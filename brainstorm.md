@@ -9,6 +9,7 @@ This file is the holding area for ideas, decisions, and additions that have surf
   - [Cite NDSS LAST-X 2026 paper on NL2Bash benchmarking](#cite-ndss-last-x-2026-paper-on-nl2bash-benchmarking)
   - [~~Name Qwen2.5-Coder-3B explicitly as the primary candidate in Section 2.1a~~ ✓ DONE](#name-qwen25-coder-3b-explicitly-as-the-primary-candidate-in-section-21a-done)
   - [~~LoRA fine-tuning as a system development step~~ ✓ DONE](#lora-fine-tuning-as-a-system-development-step-done)
+  - [Tier 3 opt-in install — Moondream 2 as user-configured vision backend](#tier-3-opt-in-install-moondream-2-as-user-configured-vision-backend)
   - [Chapter 1 — SLM-first, model-agnostic architecture backport](#chapter-1-slm-first-model-agnostic-architecture-backport)
 
 ## Pending Ideas
@@ -31,6 +32,22 @@ Applied in SA3.1 Section 2.1a. Architecture shifted to local-SLM-first, model-ag
 ### ~~LoRA fine-tuning as a system development step~~ ✓ DONE
 
 LoRA fine-tuning now appears in Section 2.1a as part of the SLM configuration description. May still be worth adding as a numbered step in Section 2.3 Validation — deferred to Thesis 1.
+
+---
+
+### Tier 3 opt-in install — Moondream 2 as user-configured vision backend
+
+**Would affect:** Thesis 1 implementation chapter (system design), installer/setup script  
+**What:** Tier 3 (vision-based GUI simulation) should be opt-in at installation time, not bundled by default. Installer prompts: "Enable vision fallback (Tier 3)? Requires an additional ~2 GB — downloads Moondream 2." Users on tight hardware skip it; full-coverage users opt in. Default install is Qwen2.5-Coder-3B only (~1.8 GB), fully functional for Tier 1 and Tier 2.
+
+Model summary:
+- Default: Qwen2.5-Coder-3B-Instruct — intent parsing, NL → bash (~1.8 GB Q4)
+- Optional (Tier 3): Moondream 2 — screenshot → UI element grounding (~2 GB, ScreenSpot F1@0.5 = 80.4)
+- Combined if both enabled: ~3.8 GB — feasible on any 8 GB RAM machine
+
+**Why not Qwen2.5-VL-3B for both roles:** VL variant adds a vision encoder making it effectively ~3.7–4B parameters (~2.5 GB Q4) — larger than Coder-3B and weaker at bash generation (Coder was trained on 5.5T code tokens). Two specialized small models beats one larger generalist.
+
+**Blocked on:** Thesis 1 implementation phase. Methodology chapter text already accommodates this — "small open-weights VLM evaluated during development" covers Moondream without naming it prematurely.
 
 ---
 
