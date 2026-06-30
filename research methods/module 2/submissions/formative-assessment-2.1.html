@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SynapseOS: Designing a Conversational Interface Layer for Personal Computing — Chapter 1 Draft</title>
+<style>
+  /* ── A4 Page Setup ── */
+  @page {
+    size: A4;
+    margin: 2.54cm 3.18cm 2.54cm 3.18cm; /* 1in left/right, 1in top/bottom */
+  }
+
+  /* ── Base Typography ── */
+  body {
+    font-family: "Times New Roman", Georgia, serif;
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #000;
+    text-align: justify;
+    widows: 3;
+    orphans: 3;
+  }
+
+  /* ── Title Page ── */
+  .title-page {
+    text-align: center;
+    padding-top: 6cm;
+    page-break-after: always;
+  }
+
+  .title-page .title {
+    font-size: 16pt;
+    font-weight: bold;
+    margin-bottom: 1.5cm;
+    line-height: 1.3;
+  }
+
+  .title-page .subtitle {
+    font-size: 13pt;
+    margin-bottom: 2cm;
+  }
+
+  .title-page .authors {
+    font-size: 12pt;
+    margin-bottom: 0.5cm;
+  }
+
+  .title-page .department {
+    font-size: 12pt;
+    margin-top: 2cm;
+  }
+
+  .title-page .university {
+    font-size: 12pt;
+  }
+
+  /* ── Table of Contents ── */
+  .toc {
+    page-break-after: always;
+  }
+
+  .toc h2 {
+    text-align: center;
+    font-size: 14pt;
+    margin-bottom: 1cm;
+    text-transform: uppercase;
+    letter-spacing: 1pt;
+  }
+
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .toc li {
+    margin-bottom: 0.3em;
+  }
+
+  .toc .toc-l1 {
+    font-weight: bold;
+  }
+
+  .toc .toc-l2 {
+    padding-left: 1.5em;
+  }
+
+  .toc .toc-dots {
+    /* simple spacer */;
+  }
+
+  /* ── Chapter Heading ── */
+  .chapter-heading {
+    text-align: center;
+    margin-top: 1cm;
+    margin-bottom: 1.5cm;
+    page-break-before: always;
+  }
+
+  .chapter-heading h1 {
+    font-size: 14pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5pt;
+    margin-bottom: 0.3cm;
+  }
+
+  .chapter-heading .chapter-subtitle {
+    font-size: 12pt;
+    font-style: italic;
+  }
+
+  /* ── Section Headings ── */
+  h2 {
+    font-size: 13pt;
+    margin-top: 1.2em;
+    margin-bottom: 0.5em;
+    text-transform: uppercase;
+    letter-spacing: 0.3pt;
+  }
+
+  h3 {
+    font-size: 12pt;
+    margin-top: 1em;
+    margin-bottom: 0.4em;
+    font-style: italic;
+  }
+
+  /* ── Body Text ── */
+  p {
+    margin: 0 0 0.8em 0;
+    text-indent: 1.27cm; /* 0.5in */
+  }
+
+  p.no-indent {
+    text-indent: 0;
+  }
+
+  /* ── Lists ── */
+  ul.bullet-list, ol {
+    margin: 0.4em 0 0.8em 1.27cm;
+    padding: 0;
+  }
+
+  ul.bullet-list li, ol li {
+    margin-bottom: 0.3em;
+  }
+
+  /* ── References ── */
+  .references {
+    page-break-before: always;
+  }
+
+  .references h2 {
+    text-align: center;
+  }
+
+  .references .ref-entry {
+    margin-bottom: 0.6em;
+    padding-left: 1.27cm;
+    text-indent: -1.27cm;
+    font-size: 11pt;
+  }
+
+  /* ── Print Helpers ── */
+  @media print {
+    body {
+      background: #fff;
+    }
+    .no-print {
+      display: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ TITLE PAGE ═══════════════ -->
+<div class="title-page">
+  <div class="title">SynapseOS: Designing a Conversational Interface Layer for Personal Computing</div>
+  <div class="subtitle">Formative Assessment 2.1: Chapter 1 Draft</div>
+  <div class="authors">
+    Alexandra Sulit<br>
+    Willard Soriano<br>
+    Allyson Vivar
+  </div>
+  <div class="department">Department of Information Technology</div>
+  <div class="university">Mapúa University – Makati</div>
+</div>
+
+
+
+<!-- ═══════════════ CHAPTER 1 ═══════════════ -->
+<div class="chapter-heading">
+  <h1>Chapter 1: Introduction</h1>
+  <div class="chapter-subtitle">(Draft)</div>
+</div>
+
+<h2>1.1 Background of the Study</h2>
+
+<ul class="bullet-list">
+  <li>The graphical desktop paradigm (icons, menus, pointer-driven interaction) has been the dominant interface for personal computing since the early 1980s</li>
+  <li>A parallel research tradition has explored natural language as an alternative interface since the late 1980s, beginning with the Berkeley UNIX Consultant [1]</li>
+  <li>LLMs and multimodal foundation models have reopened this research thread with substantially greater technical capability</li>
+  <li>Recent progress spans shell-level natural language translation [2, 3], desktop computer-using agents [16, 18], and web agents [8, 9]</li>
+  <li>Despite progress, frontier models complete only 12.24% of real computer tasks vs. 72.36% for humans on the OSWorld benchmark [17]</li>
+  <li>Coverage is uneven: Windows [15, 16], Android [10, 11, 12], and the browser [7, 8, 9] are heavily represented; Linux desktop is conspicuously absent</li>
+  <li>No existing system implements a full-OS conversational replacement for Linux — only automation on top of conventional desktops</li>
+</ul>
+
+<h2>1.2 Gap / Opportunity</h2>
+
+<ul class="bullet-list">
+  <li>No full-OS conversational replacement exists for the Linux desktop, despite Linux being the substrate for most developer and server-side workflows [3, 17]</li>
+  <li>Existing systems automate on top of the conventional desktop rather than replacing it [16, 18]</li>
+  <li>No prior work compares a conversational interface against the conventional graphical workflow on the same tasks with the same users [17]</li>
+  <li>Human-centered evaluation of LLM-based interaction is rare; only VoicePilot [5] conducts a substantive user study in this space</li>
+</ul>
+
+<h2>1.3 Objectives / Problem Statement</h2>
+
+<h3>General Objective</h3>
+
+<ul class="bullet-list">
+  <li>Design, implement, and evaluate SynapseOS, a Linux-based conversational interface layer intended to replace the conventional graphical desktop as the primary user-facing interface</li>
+</ul>
+
+<h3>Specific Objectives</h3>
+
+<ul class="bullet-list">
+  <li>Design a conversational interface layer for the Linux desktop spanning shell operations, graphical applications, and cross-application workflows</li>
+  <li>Develop a hybrid execution architecture: MCP-exposed APIs → AT-SPI accessibility tree → vision-based GUI simulation fallback</li>
+  <li>Implement SynapseOS as a Linux session manager with persistent conversational surface, undo log, and confirmation policy for irreversible operations [3, 16]</li>
+  <li>Evaluate SynapseOS against the conventional Linux desktop on task completion time, error rate, and user satisfaction across novice and power user populations [17]</li>
+</ul>
+
+<!-- ═══════════════ REFERENCES ═══════════════ -->
+<div class="references">
+  <h2>References</h2>
+
+  <div class="ref-entry">[1] Wilensky, R., Chin, D. N., Luria, M., Martin, J., Mayfield, J., &amp; Wu, D. (1988). The Berkeley Unix Consultant Project. <em>Computational Linguistics</em>, 14(4), 35–84. <a href="https://aclanthology.org/J88-4003/">https://aclanthology.org/J88-4003/</a></div>
+
+  <div class="ref-entry">[2] Westenfelder, F., Hemberg, E., Tulla, M., Moskal, S., O'Reilly, U.-M., &amp; Chiricescu, S. (2025). LLM-Supported Natural Language to Bash Translation. <em>arXiv:2502.06858</em>. <a href="https://arxiv.org/abs/2502.06858">https://arxiv.org/abs/2502.06858</a></div>
+
+  <div class="ref-entry">[3] Gyawali, B. R., Achalla, S., Kallas, K., &amp; Kumar, S. (2025). NaSh: Guardrails for an LLM-Powered Natural Language Shell. <em>arXiv:2506.13028</em>. <a href="https://arxiv.org/abs/2506.13028">https://arxiv.org/abs/2506.13028</a></div>
+
+  <div class="ref-entry">[5] Padmanabha, A., Yuan, J., Gupta, J., Karachiwalla, Z., Majidi, C., Admoni, H., &amp; Erickson, Z. (2024). VoicePilot: Harnessing LLMs as Speech Interfaces for Physically Assistive Robots. In <em>Proceedings of UIST '24</em>. <a href="https://doi.org/10.1145/3654777.3676401">https://doi.org/10.1145/3654777.3676401</a></div>
+
+  <div class="ref-entry">[7] Deng, X., Gu, Y., Zheng, B., Chen, S., Stevens, S., Wang, B., Sun, H., &amp; Su, Y. (2023). Mind2Web: Towards a Generalist Agent for the Web. In <em>Advances in Neural Information Processing Systems 36 (NeurIPS 2023)</em>. <a href="https://arxiv.org/abs/2306.06070">https://arxiv.org/abs/2306.06070</a></div>
+
+  <div class="ref-entry">[8] Zhou, S., Xu, F. F., Zhu, H., Zhou, X., Lo, R., Sridhar, A., Cheng, X., Ou, T., Bisk, Y., Fried, D., Alon, U., &amp; Neubig, G. (2024). WebArena: A Realistic Web Environment for Building Autonomous Agents. In <em>Proceedings of ICLR 2024</em>. <a href="https://arxiv.org/abs/2307.13854">https://arxiv.org/abs/2307.13854</a></div>
+
+  <div class="ref-entry">[9] Zheng, B., Gou, B., Kil, J., Sun, H., &amp; Su, Y. (2024). GPT-4V(ision) is a Generalist Web Agent, if Grounded. In <em>Proceedings of ICML 2024</em>. <a href="https://arxiv.org/abs/2401.01614">https://arxiv.org/abs/2401.01614</a></div>
+
+  <div class="ref-entry">[10] Rawles, C., Li, A., Rodriguez, D., Riva, O., &amp; Lillicrap, T. (2023). Android in the Wild: A Large-Scale Dataset for Android Device Control. In <em>Advances in Neural Information Processing Systems 36 (NeurIPS 2023)</em>. <a href="https://arxiv.org/abs/2307.10088">https://arxiv.org/abs/2307.10088</a></div>
+
+  <div class="ref-entry">[11] Zhang, C., Yang, Z., Liu, J., Han, Y., Chen, X., Huang, Z., Fu, B., &amp; Yu, G. (2023). AppAgent: Multimodal Agents as Smartphone Users. <em>arXiv:2312.13771</em>. <a href="https://arxiv.org/abs/2312.13771">https://arxiv.org/abs/2312.13771</a></div>
+
+  <div class="ref-entry">[12] Wang, J., Xu, H., Ye, J., Yan, M., Shen, W., Zhang, J., Huang, F., &amp; Sang, J. (2024). Mobile-Agent: Autonomous Multi-Modal Mobile Device Agent with Visual Perception. <em>arXiv:2401.16158</em>. <a href="https://arxiv.org/abs/2401.16158">https://arxiv.org/abs/2401.16158</a></div>
+
+  <div class="ref-entry">[15] Hui, T., Zhang, Y., Jiang, B., Sun, J., Cheng, F., Lin, X., &amp; Yang, Y. (2025). WinClick: GUI Grounding with Multimodal Large Language Models. <em>arXiv:2503.04730</em>. <a href="https://arxiv.org/abs/2503.04730">https://arxiv.org/abs/2503.04730</a></div>
+
+  <div class="ref-entry">[16] Zhang, C., He, S., Qian, J., Li, B., Li, L., Qin, S., Kang, Y., Ma, M., Liu, G., Lin, Q., Rajmohan, S., Zhang, D., &amp; Zhang, Q. (2025). UFO²: The Desktop AgentOS. <em>arXiv:2504.14603</em>. <a href="https://arxiv.org/abs/2504.14603">https://arxiv.org/abs/2504.14603</a></div>
+
+  <div class="ref-entry">[17] Xie, T., Zhang, D., Chen, J., Li, X., Zhao, S., Cao, R., Hua, T. J., Cheng, Z., Shin, D., Lei, F., Liu, Y., Xu, Y., Zhou, S., Savarese, S., Xiong, C., Zhong, V., &amp; Yu, T. (2024). OSWorld: Benchmarking Multimodal Agents for Open-Ended Tasks in Real Computer Environments. In <em>Advances in Neural Information Processing Systems 37 (NeurIPS 2024)</em>. <a href="https://arxiv.org/abs/2404.07972">https://arxiv.org/abs/2404.07972</a></div>
+
+  <div class="ref-entry">[18] Zhang, C., He, S., Qian, J., Li, B., Li, L., Qin, S., Kang, Y., Ma, M., Liu, G., Lin, Q., Rajmohan, S., Zhang, D., &amp; Zhang, Q. (2024). Large Language Model-Brained GUI Agents: A Survey. <em>arXiv:2411.18279</em>. <a href="https://arxiv.org/abs/2411.18279">https://arxiv.org/abs/2411.18279</a></div>
+</div>
+
+</body>
+</html>
