@@ -285,8 +285,10 @@
   <tr><td>RAM</td><td>4 GB minimum; 8 GB recommended</td></tr>
   <tr><td>Storage</td><td>10 GB available (OS + model + application)</td></tr>
   <tr><td>Display</td><td>Any monitor or remote terminal; no display server required (TUI interface)</td></tr>
-  <tr><td>Language Model Backend</td><td>Qwen2.5-Coder-3B-Instruct, Q4_K_M quantization (~1.8 GB); CPU inference via llama.cpp or Ollama (no GPU required); pluggable cloud LLM backend (optional, user-configured)</td></tr>
-  <tr><td>Programming Language</td><td>Python 3.x</td></tr>
+  <tr><td>Language Model Backend</td><td>Qwen2.5-Coder-3B-Instruct, Q4_K_M quantization (~1.8 GB); no GPU required; pluggable cloud LLM backend (optional, user-configured)</td></tr>
+  <tr><td>Inference Server</td><td>Ollama (model lifecycle management, REST API at localhost:11434)</td></tr>
+  <tr><td>Runtime Language</td><td>Go (session manager, TUI, bash execution, Ollama API client)</td></tr>
+  <tr><td>Build / Evaluation Language</td><td>Python 3.12 (LoRA fine-tuning, dataset preparation, statistical analysis)</td></tr>
 </table>
 
 <p class="no-indent">The minimum specification of 1 vCPU and 4 GB RAM is intentional. Because SynapseOS executes only shell-expressible operations and its conversational surface is a text-based TUI, the system imposes no display server dependency and runs on commodity cloud server hardware. A deployment on a minimal virtual private server (VPS) — or accessed remotely over SSH — is within scope, distinguishing SynapseOS from graphical desktop alternatives that require substantially more capable hardware.</p>
