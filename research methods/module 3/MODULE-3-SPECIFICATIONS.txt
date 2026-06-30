@@ -1,0 +1,226 @@
+===============================================================================
+  MODULE 3 — METHODOLOGY SPECIFICATIONS
+  SynapseOS: Designing a Conversational Interface Layer for Personal Computing
+  Reference: "Revised_Thesis_Sonam.pdf" + "Methodology.pptx" template
+===============================================================================
+
+OVERVIEW
+--------
+Module 3 covers the Methodology chapter of the thesis. Based on the reference
+template (Methodology.pptx), it must define three major sections:
+
+  1. DATASET
+  2. PROCEDURE / EXPERIMENT
+  3. MODEL / SYSTEM TESTING
+
+Each section must answer specific questions and be justified against the
+research objectives stated in Chapter 1.
+
+
+===============================================================================
+SECTION 1: DATASET
+===============================================================================
+
+1.1 WHAT TO GATHER
+-------------------
+Define the data types needed for SynapseOS:
+
+  a) Benchmark Task Suite
+     - OSWorld benchmark tasks [17] as primary evaluation dataset
+     - Custom task suite developed for this study
+     - Task categories: shell operations, file management, graphical
+       application tasks, cross-application workflows
+     - Document each task: description, expected outcome, difficulty level
+
+  b) User Study Data
+     - Task completion time (per task, per participant)
+     - Error rate (failed tasks, incorrect outcomes, recovery attempts)
+     - User satisfaction scores (Likert-scale questionnaire, e.g., SUS)
+     - Qualitative feedback (post-study interviews)
+
+  c) System Performance Data
+     - Action execution latency (MCP API, AT-SPI, vision fallback)
+     - Fallback frequency (how often each execution tier is used)
+     - Undo log events and confirmation prompts triggered
+     - Session logs (conversational turns, intent parsing accuracy)
+
+1.2 HOW TO GATHER
+------------------
+  a) Benchmark Tasks
+     - Deploy SynapseOS on Ubuntu Linux (matching OSWorld environment)
+     - Execute each task via the conversational interface
+     - Record metrics programmatically via built-in telemetry
+
+  b) User Study
+     - Controlled laboratory setting
+     - Two participant groups: novice users and power users
+     - Within-subjects or between-subjects design (specify)
+     - Screen recording + session logging
+     - Post-task questionnaires and post-study interviews
+     - Hardware: Linux desktop/workstation with SynapseOS session manager
+     - Recruitment: university population, informed consent, ethics approval
+
+1.3 WHEN TO GATHER
+-------------------
+  - User study scheduling: define date range
+  - Benchmark tasks: automated, can run continuously during development
+  - Pilot study first to calibrate instruments and task difficulty
+
+1.4 WHY (JUSTIFICATION)
+------------------------
+  - OSWorld provides the only standardized benchmark for computer-using
+    agents in real environments [17]
+  - Custom task suite needed to cover Linux-specific workflows absent
+    from existing benchmarks
+  - Dual population design (novice vs. power users) directly addresses
+    gap identified in Chapter 1: no prior work compares conversational
+    interface against graphical workflow on same tasks/users
+  - Metrics align with research questions:
+    RQ1 → design validation via task coverage
+    RQ2 → architecture effectiveness via fallback frequency & latency
+    RQ3 → comparative evaluation via time, error, satisfaction
+
+
+===============================================================================
+SECTION 2: PROCEDURE / EXPERIMENT
+===============================================================================
+
+2.1 SYSTEM DESIGN & IMPLEMENTATION
+------------------------------------
+  Step-by-step methodology for building SynapseOS:
+
+  a) Conversational Interface Layer Design
+     - Define the conversational surface (chat-based, persistent)
+     - Design intent parsing and action grounding pipeline
+     - Define the natural language command schema
+     - Specify supported operations: shell, GUI, cross-app workflows
+
+  b) Hybrid Execution Architecture Implementation
+     - Tier 1: MCP-exposed application APIs (Model Context Protocol)
+       - Define API contracts for supported applications
+       - Implement API wrappers for key Linux applications
+     - Tier 2: AT-SPI accessibility tree access
+       - Integrate Linux accessibility toolkit
+       - Map natural language intents to AT-SPI actions
+     - Tier 3: Vision-based GUI simulation (fallback)
+       - Integrate multimodal LLM for screen understanding
+       - Implement mouse/keyboard simulation for GUI control
+
+  c) Session Manager Implementation
+     - Persistent conversational surface (session persistence)
+     - Structured undo log (operation reversibility)
+     - Confirmation policy for irreversible operations
+     - Session state management
+
+2.2 DATA PRE-PROCESSING
+------------------------
+  - Task normalization (standardize task descriptions)
+  - Log parsing and event extraction
+  - Metric computation (time, error rate, satisfaction aggregation)
+  - Anonymization of participant data
+
+2.3 VALIDATION APPROACH
+------------------------
+  - For the hybrid architecture: measure accuracy of each execution tier
+  - For the conversational surface: intent parsing accuracy evaluation
+  - For safety mechanisms: confirmation policy effectiveness, undo success rate
+  - Pilot study with small participant group to validate instruments
+
+
+===============================================================================
+SECTION 3: MODEL / SYSTEM TESTING
+===============================================================================
+
+3.1 EVALUATION DATASET
+-----------------------
+  - OSWorld benchmark tasks + custom Linux task suite
+  - User study participants (novice group + power user group)
+  - Baseline: conventional Ubuntu Linux desktop workflow
+
+3.2 EVALUATION PROFILE
+-----------------------
+  Comparative evaluation design:
+
+  Condition A: SynapseOS (conversational interface)
+  Condition B: Conventional Linux desktop (graphical interface)
+
+  Metrics:
+    a) Task Completion Time
+       - Mean time per task, per condition
+       - Statistical comparison (t-test or Mann-Whitney U)
+
+    b) Error Rate
+       - Failed tasks / total tasks
+       - Error categorization (parsing errors, execution errors,
+         recovery failures)
+
+    c) User Satisfaction
+       - System Usability Scale (SUS) or similar validated instrument
+       - Perceived workload (NASA-TLX)
+       - Qualitative thematic analysis of interview data
+
+3.3 CRITERIA / FORMULA
+-----------------------
+  - Define success thresholds for each metric
+  - Statistical significance level (α = 0.05)
+  - Effect size reporting (Cohen's d)
+  - Minimum sample size justification (power analysis)
+
+3.4 VALIDATION
+---------------
+  - Internal validity: controlled lab environment, standardized tasks
+  - External validity: discussion of generalizability limits
+  - Reliability: test-retest or inter-rater where applicable
+  - Scope limitations acknowledged (Chapter 1, Section 1.1):
+    * LLM model choice not yet committed
+    * Accessibility population excluded
+    * Linux-specific findings may not generalize
+
+
+===============================================================================
+ALIGNMENT WITH RESEARCH QUESTIONS (from Chapter 1)
+===============================================================================
+
+RQ1: How can a conversational userland be designed as the primary
+     user-facing interface for Linux?
+  → Addressed by: System Design (Section 2.1a), evaluated via task
+    coverage and qualitative assessment.
+
+RQ2: What hybrid execution architecture (MCP → AT-SPI → vision fallback)
+     is most effective?
+  → Addressed by: Architecture Implementation (Section 2.1b), evaluated
+    via fallback frequency, action success rate, and latency.
+
+RQ3: How does SynapseOS compare to conventional Linux desktop on time,
+     error, and satisfaction across novice and power users?
+  → Addressed by: Comparative User Study (Section 3), evaluated via
+    statistical comparison of all three metrics.
+
+
+===============================================================================
+REFERENCES CITED IN THIS SPECIFICATION
+===============================================================================
+
+[3]  Gyawali et al. (2025). NaSh: Guardrails for an LLM-Powered
+     Natural Language Shell. arXiv:2506.13028.
+
+[16] Zhang et al. (2025). UFO²: The Desktop AgentOS. arXiv:2504.14603.
+
+[17] Xie et al. (2024). OSWorld: Benchmarking Multimodal Agents for
+     Open-Ended Tasks in Real Computer Environments. NeurIPS 2024.
+
+[5]  Padmanabha et al. (2024). VoicePilot: Harnessing LLMs as Speech
+     Interfaces. UIST '24.
+
+[22] Han et al. (2025). GUIRoboTron-Speech. arXiv:2506.11127.
+
+
+===============================================================================
+NEXT STEPS
+===============================================================================
+
+1. Draft the actual Methodology chapter text based on this specification
+2. Fill in concrete details: specific tasks, participant count, dates
+3. Create data collection instruments (questionnaires, log formats)
+4. Submit ethics approval for user study
+5. Begin SynapseOS implementation according to Section 2.1
