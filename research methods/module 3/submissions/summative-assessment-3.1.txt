@@ -24,13 +24,15 @@ Table 2.1. System environment specifications
 Component             | Specification
 --------------------------------------------------
 Operating System      | Debian 13 (Trixie)
-Processor             | [TO BE SPECIFIED]
-RAM                   | [TO BE SPECIFIED]
-Storage               | [TO BE SPECIFIED]
-Display               | [TO BE SPECIFIED]
-Language Model Backend | Locally-hosted open-weights SLM (offline, default); pluggable cloud LLM backend (optional, user-configured)
+Processor             | x86-64 with AVX2 support (Intel 4th gen / AMD Ryzen 1st gen or newer); 1 vCPU minimum, 2+ vCPU recommended for acceptable inference latency
+RAM                   | 4 GB minimum; 8 GB recommended
+Storage               | 10 GB available (OS + model + application)
+Display               | Any monitor or remote terminal; no display server required (TUI interface)
+Language Model Backend | Qwen2.5-Coder-3B-Instruct, Q4_K_M quantization (~1.8 GB); CPU inference via llama.cpp or Ollama (no GPU required); pluggable cloud LLM backend (optional, user-configured)
 Programming Language  | Python 3.x
 --------------------------------------------------
+
+The minimum specification of 1 vCPU and 4 GB RAM is intentional. Because SynapseOS executes only shell-expressible operations and its conversational surface is a text-based TUI, the system imposes no display server dependency and runs on commodity cloud server hardware. A deployment on a minimal virtual private server (VPS) — or accessed remotely over SSH — is within scope, distinguishing SynapseOS from graphical desktop alternatives that require substantially more capable hardware.
 
 
 SECTION 1: DATASET
