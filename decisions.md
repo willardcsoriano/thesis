@@ -9,9 +9,10 @@ This file records architectural and research design decisions that have been mad
   - [D1 — Deployment target: Debian 13 (Trixie)](#d1-deployment-target-debian-13-trixie)
   - [D2 — Local-SLM-first, model-agnostic inference backend](#d2-local-slm-first-model-agnostic-inference-backend)
   - [D3 — Intent parsing model: Qwen2.5-Coder-3B-Instruct](#d3-intent-parsing-model-qwen25-coder-3b-instruct)
-  - [D4 — Tier 3 vision model: Moondream 2, opt-in at install time](#d4-tier-3-vision-model-moondream-2-opt-in-at-install-time)
+  - [D4 — Vision model and GUI tiers: OUT OF SCOPE](#d4-vision-model-and-gui-tiers-out-of-scope)
   - [D5 — Within-subjects user study design, 20 participants](#d5-within-subjects-user-study-design-20-participants)
   - [D6 — Statistical analysis approach](#d6-statistical-analysis-approach)
+  - [D7 — CLI-only execution scope](#d7-cli-only-execution-scope)
 
 ## Decisions
 
@@ -49,21 +50,13 @@ Fine-tuning via LoRA on the NL2Bash corpus + custom SynapseOS task suite is plan
 
 ---
 
-### D4 — Tier 3 vision model: Moondream 2, opt-in at install time
+### D4 — Vision model and GUI tiers: OUT OF SCOPE
 
-**Status:** Decided. Not yet in any chapter — graduates to Thesis 1 system design chapter.
+**Status:** Superseded by D7. Not in any chapter.
 
-Tier 3 (vision-based GUI simulation — screenshot → UI element grounding) uses Moondream 2 (1.9B parameters, ~2 GB, ScreenSpot F1@0.5 = 80.4) as the vision model. Moondream 2 is the smallest model with verified, meaningful GUI grounding accuracy on the ScreenSpot benchmark.
+Moondream 2 (Tier 3 vision fallback) and AT-SPI accessibility tree automation (Tier 2) were evaluated and explicitly removed from the architecture. The three-tier hybrid execution model (Tier 1 MCP, Tier 2 AT-SPI, Tier 3 Vision) has been replaced by a CLI-only execution pipeline. See D7.
 
-Tier 3 is **opt-in at installation time.** The installer prompts:
-
-> "Enable vision fallback (Tier 3)? Downloads Moondream 2, requires ~2 GB additional storage and memory."
-
-Users who decline get a fully functional system on Tier 1 and Tier 2 only (~1.8 GB total). Users who opt in get full three-tier coverage (~3.8 GB total, feasible on any 8 GB RAM machine). Since Tier 3 is the last-resort fallback — fires only when both Tier 1 (MCP) and Tier 2 (AT-SPI) fail — most interactions are unaffected by whether it is installed.
-
-**Rejected:** Bundling Moondream 2 by default. Adds ~2 GB for a component that may never be invoked in most sessions.
-
-**Rejected:** Qwen2.5-VL-3B as a single unified model for both roles. See D3.
+Research data on Moondream 2 (1.9B params, ScreenSpot F1@0.5 = 80.4) and Qwen2.5-VL-3B is preserved in `research methods/module 3/references/llm-selection-research.txt` for future reference.
 
 ---
 
@@ -84,3 +77,17 @@ The user study uses a within-subjects design: all 20 participants complete both 
 **Status:** In SA3.1 Section 3.3 and 3.4
 
 Shapiro-Wilk normality test → paired-samples t-test (normal) or Wilcoxon signed-rank (non-normal), α = 0.05, Cohen's d effect size. Qualitative data via reflexive thematic analysis (Braun & Clarke [24]).
+
+---
+
+### D7 — CLI-only execution scope
+
+**Status:** In SA3.1 Conceptual Framework, Section 2.1b, Section 1.6, Section 3.1
+
+SynapseOS executes only shell-expressible operations. The system's capability boundary is the Linux command-line toolchain: file management, process control, text processing, package management, network configuration, and any application that exposes a command-line interface. GUI-only interactions are explicitly out of scope.
+
+**Why:** GUI automation (AT-SPI, vision-based simulation) introduces unrealistic complexity and scope creep that cannot be reliably built and evaluated within a thesis timeline. Constraining to CLI produces a tractable, verifiable claim. The conversational interface value proposition holds fully in CLI scope — users still interact in natural language without needing to know the commands.
+
+**Rejected:** Three-tier hybrid architecture (Tier 1 MCP, Tier 2 AT-SPI, Tier 3 Vision). The AT-SPI and vision tiers require deep integration with GUI toolkits that vary across applications and can break with updates — too fragile for a controlled study. Tier 1 (MCP) is also removed from the active architecture since it is application-specific and adds complexity without changing the research question.
+
+**Also rejected:** Framing bash as a limitation. It is a design boundary. The thesis evaluates whether natural language input improves the CLI experience — a well-scoped, answerable question.
