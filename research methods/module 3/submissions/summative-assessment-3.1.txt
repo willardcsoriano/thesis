@@ -1,0 +1,208 @@
+---
+
+CHAPTER 2
+METHODOLOGY
+
+This chapter describes the research methodology employed in designing, implementing, and evaluating SynapseOS — a Linux distribution that replaces the conventional graphical userland with a conversational interface layer. The methodology is organized into three sections: Dataset, which defines the data to be collected and how it will be gathered; Procedure, which describes the step-by-step process of building the system and conducting the study; and System Testing, which defines the evaluation design, metrics, and statistical approach used to compare SynapseOS against the conventional Linux desktop.
+
+Conceptual Framework
+
+SynapseOS operates as a conversational layer positioned between the user and the existing Linux application ecosystem. The user issues natural language commands through a persistent conversational surface. These commands are parsed for intent and grounded into system actions through a three-tier hybrid execution architecture: Tier 1 attempts to fulfill the intent through MCP-exposed application APIs; if the target application does not expose an MCP interface, Tier 2 accesses the Linux accessibility tree via AT-SPI to interact with the application's UI elements programmatically; if neither tier succeeds, Tier 3 falls back to vision-based GUI simulation, where a multimodal large language model interprets a screenshot of the current screen state and generates mouse and keyboard actions to fulfill the intent. This architecture is illustrated in Figure 2.1.
+
+The framework is evaluated through a controlled user study in which participants complete a fixed set of tasks under two conditions: using SynapseOS as the interface, and using the conventional Ubuntu Linux graphical desktop as the baseline. The comparison generates empirical data on task completion time, error rate, and user satisfaction, directly addressing the gap identified in Chapter 1 — that no prior work has compared a conversational interface against a conventional graphical workflow on the same tasks with the same user population [17].
+
+[Figure 2.1. Conceptual framework of SynapseOS. Natural language input is parsed for intent and routed through three execution tiers: MCP-exposed APIs (Tier 1), AT-SPI accessibility tree (Tier 2), and vision-based GUI simulation (Tier 3). The output is a system action executed on the Linux environment.]
+
+System Environment Specifications
+
+The hardware and software environment on which SynapseOS is deployed and evaluated is specified in Table 2.1. All participants in the user study interact with the same physical machine configuration to control for hardware variability.
+
+Table 2.1. System environment specifications
+--------------------------------------------------
+Component             | Specification
+--------------------------------------------------
+Operating System      | Ubuntu 24.04 LTS
+Processor             | [TO BE SPECIFIED]
+RAM                   | [TO BE SPECIFIED]
+Storage               | [TO BE SPECIFIED]
+Display               | [TO BE SPECIFIED]
+LLM Backend           | Frontier multimodal LLM (TBD)
+Programming Language  | Python 3.x
+--------------------------------------------------
+
+
+SECTION 1: DATASET
+
+The data gathered for this study falls into three categories: benchmark task data used to evaluate the system in a standardized environment, user study data collected from human participants in a controlled setting, and system performance data captured automatically through built-in telemetry during all sessions.
+
+1.1 What to Gather
+
+a) Benchmark Task Suite
+
+The primary benchmark dataset is the OSWorld task suite [17], which provides standardized real-computer tasks across shell operations, file management, web browsing, and application-level interactions. OSWorld is the only existing benchmark that evaluates computer-using agents in real operating system environments, making it the most appropriate external standard for SynapseOS evaluation. In addition to OSWorld tasks, a custom Linux task suite is developed for this study to cover workflows specific to the Linux desktop that are absent from OSWorld — including AT-SPI-dependent application interactions and cross-application workflows representative of typical developer and non-technical user scenarios. Each task in both suites is documented with a description, expected outcome, task category, and difficulty level.
+
+b) User Study Data
+
+The following data types are collected from each participant during the user study:
+
+   - Task completion time: the elapsed time from when the task prompt is presented to when the participant signals task completion or the session logs a terminal event
+   - Error rate: the count of failed tasks, incorrect outcomes, and recovery attempts per participant per condition
+   - User satisfaction scores: post-study responses to the System Usability Scale (SUS) and the NASA Task Load Index (NASA-TLX), both validated instruments for measuring perceived usability and cognitive workload respectively
+   - Qualitative feedback: responses gathered through a semi-structured post-study interview covering perceived ease of use, trust in the system, and comparison between the two conditions
+
+c) System Performance Data
+
+The following telemetry data is captured automatically by SynapseOS throughout all sessions:
+
+   - Action execution latency per tier (MCP API, AT-SPI, vision fallback)
+   - Fallback frequency: how often each execution tier is invoked per session
+   - Undo log events: count and type of operations logged to the undo stack
+   - Confirmation prompts triggered: count of irreversible operations that required user confirmation
+   - Conversational turns per task: the number of utterances required to complete each task
+   - Intent parsing accuracy: whether the system correctly identified the user's intent on the first attempt
+
+1.2 How to Gather
+
+a) Benchmark Tasks
+
+SynapseOS is deployed on the Ubuntu Linux environment matching the OSWorld evaluation setup [17]. Each benchmark task is executed through the conversational interface, and results are captured programmatically through the built-in telemetry system. Tasks are run in automated sessions where SynapseOS is given the task prompt as a natural language instruction and the system's output is compared against the expected outcome defined in the benchmark.
+
+b) User Study
+
+The user study is conducted in a controlled laboratory setting. Participants are seated at the designated test machine running SynapseOS and are given a task prompt sheet. The session is recorded via screen capture software and the SynapseOS session logger. The study follows a within-subjects design: each participant completes the full task set under both conditions — SynapseOS and the conventional Ubuntu desktop — with condition order counterbalanced across participants to mitigate learning and carryover effects. Specifically, half of the participants complete the SynapseOS condition first, and the remaining half complete the conventional desktop condition first.
+
+The study involves 20 participants divided into two groups:
+
+   - Novice users (n = 10): participants with limited computing experience and no prior command-line familiarity, recruited from the general university population
+   - Power users (n = 10): participants with demonstrated proficiency in Linux desktop use, recruited from the university's information technology and computer science programs
+
+Participants are recruited through university channels. Informed consent is obtained from all participants prior to the session. Ethics approval is secured before recruitment begins. Participant data is anonymized at the point of collection.
+
+After completing each condition, participants fill out the SUS and NASA-TLX questionnaires. After completing both conditions, a brief semi-structured interview is conducted to gather qualitative feedback.
+
+1.3 When to Gather
+
+Data collection proceeds in two phases:
+
+   Phase 1 — Pilot Study: A pilot study is conducted with a small group of five participants prior to the main study. The pilot study serves to calibrate the task difficulty, validate the data collection instruments, and identify procedural issues before the main study begins. Instruments are revised based on pilot findings.
+
+   Phase 2 — Main User Study: The main user study is conducted following pilot study completion and ethics approval. The specific date range is determined by ethics review timeline and participant availability.
+
+Benchmark task evaluation runs continuously throughout the development phase of SynapseOS, independently of the user study timeline. This allows for iterative assessment of system performance as the implementation matures.
+
+1.4 Why
+
+The OSWorld benchmark is used as the primary evaluation standard because it is the only existing benchmark that evaluates computer-using agents in real operating system environments with real applications [17]. Its use allows SynapseOS results to be situated within the existing literature.
+
+A custom Linux task suite is necessary because OSWorld's task coverage does not fully represent Linux-specific desktop workflows — particularly those involving AT-SPI-dependent applications and cross-application operations common to developer and non-technical Linux users.
+
+The within-subjects design is chosen because it allows each participant to serve as their own control, producing a direct comparison between conditions while requiring a smaller participant pool than a between-subjects design. Counterbalancing controls for the primary threat to internal validity: the learning effect, wherein participants may perform better in the second condition simply due to familiarity with the tasks.
+
+The dual-population design — novice and power users — directly addresses the gap identified in Chapter 1, where no prior work has evaluated a conversational interface across user populations with differing technical backgrounds [17]. The three data categories align with the three research questions: RQ1 is addressed by the system design and benchmark task coverage; RQ2 is addressed by system performance telemetry (fallback frequency, latency, intent parsing accuracy); and RQ3 is addressed by the user study metrics (task completion time, error rate, satisfaction scores).
+
+
+SECTION 2: PROCEDURE / EXPERIMENT
+
+2.1 System Design and Implementation
+
+The construction of SynapseOS proceeds in three parallel workstreams: the conversational interface layer, the hybrid execution architecture, and the session manager. These components are developed iteratively and integrated into a unified Linux session that replaces the conventional graphical desktop.
+
+a) Conversational Interface Layer
+
+The conversational surface is implemented as a persistent, full-screen chat interface that serves as the primary and sole user-facing interface when SynapseOS is active as the session manager. The interface accepts natural language input, displays system responses and action confirmations, and maintains conversational context across the session. An intent parsing pipeline translates each user utterance into a structured action representation specifying the target application, the intended operation, and the relevant parameters. The pipeline is built on a frontier multimodal LLM and is evaluated for intent parsing accuracy as part of the system validation process.
+
+b) Hybrid Execution Architecture
+
+The execution architecture implements three tiers in priority order:
+
+   Tier 1 — MCP-Exposed Application APIs: For applications that expose a Model Context Protocol interface, SynapseOS routes the parsed action directly to the application's MCP server. This tier provides the most reliable and semantically precise execution path. API contracts are defined for key Linux applications in scope, and MCP wrappers are implemented accordingly.
+
+   Tier 2 — AT-SPI Accessibility Tree: For applications without MCP support, SynapseOS queries the Linux accessibility tree via AT-SPI to inspect the application's UI element hierarchy and map the parsed intent to an accessibility action (click, type, scroll, select). This tier generalizes across most graphical Linux applications without requiring application-level modifications.
+
+   Tier 3 — Vision-Based GUI Simulation: When neither Tier 1 nor Tier 2 can fulfill the intent — for example, applications that are neither MCP-enabled nor fully accessible via AT-SPI — SynapseOS captures a screenshot of the current screen state and passes it to a multimodal LLM for visual grounding. The LLM identifies the relevant screen region and generates mouse and keyboard simulation commands to fulfill the intent. This tier trades execution reliability for generality.
+
+c) Session Manager
+
+SynapseOS is implemented as a Linux session manager that launches in place of the conventional desktop environment. The session manager maintains a persistent conversational surface, a structured undo log that records reversible operations for potential rollback, and a confirmation policy that intercepts irreversible operations — such as file deletion or system configuration changes — and prompts the user for explicit approval before execution.
+
+2.2 Data Pre-processing
+
+Prior to analysis, all collected data undergoes the following processing steps:
+
+   - Task normalization: task descriptions and expected outcomes are standardized across both the OSWorld benchmark and the custom task suite to ensure consistent evaluation criteria
+   - Log parsing and event extraction: raw session logs from SynapseOS telemetry are parsed to extract per-task metrics — completion time, error events, fallback invocations, and undo events
+   - Metric computation: task completion time is computed as the elapsed time between task prompt presentation and task completion event; error rate is computed as the ratio of failed or incorrect task outcomes to total task attempts per participant per condition; SUS and NASA-TLX scores are computed according to their respective standard scoring formulas
+   - Participant data anonymization: all participant records are anonymized at the point of extraction, replacing identifying information with participant ID codes prior to any analysis
+
+2.3 Validation
+
+The following validation procedures are applied to ensure the reliability and accuracy of the system and the study instruments:
+
+   - Pilot study: conducted with five participants prior to the main study to validate the task set difficulty, the questionnaire instruments, and the session procedure; findings from the pilot study are used to revise instruments and procedures before the main data collection begins
+   - Intent parsing accuracy: evaluated by comparing the system's parsed intent representation against a human-annotated ground truth for each task utterance; accuracy is computed as the proportion of utterances where the parsed intent matches the annotated intent on the first attempt
+   - Confirmation policy effectiveness: evaluated by verifying that all irreversible operations in the task set trigger the confirmation prompt as designed, and that no irreversible operations execute without user approval
+   - Undo success rate: evaluated by executing a representative set of reversible operations and verifying that the undo log correctly restores the prior system state in each case
+
+
+SECTION 3: SYSTEM TESTING
+
+3.1 Evaluation Dataset
+
+The system is evaluated against two datasets. The first is the OSWorld benchmark task suite [17], which provides a standardized set of real-computer tasks for direct comparison with results reported in the existing literature. The second is the custom Linux task suite developed for this study, covering shell operations, file management, graphical application tasks, and cross-application workflows specific to the Linux desktop.
+
+The user study evaluation involves 20 participants: 10 novice users and 10 power users. The baseline condition against which SynapseOS is compared is the conventional Ubuntu Linux graphical desktop, operated by the same participants on the same task set under the same laboratory conditions.
+
+3.2 Evaluation Profile
+
+The study employs a within-subjects design with two conditions:
+
+   Condition A: SynapseOS (conversational interface layer)
+   Condition B: Conventional Ubuntu Linux desktop (graphical interface)
+
+All 20 participants complete both conditions. Condition order is counterbalanced: 10 participants complete Condition A first, and 10 participants complete Condition B first. This counterbalancing controls for order effects and task familiarity.
+
+The two participant groups — novice users and power users — are analyzed both in aggregate and separately to determine whether the effect of the interface condition differs across user populations. This directly addresses RQ3, which specifies evaluation across novice and power user populations.
+
+3.3 Criteria and Formula
+
+The following metrics and formulas are used to evaluate SynapseOS against the baseline:
+
+a) Task Completion Time
+
+Mean task completion time is computed per condition per participant group. The primary statistical test is the paired-samples t-test for normally distributed data or the Wilcoxon signed-rank test for non-normally distributed data, applied at a significance level of α = 0.05. Effect size is reported using Cohen's d.
+
+b) Error Rate
+
+Error rate is computed as the proportion of task attempts resulting in failure or incorrect outcome:
+
+   Error Rate = (Failed Tasks + Incorrect Outcomes) / Total Task Attempts
+
+Error events are further categorized by type: intent parsing errors, execution errors (Tier 1/2/3 failure), and recovery failures. The same paired statistical test is applied to error rate differences between conditions.
+
+c) User Satisfaction
+
+SUS scores are computed using the standard SUS scoring formula: for each of the ten SUS items, the score contribution is computed (odd-numbered items: score minus 1; even-numbered items: 5 minus score), the contributions are summed, and the total is multiplied by 2.5 to produce a score on a 0–100 scale. A SUS score above 68 is considered above average usability [accepted convention].
+
+NASA-TLX scores are computed by averaging the six subscale ratings (Mental Demand, Physical Demand, Temporal Demand, Performance, Effort, Frustration) to produce a composite workload score per participant per condition.
+
+Qualitative interview data is analyzed using thematic analysis to identify recurring themes in participant perceptions of both conditions.
+
+d) Statistical Significance and Effect Size
+
+All primary comparisons between conditions are tested at α = 0.05. Effect size is reported using Cohen's d, with thresholds of 0.2 (small), 0.5 (medium), and 0.8 (large). Minimum sample size justification is based on an a priori power analysis targeting 80% statistical power at the specified significance level and a medium effect size (d = 0.5), which yields a minimum of 17 participants for a within-subjects design — satisfied by the 20-participant sample.
+
+REFERENCES:
+
+[3] Bimal Raj Gyawali, Saikrishna Achalla, Konstantinos Kallas, and Sam Kumar. 2025. NaSh: Guardrails for an LLM-Powered Natural Language Shell. arXiv:2506.13028 [cs.OS]. https://arxiv.org/abs/2506.13028
+
+[5] Akhil Padmanabha, Jessie Yuan, Janavi Gupta, Zulekha Karachiwalla, Carmel Majidi, Henny Admoni, and Zackory Erickson. 2024. VoicePilot: Harnessing LLMs as Speech Interfaces for Physically Assistive Robots. In Proceedings of the 37th Annual ACM Symposium on User Interface Software and Technology (UIST '24). ACM, New York, NY, USA. https://doi.org/10.1145/3654777.3676401
+
+[16] Chaoyun Zhang, Shilin He, Jiaxu Qian, Bowen Li, Liqun Li, Si Qin, Yu Kang, Minghua Ma, Guyue Liu, Qingwei Lin, Saravan Rajmohan, Dongmei Zhang, and Qi Zhang. 2025. UFO²: The Desktop AgentOS. arXiv:2504.14603 [cs.AI]. https://arxiv.org/abs/2504.14603
+
+[17] Tianbao Xie, Danyang Zhang, Jixuan Chen, Xiaochuan Li, Siheng Zhao, Ruisheng Cao, Toh Jing Hua, Zhoujun Cheng, Dongchan Shin, Fangyu Lei, Yitao Liu, Yiheng Xu, Shuyan Zhou, Silvio Savarese, Caiming Xiong, Victor Zhong, and Tao Yu. 2024. OSWorld: Benchmarking Multimodal Agents for Open-Ended Tasks in Real Computer Environments. In Advances in Neural Information Processing Systems 37 (NeurIPS 2024). https://arxiv.org/abs/2404.07972
+
+[22] Wenkang Han, Zhixiong Zeng, Jing Huang, Shu Jiang, et al. 2025. GUIRoboTron-Speech: Towards Automated GUI Agents Based on Speech Instructions. arXiv:2506.11127 [cs.AI]. https://arxiv.org/abs/2506.11127
+
+[23] Joonhyung Park, Peng Tang, Sagnik Das, Srikar Appalaraju, Kunwar Yashraj Singh, R. Manmatha, and Shabnam Ghadar. 2025. R-VLM: Region-aware Vision Language Model for Precise GUI Grounding. In Findings of the Association for Computational Linguistics: ACL 2025, 9669–9685. https://doi.org/10.18653/v1/2025.findings-acl.501
+
+---
