@@ -13,7 +13,7 @@ To illustrate: if a user says "find all PDF files in my Downloads folder and sho
 
 The framework is evaluated through a controlled user study in which participants complete a fixed set of tasks under two conditions: using SynapseOS as the interface, and using the conventional Debian Linux graphical desktop as the baseline. The comparison generates empirical data on task completion time, error rate, and user satisfaction, directly addressing the gap identified in Chapter 1 — that no prior work has compared a conversational interface against a conventional graphical workflow on the same tasks with the same user population [17].
 
-[Figure 2.1. Conceptual framework of SynapseOS. The user issues a natural language command through the conversational surface. The intent parser (Qwen2.5-Coder-3B-Instruct, local SLM) translates the utterance into a shell command, which is dispatched to an execution engine (bash subprocess). Irreversible operations are intercepted by the confirmation gate; reversible operations are logged to the undo stack. Command output is captured and rendered back in the conversational surface.]
+[Figure 2.1. Conceptual framework of SynapseOS. The user issues a natural language command to the conversational surface, which routes the utterance to the intent parser (Qwen2.5-Coder-3B-Instruct, local SLM). The intent parser produces a shell command dispatched to the execution engine (bash subprocess). Irreversible operations are intercepted by the confirmation gate; reversible operations are logged to the undo stack. Command output (stdout/stderr) is captured, rendered in the conversational surface, and presented back to the user — completing the interaction loop.]
 
 System Environment Specifications
 

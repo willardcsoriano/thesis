@@ -210,9 +210,13 @@
   <rect x="220" y="15" width="200" height="44" rx="6" fill="white" stroke="#222" stroke-width="2"/>
   <text x="320" y="42" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="#111">User</text>
 
-  <!-- Arrow: User → Surface -->
-  <line x1="320" y1="59" x2="320" y2="94" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="332" y="82" font-family="Arial,sans-serif" font-size="9" fill="#555">natural language</text>
+  <!-- Arrow: User → Surface (input, left of center) -->
+  <line x1="307" y1="59" x2="307" y2="94" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="192" y="82" text-anchor="end" font-family="Arial,sans-serif" font-size="9" fill="#555">natural language</text>
+
+  <!-- Arrow: Surface → User (response, right of center) -->
+  <line x1="333" y1="94" x2="333" y2="59" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="340" y="82" font-family="Arial,sans-serif" font-size="9" fill="#555">response</text>
 
   <!-- CONVERSATIONAL SURFACE -->
   <rect x="60" y="96" width="520" height="52" rx="6" fill="#DEDEDE" stroke="#222" stroke-width="2"/>
@@ -266,7 +270,7 @@
   <path d="M 60 408 C 20 408 20 122 60 122" stroke="#777" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#arr-gray)"/>
   <text transform="translate(12,290) rotate(-90)" font-family="Arial,sans-serif" font-size="9" fill="#777" text-anchor="middle">result / confirmation</text>
 </svg>
-<p class="figure-caption">Figure 2.1. Conceptual framework of SynapseOS. The user issues a natural language command through the conversational surface. The intent parser (Qwen2.5-Coder-3B-Instruct, local SLM) translates the utterance into a shell command, which is dispatched to an execution engine (bash subprocess). Irreversible operations are intercepted by the confirmation gate; reversible operations are logged to the undo stack. Command output is captured and rendered back in the conversational surface.</p>
+<p class="figure-caption">Figure 2.1. Conceptual framework of SynapseOS. The user issues a natural language command to the conversational surface, which routes the utterance to the intent parser (Qwen2.5-Coder-3B-Instruct, local SLM). The intent parser produces a shell command dispatched to the execution engine (bash subprocess). Irreversible operations are intercepted by the confirmation gate; reversible operations are logged to the undo stack. Command output (stdout/stderr) is captured, rendered in the conversational surface, and presented back to the user — completing the interaction loop.</p>
 
 <!-- ── System Environment Specifications ── -->
 <h2>System Environment Specifications</h2>
