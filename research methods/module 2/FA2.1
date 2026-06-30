@@ -1,0 +1,55 @@
+SynapseOS: Designing a Conversational Interface Layer for Personal Computing
+Formative Assessment 2.1: Chapter 1 Draft
+
+Alexandra Sulit
+Willard Soriano
+Allyson Vivar
+Department of Information Technology
+Mapua University – Makati
+Table of Contents
+SynapseOS: Designing a Conversational Interface Layer for Personal Computing	1
+CHAPTER 1: INTRODUCTION (Draft)	3
+1.1 Background of the Study	3
+1.2 Gap / Opportunity	3
+1.3 Objectives / Problem Statement	4
+General Objective:	4
+Specific Objectives:	4
+References	5
+
+CHAPTER 1: INTRODUCTION (Draft)
+1.1 Background of the Study
+    • The graphical desktop paradigm (icons, menus, pointer-driven interaction) has been the dominant interface for personal computing since the early 1980s
+    • A parallel research tradition has explored natural language as an alternative interface since the late 1980s, beginning with the Berkeley UNIX Consultant [1]
+    • LLMs and multimodal foundation models have reopened this research thread with substantially greater technical capability
+    • Recent progress spans shell-level natural language translation [2, 3], desktop computer-using agents [16, 18], and web agents [8, 9]
+    • Despite progress, frontier models complete only 12.24% of real computer tasks vs. 72.36% for humans on the OSWorld benchmark [17]
+    • Coverage is uneven: Windows [15, 16], Android [10, 11, 12], and the browser [7, 8, 9] are heavily represented; Linux desktop is conspicuously absent
+    • No existing system implements a full-OS conversational replacement for Linux — only automation on top of conventional desktops
+1.2 Gap / Opportunity
+    • No full-OS conversational replacement exists for the Linux desktop, despite Linux being the substrate for most developer and server-side workflows [3, 17]
+    • Existing systems automate on top of the conventional desktop rather than replacing it [16, 18]
+    • No prior work compares a conversational interface against the conventional graphical workflow on the same tasks with the same users [17]
+    • Human-centered evaluation of LLM-based interaction is rare; only VoicePilot [5] conducts a substantive user study in this space
+1.3 Objectives / Problem Statement
+General Objective:
+    • Design, implement, and evaluate SynapseOS, a Linux-based conversational interface layer intended to replace the conventional graphical desktop as the primary user-facing interface
+Specific Objectives:
+    • Design a conversational interface layer for the Linux desktop spanning shell operations, graphical applications, and cross-application workflows
+    • Develop a hybrid execution architecture: MCP-exposed APIs → AT-SPI accessibility tree → vision-based GUI simulation fallback
+    • Implement SynapseOS as a Linux session manager with persistent conversational surface, undo log, and confirmation policy for irreversible operations [3, 16]
+    • Evaluate SynapseOS against the conventional Linux desktop on task completion time, error rate, and user satisfaction across novice and power user populations [17]
+References
+[1] Wilensky et al. 1988. The Berkeley Unix Consultant Project. Computational Linguistics 14, 4. https://aclanthology.org/J88-4003/
+[2] Westenfelder et al. 2025. LLM-Supported Natural Language to Bash Translation. arXiv:2502.06858. https://arxiv.org/abs/2502.06858
+[3] Gyawali et al. 2025. NaSh: Guardrails for an LLM-Powered Natural Language Shell. arXiv:2506.13028. https://arxiv.org/abs/2506.13028
+[5] Padmanabha et al. 2024. VoicePilot: Harnessing LLMs as Speech Interfaces for Physically Assistive Robots. UIST '24. https://doi.org/10.1145/3654777.3676401
+[7] Deng et al. 2023. Mind2Web: Towards a Generalist Agent for the Web. NeurIPS 2023. https://arxiv.org/abs/2306.06070
+[8] Zhou et al. 2024. WebArena: A Realistic Web Environment for Building Autonomous Agents. ICLR 2024. https://arxiv.org/abs/2307.13854
+[9] Zheng et al. 2024. GPT-4V(ision) is a Generalist Web Agent, if Grounded. ICML 2024. https://arxiv.org/abs/2401.01614
+[10] Rawles et al. 2023. Android in the Wild: A Large-Scale Dataset for Android Device Control. NeurIPS 2023. https://arxiv.org/abs/2307.10088
+[11] Zhang et al. 2023. AppAgent: Multimodal Agents as Smartphone Users. arXiv:2312.13771. https://arxiv.org/abs/2312.13771
+[12] Wang et al. 2024. Mobile-Agent: Autonomous Multi-Modal Mobile Device Agent with Visual Perception. arXiv:2401.16158. https://arxiv.org/abs/2401.16158
+[15] Hui et al. 2025. WinClick: GUI Grounding with Multimodal Large Language Models. arXiv:2503.04730. https://arxiv.org/abs/2503.04730
+[16] Zhang et al. 2025. UFO²: The Desktop AgentOS. arXiv:2504.14603. https://arxiv.org/abs/2504.14603
+[17] Xie et al. 2024. OSWorld: Benchmarking Multimodal Agents for Open-Ended Tasks in Real Computer Environments. NeurIPS 2024. https://arxiv.org/abs/2404.07972
+[18] Zhang et al. 2024. Large Language Model-Brained GUI Agents: A Survey. arXiv:2411.18279. https://arxiv.org/abs/2411.18279
