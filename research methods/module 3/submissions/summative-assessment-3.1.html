@@ -281,7 +281,7 @@
 <table>
   <tr><th>Component</th><th>Specification</th></tr>
   <tr><td>Operating System</td><td>Debian 13 (Trixie)</td></tr>
-  <tr><td>Processor</td><td>x86-64 with AVX2 support (Intel 4th gen / AMD Ryzen 1st gen or newer); 1 vCPU minimum, 2+ vCPU recommended for acceptable inference latency</td></tr>
+  <tr><td>Processor</td><td>x86-64 with AVX2 support (Intel 4th gen / AMD Ryzen 1st gen or newer); 2 vCPU minimum</td></tr>
   <tr><td>RAM</td><td>4 GB minimum; 8 GB recommended</td></tr>
   <tr><td>Storage</td><td>10 GB available (OS + model + application)</td></tr>
   <tr><td>Display</td><td>Any monitor or remote terminal; no display server required (TUI interface)</td></tr>
@@ -291,7 +291,7 @@
   <tr><td>Build / Evaluation Language</td><td>Python 3.12 (LoRA fine-tuning, dataset preparation, statistical analysis)</td></tr>
 </table>
 
-<p class="no-indent">The minimum specification of 1 vCPU and 4 GB RAM is intentional. Because SynapseOS executes only shell-expressible operations and its conversational surface is a text-based TUI, the system imposes no display server dependency and runs on commodity cloud server hardware. A deployment on a minimal virtual private server (VPS) — or accessed remotely over SSH — is within scope, distinguishing SynapseOS from graphical desktop alternatives that require substantially more capable hardware.</p>
+<p class="no-indent">The minimum specification of 2 vCPU and 4 GB RAM is intentional. Because SynapseOS executes only shell-expressible operations and its conversational surface is a text-based TUI, the system imposes no display server dependency and runs on commodity cloud server hardware. A deployment on a minimal virtual private server (VPS) — or accessed remotely over SSH — is within scope, distinguishing SynapseOS from graphical desktop alternatives that require substantially more capable hardware.</p>
 
 <!-- ═══════════════ SECTION 1: DATASET ═══════════════ -->
 <h2>Section 1: Dataset</h2>

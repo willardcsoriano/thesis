@@ -65,7 +65,7 @@ Runs offline. Never executes during the user study.
 | Component | Minimum |
 |---|---|
 | OS | Debian 13 (Trixie) |
-| CPU | x86-64 + AVX2; 1 vCPU minimum |
+| CPU | x86-64 + AVX2; 2 vCPU minimum |
 | RAM | 4 GB |
 | Storage | 10 GB |
 | Display | Any terminal (SSH included; no display server required) |

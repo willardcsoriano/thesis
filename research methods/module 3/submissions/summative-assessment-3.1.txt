@@ -24,7 +24,7 @@ Table 2.1. System environment specifications
 Component             | Specification
 --------------------------------------------------
 Operating System      | Debian 13 (Trixie)
-Processor             | x86-64 with AVX2 support (Intel 4th gen / AMD Ryzen 1st gen or newer); 1 vCPU minimum, 2+ vCPU recommended for acceptable inference latency
+Processor             | x86-64 with AVX2 support (Intel 4th gen / AMD Ryzen 1st gen or newer); 2 vCPU minimum
 RAM                   | 4 GB minimum; 8 GB recommended
 Storage               | 10 GB available (OS + model + application)
 Display               | Any monitor or remote terminal; no display server required (TUI interface)
@@ -34,7 +34,7 @@ Runtime Language      | Go (session manager, TUI, bash execution, Ollama API cli
 Build / Eval Language | Python 3.12 (LoRA fine-tuning, dataset preparation, statistical analysis)
 --------------------------------------------------
 
-The minimum specification of 1 vCPU and 4 GB RAM is intentional. Because SynapseOS executes only shell-expressible operations and its conversational surface is a text-based TUI, the system imposes no display server dependency and runs on commodity cloud server hardware. A deployment on a minimal virtual private server (VPS) — or accessed remotely over SSH — is within scope, distinguishing SynapseOS from graphical desktop alternatives that require substantially more capable hardware.
+The minimum specification of 2 vCPU and 4 GB RAM is intentional. Because SynapseOS executes only shell-expressible operations and its conversational surface is a text-based TUI, the system imposes no display server dependency and runs on commodity cloud server hardware. A deployment on a minimal virtual private server (VPS) — or accessed remotely over SSH — is within scope, distinguishing SynapseOS from graphical desktop alternatives that require substantially more capable hardware.
 
 
 SECTION 1: DATASET
