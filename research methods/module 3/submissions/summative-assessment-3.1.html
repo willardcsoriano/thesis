@@ -190,108 +190,83 @@
 <!-- ── Conceptual Framework ── -->
 <h2>Conceptual Framework</h2>
 
-<p class="no-indent">SynapseOS operates as a conversational layer positioned between the user and the existing Linux application ecosystem. The user issues natural language commands through a persistent conversational surface. These commands are parsed for intent and grounded into system actions through a three-tier hybrid execution architecture: Tier 1 attempts to fulfill the intent through MCP-exposed application APIs; if the target application does not expose an MCP interface, Tier 2 accesses the Linux accessibility tree via AT-SPI to interact with the application's UI elements programmatically; if neither tier succeeds, Tier 3 falls back to vision-based GUI simulation, where a multimodal large language model interprets a screenshot of the current screen state and generates mouse and keyboard actions to fulfill the intent. This architecture is illustrated in Figure 2.1.</p>
+<p class="no-indent">SynapseOS operates as a conversational shell layer positioned between the user and the Linux command-line environment. The user issues natural language commands through a persistent chat interface. An intent parsing pipeline — powered by a locally-hosted small language model — translates each utterance into a shell command, which is executed in a bash subprocess. Output is captured and rendered back in the conversational interface. The user issues intent in natural language and receives results in natural language; the shell command is an implementation detail invisible to the user. This architecture is illustrated in Figure 2.1.</p>
 
-<p>To illustrate: if a user issues the command "open Firefox and go to YouTube," the intent parser produces a structured action targeting Firefox with a navigation operation. SynapseOS first attempts Tier 1 — if Firefox exposes an MCP interface, the navigation is dispatched as a direct API call. If not, Tier 2 queries the AT-SPI accessibility tree to locate Firefox's URL bar and types the address programmatically. If Firefox's UI is not accessible via AT-SPI, Tier 3 captures a screenshot, passes it to the vision model to identify the URL bar's screen coordinates, and simulates a mouse click followed by keyboard input. The same three-tier fallback sequence applies to every user command regardless of the target application.</p>
+<p>To illustrate: if a user says "find all PDF files in my Downloads folder and show their sizes," the intent parser generates the command <code>find ~/Downloads -name '*.pdf' -exec du -sh {} \;</code>. SynapseOS executes this in a bash subprocess, captures the output, and displays it in the conversational interface — the user never sees the command itself. The same flow applies to any operation expressible through the Linux command-line toolchain.</p>
 
 <p>The framework is evaluated through a controlled user study in which participants complete a fixed set of tasks under two conditions: using SynapseOS as the interface, and using the conventional Debian Linux graphical desktop as the baseline. The comparison generates empirical data on task completion time, error rate, and user satisfaction, directly addressing the gap identified in Chapter 1 — that no prior work has compared a conversational interface against a conventional graphical workflow on the same tasks with the same user population [17].</p>
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 700" style="width:100%;display:block;margin:0.8em auto 0.3em;">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 445" style="width:100%;max-width:640px;display:block;margin:0.8em auto 0.3em;">
   <defs>
-    <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-      <polygon points="0 0,8 3,0 6" fill="#333"/>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#333"/>
     </marker>
-    <marker id="arr-gray" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-      <polygon points="0 0,8 3,0 6" fill="#777"/>
+    <marker id="arr-gray" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#777"/>
     </marker>
   </defs>
 
   <!-- USER -->
-  <rect x="220" y="20" width="200" height="44" rx="8" fill="white" stroke="#222" stroke-width="2"/>
-  <text x="320" y="47" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="#111">User</text>
+  <rect x="220" y="15" width="200" height="44" rx="6" fill="white" stroke="#222" stroke-width="2"/>
+  <text x="320" y="42" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="#111">User</text>
 
   <!-- Arrow: User → Surface -->
-  <line x1="320" y1="64" x2="320" y2="105" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="330" y="89" font-family="Arial,sans-serif" font-size="10" fill="#555">natural language input</text>
+  <line x1="320" y1="59" x2="320" y2="94" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="332" y="82" font-family="Arial,sans-serif" font-size="9" fill="#555">natural language</text>
 
   <!-- CONVERSATIONAL SURFACE -->
-  <rect x="60" y="108" width="520" height="65" rx="8" fill="#DEDEDE" stroke="#222" stroke-width="2.5"/>
-  <text x="320" y="134" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="#111">SynapseOS Conversational Surface</text>
-  <text x="320" y="153" text-anchor="middle" font-family="Arial,sans-serif" font-size="9.5" fill="#444">Persistent chat interface · Session manager · Undo log · Confirmation policy</text>
+  <rect x="60" y="96" width="520" height="52" rx="6" fill="#DEDEDE" stroke="#222" stroke-width="2"/>
+  <text x="320" y="118" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#111">SynapseOS Conversational Surface</text>
+  <text x="320" y="136" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#444">persistent chat interface · session context · undo log display</text>
 
   <!-- Arrow: Surface → Intent Parser -->
-  <line x1="320" y1="173" x2="320" y2="207" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="320" y1="148" x2="320" y2="183" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="332" y="170" font-family="Arial,sans-serif" font-size="9" fill="#555">utterance</text>
 
   <!-- INTENT PARSER -->
-  <rect x="150" y="210" width="340" height="50" rx="8" fill="white" stroke="#555" stroke-width="1.5"/>
-  <text x="320" y="232" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#222">Intent Parser</text>
-  <text x="320" y="250" text-anchor="middle" font-family="Arial,sans-serif" font-size="9.5" fill="#555">Multimodal LLM — structured action representation</text>
+  <rect x="100" y="185" width="440" height="52" rx="6" fill="white" stroke="#555" stroke-width="1.5"/>
+  <text x="320" y="207" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#222">Intent Parser</text>
+  <text x="320" y="225" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#555">Qwen2.5-Coder-3B-Instruct · local SLM · NL → bash translation</text>
 
   <!-- Arrow: Intent Parser → Execution Engine -->
-  <line x1="320" y1="260" x2="320" y2="292" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="320" y1="237" x2="320" y2="282" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="332" y="264" font-family="Arial,sans-serif" font-size="9" fill="#555">shell command</text>
 
-  <!-- EXECUTION ENGINE CONTAINER (dashed) -->
-  <rect x="40" y="295" width="560" height="283" rx="8" fill="#F8F8F8" stroke="#999" stroke-width="1.5" stroke-dasharray="7,4"/>
-  <text x="320" y="315" text-anchor="middle" font-family="Arial,sans-serif" font-size="10.5" font-weight="bold" fill="#666" letter-spacing="2">HYBRID EXECUTION ENGINE</text>
+  <!-- CONFIRMATION GATE (left, dashed) -->
+  <rect x="5" y="284" width="148" height="52" rx="4" fill="white" stroke="#555" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="79" y="308" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" font-weight="bold" fill="#333">Confirmation Gate</text>
+  <text x="79" y="322" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" fill="#555">irreversible ops → user approval</text>
 
-  <!-- SYSTEM ACTION BOX (right, tall) -->
-  <rect x="447" y="323" width="138" height="232" rx="6" fill="#C8C8C8" stroke="#333" stroke-width="1.5"/>
-  <text x="516" y="426" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#111">System</text>
-  <text x="516" y="444" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#111">Action</text>
-  <text x="516" y="465" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#555">Executed on</text>
-  <text x="516" y="477" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#555">Linux environment</text>
+  <!-- UNDO LOG (right, dashed) -->
+  <rect x="487" y="284" width="148" height="52" rx="4" fill="white" stroke="#555" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="561" y="308" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" font-weight="bold" fill="#333">Undo Log</text>
+  <text x="561" y="322" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" fill="#555">reversible ops → rollback stack</text>
 
-  <!-- TIER 1 -->
-  <rect x="58" y="323" width="260" height="65" rx="6" fill="white" stroke="#444" stroke-width="1.5"/>
-  <text x="188" y="345" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#111">Tier 1 — MCP-Exposed APIs</text>
-  <text x="188" y="361" text-anchor="middle" font-family="Arial,sans-serif" font-size="9.5" fill="#333">Direct API call via Model Context Protocol</text>
-  <text x="188" y="378" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#777">most reliable · lowest latency</text>
+  <!-- EXECUTION ENGINE -->
+  <rect x="170" y="284" width="300" height="52" rx="6" fill="#E8E8E8" stroke="#333" stroke-width="1.5"/>
+  <text x="320" y="308" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#111">Execution Engine</text>
+  <text x="320" y="323" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#444">bash subprocess · stdout / stderr capture</text>
 
-  <!-- Tier 1 success → System Action -->
-  <line x1="318" y1="352" x2="445" y2="385" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="350" y="350" font-family="Arial,sans-serif" font-size="9" fill="#333">success</text>
+  <!-- Connection: Execution Engine ↔ Confirmation Gate -->
+  <line x1="170" y1="310" x2="153" y2="310" stroke="#555" stroke-width="1" stroke-dasharray="4,2"/>
 
-  <!-- Tier 1 fail → Tier 2 -->
-  <line x1="188" y1="388" x2="188" y2="413" stroke="#555" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="194" y="406" font-family="Arial,sans-serif" font-size="9" fill="#777">fail</text>
+  <!-- Connection: Execution Engine ↔ Undo Log -->
+  <line x1="470" y1="310" x2="487" y2="310" stroke="#555" stroke-width="1" stroke-dasharray="4,2"/>
 
-  <!-- TIER 2 -->
-  <rect x="58" y="415" width="260" height="65" rx="6" fill="white" stroke="#444" stroke-width="1.5"/>
-  <text x="188" y="437" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#111">Tier 2 — AT-SPI Accessibility Tree</text>
-  <text x="188" y="453" text-anchor="middle" font-family="Arial,sans-serif" font-size="9.5" fill="#333">Linux accessibility tree · UI element traversal</text>
-  <text x="188" y="470" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#777">broad coverage · no app modification</text>
+  <!-- Arrow: Execution Engine → Linux System -->
+  <line x1="320" y1="336" x2="320" y2="380" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="332" y="362" font-family="Arial,sans-serif" font-size="9" fill="#555">stdout / stderr</text>
 
-  <!-- Tier 2 success → System Action -->
-  <line x1="318" y1="443" x2="445" y2="435" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="344" y="432" font-family="Arial,sans-serif" font-size="9" fill="#333">success</text>
+  <!-- LINUX SYSTEM -->
+  <rect x="60" y="382" width="520" height="52" rx="6" fill="#DEDEDE" stroke="#222" stroke-width="2"/>
+  <text x="320" y="404" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#111">Linux System</text>
+  <text x="320" y="421" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#444">files · processes · packages · CLI applications</text>
 
-  <!-- Tier 2 fail → Tier 3 -->
-  <line x1="188" y1="480" x2="188" y2="505" stroke="#555" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="194" y="498" font-family="Arial,sans-serif" font-size="9" fill="#777">fail</text>
-
-  <!-- TIER 3 -->
-  <rect x="58" y="507" width="260" height="60" rx="6" fill="#EBEBEB" stroke="#444" stroke-width="1.5"/>
-  <text x="188" y="529" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#111">Tier 3 — Vision-Based Simulation</text>
-  <text x="188" y="545" text-anchor="middle" font-family="Arial,sans-serif" font-size="9.5" fill="#333">Screenshot grounding · Mouse/keyboard sim</text>
-  <text x="188" y="560" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#777">universal fallback</text>
-
-  <!-- Tier 3 → System Action -->
-  <line x1="318" y1="535" x2="445" y2="488" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
-
-  <!-- System Action → route down + left → Ecosystem -->
-  <polyline points="516,555 516,582 320,582" stroke="#333" stroke-width="1.5" fill="none"/>
-  <line x1="320" y1="582" x2="320" y2="598" stroke="#333" stroke-width="1.5" marker-end="url(#arr)"/>
-
-  <!-- LINUX APPLICATION ECOSYSTEM -->
-  <rect x="70" y="600" width="500" height="58" rx="8" fill="white" stroke="#222" stroke-width="2"/>
-  <text x="320" y="625" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="bold" fill="#111">Linux Application Ecosystem</text>
-  <text x="320" y="643" text-anchor="middle" font-family="Arial,sans-serif" font-size="9.5" fill="#555">Kernel unchanged · MCP-enabled, AT-SPI accessible, and legacy applications</text>
-
-  <!-- FEEDBACK (dashed, left side) -->
-  <path d="M 70 629 C 22 629 22 140 60 140" stroke="#777" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#arr-gray)"/>
-  <text transform="translate(12,430) rotate(-90)" font-family="Arial,sans-serif" font-size="9" fill="#777" text-anchor="middle">response / confirmation</text>
+  <!-- FEEDBACK arc (dashed, left side) -->
+  <path d="M 60 408 C 20 408 20 122 60 122" stroke="#777" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#arr-gray)"/>
+  <text transform="translate(12,290) rotate(-90)" font-family="Arial,sans-serif" font-size="9" fill="#777" text-anchor="middle">result / confirmation</text>
 </svg>
-<p class="figure-caption">Figure 2.1. Conceptual framework of SynapseOS. Natural language input is parsed for intent and routed through three execution tiers: MCP-exposed APIs (Tier 1), AT-SPI accessibility tree (Tier 2), and vision-based GUI simulation (Tier 3). The output is a system action executed on the Linux environment.</p>
+<p class="figure-caption">Figure 2.1. Conceptual framework of SynapseOS. The user issues a natural language command through the conversational surface. The intent parser (Qwen2.5-Coder-3B-Instruct, local SLM) translates the utterance into a shell command, which is dispatched to an execution engine (bash subprocess). Irreversible operations are intercepted by the confirmation gate; reversible operations are logged to the undo stack. Command output is captured and rendered back in the conversational surface.</p>
 
 <!-- ── System Environment Specifications ── -->
 <h2>System Environment Specifications</h2>
@@ -320,7 +295,7 @@
 
 <h4>a) Benchmark Task Suite</h4>
 
-<p class="no-indent">The primary benchmark dataset is the OSWorld task suite [17], which provides standardized real-computer tasks across shell operations, file management, web browsing, and application-level interactions. OSWorld is the only existing benchmark that evaluates computer-using agents in real operating system environments, making it the most appropriate external standard for SynapseOS evaluation. In addition to OSWorld tasks, a custom Linux task suite is developed for this study to cover workflows specific to the Linux desktop that are absent from OSWorld — including AT-SPI-dependent application interactions and cross-application workflows representative of typical developer and non-technical user scenarios. Each task in both suites is documented with a description, expected outcome, task category, and difficulty level.</p>
+<p class="no-indent">The primary benchmark dataset is the OSWorld task suite [17], which provides standardized real-computer tasks across shell operations, file management, web browsing, and application-level interactions. OSWorld is the only existing benchmark that evaluates computer-using agents in real operating system environments, making it the most appropriate external standard for SynapseOS evaluation. In addition to OSWorld tasks, a custom Linux task suite is developed for this study to cover CLI-specific workflows representative of real-world Linux use that are absent or underrepresented in OSWorld — including file management operations, process administration, text processing, and package management tasks expressed in natural language. Each task in both suites is documented with a description, expected outcome, task category, and difficulty level.</p>
 
 <h4>b) User Study Data</h4>
 
@@ -336,8 +311,7 @@
 
 <p class="no-indent">The following telemetry data is captured automatically by SynapseOS throughout all sessions:</p>
 <ul>
-  <li>Action execution latency per tier (MCP API, AT-SPI, vision fallback)</li>
-  <li>Fallback frequency: how often each execution tier is invoked per session</li>
+  <li>Command execution latency: time elapsed from utterance submission to bash subprocess completion</li>
   <li>Undo log events: count and type of operations logged to the undo stack</li>
   <li>Confirmation prompts triggered: count of irreversible operations that required user confirmation</li>
   <li>Conversational turns per task: the number of utterances required to complete each task</li>
@@ -381,7 +355,7 @@
 
 <p class="no-indent">The OSWorld benchmark is used as the primary evaluation standard because it is the only existing benchmark that evaluates computer-using agents in real operating system environments with real applications [17]. Its use allows SynapseOS results to be situated within the existing literature.</p>
 
-<p>A custom Linux task suite is necessary because OSWorld's task coverage does not fully represent Linux-specific desktop workflows — particularly those involving AT-SPI-dependent applications and cross-application operations common to developer and non-technical Linux users.</p>
+<p>A custom Linux task suite is necessary because OSWorld's task coverage does not fully represent Linux-specific CLI workflows — particularly command-line operations common to developer and non-technical Linux users that go beyond the application-level interactions OSWorld was designed to evaluate.</p>
 
 <p>The within-subjects design is chosen because it allows each participant to serve as their own control, producing a direct comparison between conditions while requiring a smaller participant pool than a between-subjects design. Counterbalancing controls for the primary threat to internal validity: the learning effect, wherein participants may perform better in the second condition simply due to familiarity with the tasks.</p>
 
@@ -389,7 +363,7 @@
 
 <p>Cloud model access is preserved as an explicit opt-in. A model-agnostic backend interface accepts user-supplied API keys to substitute the local SLM with a hosted frontier model for users who choose that tradeoff. This design treats privacy as the default and cloud connectivity as a deliberate user choice. It also ensures reproducible evaluation conditions independent of API availability, rate limits, or cost.</p>
 
-<p>The dual-population design — novice and power users — directly addresses the gap identified in Chapter 1, where no prior work has evaluated a conversational interface across user populations with differing technical backgrounds [17]. The three data categories align with the three research questions: RQ1 is addressed by the system design and benchmark task coverage; RQ2 is addressed by system performance telemetry (fallback frequency, latency, intent parsing accuracy); and RQ3 is addressed by the user study metrics (task completion time, error rate, satisfaction scores).</p>
+<p>The dual-population design — novice and power users — directly addresses the gap identified in Chapter 1, where no prior work has evaluated a conversational interface across user populations with differing technical backgrounds [17]. The three data categories align with the three research questions: RQ1 is addressed by the system design and benchmark task coverage; RQ2 is addressed by system performance telemetry (command execution latency, intent parsing accuracy, undo and confirmation events); and RQ3 is addressed by the user study metrics (task completion time, error rate, satisfaction scores).</p>
 
 <!-- 1.5 -->
 <h3>1.5 Participant Screening Criteria</h3>
@@ -412,12 +386,12 @@
 
 <ol>
   <li><strong>Ecological validity</strong> — tasks reflect actions a real user would perform in a Linux desktop environment, drawn from common developer and non-technical user workflows</li>
-  <li><strong>Tier coverage</strong> — the task set collectively exercises all three execution tiers of the SynapseOS architecture: tasks solvable via MCP APIs, tasks requiring AT-SPI accessibility tree access, and tasks requiring vision-based fallback</li>
+  <li><strong>CLI scope</strong> — all tasks are expressible as Linux command-line operations, covering the breadth of the command-line toolchain: file management, process control, text processing, package management, and system administration</li>
   <li><strong>Difficulty stratification</strong> — tasks are rated at three difficulty levels (simple, moderate, complex) based on the number of steps required and the specificity of the target application interaction</li>
   <li><strong>Population appropriateness</strong> — both participant groups receive the same task set, with task wording written in plain language accessible to novice users</li>
 </ol>
 
-<p class="no-indent">The custom task suite comprises tasks organized into four categories: shell operations, file management, graphical application tasks, and cross-application workflows. The specific task count per category is determined during the pilot study based on observed session duration and task calibration findings. Each task is documented with a unique identifier, a natural language prompt as presented to the participant, the expected system outcome, the relevant execution tier, and the assigned difficulty level. Tasks are validated during the pilot study and revised as necessary before the main study begins.</p>
+<p class="no-indent">The custom task suite comprises tasks organized into four categories: shell operations, file management, process and system administration, and text processing. All tasks are expressible as Linux command-line operations — GUI-only interactions are excluded by design. Each task is documented with a unique identifier, a natural language prompt as presented to the participant, the expected system outcome, and the assigned difficulty level. Tasks are validated during the pilot study and revised as necessary before the main study begins.</p>
 
 <!-- ═══════════════ SECTION 2: PROCEDURE ═══════════════ -->
 <h2>Section 2: Procedure / Experiment</h2>
@@ -425,27 +399,23 @@
 <!-- 2.1 -->
 <h3>2.1 System Design and Implementation</h3>
 
-<p class="no-indent">The construction of SynapseOS proceeds in three parallel workstreams: the conversational interface layer, the hybrid execution architecture, and the session manager. These components are developed iteratively and integrated into a unified Linux session that replaces the conventional graphical desktop.</p>
+<p class="no-indent">The construction of SynapseOS proceeds in three parallel workstreams: the conversational interface layer, the execution pipeline, and the session manager. These components are developed iteratively and integrated into a unified Linux session that replaces the conventional graphical desktop.</p>
 
 <h4>a) Conversational Interface Layer</h4>
 
-<p class="no-indent">The conversational surface is implemented as a persistent, full-screen chat interface that serves as the primary and sole user-facing interface when SynapseOS is active as the session manager. The interface accepts natural language input, displays system responses and action confirmations, and maintains conversational context across the session. An intent parsing pipeline translates each user utterance into a structured action representation specifying the target application, the intended operation, and the relevant parameters.</p>
+<p class="no-indent">The conversational surface is implemented as a persistent, full-screen chat interface that serves as the primary and sole user-facing interface when SynapseOS is active as the session manager. The interface accepts natural language input, displays system responses and command output, and maintains conversational context across the session. An intent parsing pipeline translates each user utterance into a shell command for execution.</p>
 
-<p>SynapseOS is designed around a locally-hosted small language model (SLM) as the default inference backend. Because the system operates at the OS level — processing every natural language command, capturing screen state for Tier 3 execution, and observing terminal output, window titles, file paths, and application state — routing inference through a cloud API would give an external provider continuous visibility into the user's computing activity. SynapseOS therefore defaults to on-device inference: all language and vision processing runs locally, with no user data transmitted externally.</p>
+<p>SynapseOS is designed around a locally-hosted small language model (SLM) as the default inference backend. Because the system operates at the OS level — processing every natural language command, observing terminal output, file paths, command history, and the user's interaction patterns — routing inference through a cloud API would give an external provider continuous visibility into the user's computing activity. SynapseOS therefore defaults to on-device inference: all language processing runs locally, with no user data transmitted externally.</p>
 
-<p>The inference backend is model-agnostic by design. Users may optionally supply an API key for a supported cloud provider to substitute the local SLM with a hosted frontier model for any inference role; this is entirely at the user's discretion. The default configuration requires no API key, no internet connection, and no per-query cost, making SynapseOS fully operational in offline and air-gapped environments.</p>
+<p>The inference backend is model-agnostic by design. Users may optionally supply an API key for a supported cloud provider to substitute the local SLM with a hosted frontier model; this is entirely at the user's discretion. The default configuration requires no API key, no internet connection, and no per-query cost, making SynapseOS fully operational in offline and air-gapped environments.</p>
 
-<p>For the intent parsing role, the primary SLM candidate is Qwen2.5-Coder-3B-Instruct, an open-weights code-specialized model that demonstrated the strongest natural language-to-bash translation accuracy among models below 7B parameters in controlled evaluation [2]. At 4-bit quantization, the model requires approximately 1.8 GB of memory and runs on the target Debian 13 (Trixie) hardware without a dedicated GPU. For the Tier 3 vision grounding role, a small open-weights vision-language model is evaluated in parallel during system development; the specific model is selected based on visual grounding accuracy against the custom Linux task suite. Both models are fine-tuned via Low-Rank Adaptation (LoRA) on task-relevant corpora to maximize accuracy within the 3B parameter budget, following the methodology of Westenfelder et al. [2].</p>
+<p>The primary SLM is Qwen2.5-Coder-3B-Instruct, an open-weights code-specialized model that demonstrated the strongest natural language-to-bash translation accuracy among models below 7B parameters in controlled evaluation [2]. At 4-bit quantization, the model requires approximately 1.8 GB of memory and runs on the target Debian 13 (Trixie) hardware without a dedicated GPU. The model is fine-tuned via Low-Rank Adaptation (LoRA) on the NL2Bash corpus and a custom SynapseOS task suite to maximize intent parsing accuracy, following the evaluation methodology of Westenfelder et al. [2].</p>
 
-<h4>b) Hybrid Execution Architecture</h4>
+<h4>b) Execution Pipeline</h4>
 
-<p class="no-indent">The execution architecture implements three tiers in priority order:</p>
+<p class="no-indent">Once the intent parser produces a shell command, SynapseOS passes it through two safety mechanisms before execution. First, the command is classified by reversibility: operations that are irreversible — such as file deletion, system configuration changes, or destructive package operations — trigger a confirmation prompt requiring explicit user approval before execution proceeds. Reversible operations are logged to the undo stack, enabling the user to request rollback at any point through the conversational interface. Second, the approved command is dispatched to a bash subprocess. Standard output and standard error are captured and rendered in the conversational surface as the system's response to the original natural language input.</p>
 
-<div class="tier-block">
-  <p><strong>Tier 1 — MCP-Exposed Application APIs:</strong> For applications that expose a Model Context Protocol interface, SynapseOS routes the parsed action directly to the application's MCP server. This tier provides the most reliable and semantically precise execution path. API contracts are defined for key Linux applications in scope, and MCP wrappers are implemented accordingly.</p>
-  <p><strong>Tier 2 — AT-SPI Accessibility Tree:</strong> For applications without MCP support, SynapseOS queries the Linux accessibility tree via AT-SPI to inspect the application's UI element hierarchy and map the parsed intent to an accessibility action (click, type, scroll, select). This tier generalizes across most graphical Linux applications without requiring application-level modifications.</p>
-  <p><strong>Tier 3 — Vision-Based GUI Simulation:</strong> When neither Tier 1 nor Tier 2 can fulfill the intent — for example, applications that are neither MCP-enabled nor fully accessible via AT-SPI — SynapseOS captures a screenshot of the current screen state and passes it to a multimodal LLM for visual grounding. The LLM identifies the relevant screen region and generates mouse and keyboard simulation commands to fulfill the intent. This tier trades execution reliability for generality.</p>
-</div>
+<p>SynapseOS executes only shell-expressible operations. The system's capability boundary is the Linux command-line toolchain: file management, process control, text processing, package management, network configuration, and any application that exposes a command-line interface. GUI-only interactions — clicking buttons in graphical applications, navigating web page elements, or interacting with visual-only interfaces — are explicitly outside scope. This boundary is intentional: it constrains the research to a tractable, verifiable claim that the system can be built, evaluated, and defended within the thesis timeline.</p>
 
 <h4>c) Session Manager</h4>
 
@@ -457,7 +427,7 @@
 <p class="no-indent">Prior to analysis, all collected data undergoes the following processing steps:</p>
 <ul>
   <li><strong>Task normalization:</strong> task descriptions and expected outcomes are standardized across both the OSWorld benchmark and the custom task suite to ensure consistent evaluation criteria</li>
-  <li><strong>Log parsing and event extraction:</strong> raw session logs from SynapseOS telemetry are parsed to extract per-task metrics — completion time, error events, fallback invocations, and undo events</li>
+  <li><strong>Log parsing and event extraction:</strong> raw session logs from SynapseOS telemetry are parsed to extract per-task metrics — completion time, error events, and undo events</li>
   <li><strong>Metric computation:</strong> task completion time is computed as the elapsed time between task prompt presentation and task completion event; error rate is computed as the ratio of failed or incorrect task outcomes to total task attempts per participant per condition; SUS and NASA-TLX scores are computed according to their respective standard scoring formulas</li>
   <li><strong>Participant data anonymization:</strong> all participant records are anonymized at the point of extraction, replacing identifying information with participant ID codes prior to any analysis</li>
 </ul>
@@ -509,7 +479,7 @@
 <!-- 3.1 -->
 <h3>3.1 Evaluation Dataset</h3>
 
-<p class="no-indent">The system is evaluated against two datasets. The first is the OSWorld benchmark task suite [17], which provides a standardized set of real-computer tasks for direct comparison with results reported in the existing literature. The second is the custom Linux task suite developed for this study, covering shell operations, file management, graphical application tasks, and cross-application workflows specific to the Linux desktop.</p>
+<p class="no-indent">The system is evaluated against two datasets. The first is the OSWorld benchmark task suite [17], which provides a standardized set of real-computer tasks for direct comparison with results reported in the existing literature. The second is the custom Linux task suite developed for this study, covering shell operations, file management, process and system administration, and text processing — all expressible through the Linux command-line toolchain.</p>
 
 <p>The user study evaluation involves 20 participants: 10 novice users and 10 power users. The baseline condition against which SynapseOS is compared is the conventional Debian Linux graphical desktop, operated by the same participants on the same task set under the same laboratory conditions.</p>
 
@@ -541,7 +511,7 @@
 
 <p class="formula">Error Rate = (Failed Tasks + Incorrect Outcomes) / Total Task Attempts</p>
 
-<p class="no-indent">Error events are further categorized by type: intent parsing errors, execution errors (Tier 1/2/3 failure), and recovery failures. The same paired statistical test is applied to error rate differences between conditions.</p>
+<p class="no-indent">Error events are further categorized by type: intent parsing errors (incorrect bash command generated), execution errors (bash subprocess failure), and recovery failures (unsuccessful undo or retry). The same paired statistical test is applied to error rate differences between conditions.</p>
 
 <h4>c) User Satisfaction</h4>
 
