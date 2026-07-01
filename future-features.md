@@ -19,6 +19,12 @@ This file holds product and research ideas that surfaced during thesis developme
   - [Conversational Hardening Application](#conversational-hardening-application)
 - [First-Run Experience](#first-run-experience)
   - [Conversational Setup Wizard](#conversational-setup-wizard)
+- [GUI: Active Desktop / Wallpaper-Layer Interface](#gui-active-desktop-wallpaper-layer-interface)
+  - [Concept](#concept)
+  - [Implementation path](#implementation-path)
+- [Persistent Conversation Memory](#persistent-conversation-memory)
+  - [Concept](#concept-1)
+  - [Design decisions needed](#design-decisions-needed)
 - [Deployment Modes](#deployment-modes)
   - [VPS / SSH First-Class Support](#vps-ssh-first-class-support)
 
@@ -99,6 +105,45 @@ On first launch (no user profile exists), SynapseOS runs a short setup conversat
 4. Optional: apply hardening profile
 
 **Deferred because:** the user study uses pre-configured machines. First-run setup is irrelevant in a controlled lab setting. High-value for a real product launch.
+
+---
+
+## GUI: Active Desktop / Wallpaper-Layer Interface
+
+### Concept
+
+The SynapseOS chat interface renders at the desktop background layer — it IS the wallpaper. Other application windows float on top of it. A global hotkey (e.g., Ctrl+D) hides all foreground windows and returns focus to the chat layer, making the conversational interface ambient and always accessible without occupying a window slot.
+
+This is the primary GUI target for non-technical users. The TUI remains the server and power-user deployment mode.
+
+### Implementation path
+
+**Frontend:** React + Tailwind CSS + shadcn/ui for the chat UI; Framer Motion for typewriter animations and message transitions. The "Tom Riddle's notebook" aesthetic — dark, immersive, flowing text — is achievable entirely in CSS.
+
+**Desktop integration (Wayland):** The `wlr-layer-shell` Wayland protocol allows an application to declare itself as the `BACKGROUND` layer. Tauri (Rust backend + WebView frontend) has a community plugin for wlr-layer-shell, making this achievable without writing compositor code. The chat WebView anchors itself as a Wayland background surface; all other windows appear on top.
+
+**Desktop integration (X11 fallback):** `xwinwrap` pins any application as the X11 root window (the wallpaper layer). Less modern but covers non-Wayland systems.
+
+**Backend:** The Go layer (Ollama client, bash execution, confirmation gate, undo log) is unchanged. Tauri exposes Go-equivalent Rust functions to the React frontend; or the Go process runs separately and the frontend communicates via a local socket or REST.
+
+**Deferred because:** building the wallpaper-layer integration, desktop compositor hooks, and global hotkey handling is significant implementation work beyond the thesis timeline. The thesis prototype uses a fullscreen borderless window that approximates the aesthetic without requiring layer-shell integration. Full active-desktop mode is the post-thesis product target.
+
+---
+
+## Persistent Conversation Memory
+
+### Concept
+
+Conversation history survives reboots. Each login session becomes a named thread (auto-titled or user-named). Users can scroll back through past conversations, resume old threads, or start fresh. Analogous to iMessage threads or ChatGPT conversation history.
+
+### Design decisions needed
+
+- **Storage:** SQLite local database, one row per message (timestamp, role, content, session ID). No cloud sync by default — local only, encrypted at rest.
+- **Context window management:** Qwen2.5-Coder-3B has a finite context window (~8K tokens). Long sessions overflow it. Two strategies: (a) rolling window — drop oldest messages until the context fits; (b) conversational summarization — compress old turns into a summary token that stays in context while raw history is archived to SQLite.
+- **Session boundary:** Define what starts a new session — time gap, explicit user command ("new chat"), or system reboot.
+- **Privacy:** All history is local. No telemetry. History deletion must be a first-class user action ("clear my history").
+
+**Deferred because:** the thesis prototype uses session-scoped memory — history lives in RAM for the duration of one login session and is cleared on logout. This removes the data model, context management, and privacy complexity entirely and keeps the evaluation environment clean and reproducible.
 
 ---
 
