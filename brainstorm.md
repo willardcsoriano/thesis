@@ -25,6 +25,6 @@ This file is the holding area for ideas and additions that have surfaced during 
 **Would affect:** SA1 (Chapter 1, already submitted)  
 **What:** Three changes needed when Chapter 1 is revised for Thesis 1:
   1. **5th specific objective:** "To design and integrate a privacy-preserving, locally-hosted SLM backend with a model-agnostic interface, enabling SynapseOS to operate fully offline without transmitting user data to external services."
-  2. **Remove limitation:** "LLM not yet committed" is now resolved. Replace with the honest limitation: accuracy ceiling of the 3B SLM at Tier 3 vision grounding relative to frontier alternatives.
+  2. **Remove limitation:** "LLM not yet committed" is now resolved. Replace with the honest limitation: accuracy ceiling of the 3B SLM on complex or ambiguous natural language commands relative to frontier alternatives.
   3. **Update scope:** Cloud inference is opt-in, not a design dependency.  
 **Blocked on:** SA1 already submitted. Apply during Thesis 1 revision.
