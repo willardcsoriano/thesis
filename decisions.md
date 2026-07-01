@@ -14,6 +14,7 @@ This file records architectural and research design decisions that have been mad
   - [D6 — Statistical analysis approach](#d6-statistical-analysis-approach)
   - [D7 — CLI-only execution scope](#d7-cli-only-execution-scope)
   - [D8 — Implementation stack: Go runtime, Python build pipeline, Ollama inference server](#d8-implementation-stack-go-runtime-python-build-pipeline-ollama-inference-server)
+  - [D9 — Study baseline: expert baseline design (participant's primary OS)](#d9-study-baseline-expert-baseline-design-participants-primary-os)
 
 ## Decisions
 
@@ -108,3 +109,15 @@ SynapseOS executes only shell-expressible operations. The system's capability bo
 **Why this split and not pure Python:** Go produces a single binary with no dependency hell, goroutines are a natural fit for streaming model output token-by-token into the TUI, and memory overhead is ~15 MB vs ~80–100 MB for the Python interpreter + deps. Python is kept only where it has no peer — the ML fine-tuning ecosystem (Transformers, PEFT, Unsloth) is Python-only.
 
 **Rejected:** Pure Python runtime. Textual is good but bubbletea is better for this use case, and asyncio subprocess streaming is more complex than goroutines. Rejected: Go for fine-tuning — no viable Go ML training ecosystem exists.
+
+---
+
+### D9 — Study baseline: expert baseline design (participant's primary OS)
+
+**Status:** In SA3.1 Section 3.2
+
+Condition B is each participant's primary OS — Windows 11, macOS, or Linux with GNOME — on a dedicated baseline machine in the lab. Study uses four physical machines: one SynapseOS (Debian 13), one Windows 11, one macOS, one Linux (GNOME). Each participant uses whichever baseline machine matches their daily driver.
+
+**Why:** A fixed Linux desktop baseline (originally GNOME on Debian) would confound the result. Most participants have never used a Linux desktop; slow performance under that condition reflects OS unfamiliarity, not interface quality. The expert baseline design tests SynapseOS against what participants already know — a harder and more ecologically valid opponent. A positive result against a participant's home environment is a stronger claim than winning against a foreign system.
+
+**Rejected:** Single fixed Linux baseline (GNOME/Debian) — confounds interface with OS familiarity. Three-OS between-subjects design — requires much larger n and loses within-subjects control. macOS-only or Windows-only baseline — excludes participants whose native platform differs.
