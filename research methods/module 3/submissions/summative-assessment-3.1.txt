@@ -11,7 +11,7 @@ SynapseOS operates as a conversational shell layer positioned between the user a
 
 To illustrate: if a user says "find all PDF files in my Downloads folder and show their sizes," the intent parser generates the command `find ~/Downloads -name '*.pdf' -exec du -sh {} \;`. SynapseOS executes this in a bash subprocess, captures the output, and displays it in the conversational interface — the user never sees the command itself. The same flow applies to any operation expressible through the Linux command-line toolchain.
 
-The framework is evaluated through a controlled user study in which participants complete a fixed set of tasks under two conditions: using SynapseOS as the interface, and using the conventional Debian Linux graphical desktop as the baseline. The comparison generates empirical data on task completion time, error rate, and user satisfaction, directly addressing the gap identified in Chapter 1 — that no prior work has compared a conversational interface against a conventional graphical workflow on the same tasks with the same user population [17].
+The framework is evaluated through a controlled user study in which participants complete a fixed set of tasks under two conditions: using SynapseOS as the interface, and using their own primary operating system — Windows, macOS, or Linux — as the baseline. This expert baseline design pits SynapseOS against the environment each participant already knows and uses daily, generating empirical data on task completion time, error rate, and user satisfaction across the real-world OS landscape [17].
 
 [Figure 2.1. Conceptual framework of SynapseOS. The user issues a natural language command to the conversational surface, which routes the utterance to the intent parser (Qwen2.5-Coder-3B-Instruct, local SLM). The intent parser produces a shell command dispatched to the execution engine (bash subprocess). Irreversible operations are intercepted by the confirmation gate; reversible operations are logged to the undo stack. Command output (stdout/stderr) is captured, rendered in the conversational surface, and presented back to the user — completing the interaction loop.]
 
@@ -45,7 +45,7 @@ The data gathered for this study falls into three categories: benchmark task dat
 
 a) Benchmark Task Suite
 
-The primary benchmark dataset is the OSWorld task suite [17], which provides standardized real-computer tasks across shell operations, file management, web browsing, and application-level interactions. OSWorld is the only existing benchmark that evaluates computer-using agents in real operating system environments, making it the most appropriate external standard for SynapseOS evaluation. In addition to OSWorld tasks, a custom Linux task suite is developed for this study to cover CLI-specific workflows representative of real-world Linux use that are absent or underrepresented in OSWorld — including file management operations, process administration, text processing, and package management tasks expressed in natural language. Each task in both suites is documented with a description, expected outcome, task category, and difficulty level.
+The primary benchmark dataset is the OSWorld task suite [17], which provides standardized real-computer tasks across shell operations, file management, web browsing, and application-level interactions. OSWorld is the only existing benchmark that evaluates computer-using agents in real operating system environments, making it the most appropriate external standard for SynapseOS evaluation. In addition to OSWorld tasks, a custom cross-platform task suite is developed for this study, covering file search and organization, system and process monitoring, application and package management, and text and data processing — each task defined as a human-level goal achievable via SynapseOS natural language commands and via native OS tools on the comparison machine. Each task in both suites is documented with a description, expected outcome, task category, and difficulty level.
 
 b) User Study Data
 
@@ -74,12 +74,12 @@ SynapseOS is deployed on the Debian 13 (Trixie) environment matching the OSWorld
 
 b) User Study
 
-The user study is conducted in a controlled laboratory setting. Participants are seated at the designated test machine running SynapseOS and are given a task prompt sheet. The session is recorded via screen capture software and the SynapseOS session logger. The study follows a within-subjects design: each participant completes the full task set under both conditions — SynapseOS and the conventional Debian desktop — with condition order counterbalanced across participants to mitigate learning and carryover effects. Specifically, half of the participants complete the SynapseOS condition first, and the remaining half complete the conventional desktop condition first.
+The user study is conducted in a controlled laboratory setting with two machines: the SynapseOS evaluation machine (Debian 13, conversational interface) and the baseline machine running the participant's native OS — Windows 11, macOS, or Linux with a GNOME desktop — as determined during screening. Each participant completes the full task set on both machines under a within-subjects design, with condition order counterbalanced across participants to mitigate learning and carryover effects. Specifically, half of the participants complete the SynapseOS condition first, and the remaining half complete the native OS condition first. Screen capture software records activity on both machines; the SynapseOS session logger supplements the recording for the SynapseOS condition.
 
 The study involves 20 participants divided into two groups:
 
-   - Novice users (n = 10): participants with limited computing experience and no prior command-line familiarity, recruited from the general university population
-   - Power users (n = 10): participants with demonstrated proficiency in Linux desktop use, recruited from the university's information technology and computer science programs
+   - Novice users (n = 10): participants with limited computing experience, capable only of basic tasks (web browsing, document editing) on any OS, and no prior command-line familiarity, recruited from the general university population
+   - Power users (n = 10): participants with demonstrated proficiency in computing on their primary OS — capable of performing file management, system monitoring, and process administration tasks efficiently — recruited from the university's information technology and computer science programs
 
 Participants are recruited through university channels. Informed consent is obtained from all participants prior to the session. Ethics approval is secured before recruitment begins. Participant data is anonymized at the point of collection.
 
@@ -99,9 +99,11 @@ Benchmark task evaluation runs continuously throughout the development phase of 
 
 The OSWorld benchmark is used as the primary evaluation standard because it is the only existing benchmark that evaluates computer-using agents in real operating system environments with real applications [17]. Its use allows SynapseOS results to be situated within the existing literature.
 
-A custom Linux task suite is necessary because OSWorld's task coverage does not fully represent Linux-specific CLI workflows — particularly command-line operations common to developer and non-technical Linux users that go beyond the application-level interactions OSWorld was designed to evaluate.
+A custom cross-platform task suite is necessary because OSWorld's task coverage does not represent the human-goal-framed system tasks relevant to this study — file organization, system monitoring, process management, and text processing — achievable both through SynapseOS natural language commands and through participants' native OS tools (Windows, macOS, or Linux graphical desktop). Tasks are scoped to operations achievable via bash on SynapseOS and via native graphical or terminal tools on the comparison machine.
 
 The within-subjects design is chosen because it allows each participant to serve as their own control, producing a direct comparison between conditions while requiring a smaller participant pool than a between-subjects design. Counterbalancing controls for the primary threat to internal validity: the learning effect, wherein participants may perform better in the second condition simply due to familiarity with the tasks.
+
+The expert baseline design — using each participant's primary OS as Condition B rather than a fixed Linux graphical desktop — is chosen because a fixed Linux baseline would confound interface quality with OS familiarity. The overwhelming majority of participants have never used a Linux desktop; performance under that condition would reflect unfamiliarity with a foreign environment, not a meaningful comparison of interface paradigms. The stronger and more ecologically valid test is whether SynapseOS can compete with what participants already know and use daily. A positive result against a participant's native environment is a more compelling argument for SynapseOS than a win against a system participants are encountering for the first time.
 
 The local-SLM-first design is a principled architectural choice, not a fallback. A system that replaces the Linux desktop userland necessarily observes everything the user does at the OS level: every command issued, every file opened, every window on screen. Routing this data to a cloud inference API gives an external provider continuous visibility into the user's computing activity — a privacy exposure that is categorically inappropriate for a system positioned as a userland replacement. On-device inference eliminates this exposure: no user data leaves the machine regardless of what the user is doing.
 
@@ -114,23 +116,23 @@ The dual-population design — novice and power users — directly addresses the
 Participants are assigned to the novice or power user group based on a pre-study screening questionnaire administered before the session begins. The questionnaire assesses the following dimensions:
 
    - Years of general computer use
-   - Frequency of Linux desktop use (never / occasionally / regularly / daily)
+   - Primary OS — the operating system used as the primary daily computing environment (Windows / macOS / Linux); must average four or more hours of use per day to qualify
+   - Self-reported proficiency on primary OS (basic / intermediate / advanced)
    - Self-reported command-line familiarity (none / basic / intermediate / advanced)
-   - Familiarity with graphical Linux desktop environments (GNOME, KDE, and similar)
    - Prior exposure to conversational AI interfaces (chatbots, voice assistants, LLM tools)
 
-Participants are classified as novice users if they report no prior command-line experience, no prior regular use of a Linux desktop environment, and general computer use limited to basic web browsing and document editing. Participants are classified as power users if they report at least intermediate command-line proficiency and regular use of a Linux desktop environment in a professional or academic capacity. Participants who do not clearly satisfy either classification are excluded. Prior exposure to conversational AI interfaces is recorded for all participants as a covariate but is not used as a classification criterion.
+Participants are classified as novice users if they report basic proficiency on their primary OS, computing use limited to web browsing and document editing, and no prior command-line experience on any platform. Participants are classified as power users if they report advanced proficiency on their primary OS — capable of performing file management, process monitoring, and system administration tasks efficiently using that OS's native tools — regardless of which OS that is. Participants who do not clearly satisfy either classification are excluded. Primary OS and prior exposure to conversational AI interfaces are recorded for all participants as covariates and grouping variables in the analysis.
 
 1.6 Task Design
 
-The custom Linux task suite is designed to cover workflows representative of real-world Linux desktop use that are absent or underrepresented in the OSWorld benchmark. Task design follows four principles:
+The custom cross-platform task suite is designed to cover human-level system tasks achievable both through SynapseOS natural language commands and through native tools on the participant's primary OS. Task design follows four principles:
 
-   1. Ecological validity — tasks reflect actions a real user would perform in a Linux desktop environment, drawn from common developer and non-technical user workflows
-   2. CLI scope — all tasks are expressible as Linux command-line operations, covering the breadth of the command-line toolchain: file management, process control, text processing, package management, and system administration
-   3. Difficulty stratification — tasks are rated at three difficulty levels (simple, moderate, complex) based on the number of steps required and the specificity of the target application interaction
-   4. Population appropriateness — both participant groups receive the same task set, with task wording written in plain language accessible to novice users
+   1. Ecological validity — tasks reflect actions a real user would perform in their everyday computing environment: finding and organizing files, monitoring system resources, managing processes, and handling text data
+   2. Cross-platform equivalence — all tasks are defined as human-level goals achievable both through SynapseOS natural language commands (mapped to bash) and through native tools on the participant's primary OS (File Explorer, Task Manager, Finder, Activity Monitor, GNOME, or equivalent). The method of achievement differs by platform; the human goal does not
+   3. Difficulty stratification — tasks are rated at three difficulty levels (simple, moderate, complex) based on the number of steps required and the specificity of the target operation
+   4. Population appropriateness — both participant groups receive the same task set, with task wording written in plain language accessible to novice users and free of OS-specific or CLI-specific terminology
 
-The custom task suite comprises tasks organized into four categories: shell operations, file management, process and system administration, and text processing. All tasks are expressible as Linux command-line operations — GUI-only interactions are excluded by design. Each task is documented with a unique identifier, a natural language prompt as presented to the participant, the expected system outcome, and the assigned difficulty level. Tasks are validated during the pilot study and revised as necessary before the main study begins.
+The custom task suite comprises tasks organized into four categories: file search and organization, system and process monitoring, application and package management, and text and data processing. All tasks are defined at the human-goal level — achievable via SynapseOS natural language on the evaluation machine and via native graphical or terminal tools on the comparison machine. Each task is documented with a unique identifier, a natural language prompt as presented to the participant, the expected outcome, and the assigned difficulty level. Tasks are validated during the pilot study and revised as necessary before the main study begins.
 
 
 SECTION 2: PROCEDURE / EXPERIMENT
@@ -183,13 +185,13 @@ Each participant session follows a standardized procedure conducted in the follo
 
    1. Briefing: The session facilitator explains the study purpose, session structure, and participant rights. The participant reads and signs the informed consent form. The pre-study screening questionnaire is administered to confirm group classification.
 
-   2. System familiarization: The participant is given a five-minute familiarization period with the assigned interface condition. For the SynapseOS condition, the participant is shown how to enter natural language commands. For the conventional desktop condition, the participant is reminded of standard desktop interactions. No task-specific training is provided during familiarization.
+   2. System familiarization: For the SynapseOS condition, the participant is given a five-minute orientation to the conversational interface and shown how to enter natural language commands. For the native OS condition, no familiarization is provided — participants use their home environment as they normally would. No task-specific training is provided under either condition.
 
    3. Task completion: The participant completes the full task set under the assigned condition. Tasks are presented one at a time via a printed task prompt sheet. The session logger captures start and end times automatically. Screen recording captures all on-screen activity. The participant is instructed to think aloud throughout.
 
    4. Post-condition questionnaire: Immediately after completing all tasks under a condition, the participant completes the SUS and NASA-TLX questionnaires for that condition.
 
-   5. Condition changeover: If the participant has not yet completed both conditions, a short break is offered, the interface condition is switched, and the session returns to step 2.
+   5. Condition changeover: If the participant has not yet completed both conditions, a short break is offered, the participant moves to the other machine (SynapseOS or native OS), and the session returns to step 2.
 
    6. Post-study interview: After both conditions are completed, the facilitator conducts a semi-structured interview of approximately 10–15 minutes covering perceived ease of use, trust in the conversational interface, preference between conditions, and open-ended feedback.
 
@@ -213,20 +215,20 @@ SECTION 3: SYSTEM TESTING
 
 3.1 Evaluation Dataset
 
-The system is evaluated against two datasets. The first is the OSWorld benchmark task suite [17], which provides a standardized set of real-computer tasks for direct comparison with results reported in the existing literature. The second is the custom Linux task suite developed for this study, covering shell operations, file management, process and system administration, and text processing — all expressible through the Linux command-line toolchain.
+The system is evaluated against two datasets. The first is the OSWorld benchmark task suite [17], which provides a standardized set of real-computer tasks for direct comparison with results reported in the existing literature. The second is the custom cross-platform task suite developed for this study, covering file search and organization, system and process monitoring, application and package management, and text and data processing — each task defined as a human-level goal achievable via SynapseOS natural language commands and via native OS tools on the comparison machine.
 
-The user study evaluation involves 20 participants: 10 novice users and 10 power users. The baseline condition against which SynapseOS is compared is the conventional Debian Linux graphical desktop, operated by the same participants on the same task set under the same laboratory conditions.
+The user study evaluation involves 20 participants: 10 novice users and 10 power users. The baseline condition is each participant's primary operating system — Windows 11, macOS, or Linux with GNOME desktop — operated on a dedicated baseline machine under the same laboratory conditions and the same human-goal task set.
 
 3.2 Evaluation Profile
 
 The study employs a within-subjects design with two conditions:
 
-   Condition A: SynapseOS (conversational interface layer)
-   Condition B: Conventional Debian Linux desktop (graphical interface)
+   Condition A: SynapseOS (conversational interface layer on the Debian 13 evaluation machine)
+   Condition B: Participant's primary operating system (Windows 11, macOS, or Linux with GNOME desktop, as determined by pre-study screening, on the dedicated baseline machine)
 
 All 20 participants complete both conditions. Condition order is counterbalanced: 10 participants complete Condition A first, and 10 participants complete Condition B first. This counterbalancing controls for order effects and task familiarity.
 
-The two participant groups — novice users and power users — are analyzed both in aggregate and separately to determine whether the effect of the interface condition differs across user populations. This directly addresses RQ3, which specifies evaluation across novice and power user populations.
+The two participant groups — novice users and power users — are analyzed both in aggregate and separately to determine whether the effect of the interface condition differs across experience levels. Additionally, primary OS (Windows, macOS, Linux) is recorded as a secondary grouping variable to determine whether results vary across participant backgrounds. The primary analysis is the pooled within-subjects comparison across all 20 participants; per-OS subgroup analyses are treated as exploratory given the smaller per-group sample sizes expected at n = 20.
 
 3.3 Criteria and Formula
 
@@ -276,8 +278,8 @@ Internal validity:
 
 External validity:
 
-   - Sample generalizability: The study uses a university-recruited sample of 20 participants, which limits direct generalization to the broader population of Linux desktop users. Findings should be interpreted as indicative rather than definitive; replication with larger and more diverse samples is recommended as a direction for future work.
-   - Task generalizability: The evaluation is bounded by OSWorld coverage and the custom task suite developed for this study. Linux desktop workflows outside this coverage are not evaluated, and results may not extend to all possible use cases.
+   - Sample generalizability: The study uses a university-recruited sample of 20 participants across three primary OS backgrounds (Windows, macOS, Linux), which limits direct generalization to the broader population of computer users. Findings should be interpreted as indicative rather than definitive; replication with larger and more diverse samples is recommended as a direction for future work.
+   - Task generalizability: The evaluation is bounded by OSWorld coverage and the custom task suite developed for this study. Computing workflows outside this coverage are not evaluated, and results may not extend to all possible use cases.
    - Platform specificity: SynapseOS is evaluated on a single hardware and software configuration running Debian 13 (Trixie). Performance characteristics on different hardware, display configurations, or Linux distributions may differ from the reported results.
 
 REFERENCES:
