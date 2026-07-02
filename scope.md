@@ -15,6 +15,7 @@ This file tracks every concrete deliverable the methodology chapter (SA3.1) has 
 - [Infrastructure — Third-Party Setup](#infrastructure-third-party-setup)
 - [Process — Ethics and Recruitment](#process-ethics-and-recruitment)
 - [Process — Study Execution](#process-study-execution)
+- [Final Thesis Compilation](#final-thesis-compilation)
 
 ## Status Key
 
@@ -43,7 +44,7 @@ These are features of the SynapseOS binary that the paper explicitly describes. 
   - Task ID (links events to the task prompt that caused them)
   - Participant ID (anonymized code, set at session start)
   - Condition (A = SynapseOS, B = native OS — always A for this logger)
-- `[ ]` **Session context manager** — maintains in-memory conversation history; passes prior turns as prompt context to Ollama; implements rolling window when context approaches the 8K token limit
+- `[ ]` **Session context manager** — maintains in-memory conversation history; passes prior turns as prompt context to Ollama; implements rolling window when context approaches the 8K token limit; truncates verbose bash output (long `find`/`ls` results) before appending to context — never stores raw verbose output at full length (see D10)
 - `[ ]` **Ollama connectivity check** — verifies Ollama is running at `localhost:11434` on startup; fails gracefully with a user-readable error if not
 
 ---
@@ -98,7 +99,7 @@ Physical or digital documents administered during the study. All need to be draf
 
 Four physical machines required for the lab setup.
 
-- `[ ]` **SynapseOS machine** — x86-64, 2 vCPU minimum, 4 GB RAM, 10 GB storage, Debian 13 (Trixie), no display server required for TUI mode (display server needed if GUI mode is used in the study)
+- `[ ]` **SynapseOS machine** — x86-64, 8 GB RAM recommended, 10 GB storage, Wayland compositor required; runs SynapseOS in GUI mode (fullscreen conversational interface) on a Debian 13 (Trixie) base
 - `[ ]` **Windows 11 machine** — any x86-64 hardware; Windows 11 installed and configured with standard user account, no custom software beyond what a typical user would have
 - `[ ]` **macOS machine** — Apple Silicon or Intel Mac; macOS (current release); standard user account
 - `[ ]` **Linux / GNOME machine** — x86-64; GNOME desktop on a mainstream distro (Ubuntu 24.04 LTS recommended for familiarity); standard user account
@@ -125,3 +126,13 @@ Four physical machines required for the lab setup.
 - `[ ]` **Pilot study** — 5 participants before the main study; validates task difficulty calibration, questionnaire clarity, and session procedure; findings used to revise instruments
 - `[ ]` **Main study** — 20 participants; sessions run in the lab; data collected, anonymized, and stored securely
 - `[ ]` **Qualitative coding** — semi-structured interview transcripts coded using Braun & Clarke reflexive thematic analysis; two-coder agreement check
+
+---
+
+## Final Thesis Compilation
+
+These items are not blocking for current submissions but must be resolved when all chapters are assembled into the final thesis document.
+
+- `[ ]` **Chapter 1 alignment** — SA1 (summative-assessment-1.html) reflects pre-D7 and pre-D9 decisions: RQ2 and Specific Objective 2 reference the three-tier MCP/AT-SPI/vision architecture (superseded by D7 — CLI-only scope); RQ3 and Objective 4 reference "conventional Linux graphical desktop" as the comparison condition (superseded by D9 — expert baseline design); Scope and Limitations states the LLM is "not yet committed" (resolved by D3 — Qwen2.5-Coder-3B-Instruct). All four items need updating when Chapter 1 is revised for final submission.
+- `[ ]` **Cross-chapter terminology consistency** — wordbank.md terms incorporated into SA3.1 (expert baseline design, ecological validity, session-scoped memory, etc.) should be verified for consistent use across Chapter 1 and Chapter 2 in the compiled document.
+- `[ ]` **Footnote numbering continuity** — SA1 and SA3.1 each have their own footnote sequences (1–7 each). When compiled into a single document, footnote numbers must be unified into a single sequence or converted to per-chapter endnotes.
