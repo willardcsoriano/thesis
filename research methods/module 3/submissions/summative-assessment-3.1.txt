@@ -15,24 +15,34 @@ The framework is evaluated through a controlled user study in which participants
 
 System Environment Specifications
 
-The hardware and software environment on which SynapseOS is deployed and evaluated is specified in Table 2.1. All participants in the user study interact with the same physical machine configuration to control for hardware variability.
+The user study is conducted across four dedicated machines — one running SynapseOS (Condition A) and three running the supported baseline operating systems (Condition B). Table 2.1 describes each machine's role and operating environment. Exact processor, RAM, and storage specifications for each machine are confirmed and documented in the study protocol prior to the pilot study. Table 2.2 specifies the minimum hardware and software requirements for deploying SynapseOS independently of the study configuration.
 
-Table 2.1. System environment specifications
+Table 2.1. Study evaluation machines
+---------------------------------------------------------------------------------------------
+Machine                          | Role                                      | OS                    | Notes
+---------------------------------------------------------------------------------------------
+SynapseOS evaluation machine     | Condition A — all participants            | Debian 13 (Trixie)    | TUI mode; no display server required; Ollama + Qwen2.5-Coder-3B-Instruct running locally
+Windows 11 baseline machine      | Condition B — Windows-primary participants | Windows 11            | Standard consumer hardware; default user account; no custom software
+macOS baseline machine           | Condition B — macOS-primary participants  | macOS (current)       | Apple Silicon hardware; standard user account
+Linux / GNOME baseline machine   | Condition B — Linux-primary participants  | Ubuntu 24.04 LTS      | GNOME desktop environment; standard user account
+---------------------------------------------------------------------------------------------
+
+Table 2.2. SynapseOS minimum deployment requirements
 --------------------------------------------------
-Component             | Specification
+Component             | Minimum
 --------------------------------------------------
 Operating System      | Debian 13 (Trixie)
 Processor             | x86-64 with AVX2 support (Intel 4th gen / AMD Ryzen 1st gen or newer); 2 vCPU minimum
-RAM                   | 4 GB minimum; 8 GB recommended
+RAM                   | 4 GB (TUI mode); 8 GB recommended (GUI mode)
 Storage               | 10 GB available (OS + model + application)
-Display               | Any monitor or remote terminal; no display server required (TUI interface)
+Display               | TUI mode: any monitor or remote terminal; no display server required. GUI mode: Wayland compositor required.
 Language Model Backend | Qwen2.5-Coder-3B-Instruct, Q4_K_M quantization (~1.8 GB); no GPU required; pluggable cloud LLM backend (optional, user-configured)
 Inference Server      | Ollama (model lifecycle management, REST API at localhost:11434)
 Runtime Language      | Go (session manager, TUI, bash execution, Ollama API client)
 Build / Eval Language | Python 3.12 (LoRA fine-tuning, dataset preparation, statistical analysis)
 --------------------------------------------------
 
-The minimum specification of 2 vCPU and 4 GB RAM is intentional. Because SynapseOS executes only shell-expressible operations and its conversational surface is a text-based TUI, the system imposes no display server dependency and runs on commodity cloud server hardware. A deployment on a minimal virtual private server (VPS) — or accessed remotely over SSH — is within scope, distinguishing SynapseOS from graphical desktop alternatives that require substantially more capable hardware.
+The 2 vCPU / 4 GB RAM floor is intentional for TUI mode. Because SynapseOS executes only shell-expressible operations and imposes no display server dependency, it runs on commodity cloud server hardware and is accessible over SSH — distinguishing it from graphical desktop alternatives that require substantially more capable hardware.
 
 
 SECTION 1: DATASET
