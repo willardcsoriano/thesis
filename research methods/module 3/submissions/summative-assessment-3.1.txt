@@ -21,28 +21,26 @@ Table 2.1. Study evaluation machines
 ---------------------------------------------------------------------------------------------
 Machine                          | Role                                      | OS                    | Notes
 ---------------------------------------------------------------------------------------------
-SynapseOS evaluation machine     | Condition A — all participants            | Debian 13 (Trixie)    | TUI mode; no display server required; Ollama + Qwen2.5-Coder-3B-Instruct running locally
+SynapseOS evaluation machine     | Condition A — all participants            | SynapseOS             | GUI mode; fullscreen conversational interface; Wayland compositor required; based on Debian 13 (Trixie); Ollama + Qwen2.5-Coder-3B-Instruct running locally
 Windows 11 baseline machine      | Condition B — Windows-primary participants | Windows 11            | Standard consumer hardware; default user account; no custom software
 macOS baseline machine           | Condition B — macOS-primary participants  | macOS (current)       | Apple Silicon hardware; standard user account
 Linux / GNOME baseline machine   | Condition B — Linux-primary participants  | Ubuntu 24.04 LTS      | GNOME desktop environment; standard user account
 ---------------------------------------------------------------------------------------------
 
-Table 2.2. SynapseOS minimum deployment requirements
+Table 2.2. SynapseOS minimum deployment requirements.
+SynapseOS is distributed as a Linux system based on Debian 13 (Trixie).
 --------------------------------------------------
-Component             | Minimum
+Component             | Minimum Requirement
 --------------------------------------------------
-Operating System      | Debian 13 (Trixie)
-Processor             | x86-64 with AVX2 support (Intel 4th gen / AMD Ryzen 1st gen or newer); 2 vCPU minimum
-RAM                   | 4 GB (TUI mode); 8 GB recommended (GUI mode)
-Storage               | 10 GB available (OS + model + application)
-Display               | TUI mode: any monitor or remote terminal; no display server required. GUI mode: Wayland compositor required.
-Language Model Backend | Qwen2.5-Coder-3B-Instruct, Q4_K_M quantization (~1.8 GB); no GPU required; pluggable cloud LLM backend (optional, user-configured)
-Inference Server      | Ollama (model lifecycle management, REST API at localhost:11434)
-Runtime Language      | Go (session manager, TUI, bash execution, Ollama API client)
-Build / Eval Language | Python 3.12 (LoRA fine-tuning, dataset preparation, statistical analysis)
+Processor             | 64-bit x86 processor, 2-core minimum; no GPU required
+RAM                   | 4 GB (TUI mode[1]); 8 GB recommended (GUI mode)
+Storage               | 10 GB available (operating system, language model, and application)
+Display               | TUI mode: any terminal or remote connection; no graphical environment required. GUI mode: graphical desktop environment required.
+Language Model        | Locally-hosted small language model (~1.8 GB)[2]; CPU-only inference; no GPU required. Cloud language model backend available as an optional, user-configured alternative.
+Inference Server      | Local inference server (Ollama)[3]; manages model lifecycle, loading, and query serving on the host machine.
 --------------------------------------------------
 
-The 2 vCPU / 4 GB RAM floor is intentional for TUI mode. Because SynapseOS executes only shell-expressible operations and imposes no display server dependency, it runs on commodity cloud server hardware and is accessible over SSH — distinguishing it from graphical desktop alternatives that require substantially more capable hardware.
+The user study evaluates SynapseOS in GUI mode, which requires a graphical desktop environment and 8 GB RAM. SynapseOS additionally supports a TUI mode — a terminal-based interface requiring no display server, running on as little as 2 vCPU and 4 GB RAM — designed for server and remote deployment environments accessible over SSH. TUI mode is not evaluated in the user study.
 
 
 SECTION 1: DATASET
@@ -143,7 +141,7 @@ SynapseOS is designed around a locally-hosted small language model (SLM) as the 
 
 The inference backend is model-agnostic by design. Users may optionally supply an API key for a supported cloud provider to substitute the local SLM with a hosted frontier model for any inference role; this is entirely at the user's discretion. The default configuration requires no API key, no internet connection, and no per-query cost, making SynapseOS fully operational in offline and air-gapped environments.
 
-The primary SLM is Qwen2.5-Coder-3B-Instruct, an open-weights code-specialized model that demonstrated the strongest natural language-to-bash translation accuracy among models below 7B parameters in controlled evaluation [2]. At 4-bit quantization, the model requires approximately 1.8 GB of memory and runs on the target Debian 13 (Trixie) hardware without a dedicated GPU. The model is fine-tuned via Low-Rank Adaptation (LoRA) on the NL2Bash corpus and a custom SynapseOS task suite to maximize intent parsing accuracy.
+The primary SLM is Qwen2.5-Coder-3B-Instruct, an open-weights[4] code-specialized model that demonstrated the strongest natural language-to-bash translation accuracy among models below 7B parameters in controlled evaluation [2]. At 4-bit quantization[5], the model requires approximately 1.8 GB of memory and runs on the target Debian 13 (Trixie) hardware without a dedicated GPU. The model is fine-tuned via Low-Rank Adaptation (LoRA)[6] on the NL2Bash corpus[7] and a custom SynapseOS task suite to maximize intent parsing accuracy.
 
 Intent parsing accuracy is evaluated following the methodology established by Westenfelder et al. [2], who assessed NL2Bash performance through execution-based scoring rather than syntax-level string matching: each generated command is executed in a controlled environment and its output compared against the expected result, with ambiguous cases resolved through LLM-assisted functional equivalence assessment at 95% confidence. Westenfelder et al. further identified that more than half of the InterCode NL2Bash dataset contains erroneous entries, and constructed larger, manually verified datasets for evaluation. Applying their methodology across three conditions — zero-shot baseline, prompt engineering, and LoRA fine-tuning — they found that fine-tuning on small models produced accuracy gains sufficient to approach the zero-shot baseline performance of significantly larger models. Qwen2.5-Coder-3B-Instruct achieved 58% NL2Bash accuracy with prompt engineering alone — the highest among models below 7B parameters in their evaluation [2] — motivating both its selection as the SynapseOS intent parsing model and the adoption of their execution-based evaluation pipeline for measuring accuracy in this study.
 
@@ -268,8 +266,17 @@ External validity:
 
    - Sample generalizability: The study uses a university-recruited sample of 20 participants across three primary OS backgrounds (Windows, macOS, Linux), which limits direct generalization to the broader population of computer users. Findings should be interpreted as indicative rather than definitive; replication with larger and more diverse samples is recommended as a direction for future work.
    - Task generalizability: The evaluation is bounded by OSWorld coverage and the custom task suite developed for this study. Computing workflows outside this coverage are not evaluated, and results may not extend to all possible use cases.
-   - Platform specificity: SynapseOS is evaluated on a single hardware and software configuration running Debian 13 (Trixie). Performance characteristics on different hardware, display configurations, or Linux distributions may differ from the reported results.
-   - Interface mode: The thesis prototype evaluates SynapseOS in TUI mode, which is the intended deployment target for power users. The GUI mode — the intended interface for general and non-technical users — is deferred beyond the thesis scope. Results for the novice user group reflect TUI performance and may not represent the experience those users would have under the full GUI implementation.
+   - Platform specificity: SynapseOS is evaluated on a single hardware and software configuration — a dedicated machine running SynapseOS in GUI mode on a Debian 13 (Trixie) base. Performance characteristics on different hardware, display configurations, or Linux distributions may differ from the reported results.
+
+NOTES:
+
+[1] Terminal User Interface: a text-based interactive interface that runs in a command-line terminal. TUI mode requires no graphical display server or desktop environment and can be accessed remotely over SSH.
+[2] The SynapseOS prototype uses Qwen2.5-Coder-3B-Instruct, a code-specialized open-weights model selected for its NL2Bash accuracy. See Section 2.1a for selection rationale and benchmark evidence.
+[3] An inference server loads a language model into memory and processes query requests from the application layer. Ollama is an open-source tool for running language models locally on consumer hardware without cloud connectivity.
+[4] Open-weights models make their trained parameters publicly available for local download and use; users run inference on their own hardware without routing queries to an external service provider.
+[5] Quantization reduces the numerical precision of model weights to lower memory requirements. At 4-bit precision, a model that would otherwise require dedicated GPU memory can run on a standard CPU with modest RAM.
+[6] Low-Rank Adaptation (LoRA) is a parameter-efficient fine-tuning method that introduces a small number of trainable weight matrices while keeping the base model frozen, enabling task-specific adaptation on consumer hardware without full retraining.
+[7] NL2Bash is a benchmark dataset pairing natural language command descriptions with their corresponding bash shell commands, used to evaluate a model's accuracy in translating natural language into executable commands.
 
 REFERENCES:
 

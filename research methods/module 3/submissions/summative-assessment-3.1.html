@@ -7,14 +7,14 @@
   /* ── A4 Page Setup ── */
   @page {
     size: A4;
-    margin: 2.54cm 3.18cm 2.54cm 3.18cm;
+    margin: 2.54cm 2.54cm 2.54cm 3.18cm; /* top 1in, right 1in, bottom 1in, left 1.25in */
   }
 
   /* ── Base Typography ── */
   body {
     font-family: "Times New Roman", Georgia, serif;
     font-size: 12pt;
-    line-height: 1.5;
+    line-height: 2.0;
     color: #000;
     text-align: justify;
     widows: 3;
@@ -30,13 +30,14 @@
 
   .chapter-heading .chapter-num {
     font-size: 14pt;
-    text-transform: uppercase;
+    font-weight: bold;
     letter-spacing: 0.5pt;
     margin-bottom: 0.2cm;
   }
 
   .chapter-heading .chapter-title {
     font-size: 14pt;
+    font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 0.5pt;
   }
@@ -44,50 +45,49 @@
   /* ── Section Headings ── */
   h2 {
     font-size: 13pt;
-    margin-top: 1.5em;
-    margin-bottom: 0.5em;
-    text-transform: uppercase;
-    letter-spacing: 0.3pt;
+    font-weight: bold;
+    margin-top: 30pt;
+    margin-bottom: 0;
     text-align: left;
   }
 
   h3 {
     font-size: 12pt;
-    margin-top: 1em;
-    margin-bottom: 0.4em;
     font-weight: bold;
+    margin-top: 30pt;
+    margin-bottom: 0;
   }
 
   h4 {
     font-size: 12pt;
-    font-weight: bold;
-    font-style: italic;
-    margin-top: 0.8em;
-    margin-bottom: 0.3em;
+    font-weight: normal;
+    font-style: normal;
+    margin-top: 30pt;
+    margin-bottom: 0;
   }
 
   /* ── Body Text ── */
   p {
-    margin: 0 0 0.8em 0;
-    text-indent: 1.27cm;
+    margin: 0;
+    text-indent: 1.50cm;
   }
 
   p.no-indent {
-    text-indent: 0;
+    text-indent: 1.50cm;
   }
 
   /* ── Lists ── */
   ol, ul {
-    margin: 0.4em 0 0.8em 1.27cm;
+    margin: 0 0 0 1.50cm;
     padding: 0;
   }
 
   ol li, ul li {
-    margin-bottom: 0.5em;
+    margin-bottom: 0;
   }
 
   ol.main-list > li {
-    margin-bottom: 0.8em;
+    margin-bottom: 0;
   }
 
   /* ── Tiers / Definition-style blocks ── */
@@ -121,9 +121,9 @@
   }
 
   .table-caption {
-    font-size: 11pt;
-    font-style: italic;
-    margin-bottom: 0.3em;
+    font-size: 12pt;
+    font-style: normal;
+    margin-bottom: 0;
     text-indent: 0;
   }
 
@@ -140,9 +140,9 @@
 
   .figure-caption {
     text-align: center;
-    font-size: 11pt;
-    font-style: italic;
-    margin-bottom: 1em;
+    font-size: 12pt;
+    font-style: normal;
+    margin-bottom: 0;
     text-indent: 0;
   }
 
@@ -160,15 +160,41 @@
   }
 
   .references h2 {
-    text-align: center;
-    margin-bottom: 1cm;
+    margin-bottom: 0;
   }
 
   .references .ref-entry {
-    margin-bottom: 0.7em;
+    margin-bottom: 0;
     padding-left: 1.27cm;
     text-indent: -1.27cm;
-    font-size: 11pt;
+    font-size: 12pt;
+  }
+
+  /* ── Footnotes ── */
+  sup.fn {
+    font-size: 8pt;
+    vertical-align: super;
+    line-height: 0;
+  }
+  sup.fn a {
+    color: #000;
+    text-decoration: none;
+  }
+  .footnotes {
+    margin-top: 2em;
+    border-top: 0.5pt solid #555;
+    padding-top: 0.8em;
+  }
+  .footnotes h2 {
+    margin-bottom: 0;
+  }
+  .footnotes ol {
+    font-size: 10pt;
+    line-height: 1.4;
+    margin-left: 1.50cm;
+  }
+  .footnotes li {
+    margin-bottom: 0.5em;
   }
 
   /* ── Print Helpers ── */
@@ -268,37 +294,34 @@
   <path d="M 60 408 C 20 408 20 122 60 122" stroke="#777" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#arr-gray)"/>
   <text transform="translate(12,290) rotate(-90)" font-family="Arial,sans-serif" font-size="9" fill="#777" text-anchor="middle">result / confirmation</text>
 </svg>
-<p class="figure-caption">Figure 2.1. Conceptual framework of SynapseOS. The user issues a natural language command to the conversational surface, which routes the utterance to the intent parser (Qwen2.5-Coder-3B-Instruct, local SLM). The intent parser produces a shell command dispatched to the execution engine (bash subprocess). Irreversible operations are intercepted by the confirmation gate; reversible operations are logged to the undo stack. Command output (stdout/stderr) is captured, rendered in the conversational surface, and presented back to the user — completing the interaction loop.</p>
+<p class="figure-caption"><strong>Figure 2.1.</strong> Conceptual framework of SynapseOS. The user issues a natural language command to the conversational surface, which routes the utterance to the intent parser (Qwen2.5-Coder-3B-Instruct, local SLM). The intent parser produces a shell command dispatched to the execution engine (bash subprocess). Irreversible operations are intercepted by the confirmation gate; reversible operations are logged to the undo stack. Command output (stdout/stderr) is captured, rendered in the conversational surface, and presented back to the user — completing the interaction loop.</p>
 
 <!-- ── System Environment Specifications ── -->
 <h2>System Environment Specifications</h2>
 
 <p class="no-indent">The user study is conducted across four dedicated machines — one running SynapseOS (Condition A) and three running the supported baseline operating systems (Condition B). Table 2.1 describes each machine's role and operating environment. Exact processor, RAM, and storage specifications for each machine are confirmed and documented in the study protocol prior to the pilot study. Table 2.2 specifies the minimum hardware and software requirements for deploying SynapseOS independently of the study configuration.</p>
 
-<p class="table-caption">Table 2.1. Study evaluation machines</p>
+<p class="table-caption"><strong>Table 2.1.</strong> Study evaluation machines</p>
 <table>
   <tr><th>Machine</th><th>Role</th><th>OS</th><th>Notes</th></tr>
-  <tr><td>SynapseOS evaluation machine</td><td>Condition A — all participants</td><td>Debian 13 (Trixie)</td><td>TUI mode; no display server required; Ollama + Qwen2.5-Coder-3B-Instruct running locally</td></tr>
+  <tr><td>SynapseOS evaluation machine</td><td>Condition A — all participants</td><td>SynapseOS</td><td>GUI mode; fullscreen conversational interface; Wayland compositor required; based on Debian 13 (Trixie); Ollama + Qwen2.5-Coder-3B-Instruct running locally</td></tr>
   <tr><td>Windows 11 baseline machine</td><td>Condition B — Windows-primary participants</td><td>Windows 11</td><td>Standard consumer hardware; default user account; no custom software</td></tr>
   <tr><td>macOS baseline machine</td><td>Condition B — macOS-primary participants</td><td>macOS (current release)</td><td>Apple Silicon hardware; standard user account</td></tr>
   <tr><td>Linux / GNOME baseline machine</td><td>Condition B — Linux-primary participants</td><td>Ubuntu 24.04 LTS</td><td>GNOME desktop environment; standard user account</td></tr>
 </table>
 
-<p class="table-caption">Table 2.2. SynapseOS minimum deployment requirements</p>
+<p class="table-caption"><strong>Table 2.2.</strong> SynapseOS minimum deployment requirements. SynapseOS is distributed as a Linux system based on Debian 13 (Trixie).</p>
 <table>
-  <tr><th>Component</th><th>Minimum</th></tr>
-  <tr><td>Operating System</td><td>Debian 13 (Trixie)</td></tr>
-  <tr><td>Processor</td><td>x86-64 with AVX2 support (Intel 4th gen / AMD Ryzen 1st gen or newer); 2 vCPU minimum</td></tr>
-  <tr><td>RAM</td><td>4 GB (TUI mode); 8 GB recommended (GUI mode)</td></tr>
-  <tr><td>Storage</td><td>10 GB available (OS + model + application)</td></tr>
-  <tr><td>Display</td><td>TUI mode: any monitor or remote terminal; no display server required. GUI mode: Wayland compositor required.</td></tr>
-  <tr><td>Language Model Backend</td><td>Qwen2.5-Coder-3B-Instruct, Q4_K_M quantization (~1.8 GB); no GPU required; pluggable cloud LLM backend (optional, user-configured)</td></tr>
-  <tr><td>Inference Server</td><td>Ollama (model lifecycle management, REST API at localhost:11434)</td></tr>
-  <tr><td>Runtime Language</td><td>Go (session manager, TUI, bash execution, Ollama API client)</td></tr>
-  <tr><td>Build / Evaluation Language</td><td>Python 3.12 (LoRA fine-tuning, dataset preparation, statistical analysis)</td></tr>
+  <tr><th>Component</th><th>Minimum Requirement</th></tr>
+  <tr><td>Processor</td><td>64-bit x86 processor, 2-core minimum; no GPU required</td></tr>
+  <tr><td>RAM</td><td>4 GB (TUI mode<sup class="fn"><a href="#fn1">1</a></sup>); 8 GB recommended (GUI mode)</td></tr>
+  <tr><td>Storage</td><td>10 GB available (operating system, language model, and application)</td></tr>
+  <tr><td>Display</td><td>TUI mode: any terminal or remote connection; no graphical environment required. GUI mode: graphical desktop environment required.</td></tr>
+  <tr><td>Language Model</td><td>Locally-hosted small language model (~1.8 GB)<sup class="fn"><a href="#fn2">2</a></sup>; CPU-only inference; no GPU required. Cloud language model backend available as an optional, user-configured alternative.</td></tr>
+  <tr><td>Inference Server</td><td>Local inference server (Ollama)<sup class="fn"><a href="#fn3">3</a></sup>; manages model lifecycle, loading, and query serving on the host machine.</td></tr>
 </table>
 
-<p class="no-indent">The 2 vCPU / 4 GB RAM floor is intentional for TUI mode. Because SynapseOS executes only shell-expressible operations and imposes no display server dependency, it runs on commodity cloud server hardware and is accessible over SSH — distinguishing it from graphical desktop alternatives that require substantially more capable hardware.</p>
+<p class="no-indent">The user study evaluates SynapseOS in GUI mode, which requires a graphical desktop environment and 8 GB RAM. SynapseOS additionally supports a TUI mode — a terminal-based interface requiring no display server, running on as little as 2 vCPU and 4 GB RAM — designed for server and remote deployment environments accessible over SSH. TUI mode is not evaluated in the user study.</p>
 
 <!-- ═══════════════ SECTION 1: DATASET ═══════════════ -->
 <h2>Section 1: Dataset</h2>
@@ -310,7 +333,7 @@
 
 <h4>a) Benchmark Task Suite</h4>
 
-<p class="no-indent">The primary benchmark dataset is the OSWorld task suite [17], which provides standardized real-computer tasks across shell operations, file management, web browsing, and application-level interactions. OSWorld is the only existing benchmark that evaluates computer-using agents in real operating system environments, making it the most appropriate external standard for SynapseOS evaluation. In addition to OSWorld tasks, a custom cross-platform task suite is developed for this study, covering file search and organization, system and process monitoring, application and package management, and text and data processing — each task defined as a human-level goal achievable via SynapseOS natural language commands and via native OS tools on the comparison machine. Each task in both suites is documented with a description, expected outcome, task category, and difficulty level.</p>
+<p class="no-indent">The primary benchmark dataset is the OSWorld task suite [17], which provides standardized real-computer tasks across shell operations, file management, web browsing, and application-level interactions. OSWorld is the only existing benchmark that evaluates computer-using agents in real operating system environments, making it the most appropriate external standard for SynapseOS evaluation. Tasks are presented as natural language instructions; agents interact with a real virtual machine environment, and outcomes are evaluated by automated inspection of the resulting system state — whether the goal was actually achieved — rather than by comparing individual actions. In addition to OSWorld tasks, a custom cross-platform task suite is developed for this study, covering file search and organization, system and process monitoring, application and package management, and text and data processing — each task defined as a human-level goal achievable via SynapseOS natural language commands and via native OS tools on the comparison machine. Each task in both suites is documented with a description, expected outcome, task category, and difficulty level.</p>
 
 <h4>b) User Study Data</h4>
 
@@ -411,7 +434,7 @@
 
 <p>The inference backend is model-agnostic by design. Users may optionally supply an API key for a supported cloud provider to substitute the local SLM with a hosted frontier model; this is entirely at the user's discretion. The default configuration requires no API key, no internet connection, and no per-query cost, making SynapseOS fully operational in offline and air-gapped environments.</p>
 
-<p>The primary SLM is Qwen2.5-Coder-3B-Instruct, an open-weights code-specialized model that demonstrated the strongest natural language-to-bash translation accuracy among models below 7B parameters in controlled evaluation [2]. At 4-bit quantization, the model requires approximately 1.8 GB of memory and runs on the target Debian 13 (Trixie) hardware without a dedicated GPU. The model is fine-tuned via Low-Rank Adaptation (LoRA) on the NL2Bash corpus and a custom SynapseOS task suite to maximize intent parsing accuracy.</p>
+<p>The primary SLM is Qwen2.5-Coder-3B-Instruct, an open-weights<sup class="fn"><a href="#fn4">4</a></sup> code-specialized model that demonstrated the strongest natural language-to-bash translation accuracy among models below 7B parameters in controlled evaluation [2]. At 4-bit quantization<sup class="fn"><a href="#fn5">5</a></sup>, the model requires approximately 1.8 GB of memory and runs on the target Debian 13 (Trixie) hardware without a dedicated GPU. The model is fine-tuned via Low-Rank Adaptation (LoRA)<sup class="fn"><a href="#fn6">6</a></sup> on the NL2Bash corpus<sup class="fn"><a href="#fn7">7</a></sup> and a custom SynapseOS task suite to maximize intent parsing accuracy.</p>
 
 <p>Intent parsing accuracy is evaluated following the methodology established by Westenfelder et al. [2], who assessed NL2Bash performance through execution-based scoring rather than syntax-level string matching: each generated command is executed in a controlled environment and its output compared against the expected result, with ambiguous cases resolved through LLM-assisted functional equivalence assessment at 95% confidence. Westenfelder et al. further identified that more than half of the InterCode NL2Bash dataset contains erroneous entries, and constructed larger, manually verified datasets for evaluation. Applying their methodology across three conditions — zero-shot baseline, prompt engineering, and LoRA fine-tuning — they found that fine-tuning on small models produced accuracy gains sufficient to approach the zero-shot baseline performance of significantly larger models. Qwen2.5-Coder-3B-Instruct achieved 58% NL2Bash accuracy with prompt engineering alone — the highest among models below 7B parameters in their evaluation [2] — motivating both its selection as the SynapseOS intent parsing model and the adoption of their execution-based evaluation pipeline for measuring accuracy in this study.</p>
 
@@ -546,9 +569,22 @@
 <ul>
   <li><strong>Sample generalizability:</strong> The study uses a university-recruited sample of 20 participants across three primary OS backgrounds (Windows, macOS, Linux), which limits direct generalization to the broader population of computer users. Findings should be interpreted as indicative rather than definitive; replication with larger and more diverse samples is recommended as a direction for future work.</li>
   <li><strong>Task generalizability:</strong> The evaluation is bounded by OSWorld coverage and the custom task suite developed for this study. Computing workflows outside this coverage are not evaluated, and results may not extend to all possible use cases.</li>
-  <li><strong>Platform specificity:</strong> SynapseOS is evaluated on a single hardware and software configuration running Debian 13 (Trixie). Performance characteristics on different hardware, display configurations, or Linux distributions may differ from the reported results.</li>
-  <li><strong>Interface mode:</strong> The thesis prototype evaluates SynapseOS in TUI mode, which is the intended deployment target for power users. The GUI mode — the intended interface for general and non-technical users — is deferred beyond the thesis scope. Results for the novice user group reflect TUI performance and may not represent the experience those users would have under the full GUI implementation.</li>
+  <li><strong>Platform specificity:</strong> SynapseOS is evaluated on a single hardware and software configuration — a dedicated machine running SynapseOS in GUI mode on a Debian 13 (Trixie) base. Performance characteristics on different hardware, display configurations, or Linux distributions may differ from the reported results.</li>
 </ul>
+
+<!-- ═══════════════ NOTES ═══════════════ -->
+<div class="footnotes">
+  <h2>Notes</h2>
+  <ol>
+    <li id="fn1">Terminal User Interface: a text-based interactive interface that runs in a command-line terminal. TUI mode requires no graphical display server or desktop environment and can be accessed remotely over SSH.</li>
+    <li id="fn2">The SynapseOS prototype uses Qwen2.5-Coder-3B-Instruct, a code-specialized open-weights model selected for its NL2Bash accuracy. See Section 2.1a for selection rationale and benchmark evidence.</li>
+    <li id="fn3">An inference server loads a language model into memory and processes query requests from the application layer. Ollama is an open-source tool for running language models locally on consumer hardware without cloud connectivity.</li>
+    <li id="fn4">Open-weights models make their trained parameters publicly available for local download and use; users run inference on their own hardware without routing queries to an external service provider.</li>
+    <li id="fn5">Quantization reduces the numerical precision of model weights to lower memory requirements. At 4-bit precision, a model that would otherwise require dedicated GPU memory can run on a standard CPU with modest RAM.</li>
+    <li id="fn6">Low-Rank Adaptation (LoRA) is a parameter-efficient fine-tuning method that introduces a small number of trainable weight matrices while keeping the base model frozen, enabling task-specific adaptation on consumer hardware without full retraining.</li>
+    <li id="fn7">NL2Bash is a benchmark dataset pairing natural language command descriptions with their corresponding bash shell commands, used to evaluate a model's accuracy in translating natural language into executable commands.</li>
+  </ol>
+</div>
 
 <!-- ═══════════════ REFERENCES ═══════════════ -->
 <div class="references">
