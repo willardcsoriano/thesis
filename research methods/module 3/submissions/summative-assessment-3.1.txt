@@ -9,8 +9,6 @@ Conceptual Framework
 
 SynapseOS operates as a conversational shell layer positioned between the user and the Linux command-line environment. The user issues natural language commands through a persistent chat interface. An intent parsing pipeline — powered by a locally-hosted small language model — translates each utterance into a shell command, which is executed in a bash subprocess. Output is captured and rendered back in the conversational interface. The user issues intent in natural language and receives results in natural language; the shell command is an implementation detail invisible to the user. This architecture is illustrated in Figure 2.1.
 
-To illustrate: if a user says "find all PDF files in my Downloads folder and show their sizes," the intent parser generates the command `find ~/Downloads -name '*.pdf' -exec du -sh {} \;`. SynapseOS executes this in a bash subprocess, captures the output, and displays it in the conversational interface — the user never sees the command itself. The same flow applies to any operation expressible through the Linux command-line toolchain.
-
 The framework is evaluated through a controlled user study in which participants complete a fixed set of tasks under two conditions: using SynapseOS as the interface, and using their own primary operating system — Windows, macOS, or Linux — as the baseline. This expert baseline design pits SynapseOS against the environment each participant already knows and uses daily, generating empirical data on task completion time, error rate, and user satisfaction across the real-world OS landscape [17].
 
 [Figure 2.1. Conceptual framework of SynapseOS. The user issues a natural language command to the conversational surface, which routes the utterance to the intent parser (Qwen2.5-Coder-3B-Instruct, local SLM). The intent parser produces a shell command dispatched to the execution engine (bash subprocess). Irreversible operations are intercepted by the confirmation gate; reversible operations are logged to the undo stack. Command output (stdout/stderr) is captured, rendered in the conversational surface, and presented back to the user — completing the interaction loop.]
@@ -85,16 +83,6 @@ Participants are recruited through university channels. Informed consent is obta
 
 After completing each condition, participants fill out the SUS and NASA-TLX questionnaires. After completing both conditions, a brief semi-structured interview is conducted to gather qualitative feedback.
 
-1.3 When to Gather
-
-Data collection proceeds in two phases:
-
-   Phase 1 — Pilot Study: A pilot study is conducted with a small group of five participants prior to the main study. The pilot study serves to calibrate the task difficulty, validate the data collection instruments, and identify procedural issues before the main study begins. Instruments are revised based on pilot findings.
-
-   Phase 2 — Main User Study: The main user study is conducted following pilot study completion and ethics approval. The specific date range is determined by ethics review timeline and participant availability.
-
-Benchmark task evaluation runs continuously throughout the development phase of SynapseOS, independently of the user study timeline. This allows for iterative assessment of system performance as the implementation matures.
-
 1.4 Why
 
 The OSWorld benchmark is used as the primary evaluation standard because it is the only existing benchmark that evaluates computer-using agents in real operating system environments with real applications [17]. Its use allows SynapseOS results to be situated within the existing literature.
@@ -104,10 +92,6 @@ A custom cross-platform task suite is necessary because OSWorld's task coverage 
 The within-subjects design is chosen because it allows each participant to serve as their own control, producing a direct comparison between conditions while requiring a smaller participant pool than a between-subjects design. Counterbalancing controls for the primary threat to internal validity: the learning effect, wherein participants may perform better in the second condition simply due to familiarity with the tasks.
 
 The expert baseline design — using each participant's primary OS as Condition B rather than a fixed Linux graphical desktop — is chosen because a fixed Linux baseline would confound interface quality with OS familiarity. The overwhelming majority of participants have never used a Linux desktop; performance under that condition would reflect unfamiliarity with a foreign environment, not a meaningful comparison of interface paradigms. The stronger and more ecologically valid test is whether SynapseOS can compete with what participants already know and use daily. A positive result against a participant's native environment is a more compelling argument for SynapseOS than a win against a system participants are encountering for the first time.
-
-The local-SLM-first design is a principled architectural choice, not a fallback. A system that replaces the Linux desktop userland necessarily observes everything the user does at the OS level: every command issued, every file opened, every window on screen. Routing this data to a cloud inference API gives an external provider continuous visibility into the user's computing activity — a privacy exposure that is categorically inappropriate for a system positioned as a userland replacement. On-device inference eliminates this exposure: no user data leaves the machine regardless of what the user is doing.
-
-Cloud model access is preserved as an explicit opt-in. A model-agnostic backend interface accepts user-supplied API keys to substitute the local SLM with a hosted frontier model for users who choose that tradeoff. This design treats privacy as the default and cloud connectivity as a deliberate user choice. It also ensures reproducible evaluation conditions independent of API availability, rate limits, or cost.
 
 The dual-population design — novice and power users — directly addresses the gap identified in Chapter 1, where no prior work has evaluated a conversational interface across user populations with differing technical backgrounds [17]. The three data categories align with the three research questions: RQ1 is addressed by the system design and benchmark task coverage; RQ2 is addressed by system performance telemetry (command execution latency, intent parsing accuracy, undo and confirmation events); and RQ3 is addressed by the user study metrics (task completion time, error rate, satisfaction scores).
 
@@ -139,7 +123,7 @@ SECTION 2: PROCEDURE / EXPERIMENT
 
 2.1 System Design and Implementation
 
-The construction of SynapseOS proceeds in three parallel workstreams: the conversational interface layer, the execution pipeline, and the session manager. These components are developed iteratively and integrated into a unified Linux session that replaces the conventional graphical desktop.
+The construction of SynapseOS proceeds across two primary workstreams — the conversational interface layer and the execution pipeline — integrated into a unified session manager that launches in place of the conventional Linux graphical desktop.
 
 a) Conversational Interface Layer
 
@@ -158,10 +142,6 @@ b) Execution Pipeline
 Once the intent parser produces a shell command, SynapseOS passes it through two safety mechanisms before execution. First, the command is classified by reversibility: operations that are irreversible — such as file deletion, system configuration changes, or destructive package operations — trigger a confirmation prompt requiring explicit user approval before execution proceeds. Reversible operations are logged to the undo stack, enabling the user to request rollback at any point through the conversational interface. Second, the approved command is dispatched to a bash subprocess. Standard output and standard error are captured and rendered in the conversational surface as the system's response to the original natural language input.
 
 SynapseOS executes only shell-expressible operations. The system's capability boundary is the Linux command-line toolchain: file management, process control, text processing, package management, network configuration, and any application that exposes a command-line interface. GUI-only interactions — clicking buttons in graphical applications, navigating web page elements, or interacting with visual-only interfaces — are explicitly outside scope. This boundary is intentional: it constrains the research to a tractable, verifiable claim that the system can be built, evaluated, and defended within the thesis timeline.
-
-c) Session Manager
-
-SynapseOS is implemented as a Linux session manager that launches in place of the conventional desktop environment. The session manager maintains a persistent conversational surface, a structured undo log that records reversible operations for potential rollback, and a confirmation policy that intercepts irreversible operations — such as file deletion or system configuration changes — and prompts the user for explicit approval before execution.
 
 2.2 Data Pre-processing
 
@@ -217,9 +197,7 @@ SECTION 3: SYSTEM TESTING
 
 3.1 Evaluation Dataset
 
-The system is evaluated against two datasets. The first is the OSWorld benchmark task suite [17], which provides a standardized set of real-computer tasks for direct comparison with results reported in the existing literature. The second is the custom cross-platform task suite developed for this study, covering file search and organization, system and process monitoring, application and package management, and text and data processing — each task defined as a human-level goal achievable via SynapseOS natural language commands and via native OS tools on the comparison machine.
-
-The user study evaluation involves 20 participants: 10 novice users and 10 power users. The baseline condition is each participant's primary operating system — Windows 11, macOS, or Linux with GNOME desktop — operated on a dedicated baseline machine under the same laboratory conditions and the same human-goal task set.
+The system is evaluated against two datasets: the OSWorld benchmark task suite [17] for direct comparison with results in the existing literature, and the custom cross-platform task suite described in Sections 1.1 and 1.6. The user study evaluation involves 20 participants (10 novice, 10 power users); the baseline condition is each participant's primary operating system — Windows 11, macOS, or Linux with GNOME desktop — on a dedicated baseline machine.
 
 3.2 Evaluation Profile
 
@@ -238,7 +216,7 @@ The following metrics and formulas are used to evaluate SynapseOS against the ba
 
 a) Task Completion Time
 
-Mean task completion time is computed per condition per participant group. The primary statistical test is the paired-samples t-test for normally distributed data or the Wilcoxon signed-rank test for non-normally distributed data, applied at a significance level of α = 0.05. Effect size is reported using Cohen's d.
+Mean task completion time is computed per condition per participant group. Inferential testing and effect size reporting follow the procedures described in Section 3.4.
 
 b) Error Rate
 
@@ -250,9 +228,7 @@ Error events are further categorized by type: intent parsing errors (incorrect b
 
 c) User Satisfaction
 
-SUS scores are computed using the standard SUS scoring formula: for each of the ten SUS items, the score contribution is computed (odd-numbered items: score minus 1; even-numbered items: 5 minus score), the contributions are summed, and the total is multiplied by 2.5 to produce a score on a 0–100 scale. A SUS score above 68 is considered above average usability [accepted convention].
-
-NASA-TLX scores are computed by averaging the six subscale ratings (Mental Demand, Physical Demand, Temporal Demand, Performance, Effort, Frustration) to produce a composite workload score per participant per condition.
+SUS scores are computed per the standard scoring procedure to produce a score on a 0–100 scale; a score above 68 is considered above-average usability. NASA-TLX scores are computed as the unweighted mean of the six subscale ratings to produce a composite workload score per participant per condition.
 
 Qualitative interview data is analyzed using thematic analysis to identify recurring themes in participant perceptions of both conditions.
 
