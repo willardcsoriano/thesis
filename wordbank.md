@@ -118,5 +118,5 @@ A computing interface that is always present in the environment but does not dem
 *Where it lands: Discussion, related work comparison, product framing in Conclusion.*
 
 **TUI mode / GUI mode**
-The two deployment targets for SynapseOS. TUI mode (bubbletea): no display server required, SSH-friendly, targets servers and power users. GUI mode (Tauri + React + Tailwind, wallpaper-layer): requires Wayland/X11, targets personal machines and non-technical users. Both share the same Go backend, Ollama inference layer, and bash execution pipeline.
+The two deployment targets for SynapseOS. TUI mode (bubbletea): no display server required, SSH-friendly, targets power users comfortable with a terminal aesthetic. GUI mode (Tauri + React + Tailwind, wallpaper-layer): requires Wayland/X11, targets general and non-technical users — the active desktop ambient interface is the primary product vision. Both share the same Go backend, Ollama inference layer, and bash execution pipeline.
 *Where it lands: Section 2.1 system design (deployment modes subsection).*

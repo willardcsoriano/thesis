@@ -114,7 +114,7 @@ On first launch (no user profile exists), SynapseOS runs a short setup conversat
 
 The SynapseOS chat interface renders at the desktop background layer — it IS the wallpaper. Other application windows float on top of it. A global hotkey (e.g., Ctrl+D) hides all foreground windows and returns focus to the chat layer, making the conversational interface ambient and always accessible without occupying a window slot.
 
-This is the primary GUI target for non-technical users. The TUI remains the server and power-user deployment mode.
+This is the primary GUI target for non-technical and general users. The TUI is the power-user deployment mode — preferred by users comfortable with a terminal aesthetic and required for server and headless environments.
 
 ### Implementation path
 
