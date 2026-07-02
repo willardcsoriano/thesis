@@ -7,14 +7,14 @@
   /* ── A4 Page Setup ── */
   @page {
     size: A4;
-    margin: 2.54cm 3.18cm 2.54cm 3.18cm; /* 1in left/right, 1in top/bottom */
+    margin: 2.54cm 2.54cm 2.54cm 3.18cm; /* top 1in, right 1in, bottom 1in, left 1.25in */
   }
 
   /* ── Base Typography ── */
   body {
     font-family: "Times New Roman", Georgia, serif;
     font-size: 12pt;
-    line-height: 1.5;
+    line-height: 2.0;
     color: #000;
     text-align: justify;
     widows: 3;
@@ -30,13 +30,14 @@
 
   .chapter-heading .chapter-num {
     font-size: 14pt;
-    text-transform: uppercase;
+    font-weight: bold;
     letter-spacing: 0.5pt;
     margin-bottom: 0.2cm;
   }
 
   .chapter-heading .chapter-title {
     font-size: 14pt;
+    font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 0.5pt;
   }
@@ -44,18 +45,17 @@
   /* ── Section Headings ── */
   h2 {
     font-size: 13pt;
-    margin-top: 1.5em;
-    margin-bottom: 0.5em;
-    text-transform: uppercase;
-    letter-spacing: 0.3pt;
+    font-weight: bold;
+    margin-top: 30pt;
+    margin-bottom: 0;
     text-align: left;
   }
 
   h3 {
     font-size: 12pt;
-    margin-top: 1em;
-    margin-bottom: 0.4em;
     font-weight: bold;
+    margin-top: 30pt;
+    margin-bottom: 0;
   }
 
   h3.italic {
@@ -64,26 +64,26 @@
 
   /* ── Body Text ── */
   p {
-    margin: 0 0 0.8em 0;
-    text-indent: 1.27cm; /* 0.5in */
+    margin: 0;
+    text-indent: 1.50cm;
   }
 
   p.no-indent {
-    text-indent: 0;
+    text-indent: 1.50cm;
   }
 
   /* ── Lists ── */
   ol, ul {
-    margin: 0.4em 0 0.8em 1.27cm;
+    margin: 0 0 0 1.50cm;
     padding: 0;
   }
 
   ol li, ul li {
-    margin-bottom: 0.5em;
+    margin-bottom: 0;
   }
 
   ol.main-list > li {
-    margin-bottom: 0.8em;
+    margin-bottom: 0;
   }
 
   /* ── References ── */
@@ -92,15 +92,41 @@
   }
 
   .references h2 {
-    text-align: center;
-    margin-bottom: 1cm;
+    margin-bottom: 0;
   }
 
   .references .ref-entry {
-    margin-bottom: 0.7em;
+    margin-bottom: 0;
     padding-left: 1.27cm;
     text-indent: -1.27cm;
-    font-size: 11pt;
+    font-size: 12pt;
+  }
+
+  /* ── Footnotes ── */
+  sup.fn {
+    font-size: 8pt;
+    vertical-align: super;
+    line-height: 0;
+  }
+  sup.fn a {
+    color: #000;
+    text-decoration: none;
+  }
+  .footnotes {
+    margin-top: 2em;
+    border-top: 0.5pt solid #555;
+    padding-top: 0.8em;
+  }
+  .footnotes h2 {
+    margin-bottom: 0;
+  }
+  .footnotes ol {
+    font-size: 10pt;
+    line-height: 1.4;
+    margin-left: 1.50cm;
+  }
+  .footnotes li {
+    margin-bottom: 0.5em;
   }
 
   /* ── Print Helpers ── */
@@ -120,11 +146,11 @@
 </div>
 
 <!-- ── Background ── -->
-<p class="no-indent">The dominant paradigm for personal computing has remained largely unchanged since the early 1980s, when the graphical desktop — icons, menus, and pointer-driven interaction — was established through the Xerox Star and Apple Lisa lineage. Despite its longevity, a parallel research tradition has long explored whether users should instead be able to describe what they want in natural language and have the computer carry it out. The earliest serious system in this tradition, the Berkeley UNIX Consultant, was already operational by the late 1980s [1]. Decades later, the rise of large language models (LLMs) and multimodal foundation models has reopened this thread with substantially greater technical capability.</p>
+<p class="no-indent">The dominant paradigm for personal computing has remained largely unchanged since the early 1980s, when the graphical desktop — icons, menus, and pointer-driven interaction — was established through the Xerox Star and Apple Lisa lineage. Despite its longevity, a parallel research tradition has long explored whether users should instead be able to describe what they want in natural language and have the computer carry it out. The earliest serious system in this tradition, the Berkeley UNIX Consultant, was already operational by the late 1980s [1]. Decades later, the rise of large language models (LLMs) and multimodal foundation models<sup class="fn"><a href="#fn1">1</a></sup> has reopened this thread with substantially greater technical capability.</p>
 
-<p>The field that has emerged sits at the intersection of human-computer interaction, operating systems, natural language processing, and computer vision. On the shell side, recent work has demonstrated that LLMs can translate natural language into Bash commands with usable accuracy and can be embedded as a Unix primitive with appropriate safety guardrails [2, 3]. On the graphical side, so-called computer-using agents now operate desktop and mobile applications by combining native APIs with vision-based grounding [16, 18]. On the web, language-guided agents complete tasks across realistic websites with measurable but limited reliability [8, 9]. A converging research thread approaches the same technical problem from an accessibility perspective: speech-driven GUI command mapping for users with motor and speech impairments has progressed from voice-to-text dictation toward voice-to-action agents, with recent work on speech-instructed GUI agents [22] and region-aware visual grounding [23] demonstrating that the underlying components are maturing rapidly. Yet despite this progress across both threads, the most rigorous evaluation environment in the field — the OSWorld benchmark — shows that frontier models complete only 12.24% of real computer tasks that humans complete at 72.36% [17]. The gap between demonstration and deployable replacement remains substantial.</p>
+<p>The field that has emerged sits at the intersection of human-computer interaction, operating systems, natural language processing, and computer vision. On the shell side, recent work has demonstrated that LLMs can translate natural language into Bash commands with usable accuracy and can be embedded as a Unix primitive with appropriate safety guardrails [2, 3]. On the graphical side, so-called computer-using agents<sup class="fn"><a href="#fn2">2</a></sup> now operate desktop and mobile applications by combining native APIs with vision-based grounding [16, 18]. On the web, language-guided agents complete tasks across realistic websites with measurable but limited reliability [8, 9]. A converging research thread approaches the same technical problem from an accessibility perspective: speech-driven GUI command mapping for users with motor and speech impairments has progressed from voice-to-text dictation toward voice-to-action agents, with recent work on speech-instructed GUI agents [22] and region-aware visual grounding [23] demonstrating that the underlying components are maturing rapidly. Yet despite this progress across both threads, the most rigorous evaluation environment in the field — the OSWorld benchmark — shows that frontier models complete only 12.24% of real computer tasks that humans complete at 72.36% [17]. The gap between demonstration and deployable replacement remains substantial.</p>
 
-<p>This rapid progress has been uneven across platforms. Windows is heavily represented in the desktop agent literature [15, 16], Android in the mobile agent literature [10, 11, 12], and the browser in the web agent literature [7, 8, 9]. Linux desktop coverage, by contrast, is conspicuously absent: existing work either addresses Linux only at the shell level [3] or treats it as one of several evaluation platforms rather than a primary target [17]. No surveyed system implements a working conversational userland for the Linux desktop, despite Linux serving as the substrate for most developer and server-side workflows.</p>
+<p>This rapid progress has been uneven across platforms. Windows is heavily represented in the desktop agent literature [15, 16], Android in the mobile agent literature [10, 11, 12], and the browser in the web agent literature [7, 8, 9]. Linux desktop coverage, by contrast, is conspicuously absent: existing work either addresses Linux only at the shell level [3] or treats it as one of several evaluation platforms rather than a primary target [17]. No surveyed system implements a working conversational userland<sup class="fn"><a href="#fn3">3</a></sup> for the Linux desktop, despite Linux serving as the substrate for most developer and server-side workflows.</p>
 
 <!-- ── Gap / Opportunity ── -->
 <h2>Gap / Opportunity</h2>
@@ -144,7 +170,7 @@
 
 <ol>
   <li>How can a conversational userland be designed to function as the primary user-facing interface to a Linux-based personal computing environment, spanning shell operations, graphical applications, and cross-application workflows?</li>
-  <li>What hybrid execution architecture — combining MCP-exposed application APIs, Linux accessibility-tree access via AT-SPI, and vision-based GUI simulation as fallback — is most effective for grounding natural language intent into system actions on the Linux desktop?</li>
+  <li>What hybrid execution architecture — combining MCP-exposed application APIs<sup class="fn"><a href="#fn4">4</a></sup>, Linux accessibility-tree access via AT-SPI<sup class="fn"><a href="#fn5">5</a></sup>, and vision-based GUI simulation as fallback — is most effective for grounding natural language intent into system actions on the Linux desktop?</li>
   <li>How does SynapseOS compare to the conventional Linux graphical desktop workflow in terms of task completion time, error rate, and user satisfaction across novice and power user populations?</li>
 </ol>
 
@@ -158,7 +184,7 @@
 <ol>
   <li>To design a conversational userland for the Linux desktop that spans shell operations, graphical applications, and cross-application workflows under a single natural-language surface.</li>
   <li>To develop a hybrid execution architecture for SynapseOS that prioritizes MCP-exposed application APIs, falls back to Linux AT-SPI accessibility-tree access, and uses vision-based GUI simulation as a last resort, balancing reliability against generality.</li>
-  <li>To implement SynapseOS as a Linux session manager that provides a persistent conversational surface, a structured undo log, and a confirmation policy for irreversible operations, addressing the safety and recoverability gaps identified in prior work [3, 16].</li>
+  <li>To implement SynapseOS as a Linux session manager<sup class="fn"><a href="#fn6">6</a></sup> that provides a persistent conversational surface, a structured undo log, and a confirmation policy for irreversible operations, addressing the safety and recoverability gaps identified in prior work [3, 16].</li>
   <li>To evaluate SynapseOS through a controlled user study comparing task completion time, error rate, and self-reported satisfaction against the conventional Linux desktop workflow, across novice and power user populations, providing the empirical comparison absent from the existing literature [17].</li>
 </ol>
 
@@ -181,7 +207,21 @@
 
 <p>The study examines cross-application desktop workflows on Linux, including shell operations, file management, and application-level tasks representable in the OSWorld benchmark task suite [17]. The population studied consists of novice computer users and power users recruited for a controlled user study. The study is conducted in a Linux desktop environment and is bounded by the duration of the thesis project.</p>
 
-<p>The following limitations are acknowledged. First, the choice of underlying multimodal LLM is not yet committed; the decision between a hosted frontier model and a locally-hosted open-weights model involves tradeoffs between latency, privacy, and capability that will affect results. Second, users with motor accessibility needs — a highly relevant population — are excluded from the initial evaluation due to ethics-review and recruitment constraints; accessibility-specific configurations such as speech-instructed agent operation for atypical speech patterns [22] are likewise out of scope for the initial implementation but represent a natural extension of the SynapseOS substrate. Third, SynapseOS targets the Linux userland specifically, and the findings may not generalize directly to Windows or macOS desktop environments. Fourth, the safety confirmation policy for irreversible system operations is defined in principle but requires empirical calibration during implementation. Fifth, evaluation is bounded by the task coverage of the OSWorld benchmark and the custom task suite developed for this study; tasks outside this coverage are not evaluated.</p>
+<p>The following limitations are acknowledged. First, the choice of underlying multimodal LLM is not yet committed; the decision between a hosted frontier model and a locally-hosted open-weights model<sup class="fn"><a href="#fn7">7</a></sup> involves tradeoffs between latency, privacy, and capability that will affect results. Second, users with motor accessibility needs — a highly relevant population — are excluded from the initial evaluation due to ethics-review and recruitment constraints; accessibility-specific configurations such as speech-instructed agent operation for atypical speech patterns [22] are likewise out of scope for the initial implementation but represent a natural extension of the SynapseOS substrate. Third, SynapseOS targets the Linux userland specifically, and the findings may not generalize directly to Windows or macOS desktop environments. Fourth, the safety confirmation policy for irreversible system operations is defined in principle but requires empirical calibration during implementation. Fifth, evaluation is bounded by the task coverage of the OSWorld benchmark and the custom task suite developed for this study; tasks outside this coverage are not evaluated.</p>
+
+<!-- ═══════════════ NOTES ═══════════════ -->
+<div class="footnotes">
+  <h2>Notes</h2>
+  <ol>
+    <li id="fn1">Foundation models are large neural networks trained on broad, general-purpose data and adaptable to many tasks. Multimodal variants accept multiple input types — typically text and images — enabling the model to interpret visual interfaces and screenshots alongside natural language.</li>
+    <li id="fn2">Computer-using agents are AI systems that interact with a computer's graphical environment — clicking, typing, reading the screen — to complete tasks on behalf of a user. Unlike shell-level automation, they operate through the same visual interface a human would use.</li>
+    <li id="fn3">The userland (or user space) is the layer of software that runs on top of the operating system kernel and constitutes the user-facing computing environment: the desktop shell, window manager, session manager, application launcher, and the applications themselves. The kernel manages hardware and process scheduling; the userland defines what the user sees and interacts with.</li>
+    <li id="fn4">Model Context Protocol (MCP): an open standard for connecting AI models to external tools and application APIs through a structured interface. Applications that implement MCP expose their functions as callable tools, enabling reliable structured interaction without screen-based interpretation.</li>
+    <li id="fn5">Assistive Technology Service Provider Interface (AT-SPI): a Linux accessibility protocol that exposes the UI elements of graphical applications — buttons, text fields, menus — as a queryable tree structure, enabling programmatic interaction without modifying application source code.</li>
+    <li id="fn6">A Linux session manager is the program that starts after user login and establishes the graphical environment — launching the window manager, desktop shell, and background services. SynapseOS replaces this component with a conversational interface, making it the first program a user encounters after login.</li>
+    <li id="fn7">Open-weights models make their trained parameters publicly available for local download and use. Users run inference on their own hardware without routing queries to an external service provider, enabling offline operation and preventing user data from being transmitted to third parties.</li>
+  </ol>
+</div>
 
 <!-- ═══════════════ REFERENCES ═══════════════ -->
 <div class="references">
