@@ -211,7 +211,7 @@
   <div class="chapter-title">Methodology</div>
 </div>
 
-<p class="no-indent">This chapter describes the research methodology employed in designing, implementing, and evaluating SynapseOS — a Linux distribution that replaces the conventional graphical userland with a conversational interface layer. The methodology is organized into three sections: Dataset, which defines the data to be collected and how it will be gathered; Procedure, which describes the step-by-step process of building the system and conducting the study; and System Testing, which defines the evaluation design, metrics, and statistical approach used to compare SynapseOS against the conventional Linux desktop.</p>
+<p class="no-indent">This chapter describes the research methodology employed in designing, implementing, and evaluating SynapseOS — a system that replaces the conventional graphical session layer with a conversational interface layer. The methodology is organized into three sections: Dataset, which defines the data to be collected and how it will be gathered; Procedure, which describes the step-by-step process of building the system and conducting the study; and System Testing, which defines the evaluation design, metrics, and statistical approach used to compare SynapseOS against the conventional Linux desktop.</p>
 
 <!-- ── Conceptual Framework ── -->
 <h2>Conceptual Framework</h2>
@@ -304,7 +304,7 @@
 <p class="table-caption"><strong>Table 2.1.</strong> Study evaluation machines</p>
 <table>
   <tr><th>Machine</th><th>Role</th><th>OS</th><th>Notes</th></tr>
-  <tr><td>SynapseOS evaluation machine</td><td>Condition A — all participants</td><td>SynapseOS</td><td>GUI mode; fullscreen conversational interface; Wayland compositor required; based on Debian 13 (Trixie); Ollama + Qwen2.5-Coder-3B-Instruct running locally</td></tr>
+  <tr><td>SynapseOS evaluation machine</td><td>Condition A — all participants</td><td>SynapseOS</td><td>GUI mode; fullscreen conversational interface running within an XFCE (X11 session) desktop environment; based on Debian 13 (Trixie); Ollama + Qwen2.5-Coder-3B-Instruct running locally</td></tr>
   <tr><td>Windows 11 baseline machine</td><td>Condition B — Windows-primary participants</td><td>Windows 11</td><td>Standard consumer hardware; default user account; no custom software</td></tr>
   <tr><td>macOS baseline machine</td><td>Condition B — macOS-primary participants</td><td>macOS (current release)</td><td>Apple Silicon hardware; standard user account</td></tr>
   <tr><td>Linux / GNOME baseline machine</td><td>Condition B — Linux-primary participants</td><td>Ubuntu 24.04 LTS</td><td>GNOME desktop environment; standard user account</td></tr>
@@ -429,6 +429,8 @@
 <h4>a) Conversational Interface Layer</h4>
 
 <p class="no-indent">The conversational surface is implemented as a persistent, full-screen chat interface that serves as the primary and sole user-facing interface when SynapseOS is active as the session manager. The interface accepts natural language input, displays system responses and command output, and maintains conversational context across the session. An intent parsing pipeline translates each user utterance into a shell command for execution.</p>
+
+<p>Conversational context is session-scoped: history is held in memory for the duration of the login session and is cleared on logout or reboot, with no persistence layer in the thesis prototype. When accumulated history approaches 75% of the intent parsing model's 8,000-token context limit, a rolling window discards the oldest turns to keep the conversation within budget. Verbose command output — such as a full directory listing or search result — is truncated to a compact summary before being appended to history, preventing a single command's output from consuming a disproportionate share of the available context.</p>
 
 <p>SynapseOS is designed around a locally-hosted small language model (SLM) as the default inference backend. Because the system operates at the OS level — processing every natural language command, observing terminal output, file paths, command history, and the user's interaction patterns — routing inference through a cloud API would give an external provider continuous visibility into the user's computing activity. SynapseOS therefore defaults to on-device inference: all language processing runs locally, with no user data transmitted externally.</p>
 
@@ -569,7 +571,7 @@
 <ul>
   <li><strong>Sample generalizability:</strong> The study uses a university-recruited sample of 20 participants across three primary OS backgrounds (Windows, macOS, Linux), which limits direct generalization to the broader population of computer users. Findings should be interpreted as indicative rather than definitive; replication with larger and more diverse samples is recommended as a direction for future work.</li>
   <li><strong>Task generalizability:</strong> The evaluation is bounded by OSWorld coverage and the custom task suite developed for this study. Computing workflows outside this coverage are not evaluated, and results may not extend to all possible use cases.</li>
-  <li><strong>Platform specificity:</strong> SynapseOS is evaluated on a single hardware and software configuration — a dedicated machine running SynapseOS in GUI mode on a Debian 13 (Trixie) base. Performance characteristics on different hardware, display configurations, or Linux distributions may differ from the reported results.</li>
+  <li><strong>Platform specificity:</strong> SynapseOS is evaluated on a single hardware and software configuration — a dedicated machine running SynapseOS in GUI mode (XFCE desktop environment, X11 session) on a Debian 13 (Trixie) base. Performance characteristics on different hardware, display configurations, or Linux distributions may differ from the reported results.</li>
 </ul>
 
 <!-- ═══════════════ NOTES ═══════════════ -->
