@@ -69,11 +69,9 @@ Applied Mapúa ITRD writing guidelines to both HTML submission files:
 
 ## Pending Items
 
-- **TXT files:** `summative-assessment-1.txt` and `summative-assessment-3.1.txt` are plain text mirrors of the HTML files. They're now out of date and the HTML is the source of truth. Decision pending: delete or keep. User asked about this but has not confirmed deletion.
 - **NDSS LAST-X 2026 citation:** still blocked — the PDF is binary and the author list is not extractable. Noted in `brainstorm.md`.
 - **Custom cross-platform task suite:** task list (individual prompts, expected outcomes, difficulty ratings) does not exist yet. Only categories are specified in the paper (Section 1.6).
 - **Study hardware:** Table 2.1 specs say "to be confirmed prior to pilot study."
-- **Chapter 1 alignment (final thesis):** SA1 still reflects pre-D7 and pre-D9 decisions — RQ2/Objective 2 reference the three-tier MCP/AT-SPI/vision arch (superseded), RQ3/Objective 4 reference "conventional Linux graphical desktop" (superseded by expert baseline design). Deferred to final compilation.
 - **llm-selection-research.txt** — open in IDE as of session 2. May be the next thing to act on.
 
 ---
