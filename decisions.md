@@ -17,6 +17,8 @@ This file records architectural and research design decisions that have been mad
   - [D9 — Study baseline: expert baseline design (participant's primary OS)](#d9-study-baseline-expert-baseline-design-participants-primary-os)
   - [D10 — Conversation memory model: session-scoped, rolling window, output compression](#d10-conversation-memory-model-session-scoped-rolling-window-output-compression)
   - [D11 — Study interface mode: GUI (fullscreen conversational interface)](#d11-study-interface-mode-gui-fullscreen-conversational-interface)
+  - [D12 — Distro identity vs. implementation substrate: Debian + XFCE (GUI), bare Debian (TUI)](#d12-distro-identity-vs-implementation-substrate-debian-xfce-gui-bare-debian-tui)
+  - [D13 — Product mode (post-thesis): agentic overlay on a visible traditional desktop](#d13-product-mode-post-thesis-agentic-overlay-on-a-visible-traditional-desktop)
 
 ## Decisions
 
@@ -151,3 +153,34 @@ The thesis prototype GUI is a fullscreen borderless window approximating the act
 **Why:** The study population includes novice users for whom a terminal interface would introduce a significant familiarity barrier independent of SynapseOS's core capability. Evaluating in GUI mode tests the interface as it would be experienced by its intended general-user audience. A TUI-mode study of novice users would conflate terminal unfamiliarity with interface quality, undermining the validity of the comparison.
 
 **Rejected:** TUI mode for the study — the Interface mode threat to validity, previously listed in Section 3.5, identified exactly this problem: novice user results in TUI mode would not represent the experience those users would have under the intended GUI implementation.
+
+---
+
+### D12 — Distro identity vs. implementation substrate: Debian + XFCE (GUI), bare Debian (TUI)
+
+**Status:** Refines D1 and D11. Not yet in a chapter — record for final compilation.
+
+SynapseOS presents to the user as its own distribution — its own name and identity — while the substrate underneath is reused and never surfaced to the user. The substrate is mode-dependent:
+
+- **GUI mode:** Debian 13 + **XFCE** as the host desktop environment, running its stable **X11** session (XFCE's Wayland session remains experimental as of 4.20 — unsuitable for a reproducible 20-participant study). XFCE supplies the display session and window management only; SynapseOS launches fullscreen within it, so the participant sees and interacts with nothing but the conversational interface. XFCE is chosen over a custom kiosk compositor because it is the lowest-effort, most standard traditional Linux DE — no new toolchain (no `cage`, no Wayland layer-shell work) is needed for the thesis prototype, while still being a genuine, vendor-neutral "traditional GUI environment" for D9's expert-baseline comparison.
+- **TUI mode:** bare Debian 13, no desktop environment — unchanged from D1. Here SynapseOS is a local agentic shell: natural language in, a local SLM reasons over intent, proposes a shell command, and executes it under the confirmation gate. The interaction model is architecturally comparable to Claude Code's agentic CLI loop, but fully offline against an on-device model (D2, D3) rather than a cloud API — a useful reference point for describing the interaction model to a reader unfamiliar with OS-level agents.
+
+**Why this is not dishonest:** distro identity has always been a branding and packaging layer over a reused base, invisible to the end user — Ubuntu never surfaces "Debian" to a desktop user, SteamOS never surfaces "Arch," Pop!_OS never surfaces "Ubuntu." SynapseOS qualifies as a distribution once packaged as a bootable Debian(+XFCE) derivative with its own default session, branding, and update channel (see `layers.md`, "When It Becomes a Distribution") — a real distro, with a reused and unadvertised substrate, exactly like its predecessors.
+
+**Rejected:** a custom kiosk Wayland compositor (`cage`) as the GUI host for the thesis prototype — adds a new toolchain and packaging surface for no benefit over a fullscreen window in a standard DE session; the wallpaper-layer / `wlr-layer-shell` active-desktop mode remains the eventual post-thesis product target (`future-features.md`). True coexistence with the XFCE desktop (the participant can freely switch to it mid-task) — confounds the within-subjects comparison (D5, D9); during Condition A the participant experiences SynapseOS as the interface, full stop.
+
+---
+
+### D13 — Product mode (post-thesis): agentic overlay on a visible traditional desktop
+
+**Status:** Post-thesis product direction. Does not affect the study design (D5, D9, D11) or D12. Not in any chapter — vision/roadmap only.
+
+Beyond the thesis prototype, the commercial product target is a second mode where the traditional desktop (Debian + XFCE) stays fully visible and usable, and SynapseOS is summoned on demand — a global hotkey (via XFCE's `xfconf` keyboard-shortcut settings) or a systray icon opens a floating conversational window; the user can otherwise operate the desktop manually (drag-and-drop, the file manager, any traditional app) exactly as before. This is a lower-effort near-term instantiation of the wallpaper-layer active-desktop concept already recorded in `future-features.md` — the same idea, without requiring `wlr-layer-shell`/Tauri: XDG autostart plus a hotkey/systray launcher is sufficient.
+
+This does not conflict with D12: D12 describes the *study* substrate (fullscreen takeover, no escape hatch, required for a clean within-subjects comparison); D13 describes the *product* substrate (full coexistence, by design). They are different modes of the same runtime — same Go binary, same Ollama backend, same confirmation gate and execution engine (M2–M8) — the only difference is the shell wrapped around it, matching the existing TUI/GUI "one slot, two sets of clothes" pattern (`layers.md`).
+
+**Why coexistence is deferred from the thesis:** allowing the participant to fall back to the traditional GUI during Condition A would confound the within-subjects comparison (D5) — a result could no longer be attributed to the conversational interface specifically. The strict takeover (D12) is what makes the study's causal claim clean; the overlay is what makes the eventual product adoptable. Building both from one runtime lets the study protect its validity while the product still ships the friction-free experience users will actually want.
+
+**On the distro claim — weighing D12/D13 against hardening:** the default session (D12's takeover in the study; D13's overlay in the product) is the identity-defining reason SynapseOS can be called its own distribution — it is what a user actually experiences, and it is genuinely uncommon (no daily-driver OS ships a conversational agent as its primary interaction layer). Hardening (`future-features.md`, Hardening Profiles) is real and worth doing — it mirrors exactly how Ubuntu differentiates from bare Debian — but it is a commodity, credibility-class signal, not an identity-class one: nearly every serious distro hardens its defaults, so hardening alone does not distinguish SynapseOS from the crowd. If forced to choose one item to get right before the "own distro" claim is defensible, it is the agentic session (D12/D13), not the hardening profile.
+
+**Rejected:** treating the overlay/coexistence model as the thesis design — see D12's rejection of "true coexistence" for the study-validity reasoning. Leading with hardening as the primary "why this is a distro" argument — it is supporting evidence, not the load-bearing claim.

@@ -22,6 +22,7 @@ This file holds product and research ideas that surfaced during thesis developme
 - [GUI: Active Desktop / Wallpaper-Layer Interface](#gui-active-desktop-wallpaper-layer-interface)
   - [Concept](#concept)
   - [Implementation path](#implementation-path)
+  - [MVP variant — systray + hotkey overlay (no layer-shell required)](#mvp-variant-systray-hotkey-overlay-no-layer-shell-required)
 - [Persistent Conversation Memory](#persistent-conversation-memory)
   - [Concept](#concept-1)
   - [Design decisions needed](#design-decisions-needed)
@@ -127,6 +128,10 @@ This is the primary GUI target for non-technical and general users. The TUI is t
 **Backend:** The Go layer (Ollama client, bash execution, confirmation gate, undo log) is unchanged. Tauri exposes Go-equivalent Rust functions to the React frontend; or the Go process runs separately and the frontend communicates via a local socket or REST.
 
 **Deferred because:** building the wallpaper-layer integration, desktop compositor hooks, and global hotkey handling is significant implementation work beyond the thesis timeline. The thesis prototype uses a fullscreen borderless window that approximates the aesthetic without requiring layer-shell integration. Full active-desktop mode is the post-thesis product target.
+
+### MVP variant — systray + hotkey overlay (no layer-shell required)
+
+A much lower-effort stepping stone toward the same experience, and the recommended first post-thesis build (decision D13): skip `wlr-layer-shell`/Tauri entirely and ship SynapseOS as an ordinary XFCE desktop app — a systray icon (XFCE's panel supports these natively) plus a global hotkey bound through `xfconf`'s keyboard-shortcut settings, both toggling a floating conversational window. Autostart via a standard XDG `.desktop` file in `~/.config/autostart/`. The traditional desktop stays completely untouched and fully usable; SynapseOS is one hotkey or one click away rather than the ambient background layer. No custom compositor, no Wayland layer-shell plugin, no Tauri — just a well-behaved desktop app, which is much closer to ordinary application development than the full wallpaper-layer build. Once this variant is validated with real users, it can be upgraded to the full background-layer treatment above without changing the Go backend at all.
 
 ---
 

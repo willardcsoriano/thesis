@@ -73,4 +73,6 @@ Stated explicitly so the north star cannot silently expand the build:
 | **H1 — Beyond thesis** | Persistent memory, richer task coverage, active-desktop compositor layer | Conversation as the desktop shell | Deferred — `future-features.md` |
 | **H2 — North star** | Conversation as the primary OS interface; GUI as one rendering, not the substrate | Talk to the computer | Vision — not a deliverable |
 
+H1's near-term, buildable shape is the **Overlay** product mode (D13): the traditional desktop stays fully visible and usable, and SynapseOS is summoned via hotkey or systray icon rather than occupying the whole session. It is the lower-effort stepping stone toward the full wallpaper-layer active desktop, built from the same runtime as H0 — see `layers.md` ("one slot, two or three sets of clothes") and `future-features.md`.
+
 The whole strategy in one line: **build H0 small and prove it rigorously; let the evidence, not the ambition, argue for H1 and H2.**
