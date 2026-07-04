@@ -1,0 +1,13 @@
+# Compiled binaries
+/bin/
+/synapse
+*.exe
+
+# Go build/test cache and coverage
+*.test
+*.out
+coverage.*
+
+# Local env overrides
+.env
+.env.local
