@@ -19,6 +19,8 @@ This file records architectural and research design decisions that have been mad
   - [D11 — Study interface mode: GUI (fullscreen conversational interface)](#d11-study-interface-mode-gui-fullscreen-conversational-interface)
   - [D12 — Distro identity vs. implementation substrate: Debian + XFCE (GUI), bare Debian (TUI)](#d12-distro-identity-vs-implementation-substrate-debian-xfce-gui-bare-debian-tui)
   - [D13 — Product mode (post-thesis): agentic overlay on a visible traditional desktop](#d13-product-mode-post-thesis-agentic-overlay-on-a-visible-traditional-desktop)
+  - [D14 — Novice/power-user classification: self-report confirmed by a behavioral screener](#d14-novicepower-user-classification-self-report-confirmed-by-a-behavioral-screener)
+  - [D15 — Prior AI exposure: graded covariate, not a third grouping variable](#d15-prior-ai-exposure-graded-covariate-not-a-third-grouping-variable)
 
 ## Decisions
 
@@ -52,7 +54,9 @@ The primary SLM for intent parsing (natural language → structured action / bas
 
 Fine-tuning via LoRA on the NL2Bash corpus + custom SynapseOS task suite is planned to push accuracy higher within the 3B parameter budget.
 
-**Rejected:** Qwen2.5-VL-3B-Instruct as a unified model for both intent parsing and Tier 3 vision. The VL variant adds a vision encoder (~0.7–1B additional parameters), making it effectively ~3.7–4B total at ~2.5 GB Q4 — larger than Coder-3B and weaker at bash generation because Coder was trained on 5.5 trillion code tokens specifically.
+**Reaudited 2026-07-05:** Web research confirmed no small (<4B) model released since the original selection has NL2Bash- or shell-generation-specific benchmark evidence beating Qwen2.5-Coder-3B-Instruct. Candidates checked and rejected: **Qwen3-Coder-Next** (Feb 2026) — strong benchmarks (SWE-Bench Verified >70%) but disqualifies on hardware: MoE architecture with 80B *total* parameters (3B active per token), all experts must stay resident in memory for CPU inference, blowing the ~2 GB / 8 GB CPU-only budget by an order of magnitude regardless of active-parameter efficiency. **Phi-4-mini (3.8B)** — right size class (~2.2 GB Q4_K_M, MIT license) but no NL2Bash/shell-specific evidence, only general reasoning benchmarks (MMLU, GSM8K), which the Westenfelder et al. execution-based methodology does not treat as equivalent. **SmolLM3-3B** — beats base Qwen2.5-3B and Llama-3.2-3B, but not the code-specialized Coder variant this decision compares against; irrelevant to the actual comparison. **LiteCoder-Terminal benchmark** (arXiv 2605.29559, 2026) — a genuine terminal-agent benchmark, but tests nothing under 4B (smallest is Qwen3-4B-Instruct, scoring 1–14% pass@1 pre-fine-tune on Terminal-Bench variants); reinforces this decision's premise that LoRA fine-tuning is necessary at this size class rather than pointing at a better base model. The NDSS LAST-X 2026 citation blocker is resolved: authors are Jef Jacobs, Jorn Lapon, and Vincent Naessens (DistriNet, KU Leuven), "Local LLMs for NL2Bash: A Large-Scale Open-Source Model Evaluation for Bash Command Generation" — the per-model accuracy table inside the PDF remains unextracted (binary/FlateDecode, no available tool gets past it), so it cannot yet be cited for its specific ranking, only as corroborating literature. Added to SA3.1 Section 2.1a and the References list as [25]; the reconfirmation itself (rejected candidates and reasoning) is now also stated directly in Section 2.1a rather than living only in this file.
+
+**Rejected:** Qwen2.5-VL-3B-Instruct as a unified model for both intent parsing and Tier 3 vision. The VL variant adds a vision encoder (~0.7–1B additional parameters), making it effectively ~3.7–4B total at ~2.5 GB Q4 — larger than Coder-3B and weaker at bash generation because Coder was trained on 5.5 trillion code tokens specifically. Qwen3-Coder-Next, Phi-4-mini, and SmolLM3-3B — see reaudit above.
 
 ---
 
@@ -120,11 +124,11 @@ SynapseOS executes only shell-expressible operations. The system's capability bo
 
 **Status:** In SA3.1 Section 3.2
 
-Condition B is each participant's primary OS — Windows 11, macOS, or Linux with GNOME — on a dedicated baseline machine in the lab. Study uses four physical machines: one SynapseOS (Debian 13), one Windows 11, one macOS, one Linux (GNOME). Each participant uses whichever baseline machine matches their daily driver.
+Condition B is each participant's primary OS — Windows 11, macOS, or Linux with GNOME — on a dedicated baseline machine in the lab. Study uses three physical machines: one SynapseOS (Debian 13), one macOS, and one Windows 11 / Linux (GNOME) dual-boot machine — Windows and Linux share a machine (booted to separate partitions) rather than requiring a fourth, since mainstream x86-64 hardware runs Linux natively well. macOS remains a dedicated Apple-Silicon machine. The facilitator boots the dual-boot machine to the OS matching the participant's assignment before the session begins — no runtime switching. Each participant uses whichever baseline machine (or boot target) matches their daily driver.
 
-**Why:** A fixed Linux desktop baseline (originally GNOME on Debian) would confound the result. Most participants have never used a Linux desktop; slow performance under that condition reflects OS unfamiliarity, not interface quality. The expert baseline design tests SynapseOS against what participants already know — a harder and more ecologically valid opponent. A positive result against a participant's home environment is a stronger claim than winning against a foreign system.
+**Why:** A fixed Linux desktop baseline (originally GNOME on Debian) would confound the result. Most participants have never used a Linux desktop; slow performance under that condition reflects OS unfamiliarity, not interface quality. The expert baseline design tests SynapseOS against what participants already know — a harder and more ecologically valid opponent. A positive result against a participant's home environment is a stronger claim than winning against a foreign system. Windows/Linux dual-boot (rather than a fourth machine) preserves this: each OS still runs natively at full performance, so the task-completion-time comparison isn't touched by the consolidation.
 
-**Rejected:** Single fixed Linux baseline (GNOME/Debian) — confounds interface with OS familiarity. Three-OS between-subjects design — requires much larger n and loses within-subjects control. macOS-only or Windows-only baseline — excludes participants whose native platform differs.
+**Rejected:** Single fixed Linux baseline (GNOME/Debian) — confounds interface with OS familiarity. Three-OS between-subjects design — requires much larger n and loses within-subjects control. macOS-only or Windows-only baseline — excludes participants whose native platform differs. Full virtualization of all three baseline OSes on one shared machine — VM overhead on the baseline condition would confound the task-completion-time comparison against SynapseOS running on dedicated hardware, and macOS's software license prohibits virtualizing macOS on non-Apple hardware. Linux virtualized on the Windows machine (rather than dual-booted) — same VM-overhead confound, avoided entirely by native dual-boot instead.
 
 ---
 
@@ -184,3 +188,27 @@ This does not conflict with D12: D12 describes the *study* substrate (fullscreen
 **On the distro claim — weighing D12/D13 against hardening:** the default session (D12's takeover in the study; D13's overlay in the product) is the identity-defining reason SynapseOS can be called its own distribution — it is what a user actually experiences, and it is genuinely uncommon (no daily-driver OS ships a conversational agent as its primary interaction layer). Hardening (`future-features.md`, Hardening Profiles) is real and worth doing — it mirrors exactly how Ubuntu differentiates from bare Debian — but it is a commodity, credibility-class signal, not an identity-class one: nearly every serious distro hardens its defaults, so hardening alone does not distinguish SynapseOS from the crowd. If forced to choose one item to get right before the "own distro" claim is defensible, it is the agentic session (D12/D13), not the hardening profile.
 
 **Rejected:** treating the overlay/coexistence model as the thesis design — see D12's rejection of "true coexistence" for the study-validity reasoning. Leading with hardening as the primary "why this is a distro" argument — it is supporting evidence, not the load-bearing claim.
+
+---
+
+### D14 — Novice/power-user classification: self-report confirmed by a behavioral screener
+
+**Status:** Refines D5. In SA3.1 Section 1.5.
+
+Group assignment (novice vs. power user) is no longer decided by self-report alone. A three-task behavioral screener — performed unaided on the participant's primary OS, one task per system-task category used in the main study (file organization, process monitoring, application management) — confirms self-reported proficiency before assignment. Power user requires advanced self-report **and** passing all three tasks; novice requires basic self-report **and** failing the screener. Participants whose self-report and behavioral result disagree are excluded, same as participants who don't clearly satisfy either bucket under the original D5 criteria.
+
+**Why:** Self-reported proficiency (basic/intermediate/advanced) has no operational anchor and is a known-weak classifier in HCI screening — two participants can pick the same label for different reasons (modesty, overconfidence, or genuine skill in a domain other than OS-native system tasks). The specific failure mode motivating this: a participant technically skilled in one area (e.g., software development) may not be fluent with their own OS's native file management, process monitoring, or system administration tools — the exact competency this study's group split measures — and would be misclassified by self-report alone. The behavioral screener is scoped to the same three categories as the main task suite so it verifies the construct actually being studied, not a general technical-skill proxy.
+
+**Rejected:** Self-report only (original D5 criterion) — no behavioral check, vulnerable to self-calibration differences. A longer/more comprehensive skills test — adds session time and participant burden disproportionate to a screening step; three short pass/fail tasks are enough to confirm or contradict the self-report, not to produce a fine-grained skill score.
+
+---
+
+### D15 — Prior AI exposure: graded covariate, not a third grouping variable
+
+**Status:** Refines D5. In SA3.1 Sections 1.5 and 3.2.
+
+Prior conversational AI exposure — already a screened dimension under D5 — is upgraded from a binary "prior exposure: yes/no" item to a graded scale (never / occasionally / regularly / daily) plus which tools (chatbots, voice assistants, code-completion or agentic coding assistants, other LLM-based tools). It is recorded and analyzed as an exploratory covariate alongside primary OS, in the same section (3.2) and with the same "exploratory" framing already used for the per-OS subgroup analysis — not as a third grouping variable alongside novice/power user and condition.
+
+**Why:** A participant fluent with LLM-based tools may have a better mental model of how to phrase a request to get a good result, which could inflate or explain SynapseOS-specific results (task completion time, SUS, trust in the confirmation gate) independent of their OS-native proficiency. That is a plausible confound worth capturing. A graded scale plus tool identity costs one more screening question — no new instrument, no added session time — and gives the analysis something more useful than a binary flag to correlate against.
+
+**Rejected:** Treating AI exposure as a third primary grouping variable (e.g., low/high-exposure subgroups analyzed with their own hypothesis test) — with n = 20 already split 10/10 by novice/power user, a further split leaves cells too small to support inference; the existing per-OS subgroup analysis is exploratory for the same reason, and AI exposure is treated identically. Leaving the item as a binary yes/no — too coarse to support even exploratory correlation with any granularity.

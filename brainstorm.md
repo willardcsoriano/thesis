@@ -14,9 +14,10 @@ This file is the holding area for ideas and additions that have surfaced during 
 ### Cite NDSS LAST-X 2026 paper on NL2Bash benchmarking
 
 **Would affect:** SA3.1 Section 2.1a, References list  
-**What:** "Local LLMs for NL2Bash: A Large-Scale Open-Source Evaluation" (NDSS LAST-X 2026) evaluated 22 locally-deployable LLMs from 1B to 32B parameters. Strong empirical anchor for Qwen2.5-Coder-3B selection. Full data in `research methods/module 3/references/llm-selection-research.txt`.  
+**What:** Jacobs, J., Lapon, J., & Naessens, V. (2026). "Local LLMs for NL2Bash: A Large-Scale Open-Source Model Evaluation for Bash Command Generation." NDSS Workshop on LLM Assisted Security and Trust Exploration (LAST-X 2026). DistriNet, KU Leuven. Evaluated 22 locally-deployable LLMs from 1B to 32B parameters. Strong empirical anchor for Qwen2.5-Coder-3B selection. Full data in `research methods/module 3/references/llm-selection-research.txt`; reaudit findings in `decisions.md` D3.  
 **URL:** https://www.ndss-symposium.org/wp-content/uploads/lastx2026-49.pdf  
-**Blocked on:** Full author list and citation metadata not extractable from binary PDF. Needed before adding to references.
+**Resolved 2026-07-05:** Author list and full citation metadata found via the NDSS accepted-papers page — citable now.  
+**Still blocked on:** The per-model accuracy table inside the PDF itself remains unextracted (binary/FlateDecode stream, no available tool gets past it, and no secondary source reproduces the table). Can be cited as corroborating literature but not for its specific per-model ranking until the table is read manually or with a proper PDF text tool.
 
 ---
 

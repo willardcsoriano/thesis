@@ -8,6 +8,41 @@
   @page {
     size: A4;
     margin: 2.54cm 2.54cm 2.54cm 3.18cm; /* top 1in, right 1in, bottom 1in, left 1.25in */
+    @top-right {
+      content: counter(page);
+      font-family: "Times New Roman", Georgia, serif;
+      font-size: 12pt;
+    }
+  }
+
+  /* ── Table of Contents / List of Tables / List of Figures ── */
+  .toc-block {
+    page-break-before: always;
+  }
+  .toc-title {
+    text-align: center;
+    font-weight: bold;
+    font-size: 12pt;
+    line-height: 2.0;
+    margin: 0 0 12pt 0;
+  }
+  .toc-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    line-height: 2.0;
+    text-indent: 0;
+    gap: 0.5cm;
+  }
+  .toc-entry a {
+    color: #000;
+    text-decoration: none;
+  }
+  .toc-entry .toc-page {
+    flex-shrink: 0;
+  }
+  .toc-entry.level-2 {
+    margin-left: 1.27cm;
   }
 
   /* ── Base Typography ── */
@@ -211,10 +246,46 @@
   <div class="chapter-title">Methodology</div>
 </div>
 
-<p class="no-indent">This chapter describes the research methodology employed in designing, implementing, and evaluating SynapseOS — a system that replaces the conventional graphical session layer with a conversational interface layer. The methodology is organized into three sections: Dataset, which defines the data to be collected and how it will be gathered; Procedure, which describes the step-by-step process of building the system and conducting the study; and System Testing, which defines the evaluation design, metrics, and statistical approach used to compare SynapseOS against the conventional Linux desktop.</p>
+<div class="toc-block">
+<p class="toc-title">TABLE OF CONTENTS</p>
+<p class="toc-entry"><a href="#sec-conceptual-framework">Conceptual Framework</a><span class="toc-page">5</span></p>
+<p class="toc-entry"><a href="#sec-system-env">System Environment Specifications</a><span class="toc-page">6</span></p>
+<p class="toc-entry"><a href="#sec1">Section 1: Dataset</a><span class="toc-page">9</span></p>
+<p class="toc-entry level-2"><a href="#sec1-1">1.1 What to Gather</a><span class="toc-page">9</span></p>
+<p class="toc-entry level-2"><a href="#sec1-2">1.2 How to Gather</a><span class="toc-page">11</span></p>
+<p class="toc-entry level-2"><a href="#sec1-4">1.4 Why</a><span class="toc-page">13</span></p>
+<p class="toc-entry level-2"><a href="#sec1-5">1.5 Participant Screening Criteria</a><span class="toc-page">15</span></p>
+<p class="toc-entry level-2"><a href="#sec1-6">1.6 Task Design</a><span class="toc-page">16</span></p>
+<p class="toc-entry"><a href="#sec2">Section 2: Procedure / Experiment</a><span class="toc-page">18</span></p>
+<p class="toc-entry level-2"><a href="#sec2-1">2.1 System Design and Implementation</a><span class="toc-page">18</span></p>
+<p class="toc-entry level-2"><a href="#sec2-2">2.2 Data Pre-processing</a><span class="toc-page">21</span></p>
+<p class="toc-entry level-2"><a href="#sec2-3">2.3 Validation</a><span class="toc-page">22</span></p>
+<p class="toc-entry level-2"><a href="#sec2-4">2.4 Study Session Procedure</a><span class="toc-page">23</span></p>
+<p class="toc-entry level-2"><a href="#sec2-5">2.5 Ethical Considerations</a><span class="toc-page">25</span></p>
+<p class="toc-entry"><a href="#sec3">Section 3: System Testing</a><span class="toc-page">26</span></p>
+<p class="toc-entry level-2"><a href="#sec3-1">3.1 Evaluation Dataset</a><span class="toc-page">26</span></p>
+<p class="toc-entry level-2"><a href="#sec3-2">3.2 Evaluation Profile</a><span class="toc-page">26</span></p>
+<p class="toc-entry level-2"><a href="#sec3-3">3.3 Criteria and Formula</a><span class="toc-page">27</span></p>
+<p class="toc-entry level-2"><a href="#sec3-4">3.4 Data Analysis Plan</a><span class="toc-page">29</span></p>
+<p class="toc-entry level-2"><a href="#sec3-5">3.5 Threats to Validity</a><span class="toc-page">30</span></p>
+<p class="toc-entry"><a href="#sec-references">References</a><span class="toc-page">33</span></p>
+</div>
+
+<div class="toc-block">
+<p class="toc-title">LIST OF TABLES</p>
+<p class="toc-entry"><a href="#table-2-1">Table 2.1: Study evaluation machines</a><span class="toc-page">7</span></p>
+<p class="toc-entry"><a href="#table-2-2">Table 2.2: SynapseOS minimum deployment requirements</a><span class="toc-page">8</span></p>
+</div>
+
+<div class="toc-block">
+<p class="toc-title">LIST OF FIGURES</p>
+<p class="toc-entry"><a href="#figure-2-1">Figure 2.1: Conceptual framework of SynapseOS</a><span class="toc-page">6</span></p>
+</div>
+
+<p class="no-indent toc-block">This chapter describes the research methodology employed in designing, implementing, and evaluating SynapseOS — a system that replaces the conventional graphical session layer with a conversational interface layer. The methodology is organized into three sections: Dataset, which defines the data to be collected and how it will be gathered; Procedure, which describes the step-by-step process of building the system and conducting the study; and System Testing, which defines the evaluation design, metrics, and statistical approach used to compare SynapseOS against the conventional Linux desktop.</p>
 
 <!-- ── Conceptual Framework ── -->
-<h2>Conceptual Framework</h2>
+<h2 id="sec-conceptual-framework">Conceptual Framework</h2>
 
 <p class="no-indent">SynapseOS operates as a conversational shell layer positioned between the user and the Linux command-line environment. The user issues natural language commands through a persistent chat interface. An intent parsing pipeline — powered by a locally-hosted small language model — translates each utterance into a shell command, which is executed in a bash subprocess. Output is captured and rendered back in the conversational interface. The user issues intent in natural language and receives results in natural language; the shell command is an implementation detail invisible to the user. This architecture is illustrated in Figure 2.1.</p>
 
@@ -294,23 +365,22 @@
   <path d="M 60 408 C 20 408 20 122 60 122" stroke="#777" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#arr-gray)"/>
   <text transform="translate(12,290) rotate(-90)" font-family="Arial,sans-serif" font-size="9" fill="#777" text-anchor="middle">result / confirmation</text>
 </svg>
-<p class="figure-caption"><strong>Figure 2.1.</strong> Conceptual framework of SynapseOS. The user issues a natural language command to the conversational surface, which routes the utterance to the intent parser (Qwen2.5-Coder-3B-Instruct, local SLM). The intent parser produces a shell command dispatched to the execution engine (bash subprocess). Irreversible operations are intercepted by the confirmation gate; reversible operations are logged to the undo stack. Command output (stdout/stderr) is captured, rendered in the conversational surface, and presented back to the user — completing the interaction loop.</p>
+<p class="figure-caption" id="figure-2-1"><strong>Figure 2.1.</strong> Conceptual framework of SynapseOS. The user issues a natural language command to the conversational surface, which routes the utterance to the intent parser (Qwen2.5-Coder-3B-Instruct, local SLM). The intent parser produces a shell command dispatched to the execution engine (bash subprocess). Irreversible operations are intercepted by the confirmation gate; reversible operations are logged to the undo stack. Command output (stdout/stderr) is captured, rendered in the conversational surface, and presented back to the user — completing the interaction loop.</p>
 
 <!-- ── System Environment Specifications ── -->
-<h2>System Environment Specifications</h2>
+<h2 id="sec-system-env">System Environment Specifications</h2>
 
-<p class="no-indent">The user study is conducted across four dedicated machines — one running SynapseOS (Condition A) and three running the supported baseline operating systems (Condition B). Table 2.1 describes each machine's role and operating environment. Exact processor, RAM, and storage specifications for each machine are confirmed and documented in the study protocol prior to the pilot study. Table 2.2 specifies the minimum hardware and software requirements for deploying SynapseOS independently of the study configuration.</p>
+<p class="no-indent">The user study is conducted across three dedicated machines — one running SynapseOS (Condition A) and two covering the three supported baseline operating systems (Condition B). Table 2.1 describes each machine's role and operating environment. Exact processor, RAM, and storage specifications for each machine are confirmed and documented in the study protocol prior to the pilot study. Table 2.2 specifies the minimum hardware and software requirements for deploying SynapseOS independently of the study configuration.</p>
 
-<p class="table-caption"><strong>Table 2.1.</strong> Study evaluation machines</p>
+<p class="table-caption" id="table-2-1"><strong>Table 2.1.</strong> Study evaluation machines</p>
 <table>
   <tr><th>Machine</th><th>Role</th><th>OS</th><th>Notes</th></tr>
   <tr><td>SynapseOS evaluation machine</td><td>Condition A — all participants</td><td>SynapseOS</td><td>GUI mode; fullscreen conversational interface running within an XFCE (X11 session) desktop environment; based on Debian 13 (Trixie); Ollama + Qwen2.5-Coder-3B-Instruct running locally</td></tr>
-  <tr><td>Windows 11 baseline machine</td><td>Condition B — Windows-primary participants</td><td>Windows 11</td><td>Standard consumer hardware; default user account; no custom software</td></tr>
+  <tr><td>Windows / Linux dual-boot baseline machine</td><td>Condition B — Windows- or Linux-primary participants</td><td>Windows 11 or Ubuntu 24.04 LTS (GNOME), selected at boot</td><td>Standard consumer x86-64 hardware; Windows 11 and Ubuntu installed on separate partitions; standard user account per OS; no custom software. Facilitator boots to the OS matching the participant's assignment before the session begins.</td></tr>
   <tr><td>macOS baseline machine</td><td>Condition B — macOS-primary participants</td><td>macOS (current release)</td><td>Apple Silicon hardware; standard user account</td></tr>
-  <tr><td>Linux / GNOME baseline machine</td><td>Condition B — Linux-primary participants</td><td>Ubuntu 24.04 LTS</td><td>GNOME desktop environment; standard user account</td></tr>
 </table>
 
-<p class="table-caption"><strong>Table 2.2.</strong> SynapseOS minimum deployment requirements. SynapseOS is distributed as a Linux system based on Debian 13 (Trixie).</p>
+<p class="table-caption" id="table-2-2"><strong>Table 2.2.</strong> SynapseOS minimum deployment requirements. SynapseOS is distributed as a Linux system based on Debian 13 (Trixie).</p>
 <table>
   <tr><th>Component</th><th>Minimum Requirement</th></tr>
   <tr><td>Processor</td><td>64-bit x86 processor, 2-core minimum; no GPU required</td></tr>
@@ -324,12 +394,12 @@
 <p class="no-indent">The user study evaluates SynapseOS in GUI mode, which requires a graphical desktop environment and 8 GB RAM. SynapseOS additionally supports a TUI mode — a terminal-based interface requiring no display server, running on as little as 2 vCPU and 4 GB RAM — designed for server and remote deployment environments accessible over SSH. TUI mode is not evaluated in the user study.</p>
 
 <!-- ═══════════════ SECTION 1: DATASET ═══════════════ -->
-<h2>Section 1: Dataset</h2>
+<h2 id="sec1">Section 1: Dataset</h2>
 
 <p class="no-indent">The data gathered for this study falls into three categories: benchmark task data used to evaluate the system in a standardized environment, user study data collected from human participants in a controlled setting, and system performance data captured automatically through built-in telemetry during all sessions.</p>
 
 <!-- 1.1 -->
-<h3>1.1 What to Gather</h3>
+<h3 id="sec1-1">1.1 What to Gather</h3>
 
 <h4>a) Benchmark Task Suite</h4>
 
@@ -357,11 +427,11 @@
 </ul>
 
 <!-- 1.2 -->
-<h3>1.2 How to Gather</h3>
+<h3 id="sec1-2">1.2 How to Gather</h3>
 
 <h4>a) Benchmark Tasks</h4>
 
-<p class="no-indent">SynapseOS is deployed on the Debian 13 (Trixie) environment matching the OSWorld evaluation setup [17]. Each benchmark task is executed through the conversational interface, and results are captured programmatically through the built-in telemetry system. Tasks are run in automated sessions where SynapseOS is given the task prompt as a natural language instruction and the system's output is compared against the expected outcome defined in the benchmark.</p>
+<p class="no-indent">SynapseOS is deployed on the Debian 13 (Trixie) environment matching the OSWorld evaluation setup [17]. Each benchmark task is executed through the conversational interface, and results are captured programmatically through the built-in telemetry system. Tasks are run in automated sessions where SynapseOS is given the task prompt as a natural language instruction and the system's output is compared against the expected outcome defined in the benchmark. OSWorld evaluates autonomous agents by inspecting the resulting system state after independent task execution, not a human operator's performance; SynapseOS is the study's only autonomous agent, so it is the only system evaluated against this benchmark. Condition B has no autonomous-agent equivalent — a human participant operates it directly — and is instead evaluated through the custom cross-platform task suite administered in the user study (Section 1.2b).</p>
 
 <h4>b) User Study</h4>
 
@@ -378,7 +448,7 @@
 <p>After completing each condition, participants fill out the SUS and NASA-TLX questionnaires. After completing both conditions, a brief semi-structured interview is conducted to gather qualitative feedback.</p>
 
 <!-- 1.4 -->
-<h3>1.4 Why</h3>
+<h3 id="sec1-4">1.4 Why</h3>
 
 <p class="no-indent">The OSWorld benchmark is used as the primary evaluation standard because it is the only existing benchmark that evaluates computer-using agents in real operating system environments with real applications [17]. Its use allows SynapseOS results to be situated within the existing literature.</p>
 
@@ -391,7 +461,7 @@
 <p>The dual-population design — novice and power users — directly addresses the gap identified in Chapter 1, where no prior work has evaluated a conversational interface across user populations with differing technical backgrounds [17]. The three data categories align with the three research questions: RQ1 is addressed by the system design and benchmark task coverage; RQ2 is addressed by system performance telemetry (command execution latency, intent parsing accuracy, undo and confirmation events); and RQ3 is addressed by the user study metrics (task completion time, error rate, satisfaction scores).</p>
 
 <!-- 1.5 -->
-<h3>1.5 Participant Screening Criteria</h3>
+<h3 id="sec1-5">1.5 Participant Screening Criteria</h3>
 
 <p class="no-indent">Participants are assigned to the novice or power user group based on a pre-study screening questionnaire administered before the session begins. The questionnaire assesses the following dimensions:</p>
 <ul>
@@ -399,13 +469,15 @@
   <li>Primary OS — the operating system used as the primary daily computing environment (Windows / macOS / Linux); must average four or more hours of use per day to qualify</li>
   <li>Self-reported proficiency on primary OS (basic / intermediate / advanced)</li>
   <li>Self-reported command-line familiarity (none / basic / intermediate / advanced)</li>
-  <li>Prior exposure to conversational AI interfaces (chatbots, voice assistants, LLM tools)</li>
+  <li>Prior exposure to conversational AI interfaces — frequency of use (never / occasionally / regularly / daily) and which tools (chatbots, voice assistants, code-completion or agentic coding assistants, other LLM-based tools)</li>
 </ul>
 
-<p class="no-indent">Participants are classified as <strong>novice users</strong> if they report basic proficiency on their primary OS, computing use limited to web browsing and document editing, and no prior command-line experience on any platform. Participants are classified as <strong>power users</strong> if they report advanced proficiency on their primary OS — capable of performing file management, process monitoring, and system administration tasks efficiently using that OS's native tools — regardless of which OS that is. Participants who do not clearly satisfy either classification are excluded. Primary OS and prior exposure to conversational AI interfaces are recorded for all participants as covariates and grouping variables in the analysis.</p>
+<p class="no-indent">Self-reported proficiency is confirmed with a short behavioral screener: three timed mini-tasks performed unaided on the participant's primary OS using its native tools, one per system-task category used in the main study — file organization (locate and relocate a set of recently modified files), process monitoring (identify the application consuming the most memory via the OS's native system monitor), and application management (determine whether a named application is installed and identify its version). Each task is scored pass/fail by the facilitator against a fixed time limit and completion criterion. The behavioral screener exists because self-reported proficiency alone is not a reliable classifier — a participant's technical background in one domain (e.g., software development) does not guarantee fluency with a given OS's native file management, process monitoring, and system administration tools, which is the specific competency this study's novice/power-user split is intended to capture.</p>
+
+<p class="no-indent">Participants are classified as <strong>novice users</strong> if they report basic proficiency on their primary OS, computing use limited to web browsing and document editing, no prior command-line experience on any platform, and fail the behavioral screener. Participants are classified as <strong>power users</strong> if they report advanced proficiency on their primary OS — capable of performing file management, process monitoring, and system administration tasks efficiently using that OS's native tools — regardless of which OS that is, and pass all three behavioral screener tasks. Participants whose self-report and behavioral screener results disagree, or who do not clearly satisfy either classification, are excluded. Primary OS is recorded for all participants as a grouping variable, and prior conversational AI exposure as a covariate, in the analysis; prior AI exposure is analyzed as an exploratory covariate only (see Section 3.2) rather than a primary grouping variable, since splitting the n = 20 sample along a third axis would leave subgroups too small to support a hypothesis test.</p>
 
 <!-- 1.6 -->
-<h3>1.6 Task Design</h3>
+<h3 id="sec1-6">1.6 Task Design</h3>
 
 <p class="no-indent">The custom cross-platform task suite is designed to cover human-level system tasks achievable both through SynapseOS natural language commands and through native tools on the participant's primary OS. Task design follows four principles:</p>
 
@@ -419,10 +491,12 @@
 <p class="no-indent">The custom task suite comprises tasks organized into four categories: file search and organization, system and process monitoring, application and package management, and text and data processing. All tasks are defined at the human-goal level — achievable via SynapseOS natural language on the evaluation machine and via native graphical or terminal tools on the comparison machine. Each task is documented with a unique identifier, a natural language prompt as presented to the participant, the expected outcome, and the assigned difficulty level. Tasks are validated during the pilot study and revised as necessary before the main study begins.</p>
 
 <!-- ═══════════════ SECTION 2: PROCEDURE ═══════════════ -->
-<h2>Section 2: Procedure / Experiment</h2>
+<h2 id="sec2">Section 2: Procedure / Experiment</h2>
+
+<p class="no-indent">Building SynapseOS and running the study that evaluates it are two related but distinct efforts. The system itself — the conversational interface layer and execution pipeline — is designed and implemented first, followed by the scaffolding that makes the resulting study trustworthy: collected data is processed and anonymized, the system and instruments are validated, each participant session follows a standardized procedure, and participant welfare is protected throughout.</p>
 
 <!-- 2.1 -->
-<h3>2.1 System Design and Implementation</h3>
+<h3 id="sec2-1">2.1 System Design and Implementation</h3>
 
 <p class="no-indent">The construction of SynapseOS proceeds across two primary workstreams — the conversational interface layer and the execution pipeline — integrated into a unified session manager that launches in place of the conventional Linux graphical desktop.</p>
 
@@ -432,13 +506,13 @@
 
 <p>Conversational context is session-scoped: history is held in memory for the duration of the login session and is cleared on logout or reboot, with no persistence layer in the thesis prototype. When accumulated history approaches 75% of the intent parsing model's 8,000-token context limit, a rolling window discards the oldest turns to keep the conversation within budget. Verbose command output — such as a full directory listing or search result — is truncated to a compact summary before being appended to history, preventing a single command's output from consuming a disproportionate share of the available context.</p>
 
-<p>SynapseOS is designed around a locally-hosted small language model (SLM) as the default inference backend. Because the system operates at the OS level — processing every natural language command, observing terminal output, file paths, command history, and the user's interaction patterns — routing inference through a cloud API would give an external provider continuous visibility into the user's computing activity. SynapseOS therefore defaults to on-device inference: all language processing runs locally, with no user data transmitted externally.</p>
+<p>SynapseOS is designed around a locally-hosted small language model (SLM) as the default, model-agnostic inference backend, with cloud inference available only as an explicit opt-in. Because the system operates at the OS level — processing every natural language command and observing terminal output, file paths, command history, and interaction patterns — routing inference through a cloud API would give an external provider continuous visibility into the user's computing activity. On-device inference eliminates this exposure by default; a user may still supply an API key for a supported cloud provider to substitute a hosted frontier model, entirely at their discretion. The default configuration requires no API key, no internet connection, and no per-query cost, making SynapseOS fully operational in offline and air-gapped environments.</p>
 
-<p>The inference backend is model-agnostic by design. Users may optionally supply an API key for a supported cloud provider to substitute the local SLM with a hosted frontier model; this is entirely at the user's discretion. The default configuration requires no API key, no internet connection, and no per-query cost, making SynapseOS fully operational in offline and air-gapped environments.</p>
+<p>The primary SLM is Qwen2.5-Coder-3B-Instruct, an open-weights<sup class="fn"><a href="#fn4">4</a></sup> code-specialized model that demonstrated the strongest natural language-to-bash translation accuracy among models below 7B parameters in controlled evaluation [2]. Among the models directly compared in that evaluation, its code-specialized pretraining produced a clear margin over general-purpose models of comparable or larger size — 58% NL2Bash accuracy with prompt engineering, versus 49% for Llama 3.2-3B and 37% for a LoRA-fine-tuned Llama 3.2-1B — attributable to Qwen2.5-Coder's training corpus of 5.5 trillion code tokens against Llama 3.2's general-purpose pretraining. At 4-bit quantization<sup class="fn"><a href="#fn5">5</a></sup>, the model requires approximately 1.8 GB of memory and runs on the target Debian 13 (Trixie) hardware without a dedicated GPU. The model is fine-tuned via Low-Rank Adaptation (LoRA)<sup class="fn"><a href="#fn6">6</a></sup> on the NL2Bash corpus<sup class="fn"><a href="#fn7">7</a></sup> and a custom SynapseOS task suite to maximize intent parsing accuracy.</p>
 
-<p>The primary SLM is Qwen2.5-Coder-3B-Instruct, an open-weights<sup class="fn"><a href="#fn4">4</a></sup> code-specialized model that demonstrated the strongest natural language-to-bash translation accuracy among models below 7B parameters in controlled evaluation [2]. At 4-bit quantization<sup class="fn"><a href="#fn5">5</a></sup>, the model requires approximately 1.8 GB of memory and runs on the target Debian 13 (Trixie) hardware without a dedicated GPU. The model is fine-tuned via Low-Rank Adaptation (LoRA)<sup class="fn"><a href="#fn6">6</a></sup> on the NL2Bash corpus<sup class="fn"><a href="#fn7">7</a></sup> and a custom SynapseOS task suite to maximize intent parsing accuracy.</p>
+<p>Accuracy is measured using an execution-based scoring methodology rather than syntax-level string matching, following Westenfelder et al. [2] — see Section 2.3 for the full evaluation procedure.</p>
 
-<p>Intent parsing accuracy is evaluated following the methodology established by Westenfelder et al. [2], who assessed NL2Bash performance through execution-based scoring rather than syntax-level string matching: each generated command is executed in a controlled environment and its output compared against the expected result, with ambiguous cases resolved through LLM-assisted functional equivalence assessment at 95% confidence. Westenfelder et al. further identified that more than half of the InterCode NL2Bash dataset contains erroneous entries, and constructed larger, manually verified datasets for evaluation. Applying their methodology across three conditions — zero-shot baseline, prompt engineering, and LoRA fine-tuning — they found that fine-tuning on small models produced accuracy gains sufficient to approach the zero-shot baseline performance of significantly larger models. Qwen2.5-Coder-3B-Instruct achieved 58% NL2Bash accuracy with prompt engineering alone — the highest among models below 7B parameters in their evaluation [2] — motivating both its selection as the SynapseOS intent parsing model and the adoption of their execution-based evaluation pipeline for measuring accuracy in this study.</p>
+<p>This selection was reconfirmed against models released after the initial literature review, to guard against the fast-moving small-model landscape becoming stale before study execution; no smaller alternative offered comparable shell-generation evidence within the same CPU-only hardware budget [25]. Newer mixture-of-experts variants require all experts resident in memory regardless of active parameters per token, incompatible with this study's memory budget, and newer general-purpose small models report reasoning benchmarks but no shell-command generation evidence.</p>
 
 <h4>b) Execution Pipeline</h4>
 
@@ -447,9 +521,9 @@
 <p>SynapseOS executes only shell-expressible operations. The system's capability boundary is the Linux command-line toolchain: file management, process control, text processing, package management, network configuration, and any application that exposes a command-line interface. GUI-only interactions — clicking buttons in graphical applications, navigating web page elements, or interacting with visual-only interfaces — are explicitly outside scope. This boundary is intentional: it constrains the research to a tractable, verifiable claim that the system can be built, evaluated, and defended within the thesis timeline.</p>
 
 <!-- 2.2 -->
-<h3>2.2 Data Pre-processing</h3>
+<h3 id="sec2-2">2.2 Data Pre-processing</h3>
 
-<p class="no-indent">Prior to analysis, all collected data undergoes the following processing steps:</p>
+<p class="no-indent">Prior to statistical analysis, all data collected during the benchmark evaluation and user study — not the system itself — undergoes the following processing steps:</p>
 <ul>
   <li><strong>Task normalization:</strong> task descriptions and expected outcomes are standardized across both the OSWorld benchmark and the custom task suite to ensure consistent evaluation criteria</li>
   <li><strong>Log parsing and event extraction:</strong> raw session logs from SynapseOS telemetry are parsed to extract per-task metrics — completion time, error events, and undo events</li>
@@ -458,18 +532,18 @@
 </ul>
 
 <!-- 2.3 -->
-<h3>2.3 Validation</h3>
+<h3 id="sec2-3">2.3 Validation</h3>
 
 <p class="no-indent">The following validation procedures are applied to ensure the reliability and accuracy of the system and the study instruments:</p>
 <ul>
   <li><strong>Pilot study:</strong> conducted with five participants prior to the main study to validate the task set difficulty, the questionnaire instruments, and the session procedure; findings from the pilot study are used to revise instruments and procedures before the main data collection begins</li>
-  <li><strong>Intent parsing accuracy:</strong> evaluated by comparing the system's parsed intent representation against a human-annotated ground truth for each task utterance; accuracy is computed as the proportion of utterances where the parsed intent matches the annotated intent on the first attempt</li>
+  <li><strong>Intent parsing accuracy:</strong> evaluated using an execution-based scoring methodology [2] — each generated command is executed in a controlled environment and its resulting system state compared against a human-annotated expected outcome for each task utterance, rather than syntax-level string matching, with ambiguous cases resolved through LLM-assisted functional equivalence assessment at 95% confidence; accuracy is computed as the proportion of first-attempt matches</li>
   <li><strong>Confirmation policy effectiveness:</strong> evaluated by verifying that all irreversible operations in the task set trigger the confirmation prompt as designed, and that no irreversible operations execute without user approval</li>
   <li><strong>Undo success rate:</strong> evaluated by executing a representative set of reversible operations and verifying that the undo log correctly restores the prior system state in each case</li>
 </ul>
 
 <!-- 2.4 -->
-<h3>2.4 Study Session Procedure</h3>
+<h3 id="sec2-4">2.4 Study Session Procedure</h3>
 
 <p class="no-indent">Each participant session follows a standardized procedure conducted in the following order:</p>
 
@@ -486,7 +560,7 @@
 <p class="no-indent">Total estimated session duration per participant: 90–120 minutes.</p>
 
 <!-- 2.5 -->
-<h3>2.5 Ethical Considerations</h3>
+<h3 id="sec2-5">2.5 Ethical Considerations</h3>
 
 <p class="no-indent">This study involves human participants and is subject to ethics review and approval by the Institutional Review Board (IRB) or equivalent ethics committee of Mapúa University – Makati prior to the commencement of participant recruitment. The following ethical principles are observed throughout the study:</p>
 <ul>
@@ -499,15 +573,17 @@
 </ul>
 
 <!-- ═══════════════ SECTION 3: SYSTEM TESTING ═══════════════ -->
-<h2>Section 3: System Testing</h2>
+<h2 id="sec3">Section 3: System Testing</h2>
+
+<p class="no-indent">SynapseOS is evaluated against the datasets and study design established in Section 1. The comparison follows a fixed set of metrics and formulas, a statistical analysis plan for testing significance and effect size, and an accounting of the threats to validity this design addresses.</p>
 
 <!-- 3.1 -->
-<h3>3.1 Evaluation Dataset</h3>
+<h3 id="sec3-1">3.1 Evaluation Dataset</h3>
 
 <p class="no-indent">The system is evaluated against two datasets: the OSWorld benchmark task suite [17] for direct comparison with results in the existing literature, and the custom cross-platform task suite described in Sections 1.1 and 1.6. The user study evaluation involves 20 participants (10 novice, 10 power users); the baseline condition is each participant's primary operating system — Windows 11, macOS, or Linux with GNOME desktop — on a dedicated baseline machine.</p>
 
 <!-- 3.2 -->
-<h3>3.2 Evaluation Profile</h3>
+<h3 id="sec3-2">3.2 Evaluation Profile</h3>
 
 <p class="no-indent">The study employs a within-subjects design with two conditions:</p>
 <ul>
@@ -517,10 +593,10 @@
 
 <p class="no-indent">All 20 participants complete both conditions. Condition order is counterbalanced: 10 participants complete Condition A first, and 10 participants complete Condition B first. This counterbalancing controls for order effects and task familiarity.</p>
 
-<p>The two participant groups — novice users and power users — are analyzed both in aggregate and separately to determine whether the effect of the interface condition differs across experience levels. Additionally, primary OS (Windows, macOS, Linux) is recorded as a secondary grouping variable to determine whether results vary across participant backgrounds. The primary analysis is the pooled within-subjects comparison across all 20 participants; per-OS subgroup analyses are treated as exploratory given the smaller per-group sample sizes expected at n = 20.</p>
+<p>The two participant groups — novice users and power users — are analyzed both in aggregate and separately to determine whether the effect of the interface condition differs across experience levels. Additionally, primary OS (Windows, macOS, Linux) is recorded as a secondary grouping variable to determine whether results vary across participant backgrounds, and prior conversational AI exposure (frequency of use) is recorded as a covariate to determine whether familiarity with LLM-based tools correlates with SynapseOS performance independent of OS proficiency. The primary analysis is the pooled within-subjects comparison across all 20 participants; per-OS subgroup analyses and AI-exposure correlations are treated as exploratory given the smaller per-group sample sizes expected at n = 20.</p>
 
 <!-- 3.3 -->
-<h3>3.3 Criteria and Formula</h3>
+<h3 id="sec3-3">3.3 Criteria and Formula</h3>
 
 <p class="no-indent">The following metrics and formulas are used to evaluate SynapseOS against the baseline:</p>
 
@@ -547,7 +623,7 @@
 <p class="no-indent">All primary comparisons between conditions are tested at α = 0.05. Effect size is reported using Cohen's <em>d</em>, with thresholds of 0.2 (small), 0.5 (medium), and 0.8 (large). Minimum sample size justification is based on an a priori power analysis targeting 80% statistical power at the specified significance level and a medium effect size (<em>d</em> = 0.5), which yields a minimum of 17 participants for a within-subjects design — satisfied by the 20-participant sample.</p>
 
 <!-- 3.4 -->
-<h3>3.4 Data Analysis Plan</h3>
+<h3 id="sec3-4">3.4 Data Analysis Plan</h3>
 
 <p class="no-indent">Quantitative analysis proceeds in three stages. First, descriptive statistics — means, standard deviations, and 95% confidence intervals — are computed for all primary metrics (task completion time, error rate, SUS score, NASA-TLX score) per condition and per participant group. Second, the Shapiro-Wilk test is applied to assess normality of each distribution before selecting the appropriate inferential test: the paired-samples t-test for normally distributed data, or the Wilcoxon signed-rank test for non-normally distributed data. Third, effect size (Cohen's <em>d</em>) is computed for all statistically significant comparisons.</p>
 
@@ -556,7 +632,7 @@
 <p>Qualitative data from post-study interviews is analyzed using reflexive thematic analysis following the six-phase procedure described by Braun and Clarke [24]: familiarization with the data, initial code generation, theme search, theme review, theme definition, and write-up. Two members of the research team independently code a random subset of transcripts; inter-rater agreement is assessed and disagreements are resolved through discussion before finalizing the codebook. Themes are reported alongside representative participant quotations.</p>
 
 <!-- 3.5 -->
-<h3>3.5 Threats to Validity</h3>
+<h3 id="sec3-5">3.5 Threats to Validity</h3>
 
 <p class="no-indent">The following threats to validity are identified and the mitigations applied in this study are described.</p>
 
@@ -590,7 +666,7 @@
 
 <!-- ═══════════════ REFERENCES ═══════════════ -->
 <div class="references">
-  <h2>References</h2>
+  <h2 id="sec-references">References</h2>
 
   <div class="ref-entry">[2] Westenfelder, F., Hemberg, E., Tulla, M., Moskal, S., O'Reilly, U.-M., &amp; Chiricescu, S. (2025). LLM-Supported Natural Language to Bash Translation. <em>arXiv:2502.06858</em>. <a href="https://arxiv.org/abs/2502.06858">https://arxiv.org/abs/2502.06858</a></div>
 
@@ -607,6 +683,8 @@
   <div class="ref-entry">[23] Park, J., Tang, P., Das, S., Appalaraju, S., Singh, K. Y., Manmatha, R., &amp; Ghadar, S. (2025). R-VLM: Region-aware Vision Language Model for Precise GUI Grounding. In <em>Findings of the Association for Computational Linguistics: ACL 2025</em>, 9669–9685. <a href="https://doi.org/10.18653/v1/2025.findings-acl.501">https://doi.org/10.18653/v1/2025.findings-acl.501</a></div>
 
   <div class="ref-entry">[24] Braun, V., &amp; Clarke, V. (2006). Using thematic analysis in psychology. <em>Qualitative Research in Psychology, 3</em>(2), 77–101. <a href="https://doi.org/10.1191/1478088706qp063oa">https://doi.org/10.1191/1478088706qp063oa</a></div>
+
+  <div class="ref-entry">[25] Jacobs, J., Lapon, J., &amp; Naessens, V. (2026). Local LLMs for NL2Bash: A Large-Scale Open-Source Model Evaluation for Bash Command Generation. <em>NDSS Workshop on LLM Assisted Security and Trust Exploration (LAST-X 2026)</em>. <a href="https://www.ndss-symposium.org/wp-content/uploads/lastx2026-49.pdf">https://www.ndss-symposium.org/wp-content/uploads/lastx2026-49.pdf</a></div>
 </div>
 
 </body>
