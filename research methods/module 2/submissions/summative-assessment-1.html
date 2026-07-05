@@ -8,6 +8,41 @@
   @page {
     size: A4;
     margin: 2.54cm 2.54cm 2.54cm 3.18cm; /* top 1in, right 1in, bottom 1in, left 1.25in */
+    @top-right {
+      content: counter(page);
+      font-family: "Times New Roman", Georgia, serif;
+      font-size: 12pt;
+    }
+  }
+
+  /* ── Table of Contents ── */
+  .toc-block {
+    page-break-before: always;
+  }
+  .toc-title {
+    text-align: center;
+    font-weight: bold;
+    font-size: 12pt;
+    line-height: 2.0;
+    margin: 0 0 12pt 0;
+  }
+  .toc-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    line-height: 2.0;
+    text-indent: 0;
+    gap: 0.5cm;
+  }
+  .toc-entry a {
+    color: #000;
+    text-decoration: none;
+  }
+  .toc-entry .toc-page {
+    flex-shrink: 0;
+  }
+  .toc-entry.level-2 {
+    margin-left: 1.27cm;
   }
 
   /* ── Base Typography ── */
@@ -145,15 +180,26 @@
   <div class="chapter-title">Introduction</div>
 </div>
 
+<div class="toc-block">
+<p class="toc-title">TABLE OF CONTENTS</p>
+<p class="toc-entry"><a href="#sec-gap">Gap / Opportunity</a><span class="toc-page">4</span></p>
+<p class="toc-entry"><a href="#sec-problem">Problem Statement</a><span class="toc-page">6</span></p>
+<p class="toc-entry"><a href="#sec-objectives">Objectives</a><span class="toc-page">7</span></p>
+<p class="toc-entry"><a href="#sec-significance">Significance of the Study</a><span class="toc-page">7</span></p>
+<p class="toc-entry"><a href="#sec1-1">1.1 Scope and Limitations of the Study</a><span class="toc-page">9</span></p>
+<p class="toc-entry"><a href="#sec-notes">Notes</a><span class="toc-page">10</span></p>
+<p class="toc-entry"><a href="#sec-references">References</a><span class="toc-page">12</span></p>
+</div>
+
 <!-- ── Background ── -->
-<p class="no-indent">The dominant paradigm for personal computing has remained largely unchanged since the early 1980s, when the graphical desktop — icons, menus, and pointer-driven interaction — was established through the Xerox Star and Apple Lisa lineage. Despite its longevity, a parallel research tradition has long explored whether users should instead be able to describe what they want in natural language and have the computer carry it out. The earliest serious system in this tradition, the Berkeley UNIX Consultant, was already operational by the late 1980s [1]. Decades later, the rise of large language models (LLMs) and multimodal foundation models<sup class="fn"><a href="#fn1">1</a></sup> has reopened this thread with substantially greater technical capability.</p>
+<p class="no-indent toc-block">The dominant paradigm for personal computing has remained largely unchanged since the early 1980s, when the graphical desktop — icons, menus, and pointer-driven interaction — was established through the Xerox Star and Apple Lisa lineage. Despite its longevity, a parallel research tradition has long explored whether users should instead be able to describe what they want in natural language and have the computer carry it out. The earliest serious system in this tradition, the Berkeley UNIX Consultant, was already operational by the late 1980s [1]. Decades later, the rise of large language models (LLMs) and multimodal foundation models<sup class="fn"><a href="#fn1">1</a></sup> has reopened this thread with substantially greater technical capability.</p>
 
 <p>The field that has emerged sits at the intersection of human-computer interaction, operating systems, natural language processing, and computer vision. On the shell side, recent work has demonstrated that LLMs can translate natural language into Bash commands with usable accuracy and can be embedded as a Unix primitive with appropriate safety guardrails [2, 3]. On the graphical side, so-called computer-using agents<sup class="fn"><a href="#fn2">2</a></sup> now operate desktop and mobile applications by combining native APIs with vision-based grounding [16, 18]. On the web, language-guided agents complete tasks across realistic websites with measurable but limited reliability [8, 9]. A converging research thread approaches the same technical problem from an accessibility perspective: speech-driven GUI command mapping for users with motor and speech impairments has progressed from voice-to-text dictation toward voice-to-action agents, with recent work on speech-instructed GUI agents [22] and region-aware visual grounding [23] demonstrating that the underlying components are maturing rapidly. Yet despite this progress across both threads, the most rigorous evaluation environment in the field — the OSWorld benchmark — shows that frontier models complete only 12.24% of real computer tasks that humans complete at 72.36% [17]. The gap between demonstration and deployable replacement remains substantial.</p>
 
 <p>This rapid progress has been uneven across platforms. Windows is heavily represented in the desktop agent literature [15, 16], Android in the mobile agent literature [10, 11, 12], and the browser in the web agent literature [7, 8, 9]. Linux desktop coverage, by contrast, is conspicuously absent: existing work either addresses Linux only at the shell level [3] or treats it as one of several evaluation platforms rather than a primary target [17]. No surveyed system implements a working conversational session layer<sup class="fn"><a href="#fn3">3</a></sup> for the Linux desktop, despite Linux serving as the substrate for most developer and server-side workflows.</p>
 
 <!-- ── Gap / Opportunity ── -->
-<h2>Gap / Opportunity</h2>
+<h2 id="sec-gap">Gap / Opportunity</h2>
 
 <p class="no-indent">Three compounding gaps in the existing literature motivate the present research. First, no system in the literature has replaced the conventional desktop session layer with a conversational one — existing systems automate on top of the desktop shell rather than replacing it. The UFO² system, for instance, positions itself as a "Desktop AgentOS" but operates as an automation layer atop the existing Windows shell rather than substituting for it [16]. Second, Linux desktop coverage remains absent despite Linux being the substrate for most developer and server-side workflows; the NaSh project addresses Linux but only at the shell level [3], and OSWorld includes Ubuntu only as one of three evaluation platforms rather than as a primary deployment target [17]. Third, no existing work compares a conversational interface against the conventional graphical workflow on the same tasks with the same user population [17]; user studies in this space are rare, with only VoicePilot [5] conducting a substantive human-centered evaluation of LLM-based interaction.</p>
 
@@ -162,7 +208,7 @@
 <p>These gaps present a clear opportunity, and a precedent for how to seize it. The history of the Unix shell demonstrates that a new interactive layer — bash succeeding the Bourne shell, zsh and fish succeeding both — can replace the software a user directly interacts with while leaving the kernel and the core system utilities entirely unchanged, producing a materially different experience for the user without touching anything beneath the session. The opportunity addressed by this study is to apply the same pattern in a new direction: SynapseOS replaces the conventional graphical session layer — the desktop shell, window manager, and application launcher — with a conversational one, leaving the kernel, the core system utilities, and the existing Linux application ecosystem untouched. It is designed to serve as the primary user-facing interface to a personal computing environment — spanning novice, elderly, non-technical, and technical user populations — with an evaluation methodology that engages the conventional desktop workflow as its baseline rather than as its substrate.</p>
 
 <!-- ── Problem Statement ── -->
-<h2>Problem Statement</h2>
+<h2 id="sec-problem">Problem Statement</h2>
 
 <p class="no-indent">This study addresses the absence of a conversational session layer for the Linux desktop — a conversational shell replacing the desktop's graphical session in the way a new interactive shell replaces the one before it, rather than a modification to the kernel or the core system utilities — that has been empirically evaluated against the conventional graphical workflow it would displace.</p>
 
@@ -175,7 +221,7 @@
 </ol>
 
 <!-- ── Objectives ── -->
-<h2>Objectives</h2>
+<h2 id="sec-objectives">Objectives</h2>
 
 <p class="no-indent">The general objective of this study is to design, implement, and evaluate SynapseOS, a system that replaces the conventional graphical session layer — the desktop shell, session manager, and application launcher — with a conversational interface layer, while leaving the underlying Linux kernel, core system utilities, and application ecosystem unchanged.</p>
 
@@ -189,7 +235,7 @@
 </ol>
 
 <!-- ── Significance of the Study ── -->
-<h2>Significance of the Study</h2>
+<h2 id="sec-significance">Significance of the Study</h2>
 
 <p class="no-indent">The findings of this study are expected to benefit the following groups:</p>
 
@@ -201,7 +247,7 @@
 </ol>
 
 <!-- ── Scope and Limitations ── -->
-<h2>1.1 Scope and Limitations of the Study</h2>
+<h2 id="sec1-1">1.1 Scope and Limitations of the Study</h2>
 
 <p class="no-indent">This study covers the design, implementation, and evaluation of SynapseOS as a conversational session layer for the Linux desktop. SynapseOS replaces the conventional graphical session — the desktop shell, session manager, and application launcher — with a conversational interface, analogous in scope to how a new interactive shell replaces the one before it: the kernel and the core system utilities beneath the session are unchanged. The Linux kernel, the core system utilities, and the existing ecosystem of Linux applications are not modified by this study; SynapseOS interacts with the system by translating natural language into shell commands executed through the standard command-line toolchain, rather than by rewriting applications or the utilities they depend on. The subject matter spans natural language processing, LLM-based reasoning, command-line automation, Linux system integration, and human-computer interaction.</p>
 
@@ -211,7 +257,7 @@
 
 <!-- ═══════════════ NOTES ═══════════════ -->
 <div class="footnotes">
-  <h2>Notes</h2>
+  <h2 id="sec-notes">Notes</h2>
   <ol>
     <li id="fn1">Foundation models are large neural networks trained on broad, general-purpose data and adaptable to many tasks. Multimodal variants accept multiple input types — typically text and images — enabling the model to interpret visual interfaces and screenshots alongside natural language.</li>
     <li id="fn2">Computer-using agents are AI systems that interact with a computer's graphical environment — clicking, typing, reading the screen — to complete tasks on behalf of a user. Unlike shell-level automation, they operate through the same visual interface a human would use.</li>
@@ -223,7 +269,7 @@
 
 <!-- ═══════════════ REFERENCES ═══════════════ -->
 <div class="references">
-  <h2>References</h2>
+  <h2 id="sec-references">References</h2>
 
   <div class="ref-entry">[1] Wilensky, R., Chin, D. N., Luria, M., Martin, J., Mayfield, J., &amp; Wu, D. (1988). The Berkeley Unix Consultant Project. <em>Computational Linguistics</em>, 14(4), 35–84. <a href="https://aclanthology.org/J88-4003/">https://aclanthology.org/J88-4003/</a></div>
 
