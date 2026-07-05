@@ -1,6 +1,6 @@
 ## Overview
 
-SynapseOS is a conversational operating environment: the user states intent in natural language and the system carries it out, replacing memorized commands and manual GUI navigation with a dialogue. This document holds the *why* — the long-term bet that conversation becomes the primary human–computer interface, and the near-term thesis that produces the first credible evidence for it. It deliberately separates three layers so the ambition never contaminates the scope: the **north-star vision** (a decade-out world where you talk to your computer instead of operating it), the **thesis hypothesis** (a falsifiable claim the prototype can actually test), and the **wedge** (the smallest useful slice that proves the hypothesis — natural-language control of the command line). Read this to understand what SynapseOS is *for*; read `scope.md` for what gets built, `decisions.md` for why it's built that way, and `stack.md` for how. The guiding discipline: prove a small claim rigorously, and let the small claim point at the large one.
+SynapseOS is a conversational operating environment: the user states intent in natural language and the system carries it out, replacing memorized commands and manual GUI navigation with a dialogue. This document holds the *why* — the long-term bet that conversation becomes the primary human–computer interface, and the near-term thesis that produces the first credible evidence for it. It deliberately separates three layers so the ambition never contaminates the scope: the **north-star vision** (a decade-out world where you talk to your computer instead of operating it), the **thesis hypothesis** (a falsifiable claim the prototype can actually test), and the **wedge** (the smallest useful slice that proves the hypothesis — natural-language control of the command line). Read this to understand what SynapseOS is *for*; read `scope.md` for what gets built, `decisions.md` for why it's built that way, `stack.md` for how, and `roadmap.md` for where things currently stand. The guiding discipline: prove a small claim rigorously, and let the small claim point at the large one.
 
 ## Table of Contents
 
@@ -67,12 +67,14 @@ Stated explicitly so the north star cannot silently expand the build:
 
 ## Horizons
 
-| Horizon | What exists | Interface | Status |
-|---|---|---|---|
-| **H0 — Thesis prototype** | Conversational shell over bash; local SLM; safety gate; session memory; telemetry | Fullscreen conversational GUI (study) / TUI (server) | In build — see `scope.md` |
-| **H1 — Beyond thesis** | Persistent memory, richer task coverage, active-desktop compositor layer | Conversation as the desktop shell | Deferred — `future-features.md` |
-| **H2 — North star** | Conversation as the primary OS interface; GUI as one rendering, not the substrate | Talk to the computer | Vision — not a deliverable |
+| Horizon | What exists | Interface |
+|---|---|---|
+| **H0 — Thesis prototype** | Conversational shell over bash; local SLM; safety gate; session memory; telemetry | Fullscreen conversational GUI (study) / TUI (server) |
+| **H1 — Beyond thesis** | Persistent memory, richer task coverage, active-desktop compositor layer | Conversation as the desktop shell |
+| **H2 — North star** | Conversation as the primary OS interface; GUI as one rendering, not the substrate | Talk to the computer |
 
-H1's near-term, buildable shape is the **Overlay** product mode (D13): the traditional desktop stays fully visible and usable, and SynapseOS is summoned via hotkey or systray icon rather than occupying the whole session. It is the lower-effort stepping stone toward the full wallpaper-layer active desktop, built from the same runtime as H0 — see `layers.md` ("one slot, two or three sets of clothes") and `future-features.md`.
+H1's near-term, buildable shape is the **Overlay** product mode (D13): the traditional desktop stays fully visible and usable, and SynapseOS is summoned via hotkey or systray icon rather than occupying the whole session. It is the lower-effort stepping stone toward the full wallpaper-layer active desktop, built from the same runtime as H0 (see "one slot, two or three sets of clothes" in `layers.md`).
 
 The whole strategy in one line: **build H0 small and prove it rigorously; let the evidence, not the ambition, argue for H1 and H2.**
+
+For current status and where to look at each horizon, see `roadmap.md`.
