@@ -36,6 +36,7 @@ Per-milestone goals, dependencies, and definition-of-done: **`build-order.md`**.
 | `../decisions.md` | Architecture rationale (D1–D11) |
 | `../stack.md` | Implementation stack reference |
 | `../vision.md` | Product vision and thesis hypothesis |
+| `../roadmap.md` | Cross-horizon status index |
 
 ## Quickstart
 
