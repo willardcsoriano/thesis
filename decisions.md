@@ -21,12 +21,14 @@ This file records architectural and research design decisions that have been mad
   - [D13 — Product mode (post-thesis): agentic overlay on a visible traditional desktop](#d13-product-mode-post-thesis-agentic-overlay-on-a-visible-traditional-desktop)
   - [D14 — Novice/power-user classification: self-report confirmed by a behavioral screener](#d14-novicepower-user-classification-self-report-confirmed-by-a-behavioral-screener)
   - [D15 — Prior AI exposure: graded covariate, not a third grouping variable](#d15-prior-ai-exposure-graded-covariate-not-a-third-grouping-variable)
+  - [D16 — Citation style: numbered ACM-style with DOIs/URLs, thesis-wide](#d16-citation-style-numbered-acm-style-with-doisurls-thesis-wide)
+  - [D17 — Shared master bibliography; number [21] reserved/unused](#d17-shared-master-bibliography-number-21-reservedunused)
 
 ## Decisions
 
 ### D1 — Deployment target: Debian 13 (Trixie)
 
-**Status:** In SA3.1 (Table 2.1, Section 1.2, throughout)
+**Status:** In SA3.1 (Table 3.1, Section 1.2, throughout)
 
 SynapseOS targets bare Debian 13 (Trixie) as the deployment and evaluation platform. Debian is chosen because it is the lowest-common-denominator Linux base — no desktop environment assumed, no proprietary additions — and because the development machine runs Debian 13 natively, making it the honest evaluation baseline.
 
@@ -106,7 +108,7 @@ SynapseOS executes only shell-expressible operations. The system's capability bo
 
 ### D8 — Implementation stack: Go runtime, Python build pipeline, Ollama inference server
 
-**Status:** In SA3.1 Table 2.1
+**Status:** In SA3.1 Table 3.1
 
 **Go** owns the runtime — everything the user touches during the study: the TUI session manager (bubbletea + lipgloss), bash subprocess execution and stdout/stderr streaming, Ollama API client (HTTP streaming to localhost:11434), confirmation gate, and undo log.
 
@@ -148,7 +150,7 @@ Context overflow is handled by a rolling window: when accumulated history approa
 
 ### D11 — Study interface mode: GUI (fullscreen conversational interface)
 
-**Status:** Reflected in SA3.1 Table 2.1, paragraph after Table 2.2, and Section 3.5
+**Status:** Reflected in SA3.1 Table 3.1, paragraph after Table 3.2, and Section 3.5
 
 The user study evaluates SynapseOS in GUI mode — a fullscreen conversational interface running on a graphical desktop environment. This is the primary product target for general and non-technical users. The TUI mode (terminal-based, no display server required) is the server and remote deployment target and is not evaluated in the user study.
 
@@ -212,3 +214,27 @@ Prior conversational AI exposure — already a screened dimension under D5 — i
 **Why:** A participant fluent with LLM-based tools may have a better mental model of how to phrase a request to get a good result, which could inflate or explain SynapseOS-specific results (task completion time, SUS, trust in the confirmation gate) independent of their OS-native proficiency. That is a plausible confound worth capturing. A graded scale plus tool identity costs one more screening question — no new instrument, no added session time — and gives the analysis something more useful than a binary flag to correlate against.
 
 **Rejected:** Treating AI exposure as a third primary grouping variable (e.g., low/high-exposure subgroups analyzed with their own hypothesis test) — with n = 20 already split 10/10 by novice/power user, a further split leaves cells too small to support inference; the existing per-OS subgroup analysis is exploratory for the same reason, and AI exposure is treated identically. Leaving the item as a binary yes/no — too coarse to support even exploratory correlation with any granularity.
+
+---
+
+### D16 — Citation style: numbered ACM-style with DOIs/URLs, thesis-wide
+
+**Status:** Reflected in every chapter — SA1 (Ch.1), SA2 (Ch.2 RRL), SA3.1 (Ch.3).
+
+All chapters use IEEE/ACM-style numbered in-text citations `[n]` against a shared master bibliography, with full DOIs/URLs on each reference entry, rather than the ITRD writing-guidelines handout's alphabetical author-year format.
+
+**Why:** The proposal grading rubric explicitly grades citations as "ACM style," which the numbered `[n]` + venue + DOI/URL format matches. The literature this thesis draws on is arXiv/DOI-native (most sources are 2023–2026 preprints and proceedings); dropping URLs would materially degrade verifiability. Ch.1 was already submitted under this convention, so cross-chapter consistency requires all chapters follow it.
+
+**Rejected:** The ITRD handout's author-year format with its "internet references should NOT be included" note — it predates the arXiv-heavy CS/HCI literature this thesis relies on, conflicts with the rubric's ACM directive, and is inconsistent with the already-submitted Ch.1. The handout note is treated as a general-writing default overridden by the discipline-specific rubric.
+
+---
+
+### D17 — Shared master bibliography; number [21] reserved/unused
+
+**Status:** Bookkeeping across the Ch.1/Ch.2/Ch.3 reference lists.
+
+The chapters draw from one shared master bibliography numbered `[1]`–`[25]`; each chapter's reference list contains only the entries that chapter cites. Number `[21]` is currently unassigned and is intentionally left vacant.
+
+**Why:** Renumbering to close the gap would desync the already-submitted Ch.1 and Ch.3 reference lists — every in-text `[22]`–`[25]` citation would have to shift, across two submitted chapters, for a purely cosmetic gain. Leaving `[21]` reserved preserves numbering stability across chapters at zero risk. Citation integrity is verified per chapter (every cited number is defined and every defined number is cited); `[21]` is simply never cited. If a suitable source surfaces during final compilation it can occupy `[21]` without disturbing any existing number.
+
+**Rejected:** Renumbering `[22]`–`[25]` down by one to close the hole — desyncs submitted chapters for no substantive benefit.
