@@ -14,6 +14,7 @@ This file tracks the live state of the thesis project across working sessions �
   - [Session 5 — 2026-07-07](#session-5-2026-07-07)
   - [Session 6 — 2026-07-08](#session-6-2026-07-08)
   - [Session 7 — 2026-07-08 (Ch.2 alignment audit + patch)](#session-7-2026-07-08-ch2-alignment-audit-patch)
+  - [Session 8 — 2026-07-08 (shipped to `main`)](#session-8-2026-07-08-shipped-to-main)
 - [Pending Items](#pending-items)
 - [Files to Know](#files-to-know)
 
@@ -23,10 +24,10 @@ This file tracks the live state of the thesis project across working sessions �
 |------|---------|--------|--------------|
 | `research methods/module 2/submissions/summative-assessment-1.html` | Ch. 1 Introduction | Complete — aligned with D3/D7/D9/D12, footnotes 1–5; TOC + anchor ids added | 2026-07-05 |
 | `research methods/module 2/submissions/summative-assessment-1.pdf` | Ch. 1 Introduction | Re-exported via `tools/export_pdf.py` — TOC page numbers + PDF outline/bookmarks (15 pages) | 2026-07-05 |
-| `research methods/module 3/submissions/summative-assessment-2.html` | Ch. 2 Review of Related Literature | **First draft (2026-07-08)** — 24-source RRL (refs [1]–[20],[22]–[25], current numbering), thematic §2.1–2.9 + Table 2.1 comparison matrix, footnotes 1–2, TOC/LOT + anchor ids. Grounded in the SA1.1 survey, reframed to the CLI/NL-to-bash design, scope-guarded. **Needs your review** | 2026-07-08 |
-| `research methods/module 3/submissions/summative-assessment-2.pdf` | Ch. 2 Review of Related Literature | Exported via `tools/export_pdf.py` — TOC/LOT page numbers derived + PDF outline/bookmarks (26 pages) | 2026-07-08 |
-| `research methods/module 3/submissions/summative-assessment-3.1.html` | Ch. 3 Methodology | Complete — aligned with D9(revised)/D10/D12/D14/D15, footnotes still 1–7; TOC/LOT/LOF + anchor ids added. Renumbered Ch.2→Ch.3 on 2026-07-07 (see Session 5) | 2026-07-07 |
-| `research methods/module 3/submissions/summative-assessment-3.1.pdf` | Ch. 3 Methodology | Re-exported via `tools/export_pdf.py` — TOC/LOT/LOF page numbers + PDF outline/bookmarks | 2026-07-07 |
+| `research methods/module 3/submissions/summative-assessment-2.html` | Ch. 2 Review of Related Literature | **Merged to `main` (PR #4, 2026-07-08)** — 24-source RRL (refs [1]–[20],[22]–[25]): §2.1 intro, §2.2 Theoretical Framework (four-layer pipeline + Figure 2.1), §2.3–2.7 thematic literature, §2.8 synthesis (Table 2.1 matrix + six themed `h3` headings + threefold gap), §2.9 methodological literature, §2.10 summary. Footnotes 1–2; TOC/LOT/LOF + anchor ids. Every rubric row maps to a section. **Awaits your content read** | 2026-07-08 |
+| `research methods/module 3/submissions/summative-assessment-2.pdf` | Ch. 2 Review of Related Literature | Exported via `tools/export_pdf.py` — TOC/LOT/LOF page numbers derived + PDF outline/bookmarks (29 pages) | 2026-07-08 |
+| `research methods/module 3/submissions/summative-assessment-3.1.html` | Ch. 3 Methodology | Complete — aligned with D9(revised)/D10/D12/D14/D15, footnotes 1–7; TOC/LOT/LOF + anchor ids. Renumbered Ch.2→Ch.3 (Session 5); §1.4 now names the **convergent mixed-methods** design (PR #5, 2026-07-08) | 2026-07-08 |
+| `research methods/module 3/submissions/summative-assessment-3.1.pdf` | Ch. 3 Methodology | Re-exported via `tools/export_pdf.py` — TOC/LOT/LOF page numbers + PDF outline/bookmarks | 2026-07-08 |
 
 ---
 
@@ -145,11 +146,16 @@ Applied Mapúa ITRD writing guidelines to both HTML submission files:
 - **Reconciled the "convergent mixed-methods" label** — §2.9 (Ch.2) asserted it but Ch.3 never named the design; added one framing sentence to **Ch.3 §1.4** naming it a convergent (parallel) mixed-methods design (also strengthens Ch.3's "type of study" rubric row). Both PDFs re-exported (Ch.2 now **29 pp.**; page numbers re-derived via `find_page()`).
 - **Documented two standing choices in `decisions.md`:** D16 (numbered ACM-style citations with DOIs/URLs thesis-wide — a deliberate override of the ITRD handout's "no internet references" note, per the rubric's ACM directive) and D17 (shared master bibliography; `[21]` intentionally reserved/unused to avoid desyncing submitted chapters).
 
+### Session 8 — 2026-07-08 (shipped to `main`)
+
+- **Landed the entire Session 5–7 body of work on `main` via four squash-merged PRs** (`/ship`), partitioned by concern: **#3** `docs(refs)` course reference materials (Module 1 folder, GROUP5 SA2.1, grading rubric) · **#5** `fix(ch3)` methodology-chapter alignment (Ch.2→3 reference correction + the convergent-mixed-methods sentence) · **#6** `docs` decisions D16–D17 + tracking refresh · **#4** `feat(ch2)` the Chapter 2 RRL chapter (tip of `main`). Working tree clean, local `main` fast-forwarded to `2fc7f9c`.
+- **Process note:** `Table 2.x`→`3.x` renumber and the mixed-methods sentence both live in `summative-assessment-3.1.html`, so PR #5 bundles them (file-granularity, can't hunk-split). Auto-merge enqueue was blocked by a review guardrail; you merged the PRs manually.
+
 ---
 
 ## Pending Items
 
-- **Chapter 2 (RRL) — drafted + rubric-aligned 2026-07-08, awaiting review.** `summative-assessment-2.html` (+PDF, 29 pp.) drafted (Session 6) and audited/patched against Ch.1, Ch.3, the rubric, and the guidelines (Session 7): added §2.2 Theoretical Framework + Figure 2.1, promoted the synthesis themes to headings, reconciled the mixed-methods label with Ch.3. All Ch.2 rubric rows now map to a visible section (intro §2.1 / theoretical framework §2.2 / research literature §2.3–2.7 / synthesis §2.8 / methodological literature §2.9 / summary+transition §2.10). Open follow-ups before submission-final: (1) **your content review** — check the draft reads as yours and the framing is right (the one thing not self-verifiable); (2) **footnote-numbering continuity** when chapters are compiled (SA1 1–5, **SA2 1–2**, SA3.1 1–7); (3) **TOC/LOT/LOF page-number maintenance** — page digits are hardcoded, derived via `tools/export_pdf.py`'s `find_page()`; re-derive if content shifts.
+- **Chapter 2 (RRL) — landed on `main` (PR #4), rubric-aligned, awaiting your content read.** `summative-assessment-2.html` (+PDF, 29 pp.) drafted (Session 6), audited/patched against Ch.1, Ch.3, the rubric, and the guidelines (Session 7), shipped (Session 8): §2.2 Theoretical Framework + Figure 2.1 added, synthesis themes promoted to headings, mixed-methods label reconciled with Ch.3. All Ch.2 rubric rows map to a visible section (intro §2.1 / theoretical framework §2.2 / research literature §2.3–2.7 / synthesis §2.8 / methodological literature §2.9 / summary+transition §2.10). Remaining before submission-final: (1) **your content read** — confirm §2.2 and the new Ch.3 §1.4 sentence read as yours (the one thing not self-verifiable) — **resume here**; (2) **footnote-numbering continuity** at compile time (SA1 1–5, **SA2 1–2**, SA3.1 1–7); (3) **TOC/LOT/LOF page-number maintenance** — page digits hardcoded, re-derive via `tools/export_pdf.py`'s `find_page()` if content shifts.
 
 - **Recruitment quota decision (new, highest priority next session):** should `decisions.md` D5 / `scope.md`'s recruitment item get an explicit *minimum* quota per OS background (Windows/macOS/Linux), so the realized sample can't end up all one OS? Discussed and recommended, not yet drafted — pick this up first.
 - **NDSS LAST-X 2026 citation:** author list and full citation metadata resolved 2026-07-05 (Jacobs, Lapon, Naessens — DistriNet, KU Leuven), citable now. The per-model accuracy table inside the PDF is still unextracted (binary/FlateDecode, no available tool gets past it) — only cite as corroborating literature, not for its specific ranking. Noted in `brainstorm.md`.
