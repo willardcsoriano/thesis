@@ -23,6 +23,7 @@ This file records architectural and research design decisions that have been mad
   - [D15 — Prior AI exposure: graded covariate, not a third grouping variable](#d15-prior-ai-exposure-graded-covariate-not-a-third-grouping-variable)
   - [D16 — Citation style: numbered ACM-style with DOIs/URLs, thesis-wide](#d16-citation-style-numbered-acm-style-with-doisurls-thesis-wide)
   - [D17 — Shared master bibliography; number [21] reserved/unused](#d17-shared-master-bibliography-number-21-reservedunused)
+  - [D18 — Recruitment quota: minimum 2 participants per primary-OS background](#d18-recruitment-quota-minimum-2-participants-per-primary-os-background)
 
 ## Decisions
 
@@ -238,3 +239,15 @@ The chapters draw from one shared master bibliography numbered `[1]`–`[25]`; e
 **Why:** Renumbering to close the gap would desync the already-submitted Ch.1 and Ch.3 reference lists — every in-text `[22]`–`[25]` citation would have to shift, across two submitted chapters, for a purely cosmetic gain. Leaving `[21]` reserved preserves numbering stability across chapters at zero risk. Citation integrity is verified per chapter (every cited number is defined and every defined number is cited); `[21]` is simply never cited. If a suitable source surfaces during final compilation it can occupy `[21]` without disturbing any existing number.
 
 **Rejected:** Renumbering `[22]`–`[25]` down by one to close the hole — desyncs submitted chapters for no substantive benefit.
+
+---
+
+### D18 — Recruitment quota: minimum 2 participants per primary-OS background
+
+**Status:** To be reflected in SA3.1 Section 1.2b and Section 1.5, and in the ethics application package's recruitment plan.
+
+Recruitment for the n = 20 sample (10 novice, 10 power user) adds a floor: at least 2 participants must have each of Windows, macOS, and Linux as their primary OS. The remaining 14 participants are unconstrained by OS background.
+
+**Why:** Without a floor, the realized sample could end up all one OS (e.g., 18 Windows / 1 macOS / 1 Linux), leaving the per-OS exploratory subgroup analysis (D15, SA3.1 Section 3.2/3.4) unable to say anything about the underrepresented OS at all. A floor of 2 guarantees every OS background has at least a minimal, non-singleton presence without materially constraining recruitment — macOS users are expected to be the scarcest population reachable through Mapúa University – Makati's general recruitment channels, and 2 is judged achievable without delaying the timeline.
+
+**Rejected:** No quota (risks a degenerate all-one-OS sample); increasing total n to ~50+ to properly power OS-specific subgroup claims (disproportionate to the core within-subjects hypothesis, which n = 20 already satisfies per the D5 power analysis — the per-OS breakdown is explicitly exploratory, not a primary hypothesis test); a higher floor (3 or 5 per OS) — judged to risk recruitment delay for macOS specifically without a clear analytical payoff at this sample size.
