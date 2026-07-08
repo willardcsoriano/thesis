@@ -47,7 +47,7 @@ Mapúa University – Makati
         │   ├── Methodology.pptx                # Methodology template (professor-provided)
         │   └── Revised_Thesis_Sonam.pdf        # Reference thesis (Sonam)
         └── submissions/
-            └── summative-assessment-3.1.txt    # Chapter 2 methodology (source)
+            └── summative-assessment-3.1.txt    # Chapter 3 methodology (source)
 ```
 
 ## Key References
