@@ -39,7 +39,7 @@ A data collection technique in which participants verbalize their thoughts while
 
 **Convergent mixed methods**
 A research design that collects quantitative data (task time, error rate) and qualitative data (interviews, think-aloud) concurrently and integrates them at the interpretation stage. The SynapseOS study uses this structure.
-*Where it lands: Chapter 2 framing, Discussion.*
+*Where it lands: Chapter 3 framing, Discussion.*
 
 ---
 

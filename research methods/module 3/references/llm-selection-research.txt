@@ -158,13 +158,13 @@ Chapter 1 — needs update:
   - Remove limitation: "LLM not yet committed" — now committed to local
     open-weights approach
 
-Chapter 2 (SA3.1) — already updated:
-  - Table 2.1: "Locally-hosted open-weights multimodal LLM (smallest reliable
+Chapter 3 (SA3.1) — already updated:
+  - Table 3.1: "Locally-hosted open-weights multimodal LLM (smallest reliable
     variant; determined via validation)"
   - Section 2.1a: three selection criteria (multimodal, offline, minimal footprint)
   - Section 1.4 Why: three justifications (offline-first, privacy, reproducibility)
 
-Still needed in Chapter 2:
+Still needed in Chapter 3:
   - Name Qwen2.5-Coder-3B as primary candidate in Section 2.1a
   - Cite [A] (already [2] in thesis) as empirical basis for model selection
   - Add [B] (NDSS LAST-X 2026) as new reference [24] or similar
