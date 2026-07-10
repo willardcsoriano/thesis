@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SynapseOS — Chapter 1: Introduction</title>
+<style>
+  /* ── A4 Page Setup ── */
+  @page {
+    size: A4;
+    margin: 2.54cm 2.54cm 2.54cm 3.18cm; /* top 1in, right 1in, bottom 1in, left 1.25in */
+    @top-right {
+      content: counter(page);
+      font-family: "Times New Roman", Georgia, serif;
+      font-size: 12pt;
+    }
+  }
+
+  /* ── Table of Contents ── */
+  .toc-block {
+    page-break-before: always;
+  }
+  .toc-title {
+    text-align: center;
+    font-weight: bold;
+    font-size: 12pt;
+    line-height: 2.0;
+    margin: 0 0 12pt 0;
+  }
+  .toc-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    line-height: 2.0;
+    text-indent: 0;
+    gap: 0.5cm;
+  }
+  .toc-entry a {
+    color: #000;
+    text-decoration: none;
+  }
+  .toc-entry .toc-page {
+    flex-shrink: 0;
+  }
+  .toc-entry.level-2 {
+    margin-left: 1.27cm;
+  }
+
+  /* ── Base Typography ── */
+  body {
+    font-family: "Times New Roman", Georgia, serif;
+    font-size: 12pt;
+    line-height: 2.0;
+    color: #000;
+    text-align: justify;
+    widows: 3;
+    orphans: 3;
+  }
+
+  /* ── Chapter Heading ── */
+  .chapter-heading {
+    text-align: center;
+    margin-top: 1cm;
+    margin-bottom: 2cm;
+  }
+
+  .chapter-heading .chapter-num {
+    font-size: 14pt;
+    font-weight: bold;
+    letter-spacing: 0.5pt;
+    margin-bottom: 0.2cm;
+  }
+
+  .chapter-heading .chapter-title {
+    font-size: 14pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5pt;
+  }
+
+  /* ── Section Headings ── */
+  h2 {
+    font-size: 13pt;
+    font-weight: bold;
+    margin-top: 30pt;
+    margin-bottom: 0;
+    text-align: left;
+  }
+
+  h3 {
+    font-size: 12pt;
+    font-weight: bold;
+    margin-top: 30pt;
+    margin-bottom: 0;
+  }
+
+  h3.italic {
+    font-style: italic;
+  }
+
+  /* ── Body Text ── */
+  p {
+    margin: 0;
+    text-indent: 1.50cm;
+  }
+
+  p.no-indent {
+    text-indent: 1.50cm;
+  }
+
+  /* ── Lists ── */
+  ol, ul {
+    margin: 0 0 0 1.50cm;
+    padding: 0;
+  }
+
+  ol li, ul li {
+    margin-bottom: 0;
+  }
+
+  ol.main-list > li {
+    margin-bottom: 0;
+  }
+
+  /* ── References ── */
+  .references {
+    page-break-before: always;
+  }
+
+  .references h2 {
+    margin-bottom: 0;
+  }
+
+  .references .ref-entry {
+    margin-bottom: 0;
+    padding-left: 1.27cm;
+    text-indent: -1.27cm;
+    font-size: 12pt;
+  }
+
+  /* ── Footnotes ── */
+  sup.fn {
+    font-size: 8pt;
+    vertical-align: super;
+    line-height: 0;
+  }
+  sup.fn a {
+    color: #000;
+    text-decoration: none;
+  }
+  .footnotes {
+    margin-top: 2em;
+    border-top: 0.5pt solid #555;
+    padding-top: 0.8em;
+  }
+  .footnotes h2 {
+    margin-bottom: 0;
+  }
+  .footnotes ol {
+    font-size: 10pt;
+    line-height: 1.4;
+    margin-left: 1.50cm;
+  }
+  .footnotes li {
+    margin-bottom: 0.5em;
+  }
+
+  /* ── Print Helpers ── */
+  @media print {
+    body {
+      background: #fff;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ CHAPTER 1 ═══════════════ -->
+<div class="chapter-heading">
+  <div class="chapter-num">Chapter 1</div>
+  <div class="chapter-title">Introduction</div>
+</div>
+
+<div class="toc-block">
+<p class="toc-title">TABLE OF CONTENTS</p>
+<p class="toc-entry"><a href="#sec-gap">Gap / Opportunity</a><span class="toc-page">4</span></p>
+<p class="toc-entry"><a href="#sec-problem">Problem Statement</a><span class="toc-page">6</span></p>
+<p class="toc-entry"><a href="#sec-objectives">Objectives</a><span class="toc-page">7</span></p>
+<p class="toc-entry"><a href="#sec-significance">Significance of the Study</a><span class="toc-page">7</span></p>
+<p class="toc-entry"><a href="#sec1-1">1.1 Scope and Limitations of the Study</a><span class="toc-page">9</span></p>
+<p class="toc-entry"><a href="#sec-notes">Notes</a><span class="toc-page">10</span></p>
+<p class="toc-entry"><a href="#sec-references">References</a><span class="toc-page">12</span></p>
+</div>
+
+<!-- ── Background ── -->
+<p class="no-indent toc-block">The dominant paradigm for personal computing has remained largely unchanged since the early 1980s, when the graphical desktop — icons, menus, and pointer-driven interaction — was established through the Xerox Star and Apple Lisa lineage. Despite its longevity, a parallel research tradition has long explored whether users should instead be able to describe what they want in natural language and have the computer carry it out. The earliest serious system in this tradition, the Berkeley UNIX Consultant, was already operational by the late 1980s [1]. Decades later, the rise of large language models (LLMs) and multimodal foundation models<sup class="fn"><a href="#fn1">1</a></sup> has reopened this thread with substantially greater technical capability.</p>
+
+<p>The field that has emerged sits at the intersection of human-computer interaction, operating systems, natural language processing, and computer vision. On the shell side, recent work has demonstrated that LLMs can translate natural language into Bash commands with usable accuracy and can be embedded as a Unix primitive with appropriate safety guardrails [2, 3]. On the graphical side, so-called computer-using agents<sup class="fn"><a href="#fn2">2</a></sup> now operate desktop and mobile applications by combining native APIs with vision-based grounding [16, 18]. On the web, language-guided agents complete tasks across realistic websites with measurable but limited reliability [8, 9]. A converging research thread approaches the same technical problem from an accessibility perspective: speech-driven GUI command mapping for users with motor and speech impairments has progressed from voice-to-text dictation toward voice-to-action agents, with recent work on speech-instructed GUI agents [22] and region-aware visual grounding [23] demonstrating that the underlying components are maturing rapidly. Yet despite this progress across both threads, the most rigorous evaluation environment in the field — the OSWorld benchmark — shows that frontier models complete only 12.24% of real computer tasks that humans complete at 72.36% [17]. The gap between demonstration and deployable replacement remains substantial.</p>
+
+<p>This rapid progress has been uneven across platforms. Windows is heavily represented in the desktop agent literature [15, 16], Android in the mobile agent literature [10, 11, 12], and the browser in the web agent literature [7, 8, 9]. Linux desktop coverage, by contrast, is conspicuously absent: existing work either addresses Linux only at the shell level [3] or treats it as one of several evaluation platforms rather than a primary target [17]. No surveyed system implements a working conversational session layer<sup class="fn"><a href="#fn3">3</a></sup> for the Linux desktop, despite Linux serving as the substrate for most developer and server-side workflows.</p>
+
+<!-- ── Gap / Opportunity ── -->
+<h2 id="sec-gap">Gap / Opportunity</h2>
+
+<p class="no-indent">Three compounding gaps in the existing literature motivate the present research. First, no system in the literature has replaced the conventional desktop session layer with a conversational one — existing systems automate on top of the desktop shell rather than replacing it. The UFO² system, for instance, positions itself as a "Desktop AgentOS" but operates as an automation layer atop the existing Windows shell rather than substituting for it [16]. Second, Linux desktop coverage remains absent despite Linux being the substrate for most developer and server-side workflows; the NaSh project addresses Linux but only at the shell level [3], and OSWorld includes Ubuntu only as one of three evaluation platforms rather than as a primary deployment target [17]. Third, no existing work compares a conversational interface against the conventional graphical workflow on the same tasks with the same user population [17]; user studies in this space are rare, with only VoicePilot [5] conducting a substantive human-centered evaluation of LLM-based interaction.</p>
+
+<p>Notably, the accessibility-focused thread of the field exhibits the inverse limitation. Speech-to-GUI mapping research targets specific user populations — users with motor impairments, speech disorders, or cognitive disabilities — with specialized techniques such as speech-instructed GUI agents and resilient visual grounding [22, 23], but operates at the level of individual applications or interaction techniques rather than at the level of the session layer itself. These approaches presuppose an underlying conversational system surface on which to run, yet no such surface exists. This complementarity sharpens the opportunity: a general-purpose conversational session layer would serve not only mainstream users but also provide the substrate that accessibility-specific configurations require.</p>
+
+<p>These gaps present a clear opportunity, and a precedent for how to seize it. The history of the Unix shell demonstrates that a new interactive layer — bash succeeding the Bourne shell, zsh and fish succeeding both — can replace the software a user directly interacts with while leaving the kernel and the core system utilities entirely unchanged, producing a materially different experience for the user without touching anything beneath the session. The opportunity addressed by this study is to apply the same pattern in a new direction: SynapseOS replaces the conventional graphical session layer — the desktop shell, window manager, and application launcher — with a conversational one, leaving the kernel, the core system utilities, and the existing Linux application ecosystem untouched. It is designed to serve as the primary user-facing interface to a personal computing environment — spanning novice, elderly, non-technical, and technical user populations — with an evaluation methodology that engages the conventional desktop workflow as its baseline rather than as its substrate.</p>
+
+<!-- ── Problem Statement ── -->
+<h2 id="sec-problem">Problem Statement</h2>
+
+<p class="no-indent">This study addresses the absence of a conversational session layer for the Linux desktop — a conversational shell replacing the desktop's graphical session in the way a new interactive shell replaces the one before it, rather than a modification to the kernel or the core system utilities — that has been empirically evaluated against the conventional graphical workflow it would displace.</p>
+
+<p>Specifically, the study seeks to answer the following questions:</p>
+
+<ol>
+  <li>How can a conversational session layer be designed to function as the primary user-facing interface to a Linux-based personal computing environment, spanning the full range of shell-expressible operations?</li>
+  <li>What natural-language-to-bash intent parsing and execution design — incorporating a reversibility-based confirmation gate and an undo mechanism — is most effective for grounding natural language intent into safe, recoverable system actions on the Linux command line?</li>
+  <li>How does SynapseOS compare to each participant's own primary operating system in terms of task completion time, error rate, and user satisfaction across novice and power user populations?</li>
+</ol>
+
+<!-- ── Objectives ── -->
+<h2 id="sec-objectives">Objectives</h2>
+
+<p class="no-indent">The general objective of this study is to design, implement, and evaluate SynapseOS, a system that replaces the conventional graphical session layer — the desktop shell, session manager, and application launcher — with a conversational interface layer, while leaving the underlying Linux kernel, core system utilities, and application ecosystem unchanged.</p>
+
+<p>Specifically, this study aims:</p>
+
+<ol>
+  <li>To design a conversational session layer for the Linux desktop that spans the full range of shell-expressible operations under a single natural-language surface.</li>
+  <li>To develop a natural-language-to-bash intent parsing and execution pipeline for SynapseOS, incorporating a reversibility-based confirmation gate and an undo mechanism, balancing intent parsing accuracy against execution safety.</li>
+  <li>To implement SynapseOS as a Linux session manager<sup class="fn"><a href="#fn4">4</a></sup> that provides a persistent conversational surface, a structured undo log, and a confirmation policy for irreversible operations, addressing the safety and recoverability gaps identified in prior work [3, 16].</li>
+  <li>To evaluate SynapseOS through a controlled user study comparing task completion time, error rate, and self-reported satisfaction against each participant's own primary operating system, across novice and power user populations, providing the empirical comparison absent from the existing literature [17].</li>
+</ol>
+
+<!-- ── Significance of the Study ── -->
+<h2 id="sec-significance">Significance of the Study</h2>
+
+<p class="no-indent">The findings of this study are expected to benefit the following groups:</p>
+
+<ol>
+  <li><strong>Novice and non-technical computer users.</strong> The conventional graphical desktop imposes a steep learning curve rooted in its icon-and-menu paradigm. A conversational session layer that accepts natural language intent lowers the threshold for productive computer use, particularly for users with limited prior computing experience, including elderly users encountering desktop computing late or infrequently.</li>
+  <li><strong>Developers and power users on Linux.</strong> A conversational session layer reduces the cognitive load of recalling and composing shell commands by exposing system operations through a unified natural-language interface.</li>
+  <li><strong>Users with motor accessibility needs.</strong> Although this population is scoped out of the initial evaluation for ethical and recruitment reasons, SynapseOS is positioned to serve as the session-level substrate on which accessibility-specific configurations can operate. Prior work has established design guidelines for LLM-based speech interfaces for users with motor impairments [5] and has demonstrated specialized techniques — speech-instructed GUI agents and resilient visual grounding — at the application and interaction-technique level [22, 23]. These techniques presuppose a conversational system surface that does not yet exist at the session level; SynapseOS provides that surface, making accessibility-specific extensions a natural and well-grounded future direction rather than a speculative one.</li>
+  <li><strong>The research community.</strong> The controlled comparative evaluation methodology this study introduces addresses a recognized gap in the literature, where conversational interfaces are rarely compared against conventional graphical workflows on the same tasks and population [17]. The evaluation design provides a replicable methodology for future work in this space.</li>
+</ol>
+
+<!-- ── Scope and Limitations ── -->
+<h2 id="sec1-1">1.1 Scope and Limitations of the Study</h2>
+
+<p class="no-indent">This study covers the design, implementation, and evaluation of SynapseOS as a conversational session layer for the Linux desktop. SynapseOS replaces the conventional graphical session — the desktop shell, session manager, and application launcher — with a conversational interface, analogous in scope to how a new interactive shell replaces the one before it: the kernel and the core system utilities beneath the session are unchanged. The Linux kernel, the core system utilities, and the existing ecosystem of Linux applications are not modified by this study; SynapseOS interacts with the system by translating natural language into shell commands executed through the standard command-line toolchain, rather than by rewriting applications or the utilities they depend on. The subject matter spans natural language processing, LLM-based reasoning, command-line automation, Linux system integration, and human-computer interaction.</p>
+
+<p>The study examines cross-application desktop workflows on Linux, including shell operations, file management, and application-level tasks representable in the OSWorld benchmark task suite [17]. The population studied consists of novice computer users and power users recruited for a controlled user study. The study is conducted in a Linux desktop environment and is bounded by the duration of the thesis project.</p>
+
+<p>The following limitations are acknowledged. First, SynapseOS commits to a locally-hosted, code-specialized small language model (Qwen2.5-Coder-3B-Instruct) rather than a hosted frontier model, prioritizing privacy and offline operation over the potentially higher capability of larger hosted alternatives<sup class="fn"><a href="#fn5">5</a></sup>; this tradeoff may affect the ceiling on intent parsing accuracy achievable within the study. Second, users with motor accessibility needs — a highly relevant population — are excluded from the initial evaluation due to ethics-review and recruitment constraints; accessibility-specific configurations such as speech-instructed agent operation for atypical speech patterns [22] are likewise out of scope for the initial implementation but represent a natural extension of the SynapseOS substrate. Third, SynapseOS targets the Linux desktop specifically, and the findings may not generalize directly to Windows or macOS desktop environments. Fourth, the safety confirmation policy for irreversible system operations is defined in principle but requires empirical calibration during implementation. Fifth, evaluation is bounded by the task coverage of the OSWorld benchmark and the custom task suite developed for this study; tasks outside this coverage are not evaluated.</p>
+
+<!-- ═══════════════ NOTES ═══════════════ -->
+<div class="footnotes">
+  <h2 id="sec-notes">Notes</h2>
+  <ol>
+    <li id="fn1">Foundation models are large neural networks trained on broad, general-purpose data and adaptable to many tasks. Multimodal variants accept multiple input types — typically text and images — enabling the model to interpret visual interfaces and screenshots alongside natural language.</li>
+    <li id="fn2">Computer-using agents are AI systems that interact with a computer's graphical environment — clicking, typing, reading the screen — to complete tasks on behalf of a user. Unlike shell-level automation, they operate through the same visual interface a human would use.</li>
+    <li id="fn3">The session layer (or simply, the session) is the software the user directly interacts with immediately after login — the desktop shell, window manager, session manager, and application launcher on a graphical system, or the login shell on a text terminal. It is distinct from the userland (or user space): the core system libraries and command-line tools (e.g., glibc, coreutils, bash, apt) that run outside the kernel and that the session layer itself depends on and invokes. SynapseOS replaces the session layer; the underlying userland is unchanged.</li>
+    <li id="fn4">A Linux session manager is the program that starts after user login and establishes the graphical environment — launching the window manager, desktop shell, and background services. SynapseOS replaces this component with a conversational interface, making it the first program a user encounters after login.</li>
+    <li id="fn5">Open-weights models make their trained parameters publicly available for local download and use. Users run inference on their own hardware without routing queries to an external service provider, enabling offline operation and preventing user data from being transmitted to third parties.</li>
+  </ol>
+</div>
+
+<!-- ═══════════════ REFERENCES ═══════════════ -->
+<div class="references">
+  <h2 id="sec-references">References</h2>
+
+  <div class="ref-entry">[1] Wilensky, R., Chin, D. N., Luria, M., Martin, J., Mayfield, J., &amp; Wu, D. (1988). The Berkeley Unix Consultant Project. <em>Computational Linguistics</em>, 14(4), 35–84. <a href="https://aclanthology.org/J88-4003/">https://aclanthology.org/J88-4003/</a></div>
+
+  <div class="ref-entry">[2] Westenfelder, F., Hemberg, E., Tulla, M., Moskal, S., O'Reilly, U.-M., &amp; Chiricescu, S. (2025). LLM-Supported Natural Language to Bash Translation. <em>arXiv:2502.06858</em>. <a href="https://arxiv.org/abs/2502.06858">https://arxiv.org/abs/2502.06858</a></div>
+
+  <div class="ref-entry">[3] Gyawali, B. R., Achalla, S., Kallas, K., &amp; Kumar, S. (2025). NaSh: Guardrails for an LLM-Powered Natural Language Shell. <em>arXiv:2506.13028</em>. <a href="https://arxiv.org/abs/2506.13028">https://arxiv.org/abs/2506.13028</a></div>
+
+  <div class="ref-entry">[5] Padmanabha, A., Yuan, J., Gupta, J., Karachiwalla, Z., Majidi, C., Admoni, H., &amp; Erickson, Z. (2024). VoicePilot: Harnessing LLMs as Speech Interfaces for Physically Assistive Robots. In <em>Proceedings of the 37th Annual ACM Symposium on User Interface Software and Technology (UIST '24)</em>. ACM. <a href="https://doi.org/10.1145/3654777.3676401">https://doi.org/10.1145/3654777.3676401</a></div>
+
+  <div class="ref-entry">[7] Deng, X., Gu, Y., Zheng, B., Chen, S., Stevens, S., Wang, B., Sun, H., &amp; Su, Y. (2023). Mind2Web: Towards a Generalist Agent for the Web. In <em>Advances in Neural Information Processing Systems 36 (NeurIPS 2023)</em>. <a href="https://arxiv.org/abs/2306.06070">https://arxiv.org/abs/2306.06070</a></div>
+
+  <div class="ref-entry">[8] Zhou, S., Xu, F. F., Zhu, H., Zhou, X., Lo, R., Sridhar, A., Cheng, X., Ou, T., Bisk, Y., Fried, D., Alon, U., &amp; Neubig, G. (2024). WebArena: A Realistic Web Environment for Building Autonomous Agents. In <em>Proceedings of ICLR 2024</em>. <a href="https://arxiv.org/abs/2307.13854">https://arxiv.org/abs/2307.13854</a></div>
+
+  <div class="ref-entry">[9] Zheng, B., Gou, B., Kil, J., Sun, H., &amp; Su, Y. (2024). GPT-4V(ision) is a Generalist Web Agent, if Grounded. In <em>Proceedings of ICML 2024</em>. <a href="https://arxiv.org/abs/2401.01614">https://arxiv.org/abs/2401.01614</a></div>
+
+  <div class="ref-entry">[10] Rawles, C., Li, A., Rodriguez, D., Riva, O., &amp; Lillicrap, T. (2023). Android in the Wild: A Large-Scale Dataset for Android Device Control. In <em>Advances in Neural Information Processing Systems 36 (NeurIPS 2023)</em>. <a href="https://arxiv.org/abs/2307.10088">https://arxiv.org/abs/2307.10088</a></div>
+
+  <div class="ref-entry">[11] Zhang, C., Yang, Z., Liu, J., Han, Y., Chen, X., Huang, Z., Fu, B., &amp; Yu, G. (2023). AppAgent: Multimodal Agents as Smartphone Users. <em>arXiv:2312.13771</em>. <a href="https://arxiv.org/abs/2312.13771">https://arxiv.org/abs/2312.13771</a></div>
+
+  <div class="ref-entry">[12] Wang, J., Xu, H., Ye, J., Yan, M., Shen, W., Zhang, J., Huang, F., &amp; Sang, J. (2024). Mobile-Agent: Autonomous Multi-Modal Mobile Device Agent with Visual Perception. <em>arXiv:2401.16158</em>. <a href="https://arxiv.org/abs/2401.16158">https://arxiv.org/abs/2401.16158</a></div>
+
+  <div class="ref-entry">[15] Hui, T., Zhang, Y., Jiang, B., Sun, J., Cheng, F., Lin, X., &amp; Yang, Y. (2025). WinClick: GUI Grounding with Multimodal Large Language Models. <em>arXiv:2503.04730</em>. <a href="https://arxiv.org/abs/2503.04730">https://arxiv.org/abs/2503.04730</a></div>
+
+  <div class="ref-entry">[16] Zhang, C., He, S., Qian, J., Li, B., Li, L., Qin, S., Kang, Y., Ma, M., Liu, G., Lin, Q., Rajmohan, S., Zhang, D., &amp; Zhang, Q. (2025). UFO²: The Desktop AgentOS. <em>arXiv:2504.14603</em>. <a href="https://arxiv.org/abs/2504.14603">https://arxiv.org/abs/2504.14603</a></div>
+
+  <div class="ref-entry">[17] Xie, T., Zhang, D., Chen, J., Li, X., Zhao, S., Cao, R., Hua, T. J., Cheng, Z., Shin, D., Lei, F., Liu, Y., Xu, Y., Zhou, S., Savarese, S., Xiong, C., Zhong, V., &amp; Yu, T. (2024). OSWorld: Benchmarking Multimodal Agents for Open-Ended Tasks in Real Computer Environments. In <em>Advances in Neural Information Processing Systems 37 (NeurIPS 2024)</em>. <a href="https://arxiv.org/abs/2404.07972">https://arxiv.org/abs/2404.07972</a></div>
+
+  <div class="ref-entry">[18] Zhang, C., He, S., Qian, J., Li, B., Li, L., Qin, S., Kang, Y., Ma, M., Liu, G., Lin, Q., Rajmohan, S., Zhang, D., &amp; Zhang, Q. (2024). Large Language Model-Brained GUI Agents: A Survey. <em>arXiv:2411.18279</em>. <a href="https://arxiv.org/abs/2411.18279">https://arxiv.org/abs/2411.18279</a></div>
+
+  <div class="ref-entry">[22] Han, W., Zeng, Z., Huang, J., Jiang, S., et al. (2025). GUIRoboTron-Speech: Towards Automated GUI Agents Based on Speech Instructions. <em>arXiv:2506.11127</em>. <a href="https://arxiv.org/abs/2506.11127">https://arxiv.org/abs/2506.11127</a></div>
+
+  <div class="ref-entry">[23] Park, J., Tang, P., Das, S., Appalaraju, S., Singh, K. Y., Manmatha, R., &amp; Ghadar, S. (2025). R-VLM: Region-aware Vision Language Model for Precise GUI Grounding. In <em>Findings of the Association for Computational Linguistics: ACL 2025</em>, 9669–9685. <a href="https://doi.org/10.18653/v1/2025.findings-acl.501">https://doi.org/10.18653/v1/2025.findings-acl.501</a></div>
+</div>
+
+</body>
+</html>
