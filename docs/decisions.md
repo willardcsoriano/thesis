@@ -69,7 +69,7 @@ Fine-tuning via LoRA on the NL2Bash corpus + custom SynapseOS task suite is plan
 
 Moondream 2 (Tier 3 vision fallback) and AT-SPI accessibility tree automation (Tier 2) were evaluated and explicitly removed from the architecture. The three-tier hybrid execution model (Tier 1 MCP, Tier 2 AT-SPI, Tier 3 Vision) has been replaced by a CLI-only execution pipeline. See D7.
 
-Research data on Moondream 2 (1.9B params, ScreenSpot F1@0.5 = 80.4) and Qwen2.5-VL-3B is preserved in `research methods/module 3/references/llm-selection-research.txt` for future reference.
+Research data on Moondream 2 (1.9B params, ScreenSpot F1@0.5 = 80.4) and Qwen2.5-VL-3B is preserved in `research-methods/module 3/references/llm-selection-research.txt` for future reference.
 
 ---
 

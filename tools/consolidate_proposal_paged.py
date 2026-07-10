@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SUBMISSIONS = ROOT / "research methods"
+SUBMISSIONS = ROOT / "research-methods"
 
 CH1_PATH = SUBMISSIONS / "module 2" / "submissions" / "summative-assessment-1.html"
 CH2_PATH = SUBMISSIONS / "module 3" / "submissions" / "summative-assessment-2.html"

@@ -31,7 +31,7 @@ This file holds product and research ideas that surfaced during thesis developme
 
 ## GUI Automation (Deferred Architecture)
 
-These are the three tiers of the original hybrid execution architecture, removed in D7. The research data and rationale are preserved in `decisions.md` (D4, D7) and `research methods/module 3/references/llm-selection-research.txt`.
+These are the three tiers of the original hybrid execution architecture, removed in D7. The research data and rationale are preserved in `decisions.md` (D4, D7) and `research-methods/module 3/references/llm-selection-research.txt`.
 
 ### Tier 1 — MCP-Exposed Application APIs
 

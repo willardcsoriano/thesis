@@ -17,15 +17,15 @@ A Linux distribution that replaces the conventional graphical userland — the d
 - **Willard Soriano**
 - **Allyson Vivar**
 
-Department of Information Technology  
+Department of Computer Science  
 Mapúa University – Makati
 
 ## Directory Structure
 
 ```
-├── thesis 1/                        # (pending)
-├── thesis 2/                        # (pending)
-└── research methods/
+├── thesis 1/                        # reserved for the Thesis 1 course (follows Research Methods)
+├── thesis 2/                        # reserved for the Thesis 2 course (follows Thesis 1)
+└── research-methods/
     ├── module 2/
     │   ├── references/
     │   │   ├── chapter-1.pdf                   # Chapter 1 reference PDF

@@ -24,7 +24,7 @@ This mirrors the standing global rule this project's author already works under;
 | Go / Ollama / bubbletea / lipgloss APIs | `prototype/` | Pre-1.0 libraries change API surface fast; the prototype hasn't been built past M2 yet, so most of this surface is still unwritten | Verify current API shape via Context7 or official docs before writing each new milestone (M3+) — don't assume a memorized function signature is still correct |
 | Playwright API | `tools/export_pdf.py` | Frequent releases; the CDP-level features used here (`generateDocumentOutline`) are explicitly experimental | `tools/requirements.txt` pins the working version — if ever upgraded, re-verify the CDP call still behaves the same way before trusting a re-export |
 | Debian / XFCE version specifics | `decisions.md` D12; `scope.md` hardware specs | A new Debian stable release could ship before the study's hardware is provisioned | Verify "Debian 13 (Trixie)" is still the correct target immediately before final hardware setup, not just at design time |
-| Mapúa writing guidelines | `research methods/module 3/references/writing-guidelines.pdf` | Static institutional document — low drift risk, listed for completeness | Only recheck if the department issues a revised version |
+| Mapúa writing guidelines | `research-methods/module 3/references/writing-guidelines.pdf` | Static institutional document — low drift risk, listed for completeness | Only recheck if the department issues a revised version |
 
 ## When to Recheck
 
