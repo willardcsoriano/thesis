@@ -24,6 +24,8 @@ This file records architectural and research design decisions that have been mad
   - [D16 — Citation style: numbered ACM-style with DOIs/URLs, thesis-wide](#d16-citation-style-numbered-acm-style-with-doisurls-thesis-wide)
   - [D17 — Shared master bibliography; number [21] reserved/unused](#d17-shared-master-bibliography-number-21-reservedunused)
   - [D18 — Recruitment quota: minimum 2 participants per primary-OS background](#d18-recruitment-quota-minimum-2-participants-per-primary-os-background)
+  - [D19 — CLI mode formalized as a third interface mode](#d19-cli-mode-formalized-as-a-third-interface-mode)
+  - [D20 — GUI-mode fallback to XFCE: participant-accessible, logged, and excluded from primary analysis](#d20-gui-mode-fallback-to-xfce-participant-accessible-logged-and-excluded-from-primary-analysis)
 
 ## Decisions
 
@@ -165,7 +167,7 @@ The thesis prototype GUI is a fullscreen borderless window approximating the act
 
 ### D12 — Distro identity vs. implementation substrate: Debian + XFCE (GUI), bare Debian (TUI)
 
-**Status:** Refines D1 and D11. Not yet in a chapter — record for final compilation.
+**Status:** Refines D1 and D11. Not yet in a chapter — record for final compilation. GUI mode's "no escape hatch" claim below is refined by D20 (participant-accessible fallback, logged and excluded from primary analysis).
 
 SynapseOS presents to the user as its own distribution — its own name and identity — while the substrate underneath is reused and never surfaced to the user. The substrate is mode-dependent:
 
@@ -174,7 +176,7 @@ SynapseOS presents to the user as its own distribution — its own name and iden
 
 **Why this is not dishonest:** distro identity has always been a branding and packaging layer over a reused base, invisible to the end user — Ubuntu never surfaces "Debian" to a desktop user, SteamOS never surfaces "Arch," Pop!_OS never surfaces "Ubuntu." SynapseOS qualifies as a distribution once packaged as a bootable Debian(+XFCE) derivative with its own default session, branding, and update channel (see `layers.md`, "When It Becomes a Distribution") — a real distro, with a reused and unadvertised substrate, exactly like its predecessors.
 
-**Rejected:** a custom kiosk Wayland compositor (`cage`) as the GUI host for the thesis prototype — adds a new toolchain and packaging surface for no benefit over a fullscreen window in a standard DE session; the wallpaper-layer / `wlr-layer-shell` active-desktop mode remains the eventual post-thesis product target (`future-features.md`). True coexistence with the XFCE desktop (the participant can freely switch to it mid-task) — confounds the within-subjects comparison (D5, D9); during Condition A the participant experiences SynapseOS as the interface, full stop.
+**Rejected:** a custom kiosk Wayland compositor (`cage`) as the GUI host for the thesis prototype — adds a new toolchain and packaging surface for no benefit over a fullscreen window in a standard DE session; the wallpaper-layer / `wlr-layer-shell` active-desktop mode remains the eventual post-thesis product target (`future-features.md`). **Amended by D20:** this decision originally also rejected any participant path back to XFCE during Condition A, on the grounds that it would confound the within-subjects comparison (D5, D9). D20 reopens this — a participant-accessible fallback now exists — but keeps the comparison clean by scoring and excluding fallback-invoked tasks rather than by denying access. See D20 for the full reasoning.
 
 ---
 
@@ -251,3 +253,27 @@ Recruitment for the n = 20 sample (10 novice, 10 power user) adds a floor: at le
 **Why:** Without a floor, the realized sample could end up all one OS (e.g., 18 Windows / 1 macOS / 1 Linux), leaving the per-OS exploratory subgroup analysis (D15, SA3.1 Section 3.2/3.4) unable to say anything about the underrepresented OS at all. A floor of 2 guarantees every OS background has at least a minimal, non-singleton presence without materially constraining recruitment — macOS users are expected to be the scarcest population reachable through Mapúa University – Makati's general recruitment channels, and 2 is judged achievable without delaying the timeline.
 
 **Rejected:** No quota (risks a degenerate all-one-OS sample); increasing total n to ~50+ to properly power OS-specific subgroup claims (disproportionate to the core within-subjects hypothesis, which n = 20 already satisfies per the D5 power analysis — the per-OS breakdown is explicitly exploratory, not a primary hypothesis test); a higher floor (3 or 5 per OS) — judged to risk recruitment delay for macOS specifically without a clear analytical payoff at this sample size.
+
+---
+
+### D19 — CLI mode formalized as a third interface mode
+
+**Status:** Refines D11. To be reflected in SA3.1 Table 3.2 and the paragraph following it.
+
+SynapseOS ships three interface modes, not two: **CLI** (one-shot invocation — `synapse "<task>"` translates a single natural-language request into a proposed command and exits; no persistent session), **TUI** (persistent full-screen chat session, D11), and **GUI** (fullscreen conversational takeover, evaluated in the study, D11/D12). CLI mode is not new work — it is the M2 walking skeleton's existing behavior (`prototype/cmd/synapse/main.go`), promoted from a disposable stepping-stone toward M3 to a permanent, separately-named, shipped mode. It targets scripting, automation, and one-off remote invocations over SSH where a persistent interactive session is unnecessary overhead.
+
+**Why:** M2 and M3 are genuinely different interaction shapes — one-shot request/response versus a persistent multi-turn conversation — not two maturity stages of the same feature. Collapsing CLI into "TUI without the chrome" would either force M3 to also support a non-interactive invocation path (extra branching in the TUI's own state machine) or quietly drop the one-shot use case once M3 lands, losing real utility (cron jobs, quick remote commands, shell pipelines) for no benefit. Naming it separately means M2's harness stays a permanent, useful artifact instead of throwaway scaffolding.
+
+**Rejected:** Folding CLI into TUI as a single mode with two invocation styles — the interaction shapes are different enough (stateless vs. stateful) that conflating them in the same mode name obscures the actual distinction a user or a script author needs to reason about.
+
+---
+
+### D20 — GUI-mode fallback to XFCE: participant-accessible, logged, and excluded from primary analysis
+
+**Status:** Amends D12. To be reflected in SA3.1 Table 3.1, Table 3.2, the paragraph following Table 3.2, and Section 3.5 (Threats to Validity).
+
+GUI mode gains a fallback path: a participant can return to the underlying XFCE session — already running invisibly beneath SynapseOS's fullscreen window, per D12 — if SynapseOS becomes unresponsive or they want to stop using it mid-task. Unlike D12's original no-escape-hatch design, this fallback is participant-accessible, not facilitator-only. Every invocation is logged as a discrete telemetry event (participant ID, task ID, timestamp). Any task during which it is invoked is excluded from the primary SynapseOS-condition completion-time and error-rate comparison for that task — scored as "did not complete via SynapseOS" rather than silently counted as a success — and fallback-invocation rate is reported as its own secondary, exploratory metric (how often participants reached for it, and under which task categories).
+
+**Why:** A participant-accessible fallback is what was asked for — a genuine safety net, not a hidden facilitator-only recovery path — but D12's original reasoning for having no escape hatch at all was sound: an accessible-and-unmeasured fallback would let a participant's own choice silently substitute for the interface being evaluated, contaminating the within-subjects comparison (D5) with no way to detect or correct for it afterward. The fix is not to restrict access but to instrument it: logging plus exclusion-from-primary-analysis means the core causal claim (task performance attributable to SynapseOS specifically) stays clean, while the fallback itself becomes an honest, reportable finding — a high fallback-invocation rate is informative data about the interface's reliability and trustworthiness, not something to hide.
+
+**Rejected:** Facilitator-only hidden trigger, invisible to participants (the initially-recommended alternative) — cleanly preserves D12's original validity argument with zero instrumentation needed, but does not give participants direct access, which was the explicit requirement here. Leaving the fallback un-instrumented (accessible, but its use not logged or scored specially) — would silently reintroduce exactly the confound D12 was designed to prevent, with no way to detect after the fact which "SynapseOS-condition" data points were actually completed via the fallback instead.
