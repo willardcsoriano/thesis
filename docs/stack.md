@@ -66,11 +66,11 @@ Runs offline. Never executes during the user study.
 |---|---|
 | OS | Debian 13 (Trixie) |
 | CPU | x86-64 + AVX2; 2 vCPU minimum |
-| RAM | 4 GB (TUI) / 8 GB recommended (GUI, D12) |
+| RAM | 4 GB (CLI/TUI, D19) / 8 GB recommended (GUI, D12) |
 | Storage | 10 GB |
-| Display | TUI: any terminal (SSH included; no display server required). GUI: XFCE desktop, X11 session (D12) — SynapseOS launches fullscreen within it |
+| Display | CLI/TUI: any terminal (SSH included; no display server required). GUI: XFCE desktop, X11 session (D12) — SynapseOS launches fullscreen within it, with a participant-accessible fallback back to XFCE (D20) |
 
-SynapseOS presents its own identity regardless of mode; Debian (both modes) and XFCE (GUI mode only) are the reused, unadvertised substrate underneath — see `layers.md` and decision D12.
+SynapseOS presents its own identity regardless of mode; Debian (all three modes) and XFCE (GUI mode only) are the reused, unadvertised substrate underneath — see `layers.md` and decisions D12, D19, D20.
 
 ## Data Flow (runtime)
 

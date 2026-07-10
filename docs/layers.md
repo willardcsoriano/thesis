@@ -9,7 +9,7 @@ This document is a conceptual primer on how a Linux system is layered and exactl
 - [Layer by Layer](#layer-by-layer)
 - [Where SynapseOS Sits](#where-synapseos-sits)
   - [The clean framing: SynapseOS is a shell](#the-clean-framing-synapseos-is-a-shell)
-  - [One slot, two (or three) sets of clothes](#one-slot-two-or-three-sets-of-clothes)
+  - [One slot, two, three (or four) sets of clothes](#one-slot-two-three-or-four-sets-of-clothes)
 - [What SynapseOS Is *Not*](#what-synapseos-is-not)
 - [When It Becomes a "Distribution"](#when-it-becomes-a-distribution)
 - [FAQ — Common Confusions](#faq-common-confusions)
@@ -86,15 +86,16 @@ SynapseOS is a **new interface layer at the session slot**. Two things are true 
 
 Every shell in history has been an abstraction layer that *replaced the previous shell*: `bash` is a layer over the userland; `zsh` added a layer and replaced bash for those who switched; `fish` did it again. A new shell is always simultaneously additive (to the machine) and substitutive (of the old interface) — there is no contradiction, that is simply what a shell **is**. SynapseOS is **the next shell — a conversational one**. That single sentence is honest (no new kernel), additive (a layer), a replacement (of the interface), and novel (no daily-driver shell takes natural language).
 
-### One slot, two (or three) sets of clothes
+### One slot, two, three (or four) sets of clothes
 
 | Mode | Substrate underneath | SynapseOS puts there… | Target |
 |---|---|---|---|
+| **CLI** | bare Debian, no DE — one-shot invocation (`synapse "<task>"` → proposed command → exit), no persistent session (D19) | a single-invocation command translator | scripting / automation / one-off remote use (D19) |
 | **TUI** | bare Debian, no DE — a local **agentic shell**: NL → local SLM → proposed command → confirmation gate → execution, comparable in interaction model to Claude Code's CLI agent loop but fully offline (D2, D3, D12) | the SynapseOS terminal interface | server / remote (D11) |
-| **GUI** | Debian + **XFCE** (X11 session), **invisible** — XFCE's Wayland session is still experimental, unsuitable for a reproducible study | the same SynapseOS app, launched **fullscreen within the XFCE session**, no escape hatch | user study (D11, D12) |
+| **GUI** | Debian + **XFCE** (X11 session), **invisible** — XFCE's Wayland session is still experimental, unsuitable for a reproducible study | the same SynapseOS app, launched **fullscreen within the XFCE session**; a participant-accessible fallback back to XFCE exists, logged and excluded from primary analysis (D20) | user study (D11, D12, D20) |
 | **Overlay** *(post-thesis)* | Debian + XFCE, **fully visible and usable** — nothing hidden, no escape hatch to guard against because there is nothing to escape | the same SynapseOS app, summoned via hotkey or systray icon, floating over the desktop | commercial product (D13) |
 
-All three are the **same program** — only the shell wrapped around it changes. In TUI and GUI mode, the substrate is invisible: XFCE supplies the display session and window management without ever being seen, exactly as Debian supplies the kernel and userland invisibly (D12). In Overlay mode the substrate is deliberately visible — the traditional desktop stays fully intact, and SynapseOS is one hotkey away rather than the whole session (D13). The GUI mode's lack of an escape hatch isn't a limitation carried into Overlay mode by accident — it is the whole point of GUI mode (study validity, D12) and deliberately absent from Overlay mode (product usability, D13).
+All four are the **same program** — only the shell wrapped around it changes. In CLI, TUI, and GUI mode, the substrate is invisible: XFCE supplies the display session and window management without ever being seen, exactly as Debian supplies the kernel and userland invisibly (D12). In Overlay mode the substrate is deliberately visible — the traditional desktop stays fully intact, and SynapseOS is one hotkey away rather than the whole session (D13). GUI mode's fallback (D20) and Overlay mode are not the same thing: GUI mode's fallback is a logged, analysis-excluded safety net within an otherwise-strict study takeover; Overlay mode has no takeover to escape from in the first place — the traditional desktop is the default state, and SynapseOS is summoned into it.
 
 ## What SynapseOS Is *Not*
 
@@ -141,6 +142,8 @@ Until a bootable image exists, SynapseOS is an **application** you install on De
 
 **Is there a version where I keep the traditional desktop and just summon the agent?** Yes — Overlay mode (D13), the post-thesis product target: XFCE stays fully visible and usable, SynapseOS opens via a hotkey or systray icon. It's a different mode from the study's GUI takeover (D12), built from the same runtime.
 
+**Can a participant escape GUI mode mid-study if something goes wrong?** Yes — D20 adds a participant-accessible fallback back to XFCE. Unlike Overlay mode, GUI mode is still a strict takeover by default; the fallback is a logged safety net, not a standing coexistence mode, and any task where it's used is excluded from the primary analysis rather than silently counted as a SynapseOS success.
+
 **Is hardening or the agentic layer the bigger reason this counts as a distro?** The agentic session, by a wide margin. Hardening is a credibility signal — expected of any serious distro, precedented by Ubuntu, but not distinguishing. The session is an identity signal — strip it and there's nothing left to call a distro; keep it and there still is. See D13.
 
 **Do I need to write drivers, a kernel, or a bootloader?** No. Debian provides all of it. Your work lives entirely at the session layer and above.
@@ -161,6 +164,6 @@ Until a bootable image exists, SynapseOS is an **application** you install on De
 ## See Also
 
 - `stack.md` — the concrete technology at each layer SynapseOS uses.
-- `decisions.md` — D1 (Debian base), D7 (CLI-only scope), D8 (Go/Ollama stack), D11 (TUI vs GUI mode), D12 (distro identity vs. substrate: Debian+XFCE), D13 (Overlay product mode; hardening-vs-session weighting).
+- `decisions.md` — D1 (Debian base), D7 (CLI-only scope), D8 (Go/Ollama stack), D11 (TUI vs GUI mode), D12 (distro identity vs. substrate: Debian+XFCE), D13 (Overlay product mode; hardening-vs-session weighting), D19 (CLI mode), D20 (GUI-mode XFCE fallback).
 - `vision.md` — the product horizons (H0 thesis → H2 commercial distro).
 - `prototype/build-order.md` — where the GUI/packaging work (M9+) sits in the build sequence.

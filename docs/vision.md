@@ -69,7 +69,7 @@ Stated explicitly so the north star cannot silently expand the build:
 
 | Horizon | What exists | Interface |
 |---|---|---|
-| **H0 — Thesis prototype** | Conversational shell over bash; local SLM; safety gate; session memory; telemetry | Fullscreen conversational GUI (study) / TUI (server) |
+| **H0 — Thesis prototype** | Conversational shell over bash; local SLM; safety gate; session memory; telemetry | Fullscreen conversational GUI with XFCE fallback (study, D20) / TUI (server) / CLI (scripting, D19) |
 | **H1 — Beyond thesis** | Persistent memory, richer task coverage, active-desktop compositor layer | Conversation as the desktop shell |
 | **H2 — North star** | Conversation as the primary OS interface; GUI as one rendering, not the substrate | Talk to the computer |
 

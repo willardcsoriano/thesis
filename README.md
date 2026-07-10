@@ -9,7 +9,7 @@
 
 > Designing a Conversational Interface Layer for Personal Computing
 
-A Linux distribution that replaces the conventional graphical userland — the desktop shell, session manager, and application launcher — with a conversational interface layer, leaving the underlying Linux kernel and application ecosystem unchanged.
+A Linux distribution that replaces the conventional graphical session layer — the desktop shell, session manager, and application launcher — with a conversational interface layer, leaving the underlying Linux kernel, core system utilities, and application ecosystem unchanged. Ships as three interface modes — CLI, TUI, and GUI (with a participant-accessible emergency fallback to the underlying desktop) — see `docs/decisions.md` D19/D20.
 
 ## Team
 

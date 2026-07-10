@@ -8,7 +8,7 @@ This is the authoritative build sequence for the SynapseOS prototype: the order 
 - [Sequencing Principles](#sequencing-principles)
 - [Status Key](#status-key)
 - [Runtime Milestones](#runtime-milestones)
-  - [M2 — Walking skeleton 🚧](#m2-walking-skeleton-)
+  - [M2 — Walking skeleton / CLI mode 🚧](#m2-walking-skeleton-cli-mode-)
   - [M3 — TUI loop ⬜](#m3-tui-loop-)
   - [M4 — Execution engine ⬜](#m4-execution-engine-)
   - [M5 — Confirmation gate ⬜](#m5-confirmation-gate-)
@@ -34,11 +34,11 @@ This is the authoritative build sequence for the SynapseOS prototype: the order 
 
 ## Runtime Milestones
 
-### M2 — Walking skeleton 🚧
+### M2 — Walking skeleton / CLI mode 🚧
 
-- **Goal:** Prove the riskiest assumption before building anything around it — can a local 3B model turn plain-English intent into usable bash?
-- **Delivers:** `internal/ollama` client (non-streaming generate + connectivity check); `cmd/synapse` harness that runs a sample task suite and prints each proposed command with latency and token counts. No execution.
-- **Closes (`../docs/scope.md`):** *Ollama connectivity check*; first half of *Intent parser client* (non-streaming).
+- **Goal:** Prove the riskiest assumption before building anything around it — can a local 3B model turn plain-English intent into usable bash? Also delivers CLI mode itself (D19) — this milestone is not disposable scaffolding superseded by M3, it is a permanently shipped interface mode in its own right.
+- **Delivers:** `internal/ollama` client (non-streaming generate + connectivity check); `cmd/synapse` harness that runs a sample task suite and prints each proposed command with latency and token counts. No execution. This one-shot invocation shape (`synapse "<task>"` → proposed command → exit) *is* CLI mode (D19), not a stepping-stone to be discarded once M3's TUI lands.
+- **Closes (`../docs/scope.md`):** *Ollama connectivity check*; first half of *Intent parser client* (non-streaming); *CLI mode*.
 - **Depends on:** Ollama installed, `qwen2.5-coder:3b` pulled.
 - **Done when:** `go run ./cmd/synapse` prints a proposed command for all sample tasks; a downed server prints an actionable error instead of a stack trace.
 - **Status:** Code satisfies the shape of the definition-of-done, but per this file's own "done means testable" rule, it hasn't actually been demonstrated — never run against a live Ollama instance. The error-path half (downed server) is trivially true by default; the half that actually retires the risk (does the model produce usable bash) is unverified.
@@ -101,11 +101,11 @@ This is the authoritative build sequence for the SynapseOS prototype: the order 
 ### M9 — GUI mode ⬜
 
 - **Goal:** The study-facing interface for novice users (decision D11).
-- **Delivers:** A fullscreen borderless conversational window approximating the active desktop, wrapping the same runtime built in M3–M8. TUI mode remains the server/remote target.
-- **Closes:** *SynapseOS machine — GUI mode* (infrastructure).
+- **Delivers:** A fullscreen borderless conversational window approximating the active desktop, wrapping the same runtime built in M3–M8, launched within an XFCE (X11 session) host per D12. Also delivers the participant-accessible XFCE fallback (D20): logs every invocation as its own telemetry event type, separate from the six events M7 defines. TUI and CLI modes remain the server/remote and scripting targets respectively.
+- **Closes:** *SynapseOS machine — GUI mode* (infrastructure); *GUI-mode XFCE fallback*.
 - **Depends on:** M3–M8 (a complete runtime).
-- **Done when:** The runtime runs fullscreen on a Wayland desktop and is usable by a novice without terminal knowledge; TUI mode still works.
-- **Risk retired:** The novice-familiarity threat to study validity (a TUI study would conflate terminal unfamiliarity with interface quality).
+- **Done when:** The runtime runs fullscreen within an XFCE X11 session (not Wayland — XFCE's Wayland session remains experimental per D12) and is usable by a novice without terminal knowledge; TUI and CLI modes still work; the fallback reliably returns the participant to a usable XFCE session on both an outright SynapseOS crash and a manually-triggered invocation, and every invocation is captured in the session log.
+- **Risk retired:** The novice-familiarity threat to study validity (a TUI study would conflate terminal unfamiliarity with interface quality). The fallback's reliability (does it actually recover the machine, every time) is a new risk this milestone must retire — an unreliable fallback is worse than none, since D20's validity argument depends on it working when invoked.
 
 ---
 

@@ -11,18 +11,20 @@ This folder holds all SynapseOS prototype code — the runnable artifact behind 
 
 ## Status at a Glance
 
-Current milestone: **M2 — Walking skeleton** (code complete; not yet run against a live Ollama instance — see Pending Items in `../docs/session.md`).
+Current milestone: **M2 — Walking skeleton / CLI mode** (code complete; not yet run against a live Ollama instance — see Pending Items in `../docs/session.md`).
+
+Three interface modes, ship-scoped by D19/D20: **CLI** (one-shot invocation, M2), **TUI** (persistent terminal session, M3), **GUI** (fullscreen study takeover with a participant-accessible XFCE fallback, M9).
 
 | Milestone | What it adds | Status |
 |---|---|---|
-| M2 | NL → Ollama → proposed bash (no execution) | 🚧 code complete, live validation pending |
+| M2 | NL → Ollama → proposed bash (no execution); also *is* CLI mode (D19) | 🚧 code complete, live validation pending |
 | M3 | bubbletea/lipgloss TUI chat loop | ⬜ next |
 | M4 | Execution engine (`os/exec`, streamed output) | ⬜ |
 | M5 | Confirmation gate (reversible vs. irreversible) | ⬜ |
 | M6 | Session context (rolling window, output compression) | ⬜ |
 | M7 | Session logger (study telemetry) | ⬜ |
 | M8 | Undo log | ⬜ |
-| M9+ | GUI mode → fine-tuning pipeline → study instruments | ⬜ |
+| M9+ | GUI mode + XFCE fallback (D20) → fine-tuning pipeline → study instruments | ⬜ |
 
 Per-milestone goals, dependencies, and definition-of-done: **`build-order.md`**.
 
@@ -33,7 +35,7 @@ Per-milestone goals, dependencies, and definition-of-done: **`build-order.md`**.
 | `setup.md` | Prerequisites, install, run commands, environment, layout |
 | `build-order.md` | Milestone sequence, gates, and definition-of-done |
 | `../docs/scope.md` | Full deliverables registry (what must exist) |
-| `../docs/decisions.md` | Architecture rationale (D1–D18) |
+| `../docs/decisions.md` | Architecture rationale (D1–D20) |
 | `../docs/stack.md` | Implementation stack reference |
 | `../docs/vision.md` | Product vision and thesis hypothesis |
 | `../docs/roadmap.md` | Cross-horizon status index |
