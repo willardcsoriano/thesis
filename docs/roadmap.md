@@ -12,7 +12,7 @@ This file is the single place to check where SynapseOS stands right now, across 
 
 | Horizon | Status | Detail |
 |---|---|---|
-| **H0 — Thesis prototype** | In build — M2 (walking skeleton) done, M3 (TUI loop) next | `scope.md` (deliverables checklist) · `prototype/build-order.md` (milestone sequence) · `prototype/README.md` (live status) |
+| **H0 — Thesis prototype** | In build — M2 (walking skeleton) code complete, live validation against Ollama still pending; M3 (TUI loop) next | `scope.md` (deliverables checklist) · `prototype/build-order.md` (milestone sequence) · `prototype/README.md` (live status) |
 | **H1 — Beyond thesis (Overlay)** | Deferred, not started | `future-features.md` · `layers.md` |
 | **H2 — North star** | Vision, not a deliverable | `vision.md` |
 

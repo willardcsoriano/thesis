@@ -1,6 +1,6 @@
 ## Overview
 
-This is the authoritative build sequence for the SynapseOS prototype: the order in which runtime features are built, what each milestone depends on, and the concrete condition that marks it done. It is the *gating* layer that the other docs do not provide — `../scope.md` lists everything that must exist but not in what order, and `../decisions.md` explains why each piece is shaped the way it is. Each milestone is an independently runnable vertical slice, not a horizontal layer, so the prototype works end-to-end at every step rather than only at the end. Milestones are sequenced risk-first: the least certain assumptions are tested earliest, and the highest-effort deferrable work (LoRA fine-tuning) is last, because earlier milestones tell us how much of it is actually needed. The `README.md` status table is the at-a-glance view; this file is the detail behind it.
+This is the authoritative build sequence for the SynapseOS prototype: the order in which runtime features are built, what each milestone depends on, and the concrete condition that marks it done. It is the *gating* layer that the other docs do not provide — `../docs/scope.md` lists everything that must exist but not in what order, and `../docs/decisions.md` explains why each piece is shaped the way it is. Each milestone is an independently runnable vertical slice, not a horizontal layer, so the prototype works end-to-end at every step rather than only at the end. Milestones are sequenced risk-first: the least certain assumptions are tested earliest, and the highest-effort deferrable work (LoRA fine-tuning) is last, because earlier milestones tell us how much of it is actually needed. The `README.md` status table is the at-a-glance view; this file is the detail behind it.
 
 ## Table of Contents
 
@@ -8,7 +8,7 @@ This is the authoritative build sequence for the SynapseOS prototype: the order 
 - [Sequencing Principles](#sequencing-principles)
 - [Status Key](#status-key)
 - [Runtime Milestones](#runtime-milestones)
-  - [M2 — Walking skeleton ✅](#m2-walking-skeleton-)
+  - [M2 — Walking skeleton 🚧](#m2-walking-skeleton-)
   - [M3 — TUI loop ⬜](#m3-tui-loop-)
   - [M4 — Execution engine ⬜](#m4-execution-engine-)
   - [M5 — Confirmation gate ⬜](#m5-confirmation-gate-)
@@ -34,14 +34,15 @@ This is the authoritative build sequence for the SynapseOS prototype: the order 
 
 ## Runtime Milestones
 
-### M2 — Walking skeleton ✅
+### M2 — Walking skeleton 🚧
 
 - **Goal:** Prove the riskiest assumption before building anything around it — can a local 3B model turn plain-English intent into usable bash?
 - **Delivers:** `internal/ollama` client (non-streaming generate + connectivity check); `cmd/synapse` harness that runs a sample task suite and prints each proposed command with latency and token counts. No execution.
-- **Closes (`../scope.md`):** *Ollama connectivity check*; first half of *Intent parser client* (non-streaming).
+- **Closes (`../docs/scope.md`):** *Ollama connectivity check*; first half of *Intent parser client* (non-streaming).
 - **Depends on:** Ollama installed, `qwen2.5-coder:3b` pulled.
 - **Done when:** `go run ./cmd/synapse` prints a proposed command for all sample tasks; a downed server prints an actionable error instead of a stack trace.
-- **Risk retired:** Model viability at the 3B budget — the single largest empirical unknown in the whole runtime.
+- **Status:** Code satisfies the shape of the definition-of-done, but per this file's own "done means testable" rule, it hasn't actually been demonstrated — never run against a live Ollama instance. The error-path half (downed server) is trivially true by default; the half that actually retires the risk (does the model produce usable bash) is unverified.
+- **Risk retired:** Model viability at the 3B budget — the single largest empirical unknown in the whole runtime. **Not yet retired — this is the actual next step.**
 
 ### M3 — TUI loop ⬜
 
@@ -82,7 +83,7 @@ This is the authoritative build sequence for the SynapseOS prototype: the order 
 ### M7 — Session logger ⬜
 
 - **Goal:** Capture the study's entire dataset — get it right well before the study, not the week before.
-- **Delivers:** Structured per-event log emitting every telemetry field in `../scope.md`: timestamp (ms), event type, command string, execution latency, task ID, participant ID, condition.
+- **Delivers:** Structured per-event log emitting every telemetry field in `../docs/scope.md`: timestamp (ms), event type, command string, execution latency, task ID, participant ID, condition.
 - **Closes:** *Session logger*; *Telemetry fields logged per event*.
 - **Depends on:** M4 and M5 (there must be events to log).
 - **Done when:** Every event type — `task_start`, `command_issued`, `command_result`, `confirmation_triggered`, `undo_invoked`, `task_end` — is written with all fields, and the output is parseable by the Python log parser.
@@ -110,7 +111,7 @@ This is the authoritative build sequence for the SynapseOS prototype: the order 
 
 ## Post-Runtime Phases
 
-Detailed in `../scope.md`; summarized here for sequencing. These follow the runtime and several are gated by external approval.
+Detailed in `../docs/scope.md`; summarized here for sequencing. These follow the runtime and several are gated by external approval.
 
 | Phase | Contains | Gate |
 |---|---|---|
