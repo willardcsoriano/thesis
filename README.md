@@ -37,9 +37,7 @@ Mapúa University – Makati
     │       ├── formative-assessment-2.1.txt    # Chapter 1 draft (source)
     │       ├── formative-assessment-2.1.html   # Chapter 1 draft (HTML, A4 thesis format)
     │       ├── formative-assessment-2.1.pdf    # Chapter 1 draft (PDF export)
-    │       ├── summative-assessment-1.txt      # Chapter 1 full (source)
-    │       ├── summative-assessment-1.html     # Chapter 1 full (HTML, A4 thesis format)
-    │       ├── summative-assessment-1.pdf      # Chapter 1 full (PDF export)
+    │       ├── summative-assessment-1.pdf      # Chapter 1 full, as submitted (HTML source retired, see consolidated/)
     │       └── receipt.txt                     # Submission receipt
     └── module 3/
         ├── MODULE-3-SPECIFICATIONS.txt         # Methodology chapter planning spec
