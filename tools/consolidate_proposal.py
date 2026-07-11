@@ -330,7 +330,7 @@ def main():
   <p class="toc-entry level-2"><a href="#sec-system-env">System Environment Specifications</a><span class="toc-page">{p_ch3 + 1}</span></p>
   <p class="toc-entry level-2"><a href="#sec1">Section 1: Dataset</a><span class="toc-page">{p_ch3 + 2}</span></p>
   <p class="toc-entry level-2"><a href="#sec2">Section 2: Procedure / Experiment</a><span class="toc-page">{p_ch3 + 7}</span></p>
-  <p class="toc-entry level-2"><a href="#sec3">Section 3: System Testing</a><span class="toc-page">{p_ch3 + 10}</span></p>
+  <p class="toc-entry level-2"><a href="#sec3">Section 3: System Testing</a><span class="toc-page">{p_ch3 + 11}</span></p>
 
   <p class="toc-entry" style="font-weight: bold; margin-top: 0.8em;"><a href="#sec-master-references">REFERENCES</a><span class="toc-page">{p_ref}</span></p>
   <p class="toc-entry" style="font-weight: bold; margin-top: 0.8em;"><a href="#sec-appendices">APPENDICES</a><span class="toc-page">{p_app}</span></p>
@@ -340,13 +340,13 @@ def main():
   <p class="toc-title">LIST OF TABLES</p>
   <p class="toc-entry"><a href="#table-2-1">Table 2.1: Comparative analysis of surveyed systems along the four-layer pipeline</a><span class="toc-page">{p_ch2 + 7}</span></p>
   <p class="toc-entry"><a href="#table-3-1">Table 3.1: Study evaluation machines</a><span class="toc-page">{p_ch3 + 1}</span></p>
-  <p class="toc-entry"><a href="#table-3-2">Table 3.2: SynapseOS minimum deployment requirements</a><span class="toc-page">{p_ch3 + 1}</span></p>
+  <p class="toc-entry"><a href="#table-3-2">Table 3.2: SynapseOS minimum deployment requirements</a><span class="toc-page">{p_ch3 + 2}</span></p>
 </div>
 
 <div class="toc-block" id="list-of-figures">
   <p class="toc-title">LIST OF FIGURES</p>
   <p class="toc-entry"><a href="#figure-2-1">Figure 2.1: The four-layer interaction pipeline for language-mediated computing interfaces</a><span class="toc-page">{p_ch2}</span></p>
-  <p class="toc-entry"><a href="#figure-3-1">Figure 3.1: Conceptual framework of SynapseOS</a><span class="toc-page">{p_ch3}</span></p>
+  <p class="toc-entry"><a href="#figure-3-1">Figure 3.1: Conceptual framework of SynapseOS</a><span class="toc-page">{p_ch3 + 1}</span></p>
 </div>
 """
 

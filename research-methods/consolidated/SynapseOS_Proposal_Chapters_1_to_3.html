@@ -357,23 +357,23 @@
   <p class="toc-entry level-2"><a href="#sec-system-env">System Environment Specifications</a><span class="toc-page">26</span></p>
   <p class="toc-entry level-2"><a href="#sec1">Section 1: Dataset</a><span class="toc-page">27</span></p>
   <p class="toc-entry level-2"><a href="#sec2">Section 2: Procedure / Experiment</a><span class="toc-page">32</span></p>
-  <p class="toc-entry level-2"><a href="#sec3">Section 3: System Testing</a><span class="toc-page">35</span></p>
+  <p class="toc-entry level-2"><a href="#sec3">Section 3: System Testing</a><span class="toc-page">36</span></p>
 
-  <p class="toc-entry" style="font-weight: bold; margin-top: 0.8em;"><a href="#sec-master-references">REFERENCES</a><span class="toc-page">39</span></p>
-  <p class="toc-entry" style="font-weight: bold; margin-top: 0.8em;"><a href="#sec-appendices">APPENDICES</a><span class="toc-page">41</span></p>
+  <p class="toc-entry" style="font-weight: bold; margin-top: 0.8em;"><a href="#sec-master-references">REFERENCES</a><span class="toc-page">40</span></p>
+  <p class="toc-entry" style="font-weight: bold; margin-top: 0.8em;"><a href="#sec-appendices">APPENDICES</a><span class="toc-page">42</span></p>
 </div>
 
 <div class="toc-block" id="list-of-tables" style="page-break-before: always;">
   <p class="toc-title">LIST OF TABLES</p>
   <p class="toc-entry"><a href="#table-2-1">Table 2.1: Comparative analysis of surveyed systems along the four-layer pipeline</a><span class="toc-page">20</span></p>
   <p class="toc-entry"><a href="#table-3-1">Table 3.1: Study evaluation machines</a><span class="toc-page">26</span></p>
-  <p class="toc-entry"><a href="#table-3-2">Table 3.2: SynapseOS minimum deployment requirements</a><span class="toc-page">26</span></p>
+  <p class="toc-entry"><a href="#table-3-2">Table 3.2: SynapseOS minimum deployment requirements</a><span class="toc-page">27</span></p>
 </div>
 
 <div class="toc-block" id="list-of-figures">
   <p class="toc-title">LIST OF FIGURES</p>
   <p class="toc-entry"><a href="#figure-2-1">Figure 2.1: The four-layer interaction pipeline for language-mediated computing interfaces</a><span class="toc-page">13</span></p>
-  <p class="toc-entry"><a href="#figure-3-1">Figure 3.1: Conceptual framework of SynapseOS</a><span class="toc-page">25</span></p>
+  <p class="toc-entry"><a href="#figure-3-1">Figure 3.1: Conceptual framework of SynapseOS</a><span class="toc-page">26</span></p>
 </div>
 
 </div>
@@ -797,7 +797,7 @@
 <p class="table-caption" id="table-3-1"><strong>Table 3.1.</strong> Study evaluation machines</p>
 <table>
   <tr><th>Machine</th><th>Role</th><th>OS</th><th>Notes</th></tr>
-  <tr><td>SynapseOS evaluation machine</td><td>Condition A — all participants</td><td>SynapseOS</td><td>GUI mode; fullscreen conversational interface running within an XFCE (X11 session) desktop environment; based on Debian 13 (Trixie); Ollama + Qwen2.5-Coder-3B-Instruct running locally</td></tr>
+  <tr><td>SynapseOS evaluation machine</td><td>Condition A — all participants</td><td>SynapseOS</td><td>GUI mode; fullscreen conversational interface running within an XFCE (X11 session) desktop environment; based on Debian 13 (Trixie); Ollama + Qwen2.5-Coder-3B-Instruct running locally; a participant-accessible fallback returns to the underlying XFCE session if needed, logged and excluded from the primary analysis (Section 3.5)</td></tr>
   <tr><td>Windows / Linux dual-boot baseline machine</td><td>Condition B — Windows- or Linux-primary participants</td><td>Windows 11 or Ubuntu 24.04 LTS (GNOME), selected at boot</td><td>Standard consumer x86-64 hardware; Windows 11 and Ubuntu installed on separate partitions; standard user account per OS; no custom software. Facilitator boots to the OS matching the participant's assignment before the session begins.</td></tr>
   <tr><td>macOS baseline machine</td><td>Condition B — macOS-primary participants</td><td>macOS (current release)</td><td>Apple Silicon hardware; standard user account</td></tr>
 </table>
@@ -806,14 +806,14 @@
 <table>
   <tr><th>Component</th><th>Minimum Requirement</th></tr>
   <tr><td>Processor</td><td>64-bit x86 processor, 2-core minimum; no GPU required</td></tr>
-  <tr><td>RAM</td><td>4 GB (TUI mode<sup class="fn"><a href="#ch3-fn1">1</a></sup>); 8 GB recommended (GUI mode)</td></tr>
+  <tr><td>RAM</td><td>4 GB (CLI mode<sup class="fn"><a href="#ch3-fn8">8</a></sup> / TUI mode<sup class="fn"><a href="#ch3-fn1">1</a></sup>); 8 GB recommended (GUI mode)</td></tr>
   <tr><td>Storage</td><td>10 GB available (operating system, language model, and application)</td></tr>
-  <tr><td>Display</td><td>TUI mode: any terminal or remote connection; no graphical environment required. GUI mode: graphical desktop environment required.</td></tr>
+  <tr><td>Display</td><td>CLI mode / TUI mode: any terminal or remote connection; no graphical environment required. GUI mode: graphical desktop environment required.</td></tr>
   <tr><td>Language Model</td><td>Locally-hosted small language model (~1.8 GB)<sup class="fn"><a href="#ch3-fn2">2</a></sup>; CPU-only inference; no GPU required. Cloud language model backend available as an optional, user-configured alternative.</td></tr>
   <tr><td>Inference Server</td><td>Local inference server (Ollama)<sup class="fn"><a href="#ch3-fn3">3</a></sup>; manages model lifecycle, loading, and query serving on the host machine.</td></tr>
 </table>
 
-<p class="no-indent">The user study evaluates SynapseOS in GUI mode, which requires a graphical desktop environment and 8 GB RAM. SynapseOS additionally supports a TUI mode — a terminal-based interface requiring no display server, running on as little as 2 vCPU and 4 GB RAM — designed for server and remote deployment environments accessible over SSH. TUI mode is not evaluated in the user study.</p>
+<p class="no-indent">The user study evaluates SynapseOS in GUI mode, which requires a graphical desktop environment and 8 GB RAM. If SynapseOS becomes unresponsive during a task or a participant wishes to stop using it, a fallback returns them to the underlying XFCE session, which continues running beneath the conversational interface throughout Condition A; every fallback invocation is logged, and any task during which it occurs is excluded from the primary completion-time and error-rate comparison rather than counted as a SynapseOS success (Section 3.5). SynapseOS additionally supports a TUI mode — a terminal-based interface requiring no display server, running on as little as 2 vCPU and 4 GB RAM — designed for server and remote deployment environments accessible over SSH, and a CLI mode<sup class="fn"><a href="#ch3-fn8">8</a></sup> — a one-shot, non-interactive invocation that translates a single natural-language request into a proposed command and exits, sharing TUI mode's minimal hardware footprint but intended for scripting and automation rather than an interactive session. Neither CLI nor TUI mode is evaluated in the user study.</p>
 
 <!-- ═══════════════ SECTION 1: DATASET ═══════════════ -->
 <h2 id="sec1">Section 1: Dataset</h2>
@@ -1065,6 +1065,7 @@
   <li><strong>Learning effect:</strong> Participants may perform better on the second condition simply due to task familiarity, independent of interface quality. <em>Mitigation:</em> condition order is counterbalanced across participants so that learning effects are distributed equally across both conditions and do not systematically favor either.</li>
   <li><strong>Demand characteristics:</strong> Participants may behave differently from natural use because they know they are being observed. <em>Mitigation:</em> participants are instructed to complete tasks as they naturally would; the specific hypotheses of the study are withheld until the post-study debrief to reduce social desirability bias.</li>
   <li><strong>Fatigue:</strong> Completing the full task set twice in a single session may degrade performance in the second condition independent of interface quality. <em>Mitigation:</em> a short break is offered between conditions and total session length is bounded to approximately 120 minutes.</li>
+  <li><strong>Fallback reliance:</strong> GUI mode provides a participant-accessible fallback to the underlying XFCE session if SynapseOS becomes unresponsive or a participant wishes to stop using it mid-task; unrestricted, this would let a participant's own choice substitute for the interface under evaluation, confounding the within-subjects comparison. <em>Mitigation:</em> every fallback invocation is logged with participant ID, task ID, and timestamp; any task during which it is invoked is excluded from the primary completion-time and error-rate comparison for that task rather than counted as a SynapseOS success, and fallback-invocation rate is reported separately as an exploratory reliability metric.</li>
 </ul>
 
 <p><strong>External validity:</strong></p>
@@ -1085,6 +1086,7 @@
     <li id="ch3-fn5">Quantization reduces the numerical precision of model weights to lower memory requirements. At 4-bit precision, a model that would otherwise require dedicated GPU memory can run on a standard CPU with modest RAM.</li>
     <li id="ch3-fn6">Low-Rank Adaptation (LoRA) is a parameter-efficient fine-tuning method that introduces a small number of trainable weight matrices while keeping the base model frozen, enabling task-specific adaptation on consumer hardware without full retraining.</li>
     <li id="ch3-fn7">NL2Bash is a benchmark dataset pairing natural language command descriptions with their corresponding bash shell commands, used to evaluate a model's accuracy in translating natural language into executable commands.</li>
+    <li id="ch3-fn8">Command-Line Interface mode: a one-shot, non-interactive invocation that translates a single natural-language request into a proposed command and exits, with no persistent session. Distinct from TUI mode's persistent interactive chat session; intended for scripting, automation, and one-off remote commands.</li>
   </ol>
 </div>
 
