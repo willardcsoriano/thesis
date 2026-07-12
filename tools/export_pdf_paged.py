@@ -15,8 +15,54 @@ CHROMIUM_BIN = VENDOR_DIR / "chromium" / "chrome"
 LIBS_DIR = VENDOR_DIR / "libs"
 FONTS_DIR = VENDOR_DIR / "fonts"
 
+FONTCONFIG_TEMPLATE = """<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <dir>{fonts_dir}</dir>
+  <cachedir>{fonts_dir}/cache</cachedir>
+
+  <match target="pattern">
+    <test name="family"><string>Times New Roman</string></test>
+    <edit name="family" mode="assign" binding="same"><string>Liberation Serif</string></edit>
+  </match>
+  <match target="pattern">
+    <test name="family"><string>Georgia</string></test>
+    <edit name="family" mode="assign" binding="same"><string>Liberation Serif</string></edit>
+  </match>
+  <match target="pattern">
+    <test name="family"><string>Arial</string></test>
+    <edit name="family" mode="assign" binding="same"><string>Liberation Sans</string></edit>
+  </match>
+
+  <alias>
+    <family>serif</family>
+    <prefer><family>Liberation Serif</family></prefer>
+  </alias>
+  <alias>
+    <family>sans-serif</family>
+    <prefer><family>Liberation Sans</family></prefer>
+  </alias>
+  <alias>
+    <family>monospace</family>
+    <prefer><family>Liberation Mono</family></prefer>
+  </alias>
+</fontconfig>
+"""
+
+
+def write_fontconfig() -> None:
+    """Regenerate fonts.conf with an absolute <dir>, so font resolution works
+    regardless of the invoking process's working directory. A bare
+    FONTCONFIG_PATH with no fonts.conf fails to load any config at all and
+    silently falls back to an arbitrary font (observed: DejaVu Sans, ignoring
+    every font-family in the source CSS) - this is what actually makes
+    Times New Roman resolve instead of that fallback."""
+    (FONTS_DIR / "cache").mkdir(exist_ok=True)
+    (FONTS_DIR / "fonts.conf").write_text(FONTCONFIG_TEMPLATE.format(fonts_dir=FONTS_DIR))
+
 
 def export(html_path: Path, pdf_path: Path) -> None:
+    write_fontconfig()
     env = os.environ.copy()
     env["LD_LIBRARY_PATH"] = str(LIBS_DIR) + os.pathsep + env.get("LD_LIBRARY_PATH", "")
     env["FONTCONFIG_PATH"] = str(FONTS_DIR)
