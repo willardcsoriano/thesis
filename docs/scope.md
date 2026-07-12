@@ -44,13 +44,13 @@ Two independent tracks must both finish before the **Pilot study** can run. One 
 
 These are features of the SynapseOS binary that the paper explicitly describes. All live in the Go runtime.
 
-- `[~]` **CLI mode** — one-shot invocation (`synapse "<task>"` → proposed command → exit), no persistent session; the M2 walking skeleton's existing behavior, formalized as a permanent shipped mode rather than TUI scaffolding. Code complete, not yet run against a live Ollama instance (see D19, `prototype/build-order.md` M2)
-- `[ ]` **Conversational TUI** — full-screen persistent chat interface (bubbletea + lipgloss); accepts NL input, renders responses and command output
+- `[~]` **CLI mode** — one-shot invocation (`synapse "<task>"` → proposed command → classify → auto-run or confirm → execute → exit), no persistent session; formalized as a permanent shipped mode rather than TUI scaffolding (D19). Propose validated live against Ollama 2026-07-12; now being built out to full completion — execution and the confirmation gate are delivered here first, not in the TUI (see `prototype/build-order.md` M2, revised 2026-07-12)
+- `[ ]` **Conversational TUI** — full-screen persistent chat interface (bubbletea + lipgloss); accepts NL input, renders responses and command output; wraps CLI mode's already-working intent parser, classifier, and executor rather than rebuilding them — depends on CLI mode being fully complete (`prototype/build-order.md` M3)
 - `[ ]` **GUI-mode session manager** — fullscreen conversational interface wrapping the same runtime as the TUI, launched in place of the conventional Linux graphical desktop (see D11, D12); this is Condition A as actually run in the study, not the TUI — see `prototype/build-order.md` M9
 - `[ ]` **GUI-mode XFCE fallback** — participant-accessible path back to the underlying XFCE session if SynapseOS becomes unresponsive or the participant wants to stop mid-task; every invocation logged (participant ID, task ID, timestamp) as its own telemetry event type, separate from the six events below (see D20)
 - `[ ]` **Intent parser client** — sends user utterance + session context to Ollama REST API; streams response tokens back to the TUI
-- `[ ]` **Bash execution engine** — dispatches shell commands as subprocesses via `os/exec`; captures and streams stdout/stderr
-- `[ ]` **Confirmation gate** — classifies pending commands as reversible/irreversible before dispatch; blocks irreversible commands pending explicit user approval
+- `[ ]` **Bash execution engine** — dispatches shell commands as subprocesses via `os/exec`; captures and streams stdout/stderr; delivered via CLI mode first (`prototype/build-order.md` M2, previously scoped as a standalone M4), reused by the TUI
+- `[ ]` **Confirmation gate** — classifies pending commands as reversible/irreversible before dispatch; blocks irreversible commands pending explicit user approval; delivered via CLI mode first (`prototype/build-order.md` M2, previously scoped as a standalone M5), reused by the TUI
 - `[ ]` **Undo log** — records reversible operations; exposes an undo command that restores prior system state
 - `[ ]` **Session logger** — writes structured log entries for every event: task start, command issued, command output, undo events, confirmation gate triggers, task end. This is the source of all telemetry data the study depends on.
 - `[ ]` **Telemetry fields logged per event:**
