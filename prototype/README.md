@@ -36,6 +36,7 @@ Per-milestone goals, dependencies, and definition-of-done: **`build-order.md`**.
 | `build-order.md` | Milestone sequence, gates, and definition-of-done |
 | `../docs/scope.md` | Full deliverables registry (what must exist) |
 | `../docs/decisions.md` | Architecture rationale (D1–D20) |
+| `../docs/interface-modes.md` | CLI/TUI/GUI boundaries — shared core, what each mode reuses vs. builds fresh, GUI kiosk-takeover mechanics |
 | `../docs/stack.md` | Implementation stack reference |
 | `../docs/vision.md` | Product vision and thesis hypothesis |
 | `../docs/roadmap.md` | Cross-horizon status index |

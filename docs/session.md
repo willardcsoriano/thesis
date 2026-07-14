@@ -291,6 +291,7 @@ Applied Mapúa ITRD writing guidelines to both HTML submission files:
 |------|---------|
 | `decisions.md` | All architecture and study design decisions (D1–D20) |
 | `layers.md` | OS-layer reference guide — where SynapseOS sits, TUI/GUI/Overlay modes, distro-identity criteria |
+| `interface-modes.md` | CLI/TUI/GUI reference — shared core, boundaries table (lifecycle/state/rendering), what each mode reuses vs. builds fresh, GUI kiosk-takeover mechanics. Renamed and rewritten from `gui-tui-implementation.md` Session 18 to add CLI mode (D19) and fix a stale sentence conflating TUI with "the CLI shell" |
 | `scope.md` | Complete deliverables checklist — everything the paper has promised that must be built; includes the Critical Path and Final Thesis Compilation sections |
 | `wordbank.md` | Terms to incorporate into the paper |
 | `future-features.md` | Deferred ideas (not in scope for thesis) |
