@@ -1,14 +1,19 @@
 // Command synapse is CLI mode, SynapseOS's one-shot interface (D19, build
 // milestone 2).
 //
-// Given a single natural-language request, it proposes a bash command via a
-// local Ollama model, classifies the command as reversible or irreversible,
-// and either runs it immediately (reversible) or blocks on an explicit y/n
-// confirmation first (irreversible) — the same reversibility-gated execution
-// model TUI mode (M3) will later reuse rather than rebuild. Run with no
-// arguments, it instead walks a built-in sample task suite in propose-only
-// mode: a quality smoke test across the task categories the study covers,
-// which deliberately never touches the real filesystem.
+// Given a single natural-language request, it runs a bounded multi-step loop
+// (D21): propose the next command via a local Ollama model, classify it as
+// reversible or irreversible, run it immediately (reversible) or block on an
+// explicit y/n confirmation first (irreversible), then feed the result back
+// so the model can propose the next step or signal the task is done. Every
+// step is independently classified and gated — nothing is trusted just
+// because an earlier step in the same invocation was approved — and a hard
+// step cap stops a confused model from looping indefinitely. This is the
+// same reversibility-gated execution model TUI mode (M3) will later reuse
+// rather than rebuild. Run with no arguments, it instead walks a built-in
+// sample task suite in propose-only mode: a quality smoke test across the
+// task categories the study covers, which deliberately never touches the
+// real filesystem and never loops.
 //
 // Usage:
 //
@@ -39,7 +44,9 @@ const defaultModel = "qwen2.5-coder:3b"
 // systemPrompt constrains the model to emit exactly one runnable command.
 // This is intentionally strict and un-tuned: the point of this milestone is to
 // measure the stock model's out-of-the-box quality, which sets the baseline
-// that later LoRA fine-tuning (scope.md, Python pipeline) has to beat.
+// that later LoRA fine-tuning (scope.md, Python pipeline) has to beat. Used
+// only by the propose-only sample suite (proposeOnly) — the ad-hoc path uses
+// loopSystemPrompt instead.
 const systemPrompt = `You are the command translator for a Linux system running Debian 13 (Trixie).
 Convert the user's request into a single bash command that accomplishes it.
 Rules:
@@ -47,6 +54,38 @@ Rules:
 - If the request needs multiple steps, combine them into one line with pipes or &&.
 - Prefer standard, widely available utilities.
 - If the request cannot be done with a shell command, output exactly: UNSUPPORTED`
+
+// loopSystemPrompt drives the ad-hoc path's bounded multi-step loop (D21):
+// given the task and, on later steps, what has already run and what it
+// produced, propose exactly the next command, or DONE once nothing further
+// is needed. This is what lets the loop handle tasks that need more than one
+// command (e.g. "mkdir a destination, then move files into it") and correct
+// a failed attempt using its own error output — without the model ever
+// deciding to skip the classifier/confirmation gate for a later step; that
+// gate is enforced by runAdHoc, not by anything the model is trusted to do.
+const loopSystemPrompt = `You are the command translator for a Linux system running Debian 13 (Trixie).
+You are given a task and, if any commands have already been run toward it, each one's exit code and output.
+Output the single next bash command needed to make progress on the task.
+Rules:
+- Output ONLY the command. No explanation, no commentary, no markdown code fences.
+- If the commands already run have already fully accomplished the task, output exactly: DONE
+- Combine steps into one line with pipes or && where you reasonably can, but if a step depends on seeing the result of a previous command first, propose only that next step.
+- Prefer standard, widely available utilities.
+- If the task cannot be done with a shell command at all, output exactly: UNSUPPORTED`
+
+// maxLoopSteps hard-caps the ad-hoc path's bounded loop (D21). Reaching the
+// cap is reported as an explicit failure, never silently treated as if the
+// model had signaled DONE — an unbounded or silently-truncated loop is
+// exactly the failure mode the cap exists to prevent.
+const maxLoopSteps = 5
+
+const doneSentinel = "DONE"
+
+// stepOutputChars caps how much of a single step's stdout/stderr gets fed
+// back into the next step's prompt. A command like a recursive find can
+// produce output far larger than useful context; this is a blunt truncation,
+// not the compression M6's session context will eventually do for the TUI.
+const stepOutputChars = 500
 
 // sampleSuite is a first pass across the four task categories the study covers
 // (scope.md → Custom cross-platform task suite). It is a smoke test for
@@ -98,46 +137,119 @@ func proposeOnly(ctx context.Context, client *ollama.Client, model, category, ta
 		category, task, cmd, resp.EvalCount, resp.Latency().Round(time.Millisecond))
 }
 
-// runAdHoc runs the full CLI-mode pipeline for a single user-supplied task:
-// propose a command, classify its reversibility, auto-run it if safe or
-// block on confirmation if not, then print its output and exit code.
+// loopStep records one executed command and its result, so later steps'
+// prompts can show the model what has already happened.
+type loopStep struct {
+	command string
+	result  executor.Result
+}
+
+// runAdHoc runs CLI mode's bounded multi-step loop (D21) for a single
+// user-supplied task: propose the next command, classify its reversibility,
+// auto-run it if safe or block on confirmation if not, execute it, then feed
+// the result back so the model can propose the next step or signal DONE.
+// Every step — not just the first — goes through the same classifier and
+// confirmation gate; nothing is trusted just because an earlier step in the
+// same run was approved. Stops on DONE, on a blocked-then-declined
+// confirmation, or on hitting maxLoopSteps, whichever comes first.
 func runAdHoc(ctx context.Context, client *ollama.Client, model, task string) {
-	resp, cmd, err := propose(ctx, client, model, task)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
-	}
+	var history []loopStep
 
-	fmt.Printf("intent : %s\ncommand: %s\nstats  : %d tokens in %s\n\n",
-		task, cmd, resp.EvalCount, resp.Latency().Round(time.Millisecond))
+	for i := 1; i <= maxLoopSteps; i++ {
+		resp, cmd, err := proposeStep(ctx, client, model, task, history)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
 
-	if cmd == "" || cmd == "UNSUPPORTED" {
-		fmt.Println("model reported this request cannot be done with a shell command.")
-		os.Exit(1)
-	}
+		fmt.Printf("step %d: %s\n  stats: %d tokens in %s\n",
+			i, cmd, resp.EvalCount, resp.Latency().Round(time.Millisecond))
 
-	verdict, reason := classifier.Classify(cmd)
-	if verdict == classifier.Irreversible {
-		fmt.Printf("blocked : %s is irreversible — %s\n", cmd, reason)
-		if !confirm("run it anyway?") {
-			fmt.Println("cancelled.")
+		if cmd == "" || cmd == "UNSUPPORTED" {
+			fmt.Println("model reported this request cannot be done with a shell command.")
+			os.Exit(1)
+		}
+		if strings.EqualFold(cmd, doneSentinel) {
+			if len(history) == 0 {
+				fmt.Println("model reported nothing needs to be done.")
+				return
+			}
+			fmt.Printf("task complete in %d step(s).\n", len(history))
 			return
 		}
+
+		verdict, reason := classifier.Classify(cmd)
+		if verdict == classifier.Irreversible {
+			fmt.Printf("blocked: %s is irreversible — %s\n", cmd, reason)
+			if !confirm("run it anyway?") {
+				fmt.Println("cancelled.")
+				return
+			}
+		}
+
+		result := executor.Run(ctx, cmd)
+		if result.Err != nil {
+			fmt.Fprintf(os.Stderr, "error: command did not run: %v\n", result.Err)
+			os.Exit(1)
+		}
+		if result.Stdout != "" {
+			fmt.Print(result.Stdout)
+		}
+		if result.Stderr != "" {
+			fmt.Fprint(os.Stderr, result.Stderr)
+		}
+		fmt.Printf("exit code: %d\n\n", result.ExitCode)
+
+		history = append(history, loopStep{command: cmd, result: result})
 	}
 
-	result := executor.Run(ctx, cmd)
-	if result.Err != nil {
-		fmt.Fprintf(os.Stderr, "error: command did not run: %v\n", result.Err)
-		os.Exit(1)
+	fmt.Fprintf(os.Stderr, "error: step limit reached (%d steps) without the task being reported complete — stopping.\n", maxLoopSteps)
+	os.Exit(1)
+}
+
+// proposeStep asks the model for the next command given task and everything
+// that has run so far, with the same deterministic decoding as propose.
+func proposeStep(ctx context.Context, client *ollama.Client, model, task string, history []loopStep) (*ollama.GenerateResponse, string, error) {
+	reqCtx, cancel := context.WithTimeout(ctx, 120*time.Second)
+	defer cancel()
+
+	resp, err := client.Generate(reqCtx, model, loopSystemPrompt, buildStepPrompt(task, history), map[string]any{"temperature": 0})
+	if err != nil {
+		return nil, "", err
 	}
-	if result.Stdout != "" {
-		fmt.Print(result.Stdout)
+	return resp, cleanCommand(resp.Response), nil
+}
+
+// buildStepPrompt renders the task plus a truncated history of already-run
+// commands and their results, in the shape loopSystemPrompt expects.
+func buildStepPrompt(task string, history []loopStep) string {
+	if len(history) == 0 {
+		return "Task: " + task
 	}
-	if result.Stderr != "" {
-		fmt.Fprint(os.Stderr, result.Stderr)
+
+	var b strings.Builder
+	b.WriteString("Task: ")
+	b.WriteString(task)
+	b.WriteString("\n\nSteps already run:\n")
+	for i, s := range history {
+		fmt.Fprintf(&b, "%d. $ %s\n   exit code: %d\n", i+1, s.command, s.result.ExitCode)
+		if out := strings.TrimSpace(s.result.Stdout); out != "" {
+			fmt.Fprintf(&b, "   stdout: %s\n", truncate(out, stepOutputChars))
+		}
+		if errOut := strings.TrimSpace(s.result.Stderr); errOut != "" {
+			fmt.Fprintf(&b, "   stderr: %s\n", truncate(errOut, stepOutputChars))
+		}
 	}
-	fmt.Printf("exit code: %d\n", result.ExitCode)
-	os.Exit(result.ExitCode)
+	b.WriteString("\nWhat is the next command? Output DONE if the task is already fully accomplished.")
+	return b.String()
+}
+
+// truncate shortens s to at most n bytes, marking that it was cut.
+func truncate(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + " ...(truncated)"
 }
 
 // propose sends task to the model with deterministic decoding (temperature
