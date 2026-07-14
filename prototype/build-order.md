@@ -8,7 +8,7 @@ This is the authoritative build sequence for the SynapseOS prototype: the order 
 - [Sequencing Principles](#sequencing-principles)
 - [Status Key](#status-key)
 - [Runtime Milestones](#runtime-milestones)
-  - [M2 — CLI mode: propose, classify, execute 🚧](#m2-cli-mode-propose-classify-execute-)
+  - [M2 — CLI mode: propose, classify, execute ✅](#m2-cli-mode-propose-classify-execute-)
   - [M3 — TUI loop ⬜](#m3-tui-loop-)
   - [M4 — Execution engine — merged into M2 (2026-07-12)](#m4-execution-engine-merged-into-m2-2026-07-12)
   - [M5 — Confirmation gate — merged into M2 (2026-07-12)](#m5-confirmation-gate-merged-into-m2-2026-07-12)
@@ -34,20 +34,20 @@ This is the authoritative build sequence for the SynapseOS prototype: the order 
 
 ## Runtime Milestones
 
-### M2 — CLI mode: propose, classify, execute 🚧
+### M2 — CLI mode: propose, classify, execute ✅
 
 - **Goal:** Prove the riskiest assumption before building anything around it — can a local 3B model turn plain-English intent into usable bash? Then make CLI mode a genuinely complete, useful interface on its own (D19), not just a proof-of-concept that TUI later supersedes: propose a command, classify it as reversible/irreversible, auto-run it if safe, ask for confirmation if not. **Revised 2026-07-12:** this milestone absorbed the core logic originally scoped as separate M4/M5 milestones (see their entries below) — execution and the confirmation gate don't need a TUI to exist, and CLI mode isn't a real interface mode until it can actually do things, not just print suggestions. M3 (TUI) now depends on this being fully done, not just the walking-skeleton half of it.
 - **Delivers:**
   - `internal/ollama` client (non-streaming generate + connectivity check) — **done, validated**
-  - `cmd/synapse` harness: sample task suite (propose-only, for quality-eyeballing — deliberately does not auto-execute against the real filesystem) and an ad-hoc single-task path (`synapse "<task>"`) that proposes, classifies, and executes — **propose done and validated; classify + execute not yet built**
-  - Reversibility classifier: pattern-matches a proposed command against known-irreversible shapes (`rm`, `dd`, `mkfs`, truncating redirects, …); reversible commands auto-run, irreversible ones print the command and block on an explicit y/n before running
-  - `os/exec` subprocess dispatch with stdout/stderr capture and exit-code surfacing
-- **Closes (`../docs/scope.md`):** *Ollama connectivity check*; first half of *Intent parser client* (non-streaming); *CLI mode*; *Bash execution engine*; *Confirmation gate*.
+  - `cmd/synapse` harness: sample task suite (propose-only, for quality-eyeballing — deliberately does not auto-execute against the real filesystem) and an ad-hoc single-task path (`synapse "<task>"`) that proposes, classifies, confirms, and executes — **done, validated live**
+  - `internal/classifier`: reversibility classifier that pattern-matches a proposed command against known-irreversible shapes (`rm`, `dd`, `mkfs`, `shred`, `git reset --hard`, `git clean -f`, truncating redirects); reversible commands auto-run, irreversible ones print the command and reason and block on an explicit y/n before running — **done**
+  - `internal/executor`: `os/exec` subprocess dispatch (`sh -c`) with stdout/stderr capture and exit-code surfacing — **done**
+- **Closes (`../docs/scope.md`):** *Ollama connectivity check*; *Intent parser client* (non-streaming); *CLI mode*; *Bash execution engine*; *Confirmation gate*.
 - **Depends on:** Ollama installed, `qwen2.5-coder:3b` pulled.
-- **Done when:** `go run ./cmd/synapse` prints a proposed command for all sample tasks (✅ demonstrated); `synapse "<task>"` proposes a command, classifies it, auto-runs reversible commands and shows their output, and blocks irreversible commands on confirmation before running them; a downed server prints an actionable error instead of a stack trace.
-- **Status:** Propose-only path validated against a live Ollama instance 2026-07-12 (see below) — 8/8 sample tasks produced a plausible command in 1.2–10s. Classify + execute are the actual next work, not yet started.
-- **Risk retired:** Model viability at the 3B budget — the single largest empirical unknown in the whole runtime. **Retired 2026-07-12**, confirmed live against `qwen2.5-coder:3b`. Two findings from that run: (1) `cleanCommand` only strips triple-backtick fences, not inline single backticks — 3 of 8 outputs came back wrapped in single backticks, which would hand the executor a broken string as-is; needs fixing before execution lands. (2) At least one command was plausible but semantically wrong (`dpkg-query -Wf` piped through a `grep` pattern that only matches `dpkg -l`'s different output format) — a model-accuracy limitation, not a code bug, and exactly the kind of failure the eventual study is designed to measure.
-- **Risk not yet retired:** Whether the reversibility classifier's pattern-matching approach is workable without false positives/negatives, and whether one-shot CLI confirmation (print + block on stdin) is a sane UX for M3's TUI to later build on.
+- **Done when:** `go run ./cmd/synapse` prints a proposed command for all sample tasks (✅ demonstrated); `synapse "<task>"` proposes a command, classifies it, auto-runs reversible commands and shows their output, and blocks irreversible commands on confirmation before running them (✅ demonstrated live, all three paths); a downed server prints an actionable error instead of a stack trace (✅, via `client.Ping`).
+- **Status:** Complete. Propose validated live 2026-07-12 (8/8 sample tasks). Classify + execute built and validated live the same day against `qwen2.5-coder:3b`: a reversible task (`ls`) auto-ran with output shown; an irreversible task (`rm /tmp/scratch.tmp`) blocked and correctly cancelled on non-`y` input; a second irreversible task (truncating redirect) blocked and correctly executed on `y`, with the file's contents verified afterward.
+- **Risk retired:** Model viability at the 3B budget — the single largest empirical unknown in the whole runtime. **Retired 2026-07-12**, confirmed live against `qwen2.5-coder:3b`. Two findings from the first live run: (1) `cleanCommand` only stripped triple-backtick fences, not inline single backticks — 3 of 8 outputs came back wrapped in single backticks; **fixed** the same day (handles both fence styles, unit-tested). (2) At least one command was plausible but semantically wrong (`dpkg-query -Wf` piped through a `grep` pattern that only matches `dpkg -l`'s different output format) — a model-accuracy limitation, not a code bug, and exactly the kind of failure the eventual study is designed to measure; left as-is, not something M2's scope fixes.
+- **Risk retired:** Whether the reversibility classifier's pattern-matching approach and one-shot CLI confirmation (print + block on stdin) are workable. **Retired 2026-07-12** — the three live runs above exercised auto-run, block-and-cancel, and block-and-confirm-then-run, all behaving as designed. The classifier's pattern list is intentionally small and named explicitly (see `internal/classifier`) rather than attempting full shell parsing; expanding it as new failure modes surface is expected, ordinary maintenance, not a reopened risk.
 
 ### M3 — TUI loop ⬜
 

@@ -11,14 +11,14 @@ This folder holds all SynapseOS prototype code — the runnable artifact behind 
 
 ## Status at a Glance
 
-Current milestone: **M2 — CLI mode: propose, classify, execute** (propose validated live against Ollama 2026-07-12; classify + execute not yet built — see `build-order.md`).
+Current milestone: **M2 — CLI mode: propose, classify, execute — complete** (all three stages validated live against Ollama 2026-07-12 — see `build-order.md`). Next up: **M3 — TUI loop**.
 
-Three interface modes, ship-scoped by D19/D20: **CLI** (one-shot invocation, M2), **TUI** (persistent terminal session, M3), **GUI** (fullscreen study takeover with a participant-accessible XFCE fallback, M9). CLI mode is being built out to full completion (propose + execute + confirmation gate) before TUI work starts — TUI wraps that already-working core in an interactive surface rather than building execution and confirmation from scratch.
+Three interface modes, ship-scoped by D19/D20: **CLI** (one-shot invocation, M2, done), **TUI** (persistent terminal session, M3), **GUI** (fullscreen study takeover with a participant-accessible XFCE fallback, M9). CLI mode was built out to full completion (propose + execute + confirmation gate) before TUI work starts — TUI wraps that already-working core in an interactive surface rather than building execution and confirmation from scratch.
 
 | Milestone | What it adds | Status |
 |---|---|---|
-| M2 | NL → Ollama → proposed bash, reversibility classification, `os/exec` execution — *is* CLI mode (D19) | 🚧 propose done + validated; classify/execute next |
-| M3 | bubbletea/lipgloss TUI chat loop, wrapping M2's core | ⬜ blocked on M2 completion |
+| M2 | NL → Ollama → proposed bash, reversibility classification, `os/exec` execution — *is* CLI mode (D19) | ✅ done, validated live |
+| M3 | bubbletea/lipgloss TUI chat loop, wrapping M2's core | ⬜ up next |
 | M4 | *(merged into M2 — see `build-order.md`)* | — |
 | M5 | *(merged into M2 — see `build-order.md`)* | — |
 | M6 | Session context (rolling window, output compression) | ⬜ |
