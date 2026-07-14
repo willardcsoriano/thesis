@@ -1,15 +1,19 @@
-// Command synapse is the SynapseOS walking skeleton (build milestone 2).
+// Command synapse is CLI mode, SynapseOS's one-shot interface (D19, build
+// milestone 2).
 //
-// It exercises the single riskiest assumption in the whole runtime before any
-// of the surrounding machinery exists: can a local 3B model turn plain-English
-// intent into a usable bash command? It sends natural language to Ollama and
-// prints the command the model proposes. It does NOT execute anything — that is
-// the next milestone (the execution engine + confirmation gate).
+// Given a single natural-language request, it proposes a bash command via a
+// local Ollama model, classifies the command as reversible or irreversible,
+// and either runs it immediately (reversible) or blocks on an explicit y/n
+// confirmation first (irreversible) — the same reversibility-gated execution
+// model TUI mode (M3) will later reuse rather than rebuild. Run with no
+// arguments, it instead walks a built-in sample task suite in propose-only
+// mode: a quality smoke test across the task categories the study covers,
+// which deliberately never touches the real filesystem.
 //
 // Usage:
 //
-//	synapse                       # run the built-in sample task suite
-//	synapse "find pdfs from this week"   # run one ad-hoc task
+//	synapse                              # propose-only sample task suite
+//	synapse "find pdfs from this week"   # propose, classify, confirm, execute
 //
 // Environment:
 //
@@ -18,12 +22,15 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"synapseos/internal/classifier"
+	"synapseos/internal/executor"
 	"synapseos/internal/ollama"
 )
 
@@ -68,36 +75,105 @@ func main() {
 	fmt.Printf("model: %s   endpoint: %s\n\n", model, client.BaseURL)
 
 	if args := os.Args[1:]; len(args) > 0 {
-		runTask(ctx, client, model, "ad-hoc", strings.Join(args, " "))
+		runAdHoc(ctx, client, model, strings.Join(args, " "))
 		return
 	}
 
 	for _, tc := range sampleSuite {
-		runTask(ctx, client, model, tc.category, tc.task)
+		proposeOnly(ctx, client, model, tc.category, tc.task)
 	}
 }
 
-func runTask(ctx context.Context, client *ollama.Client, model, category, task string) {
-	// Deterministic decoding: temperature 0 makes the smoke test reproducible
-	// and matches how the accuracy evaluator will score the model offline.
+// proposeOnly runs one sample-suite task through the model and prints the
+// proposed command without classifying or executing it. Used for the
+// built-in suite, which is a quality smoke test, not a live filesystem
+// action.
+func proposeOnly(ctx context.Context, client *ollama.Client, model, category, task string) {
+	resp, cmd, err := propose(ctx, client, model, task)
+	if err != nil {
+		fmt.Printf("[%s]\n  intent : %s\n  ERROR  : %v\n\n", category, task, err)
+		return
+	}
+	fmt.Printf("[%s]\n  intent : %s\n  command: %s\n  stats  : %d tokens in %s\n\n",
+		category, task, cmd, resp.EvalCount, resp.Latency().Round(time.Millisecond))
+}
+
+// runAdHoc runs the full CLI-mode pipeline for a single user-supplied task:
+// propose a command, classify its reversibility, auto-run it if safe or
+// block on confirmation if not, then print its output and exit code.
+func runAdHoc(ctx context.Context, client *ollama.Client, model, task string) {
+	resp, cmd, err := propose(ctx, client, model, task)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("intent : %s\ncommand: %s\nstats  : %d tokens in %s\n\n",
+		task, cmd, resp.EvalCount, resp.Latency().Round(time.Millisecond))
+
+	if cmd == "" || cmd == "UNSUPPORTED" {
+		fmt.Println("model reported this request cannot be done with a shell command.")
+		os.Exit(1)
+	}
+
+	verdict, reason := classifier.Classify(cmd)
+	if verdict == classifier.Irreversible {
+		fmt.Printf("blocked : %s is irreversible — %s\n", cmd, reason)
+		if !confirm("run it anyway?") {
+			fmt.Println("cancelled.")
+			return
+		}
+	}
+
+	result := executor.Run(ctx, cmd)
+	if result.Err != nil {
+		fmt.Fprintf(os.Stderr, "error: command did not run: %v\n", result.Err)
+		os.Exit(1)
+	}
+	if result.Stdout != "" {
+		fmt.Print(result.Stdout)
+	}
+	if result.Stderr != "" {
+		fmt.Fprint(os.Stderr, result.Stderr)
+	}
+	fmt.Printf("exit code: %d\n", result.ExitCode)
+	os.Exit(result.ExitCode)
+}
+
+// propose sends task to the model with deterministic decoding (temperature
+// 0, so the smoke test is reproducible and matches how the offline accuracy
+// evaluator will score the model) and returns the cleaned command it proposed.
+func propose(ctx context.Context, client *ollama.Client, model, task string) (*ollama.GenerateResponse, string, error) {
 	reqCtx, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
 
 	resp, err := client.Generate(reqCtx, model, systemPrompt, task, map[string]any{"temperature": 0})
 	if err != nil {
-		fmt.Printf("[%s]\n  intent : %s\n  ERROR  : %v\n\n", category, task, err)
-		return
+		return nil, "", err
 	}
+	return resp, cleanCommand(resp.Response), nil
+}
 
-	cmd := cleanCommand(resp.Response)
-	fmt.Printf("[%s]\n  intent : %s\n  command: %s\n  stats  : %d tokens in %s\n\n",
-		category, task, cmd, resp.EvalCount, resp.Latency().Round(time.Millisecond))
+// confirm prints prompt and blocks for an explicit "y"/"yes" on stdin. Any
+// other input, including a read error or EOF, is treated as "no" — the
+// confirmation gate fails closed.
+func confirm(prompt string) bool {
+	fmt.Printf("%s [y/N] ", prompt)
+	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
+	if err != nil {
+		return false
+	}
+	answer := strings.ToLower(strings.TrimSpace(line))
+	return answer == "y" || answer == "yes"
 }
 
 // cleanCommand strips the formatting small models add despite instructions:
-// markdown code fences and surrounding whitespace. It is defensive parsing for
-// the skeleton, not the final sanitizer — the execution engine will own real
-// command validation.
+// triple-backtick code fences, a whole-line wrapped in a single pair of
+// inline backticks (observed in live testing 2026-07-12: 3 of 8 sample-suite
+// responses came back backtick-wrapped instead of as a bare command), and
+// surrounding whitespace. It is defensive parsing, not a sanitizer — it does
+// not validate that the result is safe or even syntactically valid shell;
+// that's the classifier and the shell itself.
 func cleanCommand(s string) string {
 	s = strings.TrimSpace(s)
 	if strings.HasPrefix(s, "```") {
@@ -105,8 +181,13 @@ func cleanCommand(s string) string {
 			s = s[i+1:] // drop the opening ```lang line
 		}
 		s = strings.TrimSuffix(strings.TrimSpace(s), "```")
+		s = strings.TrimSpace(s)
 	}
-	return strings.TrimSpace(s)
+	if len(s) > 1 && strings.HasPrefix(s, "`") && strings.HasSuffix(s, "`") {
+		s = strings.TrimSuffix(strings.TrimPrefix(s, "`"), "`")
+		s = strings.TrimSpace(s)
+	}
+	return s
 }
 
 func envOr(key, fallback string) string {
