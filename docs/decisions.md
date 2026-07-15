@@ -259,7 +259,7 @@ Recruitment for the n = 20 sample (10 novice, 10 power user) adds a floor: at le
 
 ### D19 — CLI mode formalized as a third interface mode
 
-**Status:** Refines D11. To be reflected in SA3.1 Table 3.2 and the paragraph following it. **Execution model refined by D21** — CLI mode is still a single non-persistent invocation (no session survives between separate `synapse` calls), but a single invocation now runs a bounded multi-step loop internally rather than exactly one command; see D21.
+**Status:** Refines D11. Reflected in SA3.1 Table 3.2 and the paragraph following it. **Execution model refined by D21** — CLI mode is still a single non-persistent invocation (no session survives between separate `synapse` calls), but a single invocation now runs a bounded multi-step loop internally rather than exactly one command; see D21.
 
 SynapseOS ships three interface modes, not two: **CLI** (one-shot invocation — `synapse "<task>"` translates a single natural-language request into a proposed command and exits; no persistent session), **TUI** (persistent full-screen chat session, D11), and **GUI** (fullscreen conversational takeover, evaluated in the study, D11/D12). CLI mode is not new work — it is the M2 walking skeleton's existing behavior (`prototype/cmd/synapse/main.go`), promoted from a disposable stepping-stone toward M3 to a permanent, separately-named, shipped mode. It targets scripting, automation, and one-off remote invocations over SSH where a persistent interactive session is unnecessary overhead.
 
@@ -283,7 +283,7 @@ GUI mode gains a fallback path: a participant can return to the underlying XFCE 
 
 ### D21 — CLI-mode execution model: bounded, gated multi-step loop, not full autonomy
 
-**Status:** Refines D19 (M2). To be reflected in SA3.1 Table 3.2 and the paragraph following it.
+**Status:** Refines D19 (M2). Reflected in SA3.1 Table 3.2, footnote 8, and the paragraph following the table (2026-07-15).
 
 A single `synapse "<task>"` invocation runs a bounded loop, not exactly one command: propose a command → classify its reversibility → confirm if irreversible → execute → feed the result (stdout, stderr, exit code) back to the model, which then either proposes the next command toward the same task or signals the task is complete. Every proposed command at every step passes through the same classifier and confirmation gate individually — there is no batch approval, and no step is granted trust carried over from a prior step's confirmation. The loop ends when the model signals completion or a fixed hard step cap is reached, whichever comes first; hitting the cap is reported as an explicit "step limit reached" failure, never silently treated as success. The 8-task sample suite stays propose-only and is unaffected.
 
