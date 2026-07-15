@@ -12,7 +12,7 @@ This file is the single place to check where SynapseOS stands right now, across 
 
 | Horizon | Status | Detail |
 |---|---|---|
-| **H0 — Thesis prototype** | In build — M2 (walking skeleton / CLI mode, D19) code complete, live validation against Ollama still pending; M3 (TUI loop) next | `scope.md` (deliverables checklist) · `prototype/build-order.md` (milestone sequence) · `prototype/README.md` (live status) |
+| **H0 — Thesis prototype** | In build — M2 (CLI mode: propose, classify, execute, D19) complete, all three stages validated live against Ollama 2026-07-12; next is M3 (TUI loop), which depends on M2 being fully complete | `scope.md` (deliverables checklist) · `prototype/build-order.md` (milestone sequence) · `prototype/README.md` (live status) |
 | **H1 — Beyond thesis (Overlay)** | Deferred, not started | `future-features.md` · `layers.md` |
 | **H2 — North star** | Vision, not a deliverable | `vision.md` |
 
