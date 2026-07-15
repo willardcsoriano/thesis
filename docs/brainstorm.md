@@ -8,6 +8,7 @@ This file is the holding area for ideas and additions that have surfaced during 
 - [Pending Ideas](#pending-ideas)
   - [Cite NDSS LAST-X 2026 paper on NL2Bash benchmarking](#cite-ndss-last-x-2026-paper-on-nl2bash-benchmarking)
   - [Chapter 1 — SLM-first, model-agnostic architecture backport](#chapter-1-slm-first-model-agnostic-architecture-backport)
+  - [D8 reconsideration — embed the inference engine directly instead of Ollama's full shell](#d8-reconsideration-embed-the-inference-engine-directly-instead-of-ollamas-full-shell)
 
 ## Pending Ideas
 
@@ -29,3 +30,11 @@ This file is the holding area for ideas and additions that have surfaced during 
   2. **Remove limitation:** "LLM not yet committed" is now resolved. Replace with the honest limitation: accuracy ceiling of the 3B SLM on complex or ambiguous natural language commands relative to frontier alternatives.
   3. **Update scope:** Cloud inference is opt-in, not a design dependency.  
 **Blocked on:** SA1 already submitted. Apply during Thesis 1 revision.
+
+---
+
+### D8 reconsideration — embed the inference engine directly instead of Ollama's full shell
+
+**Would affect:** `decisions.md` D8 (if resolved toward change), `stack.md`, possibly SA3.1 Table 3.1  
+**What:** Raised 2026-07-15 while reasoning through a general build-vs-adopt principle for the project (adopt what's genuinely hard to reproduce — the "wheel" — go bespoke on generic orchestration built for a broader case than SynapseOS actually has). Ollama bundles a real inference engine (llama.cpp via cgo, or its own pure-Go `ollamarunner`, covering ~21 architectures) together with a generic orchestration shell: model registry/pull, automatic multi-backend hardware detection (CUDA/Metal/ROCm/CPU), and concurrent multi-client HTTP scheduling. SynapseOS has one fixed model (D3), one fixed CPU-only Debian target (D1), and one local user — most of that shell exists for cases SynapseOS doesn't have. Two possible directions if pursued: **Tier A** — embed the inference engine directly in the Go binary (no external process at all), engineering lift depends on whether a reusable pure-Go inference path exists outside Ollama's own binary (unconfirmed) versus requiring cgo bindings to llama.cpp (real build-toolchain cost). **Tier B** — SynapseOS auto-spawns/manages a local Ollama server process itself via `os/exec`, so the user never runs `ollama serve` manually, without changing the inference engine.  
+**Not yet decided:** Neither tier has been chosen, and D8 has not been changed. The concrete unresolved sub-question for Tier A is whether Ollama's pure-Go `ollamarunner` is reusable as an importable library or is an internal-only implementation detail.
