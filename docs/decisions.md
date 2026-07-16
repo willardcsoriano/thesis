@@ -112,7 +112,7 @@ SynapseOS executes only shell-expressible operations. The system's capability bo
 
 ### D8 — Implementation stack: Go runtime, Python build pipeline, Ollama inference server
 
-**Status:** In SA3.1 Table 3.1
+**Status:** In SA3.1 Table 3.1. **Reconsideration raised, unresolved 2026-07-15** — whether Ollama's full orchestration shell (model registry, multi-backend hardware detection, multi-client HTTP scheduling) is worth keeping given SynapseOS's fixed single-model/single-target/single-user deployment, versus embedding the inference engine more directly. Not yet decided; tracked in `brainstorm.md`.
 
 **Go** owns the runtime — everything the user touches during the study: the TUI session manager (bubbletea + lipgloss), bash subprocess execution and stdout/stderr streaming, Ollama API client (HTTP streaming to localhost:11434), confirmation gate, and undo log.
 
