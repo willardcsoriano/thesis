@@ -1,6 +1,3 @@
-# Claude Code local settings (machine-specific)
-.claude/settings.local.json
-
 # OS / editor cruft
 .DS_Store
 Thumbs.db
@@ -159,6 +156,12 @@ instance/
 
 # Scrapy stuff:
 .scrapy
+
+# >>> pinned custom (kept verbatim across /gitignore refreshes — do not remove) >>>
+# Claude Code local settings (machine-specific) + session log (private working notes)
+.claude/settings.local.json
+docs/session.md
+# <<< end pinned custom <<<
 
 # Sphinx documentation
 docs/_build/
