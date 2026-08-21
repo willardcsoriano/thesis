@@ -1,0 +1,325 @@
+<title>Agentic Shells</title>
+<style>
+  :root {
+    --paper: #EEF0E9;
+    --surface: #F8F9F4;
+    --ink: #1B1F1D;
+    --ink-soft: #545A50;
+    --ink-faint: #7C8177;
+    --line: #C9CDBF;
+    --accent-cloud: #453A86;
+    --accent-local: #2C6B4A;
+    --accent-warm: #A85321;
+    --shadow: 0 1px 2px rgba(27,31,29,0.06), 0 8px 24px rgba(27,31,29,0.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #14170F;
+      --surface: #1B1E17;
+      --ink: #ECEFE6;
+      --ink-soft: #ABB09F;
+      --ink-faint: #7C816F;
+      --line: #363A2F;
+      --accent-cloud: #8F82E8;
+      --accent-local: #63C494;
+      --accent-warm: #E08A50;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #14170F;
+    --surface: #1B1E17;
+    --ink: #ECEFE6;
+    --ink-soft: #ABB09F;
+    --ink-faint: #7C816F;
+    --line: #363A2F;
+    --accent-cloud: #8F82E8;
+    --accent-local: #63C494;
+    --accent-warm: #E08A50;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .page { animation: rise 0.5s ease-out both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  }
+
+  .page {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem 5rem;
+  }
+
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 0.9rem;
+  }
+
+  h1 {
+    font-family: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: clamp(2.1rem, 5vw, 2.9rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 1rem;
+    text-wrap: balance;
+  }
+
+  .lede {
+    max-width: 62ch;
+    font-size: 1.08rem;
+    color: var(--ink-soft);
+    margin: 0 0 2.8rem;
+  }
+
+  .lede strong { color: var(--ink); font-weight: 600; }
+
+  figure { margin: 0 0 2.6rem; }
+
+  .venn-wrap {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  svg.venn {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+  }
+
+  figcaption {
+    margin-top: 1.1rem;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    max-width: 64ch;
+  }
+
+  .venn-label-a { fill: var(--accent-cloud); }
+  .venn-label-b { fill: var(--accent-local); }
+  .venn-title { font-weight: 700; letter-spacing: 0.04em; }
+  .venn-sub { fill: var(--ink-faint); font-style: italic; }
+  .venn-bullet { fill: var(--ink); }
+  .venn-shared-title { fill: var(--ink); font-weight: 700; letter-spacing: 0.06em; }
+  .venn-shared-sub { fill: var(--ink-faint); font-style: italic; }
+
+  h2 {
+    font-family: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0 0 1.1rem;
+  }
+
+  .compare {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin: 0 0 2.6rem;
+  }
+
+  .compare-banner {
+    padding: 0.9rem 1.2rem;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--accent-cloud) 6%, var(--surface));
+  }
+
+  .compare-banner code {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    font-size: 0.85rem;
+    color: var(--ink);
+  }
+
+  .compare-scroll { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    min-width: 560px;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 0.75rem 1.2rem;
+    border-top: 1px solid var(--line);
+    vertical-align: top;
+  }
+
+  thead th {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    border-top: none;
+    padding-top: 1rem;
+  }
+
+  th[scope="row"] {
+    font-weight: 600;
+    color: var(--ink-soft);
+    width: 26%;
+    white-space: nowrap;
+  }
+
+  td.col-a { color: var(--accent-cloud); }
+  td.col-b { color: var(--accent-local); }
+
+  :root[data-theme="light"] td.col-a,
+  :root:not([data-theme="dark"]):not([data-theme="light"]) td.col-a { color: var(--accent-cloud); }
+
+  .callout {
+    border-left: 3px solid var(--accent-warm);
+    background: color-mix(in srgb, var(--accent-warm) 8%, var(--surface));
+    border-radius: 0 10px 10px 0;
+    padding: 1.3rem 1.5rem;
+    margin: 0 0 2.2rem;
+  }
+
+  .callout h2 { font-size: 1.05rem; margin-bottom: 0.6rem; }
+  .callout p { margin: 0; color: var(--ink-soft); font-size: 0.96rem; max-width: 62ch; }
+  .callout p + p { margin-top: 0.7rem; }
+
+  footer {
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    border-top: 1px solid var(--line);
+    padding-top: 1.2rem;
+  }
+</style>
+
+<div class="page">
+  <p class="eyebrow">SynapseOS — working diagram, not part of the submitted proposal</p>
+  <h1>Agentic Shells</h1>
+  <p class="lede">
+    A cloud coding agent and SynapseOS run the <strong>same loop</strong>: natural language in,
+    a shell command out, executed and watched. They diverge on where the model lives,
+    who it's built for, and what it's ultimately part of.
+  </p>
+
+  <figure>
+    <div class="venn-wrap">
+      <svg class="venn" viewBox="0 0 960 620" role="img" aria-label="Venn diagram comparing CLI coding agents like Claude Code against SynapseOS. The left circle, CLI coding agents, lists a frontier cloud model, built for engineers in a repo, tasks of code, git, tests, and running as a tool inside an existing OS. The right circle, SynapseOS, lists an on-device offline three billion parameter model, built for any OS user, tasks of files, apps, and processes, and aiming to be the OS itself. The overlap lists the shared agentic loop: propose a command from natural language, execute it, capture output, feed it back, and gate risky actions.">
+        <defs>
+          <clipPath id="clipA">
+            <circle cx="350" cy="310" r="230" />
+          </clipPath>
+        </defs>
+
+        <circle cx="350" cy="310" r="230" fill="var(--accent-cloud)" fill-opacity="0.10" stroke="var(--accent-cloud)" stroke-width="2" />
+        <circle cx="630" cy="310" r="230" fill="var(--accent-local)" fill-opacity="0.10" stroke="var(--accent-local)" stroke-width="2" style="mix-blend-mode:multiply" />
+
+        <!-- Circle A: CLI coding agents -->
+        <text x="180" y="196" class="venn-title venn-label-a" font-family="system-ui, sans-serif" font-size="16">CLI CODING AGENTS</text>
+        <text x="180" y="220" class="venn-sub" font-family="ui-monospace, monospace" font-size="12">Claude Code · Cursor · Aider</text>
+        <text x="180" y="260" class="venn-bullet" font-family="system-ui, sans-serif" font-size="13">Frontier cloud model</text>
+        <text x="180" y="292" class="venn-bullet" font-family="system-ui, sans-serif" font-size="13">Built for engineers, in a repo</text>
+        <text x="180" y="324" class="venn-bullet" font-family="system-ui, sans-serif" font-size="13">Task: code, git, tests</text>
+        <text x="180" y="356" class="venn-bullet" font-family="system-ui, sans-serif" font-size="13">A tool inside your OS</text>
+
+        <!-- Circle B: SynapseOS -->
+        <text x="820" y="196" text-anchor="end" class="venn-title venn-label-b" font-family="system-ui, sans-serif" font-size="16">SYNAPSEOS</text>
+        <text x="820" y="220" text-anchor="end" class="venn-sub" font-family="ui-monospace, monospace" font-size="12">Qwen2.5-Coder-3B, local</text>
+        <text x="820" y="260" text-anchor="end" class="venn-bullet" font-family="system-ui, sans-serif" font-size="13">On-device, fully offline</text>
+        <text x="820" y="292" text-anchor="end" class="venn-bullet" font-family="system-ui, sans-serif" font-size="13">Built for any OS user</text>
+        <text x="820" y="324" text-anchor="end" class="venn-bullet" font-family="system-ui, sans-serif" font-size="13">Task: files, apps, processes</text>
+        <text x="820" y="356" text-anchor="end" class="venn-bullet" font-family="system-ui, sans-serif" font-size="13">Aims to be the OS itself</text>
+
+        <!-- Overlap: shared loop -->
+        <text x="490" y="206" text-anchor="middle" class="venn-shared-title" font-family="ui-monospace, monospace" font-size="13">SHARED SHAPE</text>
+        <text x="490" y="228" text-anchor="middle" class="venn-shared-sub" font-family="system-ui, sans-serif" font-size="12">the agentic loop</text>
+        <text x="490" y="268" text-anchor="middle" class="venn-bullet" font-family="system-ui, sans-serif" font-size="12.5">NL → propose command</text>
+        <text x="490" y="298" text-anchor="middle" class="venn-bullet" font-family="system-ui, sans-serif" font-size="12.5">Execute, capture output</text>
+        <text x="490" y="328" text-anchor="middle" class="venn-bullet" font-family="system-ui, sans-serif" font-size="12.5">Feed result back</text>
+        <text x="490" y="358" text-anchor="middle" class="venn-bullet" font-family="system-ui, sans-serif" font-size="12.5">Gate risky actions</text>
+      </svg>
+    </div>
+    <figcaption>
+      Both are agentic shells around a shell: propose a command from intent, run it, observe what happened,
+      decide the next step. SynapseOS's version of that loop runs on a much smaller local model and is
+      hard-capped at a few steps with every step individually gated (decision D21) — deliberately less
+      autonomous, not a smaller version of the same autonomy.
+    </figcaption>
+  </figure>
+
+  <h2>Where they actually differ</h2>
+  <div class="compare">
+    <div class="compare-banner">
+      Shared shape, both sides: <code>NL intent → propose shell command → execute → capture output → feed back → next step or stop</code>
+    </div>
+    <div class="compare-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col"></th><th scope="col">Cloud coding agents</th><th scope="col">SynapseOS</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Model</th>
+            <td class="col-a">Frontier, cloud-hosted</td>
+            <td class="col-b">3B, local, CPU-only, offline</td>
+          </tr>
+          <tr>
+            <th scope="row">Built for</th>
+            <td class="col-a">Software engineers</td>
+            <td class="col-b">Anyone using the machine, CLI fluency not assumed</td>
+          </tr>
+          <tr>
+            <th scope="row">Task domain</th>
+            <td class="col-a">Code, git, builds, tests</td>
+            <td class="col-b">Files, processes, packages, general OS work</td>
+          </tr>
+          <tr>
+            <th scope="row">Runs as</th>
+            <td class="col-a">A tool installed inside an existing OS/editor</td>
+            <td class="col-b">The OS's own interface — the long-term bet, not yet fully built</td>
+          </tr>
+          <tr>
+            <th scope="row">Risk gating</th>
+            <td class="col-a">Configurable permission modes, policy-driven</td>
+            <td class="col-b">Hardcoded reversibility classifier, fixed step cap (D21)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout">
+    <h2>Why this reads like open ground</h2>
+    <p>
+      Frontier labs monetize scale — bigger models, more inference calls, deeper integration into paid
+      developer tools. A free, local-only agent embedded in the OS itself, aimed at people who've never
+      touched a terminal, doesn't fit that incentive: it trades capability for privacy and access.
+    </p>
+    <p>
+      That's the argument, not a verified claim about any lab's roadmap — worth treating as the thesis's
+      working hypothesis for the "gap" framing, not as settled fact to cite as-is.
+    </p>
+  </div>
+
+  <footer>
+    Reflects the prototype as of M2 (CLI mode, complete) — D21's bounded loop, D12's bare-Debian substrate for CLI/TUI.
+    The differentiation argument here is folded into a short paragraph in the consolidated proposal's §2.8
+    (research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html); this page is the fuller visual
+    version, kept for reference and reuse (e.g. a defense-deck slide), not itself part of the submitted proposal.
+  </footer>
+</div>
