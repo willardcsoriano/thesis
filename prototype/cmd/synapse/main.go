@@ -30,6 +30,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -145,66 +146,80 @@ type loopStep struct {
 }
 
 // runAdHoc runs CLI mode's bounded multi-step loop (D21) for a single
-// user-supplied task: propose the next command, classify its reversibility,
-// auto-run it if safe or block on confirmation if not, execute it, then feed
-// the result back so the model can propose the next step or signal DONE.
-// Every step — not just the first — goes through the same classifier and
-// confirmation gate; nothing is trusted just because an earlier step in the
-// same run was approved. Stops on DONE, on a blocked-then-declined
-// confirmation, or on hitting maxLoopSteps, whichever comes first.
+// user-supplied task against the real terminal, then exits the process with
+// runLoop's verdict. It is the thin process-control wrapper around runLoop —
+// see that function for the actual loop behavior.
 func runAdHoc(ctx context.Context, client *ollama.Client, model, task string) {
+	os.Exit(runLoop(ctx, client, model, task, confirm, os.Stdout, os.Stderr))
+}
+
+// runLoop is runAdHoc's testable core: propose the next command, classify
+// its reversibility, auto-run it if safe or block on confirmFn if not,
+// execute it, then feed the result back so the model can propose the next
+// step or signal DONE. Every step — not just the first — goes through the
+// same classifier and confirmation gate; nothing is trusted just because an
+// earlier step in the same run was approved. Stops on DONE, on a
+// blocked-then-declined confirmation, or on hitting maxLoopSteps, whichever
+// comes first, and returns the process exit code that outcome warrants.
+//
+// I/O and the confirmation prompt are taken as parameters — never os.Stdin,
+// os.Stdout, os.Stderr, or os.Exit directly — so tests can drive this
+// against a mocked Ollama server and canned confirmation answers, then
+// assert on the returned exit code and captured output, without spawning a
+// subprocess or touching the real terminal.
+func runLoop(ctx context.Context, client *ollama.Client, model, task string, confirmFn func(string) bool, out, errOut io.Writer) int {
 	var history []loopStep
 
 	for i := 1; i <= maxLoopSteps; i++ {
 		resp, cmd, err := proposeStep(ctx, client, model, task, history)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			os.Exit(1)
+			fmt.Fprintf(errOut, "error: %v\n", err)
+			return 1
 		}
 
-		fmt.Printf("step %d: %s\n  stats: %d tokens in %s\n",
+		fmt.Fprintf(out, "step %d: %s\n  stats: %d tokens in %s\n",
 			i, cmd, resp.EvalCount, resp.Latency().Round(time.Millisecond))
 
 		if cmd == "" || cmd == "UNSUPPORTED" {
-			fmt.Println("model reported this request cannot be done with a shell command.")
-			os.Exit(1)
+			fmt.Fprintln(out, "model reported this request cannot be done with a shell command.")
+			return 1
 		}
 		if strings.EqualFold(cmd, doneSentinel) {
 			if len(history) == 0 {
-				fmt.Println("model reported nothing needs to be done.")
-				return
+				fmt.Fprintln(out, "model reported nothing needs to be done.")
+				return 0
 			}
-			fmt.Printf("task complete in %d step(s).\n", len(history))
-			return
+			fmt.Fprintf(out, "task complete in %d step(s).\n", len(history))
+			return 0
 		}
 
 		verdict, reason := classifier.Classify(cmd)
 		if verdict == classifier.Irreversible {
-			fmt.Printf("blocked: %s is irreversible — %s\n", cmd, reason)
-			if !confirm("run it anyway?") {
-				fmt.Println("cancelled.")
-				return
+			fmt.Fprintf(out, "blocked: %s is irreversible — %s\n", cmd, reason)
+			if !confirmFn("run it anyway?") {
+				fmt.Fprintln(out, "cancelled.")
+				return 0
 			}
 		}
 
 		result := executor.Run(ctx, cmd)
 		if result.Err != nil {
-			fmt.Fprintf(os.Stderr, "error: command did not run: %v\n", result.Err)
-			os.Exit(1)
+			fmt.Fprintf(errOut, "error: command did not run: %v\n", result.Err)
+			return 1
 		}
 		if result.Stdout != "" {
-			fmt.Print(result.Stdout)
+			fmt.Fprint(out, result.Stdout)
 		}
 		if result.Stderr != "" {
-			fmt.Fprint(os.Stderr, result.Stderr)
+			fmt.Fprint(errOut, result.Stderr)
 		}
-		fmt.Printf("exit code: %d\n\n", result.ExitCode)
+		fmt.Fprintf(out, "exit code: %d\n\n", result.ExitCode)
 
 		history = append(history, loopStep{command: cmd, result: result})
 	}
 
-	fmt.Fprintf(os.Stderr, "error: step limit reached (%d steps) without the task being reported complete — stopping.\n", maxLoopSteps)
-	os.Exit(1)
+	fmt.Fprintf(errOut, "error: step limit reached (%d steps) without the task being reported complete — stopping.\n", maxLoopSteps)
+	return 1
 }
 
 // proposeStep asks the model for the next command given task and everything
