@@ -19,6 +19,7 @@
 //
 //	synapse                              # propose-only sample task suite
 //	synapse "find pdfs from this week"   # propose, classify, confirm, execute
+//	synapse undo                         # reverse the most recent auto-run reversible command
 //
 // Environment:
 //
@@ -38,6 +39,7 @@ import (
 	"synapseos/internal/classifier"
 	"synapseos/internal/executor"
 	"synapseos/internal/ollama"
+	"synapseos/internal/undo"
 )
 
 const defaultModel = "qwen2.5-coder:3b"
@@ -115,6 +117,10 @@ func main() {
 	fmt.Printf("model: %s   endpoint: %s\n\n", model, client.BaseURL)
 
 	if args := os.Args[1:]; len(args) > 0 {
+		if len(args) == 1 && args[0] == "undo" {
+			runUndo(os.Stdout, os.Stderr)
+			return
+		}
 		runAdHoc(ctx, client, model, strings.Join(args, " "))
 		return
 	}
@@ -150,7 +156,14 @@ type loopStep struct {
 // runLoop's verdict. It is the thin process-control wrapper around runLoop —
 // see that function for the actual loop behavior.
 func runAdHoc(ctx context.Context, client *ollama.Client, model, task string) {
-	os.Exit(runLoop(ctx, client, model, task, confirm, os.Stdout, os.Stderr))
+	journalPath, err := undo.DefaultJournalPath()
+	if err != nil {
+		// Non-fatal: undo recording is a safety net, not the task itself.
+		// A task should still run even if e.g. $HOME isn't writable.
+		fmt.Fprintf(os.Stderr, "warning: undo journal unavailable, this run won't be undoable: %v\n", err)
+		journalPath = ""
+	}
+	os.Exit(runLoop(ctx, client, model, task, confirm, os.Stdout, os.Stderr, journalPath))
 }
 
 // runLoop is runAdHoc's testable core: propose the next command, classify
@@ -167,7 +180,17 @@ func runAdHoc(ctx context.Context, client *ollama.Client, model, task string) {
 // against a mocked Ollama server and canned confirmation answers, then
 // assert on the returned exit code and captured output, without spawning a
 // subprocess or touching the real terminal.
-func runLoop(ctx context.Context, client *ollama.Client, model, task string, confirmFn func(string) bool, out, errOut io.Writer) int {
+//
+// journalPath, if non-empty, records an undo entry (internal/undo) for
+// every auto-run reversible step that has an observable filesystem effect,
+// by snapshotting the working directory before and after the step. Pass ""
+// to disable recording entirely (tests do this — they mostly operate on
+// absolute paths into a scratch directory, not the process's actual working
+// directory, which is what gets snapshotted). Irreversible steps are never
+// recorded: the user already explicitly approved the risk knowing there is
+// no undo, and this package's snapshot-diff approach structurally cannot
+// reconstruct deleted content anyway.
+func runLoop(ctx context.Context, client *ollama.Client, model, task string, confirmFn func(string) bool, out, errOut io.Writer, journalPath string) int {
 	var history []loopStep
 
 	for i := 1; i <= maxLoopSteps; i++ {
@@ -202,6 +225,14 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			}
 		}
 
+		wd, undoBefore := "", map[string]bool(nil)
+		if journalPath != "" && verdict == classifier.Reversible {
+			if w, err := os.Getwd(); err == nil {
+				wd = w
+				undoBefore, _ = undo.Snapshot(wd) // best-effort: a snapshot failure just disables recording for this step
+			}
+		}
+
 		result := executor.Run(ctx, cmd)
 		if result.Err != nil {
 			fmt.Fprintf(errOut, "error: command did not run: %v\n", result.Err)
@@ -214,6 +245,16 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			fmt.Fprint(errOut, result.Stderr)
 		}
 		fmt.Fprintf(out, "exit code: %d\n\n", result.ExitCode)
+
+		if wd != "" && undoBefore != nil && result.ExitCode == 0 {
+			if after, err := undo.Snapshot(wd); err == nil {
+				if entry := undo.BuildEntry(wd, cmd, undoBefore, after); !entry.IsNoop() {
+					if err := undo.AppendJournal(journalPath, entry); err != nil {
+						fmt.Fprintf(errOut, "warning: could not record undo entry: %v\n", err)
+					}
+				}
+			}
+		}
 
 		history = append(history, loopStep{command: cmd, result: result})
 	}
@@ -265,6 +306,59 @@ func truncate(s string, n int) string {
 		return s
 	}
 	return s[:n] + " ...(truncated)"
+}
+
+// runUndo reverses the most recently journaled reversible command. It shows
+// what the undo will do and asks for confirmation before touching anything
+// — undoing is itself a consequential filesystem action, so it goes through
+// the same explicit-confirmation pattern as an irreversible command rather
+// than running silently. The journal entry is only removed (PopLastJournal)
+// after confirmation; declining leaves it in place so a later `synapse undo`
+// can still act on it.
+func runUndo(out, errOut io.Writer) {
+	path, err := undo.DefaultJournalPath()
+	if err != nil {
+		fmt.Fprintf(errOut, "error: %v\n", err)
+		os.Exit(1)
+	}
+
+	entry, ok, err := undo.PeekLastJournal(path)
+	if err != nil {
+		fmt.Fprintf(errOut, "error: %v\n", err)
+		os.Exit(1)
+	}
+	if !ok {
+		fmt.Fprintln(out, "nothing to undo.")
+		return
+	}
+
+	fmt.Fprintf(out, "undoing: %s\n  (ran in %s at %s)\n", entry.Command, entry.Dir, entry.Timestamp.Format(time.RFC3339))
+	for _, m := range entry.Moves {
+		fmt.Fprintf(out, "  move back: %s -> %s\n", m.NewPath, m.OldPath)
+	}
+	for _, c := range entry.Created {
+		fmt.Fprintf(out, "  remove: %s\n", c)
+	}
+	if len(entry.Unhandled) > 0 {
+		fmt.Fprintf(out, "  note: %d change(s) from this command could not be safely reconstructed and are not part of this undo: %v\n", len(entry.Unhandled), entry.Unhandled)
+	}
+
+	if !confirm("apply this undo?") {
+		fmt.Fprintln(out, "cancelled.")
+		return
+	}
+
+	if _, _, err := undo.PopLastJournal(path); err != nil {
+		fmt.Fprintf(errOut, "error: %v\n", err)
+		os.Exit(1)
+	}
+	if errs := undo.Apply(entry); len(errs) > 0 {
+		for _, e := range errs {
+			fmt.Fprintf(errOut, "error: %v\n", e)
+		}
+		os.Exit(1)
+	}
+	fmt.Fprintln(out, "undo complete.")
 }
 
 // propose sends task to the model with deterministic decoding (temperature

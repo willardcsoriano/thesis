@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"synapseos/internal/ollama"
+	"synapseos/internal/undo"
 )
 
 // scriptedOllamaServer returns an httptest.Server whose /api/generate
@@ -55,7 +56,7 @@ func TestRunLoopMultiStepReversibleNeverPromptsAndAppliesRealEffects(t *testing.
 	client := ollama.New(server.URL)
 	var out, errOut bytes.Buffer
 
-	code := runLoop(context.Background(), client, "m", "create a.txt", neverConfirm(t), &out, &errOut)
+	code := runLoop(context.Background(), client, "m", "create a.txt", neverConfirm(t), &out, &errOut, "")
 
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
@@ -87,7 +88,7 @@ func TestRunLoopIrreversibleCancelledNeverExecutes(t *testing.T) {
 	client := ollama.New(server.URL)
 	var out, errOut bytes.Buffer
 
-	code := runLoop(context.Background(), client, "m", "delete keep.txt", confirmFn, &out, &errOut)
+	code := runLoop(context.Background(), client, "m", "delete keep.txt", confirmFn, &out, &errOut, "")
 
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0 (a declined confirmation is a clean cancel, not a failure); stderr:\n%s", code, errOut.String())
@@ -125,7 +126,7 @@ func TestRunLoopIrreversibleConfirmedExecutes(t *testing.T) {
 	client := ollama.New(server.URL)
 	var out, errOut bytes.Buffer
 
-	code := runLoop(context.Background(), client, "m", "delete delete-me.txt", confirmFn, &out, &errOut)
+	code := runLoop(context.Background(), client, "m", "delete delete-me.txt", confirmFn, &out, &errOut, "")
 
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
@@ -162,7 +163,7 @@ func TestRunLoopEveryStepReclassifiedNotJustTheFirst(t *testing.T) {
 	client := ollama.New(server.URL)
 	var out, errOut bytes.Buffer
 
-	runLoop(context.Background(), client, "m", "touch a then remove b", confirmFn, &out, &errOut)
+	runLoop(context.Background(), client, "m", "touch a then remove b", confirmFn, &out, &errOut, "")
 
 	if confirmCalls != 1 {
 		t.Fatalf("confirmFn called %d times, want exactly 1 (only the second, irreversible step)", confirmCalls)
@@ -186,7 +187,7 @@ func TestRunLoopStepLimitReachedIsReportedNotSilent(t *testing.T) {
 	client := ollama.New(server.URL)
 	var out, errOut bytes.Buffer
 
-	code := runLoop(context.Background(), client, "m", "never-ending task", neverConfirm(t), &out, &errOut)
+	code := runLoop(context.Background(), client, "m", "never-ending task", neverConfirm(t), &out, &errOut, "")
 
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
@@ -203,7 +204,7 @@ func TestRunLoopUnsupportedRequest(t *testing.T) {
 	client := ollama.New(server.URL)
 	var out, errOut bytes.Buffer
 
-	code := runLoop(context.Background(), client, "m", "sing me a song", neverConfirm(t), &out, &errOut)
+	code := runLoop(context.Background(), client, "m", "sing me a song", neverConfirm(t), &out, &errOut, "")
 
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
@@ -220,7 +221,7 @@ func TestRunLoopDoneOnFirstStepWithNoHistory(t *testing.T) {
 	client := ollama.New(server.URL)
 	var out, errOut bytes.Buffer
 
-	code := runLoop(context.Background(), client, "m", "already done somehow", neverConfirm(t), &out, &errOut)
+	code := runLoop(context.Background(), client, "m", "already done somehow", neverConfirm(t), &out, &errOut, "")
 
 	if code != 0 {
 		t.Errorf("exit code = %d, want 0", code)
@@ -239,12 +240,64 @@ func TestRunLoopProposeErrorIsReported(t *testing.T) {
 	client := ollama.New(server.URL)
 	var out, errOut bytes.Buffer
 
-	code := runLoop(context.Background(), client, "m", "anything", neverConfirm(t), &out, &errOut)
+	code := runLoop(context.Background(), client, "m", "anything", neverConfirm(t), &out, &errOut, "")
 
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
 	if !strings.Contains(errOut.String(), "error:") {
 		t.Errorf("stderr missing an error report, got:\n%s", errOut.String())
+	}
+}
+
+// TestRunLoopRecordsUndoEntryForReversibleAutoRun verifies runLoop actually
+// wires up undo recording (internal/undo has its own thorough tests for the
+// snapshot/diff/pairing logic itself — this just confirms runLoop calls it
+// correctly). It temporarily chdirs into a scratch directory since undo
+// recording snapshots the process's actual working directory, not whatever
+// absolute paths a command happens to mention.
+func TestRunLoopRecordsUndoEntryForReversibleAutoRun(t *testing.T) {
+	dir := t.TempDir()
+	origWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Getwd: %v", err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("Chdir: %v", err)
+	}
+	defer os.Chdir(origWD)
+
+	if err := os.WriteFile("a.log", []byte("x"), 0o644); err != nil {
+		t.Fatalf("setup: %v", err)
+	}
+
+	journalPath := filepath.Join(t.TempDir(), "undo.log")
+	server := scriptedOllamaServer(t, []string{
+		"mkdir dest && mv a.log dest",
+		"DONE",
+	})
+	defer server.Close()
+
+	client := ollama.New(server.URL)
+	var out, errOut bytes.Buffer
+
+	code := runLoop(context.Background(), client, "m", "organize", neverConfirm(t), &out, &errOut, journalPath)
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
+	}
+
+	entry, ok, err := undo.PeekLastJournal(journalPath)
+	if err != nil {
+		t.Fatalf("PeekLastJournal: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected an undo entry to have been recorded, journal is empty")
+	}
+	if entry.Command != "mkdir dest && mv a.log dest" {
+		t.Errorf("entry.Command = %q, want the executed command", entry.Command)
+	}
+	wantMove := undo.Move{OldPath: "a.log", NewPath: filepath.Join("dest", "a.log")}
+	if len(entry.Moves) != 1 || entry.Moves[0] != wantMove {
+		t.Errorf("entry.Moves = %+v, want [%+v]", entry.Moves, wantMove)
 	}
 }
