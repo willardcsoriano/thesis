@@ -27,6 +27,27 @@ func TestClassify(t *testing.T) {
 
 		{"word containing rm substring is not rm", "confirm the alarm settings", Reversible},
 		{"word containing dd substring is not dd", "add a new user to the group", Reversible},
+
+		// Content-mutating gap found and closed Session 22: these previously
+		// came back Reversible (auto-run, no confirmation) despite destroying
+		// existing file content with no built-in undo, same failure class as
+		// rm/dd/shred above.
+		{"sed in-place edit", `sed -i 's/foo/bar/' file.txt`, Irreversible},
+		{"sed in-place edit with backup suffix", `sed -i.bak 's/foo/bar/' file.txt`, Irreversible},
+		{"sed in-place long flag", `sed --in-place 's/foo/bar/' file.txt`, Irreversible},
+		{"awk in-place edit", `awk -i inplace '{print}' file.txt`, Irreversible},
+		{"tee without append overwrites", `echo "new content" | tee file.txt`, Irreversible},
+		{"tee heredoc without append", `tee file.txt <<< "new content"`, Irreversible},
+		{"truncate shrinks a file", "truncate -s 0 file.txt", Irreversible},
+		{"truncate to a size", "truncate -s 1M bigfile.bin", Irreversible},
+
+		// False-positive guards for the new rules: don't flag lookalikes.
+		{"sed without -i is a read-only substitution preview", `sed 's/foo/bar/' file.txt`, Reversible},
+		{"grep -i is case-insensitivity, not sed -i", `sed 's/a/b/' file.txt | grep -i foo`, Reversible},
+		{"awk without -i inplace is a normal filter", `awk '{print $1}' file.txt`, Reversible},
+		{"tee with append flag is safe", "echo hello | tee -a log.txt", Reversible},
+		{"tee with long append flag is safe", "echo hello | tee --append log.txt", Reversible},
+		{"word containing truncate substring is not truncate", "the untruncated report is attached", Reversible},
 	}
 
 	for _, tc := range cases {

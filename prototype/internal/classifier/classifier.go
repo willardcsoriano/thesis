@@ -80,7 +80,33 @@ var rules = []rule{
 		pattern: regexp.MustCompile(`\bgit\s+clean\b[^|;&]*-\w*f`),
 		reason:  "git clean -f permanently deletes untracked files",
 	},
+	{
+		name:    "sed in-place edit",
+		pattern: regexp.MustCompile(`\bsed\b[^|;&]*(-i\b|--in-place\b)`),
+		reason:  "sed -i overwrites the file in place with no built-in undo",
+	},
+	{
+		name:    "awk in-place edit",
+		pattern: regexp.MustCompile(`\bawk\b[^|;&]*-i\s+inplace\b`),
+		reason:  "awk -i inplace overwrites the file in place with no built-in undo",
+	},
+	{
+		name:    "truncate",
+		pattern: regexp.MustCompile(`\btruncate\b`),
+		reason:  "truncate can shrink or empty a file's contents with no built-in undo",
+	},
 }
+
+// Known, deliberately unflagged gap: cp onto an existing destination.
+// Unlike sed -i/tee/truncate (destructive essentially every time they're
+// invoked at all), cp is destructive only when its destination already
+// exists — which this package cannot know from the command text alone,
+// since it does no filesystem I/O by design. Blanket-flagging every cp
+// would cost a confirmation keypress on the common, actually-safe case
+// (copying to a fresh path) far more often than it would catch real danger.
+// Closing this properly needs the classifier to consult filesystem state,
+// which is a real design change (see the rigorous-testing-plan discussion,
+// Session 22), not a regex patch — tracked here, not silently dropped.
 
 // Classify returns whether cmd is safe to auto-run. When the verdict is
 // Irreversible, reason explains why in a form suitable for showing directly
@@ -93,6 +119,9 @@ func Classify(cmd string) (Verdict, string) {
 	}
 	if hasTruncatingRedirect(cmd) {
 		return Irreversible, "truncating redirect (>) overwrites the target file's existing contents"
+	}
+	if hasUnsafeTee(cmd) {
+		return Irreversible, "tee without -a/--append overwrites the target file's existing contents"
 	}
 	return Reversible, ""
 }
@@ -114,4 +143,22 @@ func hasTruncatingRedirect(cmd string) bool {
 		return true
 	}
 	return false
+}
+
+// unsafeTeeCmd matches a bare "tee" invocation.
+var unsafeTeeCmd = regexp.MustCompile(`\btee\b`)
+
+// teeAppendFlag matches tee's append flag as a standalone token.
+var teeAppendFlag = regexp.MustCompile(`(^|\s)(-a|--append)(\s|$)`)
+
+// hasUnsafeTee reports whether cmd invokes tee without an append flag
+// anywhere in the command. tee overwrites its target file(s) by default;
+// -a/--append is the only thing that makes it non-destructive. This checks
+// for the flag's presence anywhere in the string rather than scoping it to
+// a specific tee invocation (RE2 has no lookaround for that), so a command
+// chaining an appending tee and a non-appending tee in the same line would
+// be under-flagged — an accepted imprecision, consistent with this
+// package's stated trade of precision for auditability.
+func hasUnsafeTee(cmd string) bool {
+	return unsafeTeeCmd.MatchString(cmd) && !teeAppendFlag.MatchString(cmd)
 }
