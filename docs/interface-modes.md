@@ -10,7 +10,7 @@ This is the reference for how SynapseOS's three interface modes — CLI, TUI, an
 - [1. Shared Core](#1-shared-core)
 - [2. Boundaries at a Glance](#2-boundaries-at-a-glance)
 - [3. CLI Mode (D19, M2 — done)](#3-cli-mode-d19-m2-done)
-- [4. TUI (Terminal User Interface) Mode (D11, M3 — next)](#4-tui-terminal-user-interface-mode-d11-m3-next)
+- [4. TUI (Terminal User Interface) Mode (D11, M3a/M3b — next)](#4-tui-terminal-user-interface-mode-d11-m3am3b-next)
   - [Technical Stack](#technical-stack)
   - [Loop Cycle](#loop-cycle)
   - [What TUI Reuses vs. Adds](#what-tui-reuses-vs-adds)
@@ -55,7 +55,7 @@ A mode's job is only ever: collect input, drive the core, render output. Every m
 | Model output rendering | Printed once generation finishes (blocking call) | Streamed token-by-token into a scrollable viewport | Same streaming, inside fullscreen chrome |
 | Confirmation gate UX | Print the command + reason, block on stdin `y`/`N` | Render inline in the chat view, wait for a keypress | Same inline pattern, fullscreen |
 | Audience / use case | Scripting, automation, one-off remote commands over SSH | Interactive terminal session, local or remote | Study Condition A — novice users, no terminal exposure |
-| Built by | **M2 — done** | M3 — next | M9 |
+| Built by | **M2 — done** | M3a (interim loop) → M3b (rendering) — next | M9 |
 | Escape hatch | N/A (process just exits) | N/A (it's already a normal terminal) | XFCE fallback, logged and excluded from primary analysis (D20) |
 
 **The one-line answer to "isn't TUI just CLI with a nicer UI?"**: mostly, but not only — the propose/classify/execute logic is identical and reused verbatim, but persistence (a session that outlives one task) and streaming (rendering tokens as they arrive instead of waiting for the full response) are real architectural additions, not visual polish. TUI is the first mode where "session" is a meaningful concept at all.
@@ -68,9 +68,11 @@ Because there's no session to render into, the confirmation gate is the simplest
 
 Entry point: `cmd/synapse/main.go`. The built-in 8-task sample suite (`synapse` with no arguments) is a quality smoke test only — it calls `propose` but deliberately skips classify/execute, so running it never touches the real filesystem.
 
-## 4. TUI (Terminal User Interface) Mode (D11, M3 — next)
+## 4. TUI (Terminal User Interface) Mode (D11, M3a/M3b — next)
 
 TUI mode turns the one-shot CLI into a persistent, interactive session — the default target for local terminals and remote SSH connections where a real back-and-forth is wanted, as opposed to CLI mode's single-shot, script-friendly invocation.
+
+**Built in two sub-milestones (split 2026-08-21, see `build-order.md`):** M3a proves the persistent-session mechanics alone — a plain stdin loop wrapping M2's already-tested `runLoop`, no rendering — before M3b spends effort on the bubbletea/lipgloss layer below. This is a build-sequencing decision only; TUI mode itself is still one mode, unchanged from D11, and M3a is not something a user is meant to run as a deliverable in its own right.
 
 ### Technical Stack
 
@@ -91,7 +93,7 @@ TUI mode turns the one-shot CLI into a persistent, interactive session — the d
 | `internal/classifier` — same `Classify` call, same verdicts | Persistent process / session loop (bubbletea) |
 | `internal/executor` — same `Run` call, same `Result` shape | Streaming `Generate` variant in `internal/ollama` |
 | The reversibility-gate *decision logic* | In-session confirmation rendering (vs. blocking stdin read) |
-| | Multi-turn context (M6 — depends on TUI existing, not part of M3 itself) |
+| | Multi-turn context (M6 — depends on TUI existing, not part of M3a/M3b itself) |
 
 ## 5. GUI Takeover Mode (D11, D12, M9 — study prototype)
 
@@ -151,6 +153,6 @@ Once the study concludes, SynapseOS can run as a standard desktop overlay instea
 |---|---|
 | Why do these three modes exist, and not some other split? | `decisions.md` D11 (TUI vs. GUI), D19 (CLI formalized as a third mode) |
 | Why does GUI have no escape hatch by default, and why was that reopened? | `decisions.md` D12, D20 |
-| What order are these built in, and what's each milestone's definition of done? | `build-order.md` M2 (CLI), M3 (TUI), M9 (GUI) |
+| What order are these built in, and what's each milestone's definition of done? | `build-order.md` M2 (CLI), M3a/M3b (TUI), M9 (GUI) |
 | What has the paper (Ch.3) committed to describing? | `research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html` Table 3.2 and Section 2.1 |
 | Where does each mode sit relative to the OS layers (kernel, userland, session layer)? | `layers.md` |
