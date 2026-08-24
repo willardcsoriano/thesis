@@ -9,12 +9,18 @@ This is the authoritative build sequence for the SynapseOS prototype: the order 
 - [Status Key](#status-key)
 - [Runtime Milestones](#runtime-milestones)
   - [M2 — CLI mode: propose, classify, execute ✅](#m2-cli-mode-propose-classify-execute-)
-  - [M3 — TUI loop ⬜](#m3-tui-loop-)
+  - [Foundational Hardening (F1–F4) — pulled forward, before M3a](#foundational-hardening-f1f4-pulled-forward-before-m3a)
+  - [F1 — Classifier content-mutation coverage ✅](#f1-classifier-content-mutation-coverage-)
+  - [F2 — Mechanical undo log (CLI mode) ✅](#f2-mechanical-undo-log-cli-mode-)
+  - [F3 — Rigorous engine test suite ⬜](#f3-rigorous-engine-test-suite-)
+  - [F4 — Typed-operation reliability experiment ⬜](#f4-typed-operation-reliability-experiment-)
+  - [M3a — Persistent CLI loop (interim) ⬜](#m3a-persistent-cli-loop-interim-)
+  - [M3b — TUI rendering (bubbletea/lipgloss) ⬜](#m3b-tui-rendering-bubbletealipgloss-)
   - [M4 — Execution engine — merged into M2 (2026-07-12)](#m4-execution-engine-merged-into-m2-2026-07-12)
   - [M5 — Confirmation gate — merged into M2 (2026-07-12)](#m5-confirmation-gate-merged-into-m2-2026-07-12)
   - [M6 — Session context ⬜](#m6-session-context-)
   - [M7 — Session logger ⬜](#m7-session-logger-)
-  - [M8 — Undo log ⬜](#m8-undo-log-)
+  - [M8 — Undo telemetry integration ⬜](#m8-undo-telemetry-integration-)
   - [M9 — GUI mode ⬜](#m9-gui-mode-)
 - [Post-Runtime Phases](#post-runtime-phases)
 
@@ -24,6 +30,7 @@ This is the authoritative build sequence for the SynapseOS prototype: the order 
 - **Risk-first.** The most uncertain assumption is retired earliest (M2: does a 3B model produce usable bash at all?).
 - **Runtime before pipeline.** The Go runtime is built against the *stock* model first. Fine-tuning is deferred until its payoff is measurable.
 - **Telemetry is not an afterthought.** The session logger (M7) is treated as load-bearing — it is the study's entire dataset — not bolted on before the study.
+- **Foundations before features (added Session 22).** Safety/correctness infrastructure — classifier coverage, the undo safety net, the test suite that verifies both — is cheapest to build while the execution surface is still small (CLI mode alone) and gets *more* expensive every layer built on top of it. Extending the "telemetry is not an afterthought" principle: neither is safety hardening. The Foundational Hardening track (F1–F4, below) is pulled forward ahead of M3a for this reason, not sequenced by milestone number.
 - **Done means testable.** A milestone is done only when its definition-of-done can be demonstrated, not when the code exists.
 
 ## Status Key
@@ -52,14 +59,56 @@ This is the authoritative build sequence for the SynapseOS prototype: the order 
 - **Risk retired (D21):** Whether the loop mechanism itself (propose → classify → confirm → execute → feed back → repeat) works. **Retired 2026-07-12** — a genuine multi-part task (create a folder, move matching files into it) completed correctly, with per-step gating firing on a chained `rm && ls` mid-loop, not just on the first proposal.
 - **Risk not retired, and not expected to be by this milestone:** Whether the model reliably recognizes its own step failed. The same live session surfaced a case where a broken pipeline (`ls -lh` output piped into `cat`) still exited 0 — the shell's last-stage exit code masked the earlier failure — and the model declared `DONE` despite visible `cat: ... No such file or directory` lines in its own fed-back stderr. The loop mechanism behaved correctly (proposed, executed, fed back exactly what happened); the model's judgment on top of that context was wrong. This is a model-accuracy limitation in the same family as the `dpkg-query` finding above, not a defect in the loop — and further evidence for D21's case against full autonomy: if the model can't reliably tell its own step failed even when told, giving it more unsupervised steps compounds the risk rather than reducing it.
 
-### M3 — TUI loop ⬜
+### Foundational Hardening (F1–F4) — pulled forward, before M3a
 
-- **Goal:** Turn the one-shot CLI into an interactive, multi-turn chat surface, reusing the intent-parser, classifier, and executor built for CLI mode rather than rebuilding them.
-- **Delivers:** Full-screen bubbletea/lipgloss interface — input box, scrollback, streamed token rendering — wired to the same `internal/ollama` client, reversibility classifier, and executor M2 delivers. Upgrades the Ollama client to streaming.
+**Added 2026-08-21 (Session 22):** manual filesystem testing of M2 surfaced a real classifier gap (`sed -i`, `tee`, `truncate` all auto-ran despite destroying file content with no undo — see F1) and prompted a broader question: should safety/correctness infrastructure wait behind the numbered milestones, or come first? Per the sequencing principle above, it comes first — this track is not itself a numbered milestone (it doesn't deliver a new interface mode or user-facing capability) but a prerequisite the numbered milestones now build on. F1 and F2 are done; F3 and F4 are the concrete next work.
+
+### F1 — Classifier content-mutation coverage ✅
+
+- **Goal:** Close the gap between "known-deletion-shaped commands" (the original rule set) and "known-content-mutating commands" — both destroy data with no built-in undo, only the first kind was flagged.
+- **Delivers:** New `internal/classifier` rules for `sed -i`/`--in-place`, `awk -i inplace`, `truncate`, and a dedicated `tee`-without-`-a`/`--append` check; 18 new test cases (destructive shapes correctly flagged, lookalikes like `grep -i` and `sed` without `-i` correctly left alone). **Done, 100% package coverage.**
+- **Deliberately not closed:** `cp` onto an existing destination. Unlike the shapes above (destructive essentially every time they're invoked), `cp`'s destructiveness is conditional on the destination already existing, which a text-pattern classifier can't know. Blanket-flagging every `cp` would cost a confirmation keypress on the common, safe case far more often than it would catch real danger — documented in `internal/classifier/classifier.go` as a known, tracked gap rather than silently dropped. Properly closing it needs the classifier to consult filesystem state (see F4).
+- **Closes:** Hardens *Confirmation gate* (`../docs/scope.md`) — no new scope item, a correctness fix to an existing one.
+
+### F2 — Mechanical undo log (CLI mode) ✅
+
+- **Goal:** Build undo as early as possible, while the execution surface is still just CLI mode's `runLoop` — cheaper now than after TUI/GUI/session-context add more execution paths it would need to hook into. Decouples the *mechanism* (works today, on M2 alone) from the *study telemetry integration* (still genuinely needs M7 — see the narrowed M8 below).
+- **Delivers:** `internal/undo` — snapshots the working directory before/after each auto-run reversible step, diffs what appeared vs. disappeared, and pairs paths by basename to reconstruct moves (handles the flagship `mkdir dest && mv *.log dest` shape correctly, including one level of recursion into newly created directories). Pure creations (`touch`, `mkdir`, `cp`-to-new-path) are undone by removal; disappearances with no matching arrival are left unhandled rather than guessed at, since this package keeps no content backup and irreversible-classified commands (already gated separately) are out of scope by design. Journal persisted to `~/.synapse/undo.log` (JSON lines) so it survives CLI mode's one-shot, cold-process lifecycle. New `synapse undo` subcommand: peeks the last entry, shows what it would do, confirms, then applies — declining leaves the entry in place for a later attempt. **Done** — 10 unit tests in `internal/undo` plus a `cmd/synapse` integration test confirming `runLoop` wires it correctly.
+- **Known limitation:** shallow, one-level-deep snapshot — a command that moves files more than one directory level away from where they started won't be correctly paired, and is recorded as unhandled rather than mishandled.
+- **Closes:** The mechanical half of *Undo log* (`../docs/scope.md`) — restoring prior state for a reversible operation now works. The telemetry half (logging `undo_invoked` events) is M8, unchanged, still gated on M7.
+
+### F3 — Rigorous engine test suite ⬜
+
+- **Goal:** Answer "is the engine foolproof" with more than a fixed example list — see the testing-plan write-up (Session 22) for the full design: an adversarial classifier corpus organized by danger category (not just today's known shapes), a live task-corpus harness that checks the *model's actual output distribution* against the classifier rather than hand-picked examples, and executor edge-case coverage (timeouts, huge/binary output, hung processes). Must be **model-parameterized** — the same corpus runs against any `SYNAPSE_MODEL` value, not hardcoded to `qwen2.5-coder:3b`, specifically so reliability findings can be checked against 5B/7B variants and separated from "is this a 3B-only problem."
+- **Delivers:** Not yet built. Deterministic layers (adversarial classifier corpus) can land without any model change; live layers need a small comparison harness and a `//go:build live` (or similar) tag so `go test ./...` stays fast and deterministic by default.
+- **Depends on:** F1 (the corpus should include everything F1 just found, generalized into categories, not just today's exact examples).
+
+### F4 — Typed-operation reliability experiment ⬜
+
+- **Goal:** The empirical question behind "should SynapseOS reimplement filesystem-MCP-style typed operations instead of raw bash for file tasks" — does `qwen2.5-coder:3b` (and, per F3, other sizes) reliably emit structured tool calls via Ollama's native tool-calling API? Unverified, not assumed either way.
+- **Delivers:** Not yet built. A bounded comparison in `prototype/playground/`: the same file-manipulation task set run through (a) today's raw-bash-string + classifier path and (b) a typed-operation path (`move_file`/`delete_file`/`list_directory`-shaped calls dispatched via Go's own `os`/`io`, no MCP protocol or Node.js dependency — matching the project's build-vs-adopt principle), scored on call-validity rate and whether either path misses something the other would catch. A real architecture change to `internal/classifier`/`internal/executor` is gated on this experiment's result, not decided in advance.
+- **Depends on:** F3's harness (reuses its model-parameterization and scoring).
+- **Scope note:** even if F4 succeeds, it only ever covers the file-manipulation subset of D7's committed scope (package management, process control, arbitrary CLI tools stay on the raw-bash path) — this is additive hardening for the highest-value subset, not a replacement for the general execution path.
+
+### M3a — Persistent CLI loop (interim) ⬜
+
+**Added 2026-08-21 (split from the original M3 — TUI loop):** M3 as originally scoped bundled two independent risks into one milestone — whether a *persistent, multi-turn session* actually works, and whether the *bubbletea/lipgloss rendering layer* is worth the investment. Jumping straight from M2's one-shot `synapse "<task>"` (a fresh process per command, no memory) to a full-screen streaming TUI is a large leap to take in one step, and a failure in either risk would be hard to attribute to the right cause. M3a retires the session-lifecycle risk alone, cheaply: `runLoop` (Session 21's testable extraction of the M2 loop core) already takes its I/O and confirmation prompt as parameters, so wrapping it in a `for` loop that reads one line of stdin at a time — instead of exiting after one task — is a small, almost entirely reuse-driven change, not a new subsystem. **This is not a fourth interface mode and does not touch the paper** — decision D19 already commits the thesis to exactly three modes (CLI/TUI/GUI); M3a is an internal build checkpoint on the way to TUI mode (M3b), not something `interface-modes.md` or the submitted proposal needs to describe separately. If M3b slips, M3a is not a fallback deliverable to ship in its place.
+
+- **Goal:** Prove that a persistent, multi-turn session — plain stdin/stdout, no rendering — actually works before spending effort on the TUI framework itself.
+- **Delivers:** A loop in `cmd/synapse` that reads one line of input at a time and runs each through the existing `runLoop(ctx, client, model, task, confirmFn, out, errOut, journalPath)` in the same long-running process, instead of one process per invocation. Plain `fmt.Println` output — no bubbletea, no styling, no scrollback, no token streaming. Exits cleanly on EOF (Ctrl+D) or an explicit `exit`/`quit`.
+- **Closes:** Nothing in `../docs/scope.md` on its own — *Conversational TUI* and the streaming half of *Intent parser client* remain M3b's to close. This milestone exists purely to de-risk M3b, not to satisfy a deliverable.
+- **Depends on:** M2 fully complete (unchanged from the original M3 dependency).
+- **Done when:** A user can issue several distinct tasks in a row without the process restarting, each one still going through the same classify/confirm/execute path already unit-tested in Session 21, and can exit cleanly.
+- **Risk retired:** Persistent-session lifecycle — does multi-turn interaction in one process actually behave correctly (state carried correctly between iterations, no leaked confirmation state, clean exit) — isolated from any rendering or streaming concern.
+
+### M3b — TUI rendering (bubbletea/lipgloss) ⬜
+
+- **Goal:** Layer the actual terminal UI onto M3a's already-proven persistent loop, rather than building session lifecycle and rendering at the same time.
+- **Delivers:** Full-screen bubbletea/lipgloss interface — input box, scrollback, streamed token rendering — wired to the same `internal/ollama` client, reversibility classifier, and executor M2 delivers, wrapping M3a's loop instead of reimplementing it. Upgrades the Ollama client to streaming.
 - **Closes:** *Conversational TUI*; completes *Intent parser client* (streaming).
-- **Depends on:** M2 **fully complete** — propose, classify, and execute all working and demonstrated, not just the walking-skeleton shape. TUI is an interactive wrapper around an already-working core, not the place execution and confirmation get built for the first time.
+- **Depends on:** M3a done. (M2 fully complete is inherited transitively — M3a already depends on it.)
 - **Done when:** A user types natural language, sees the proposed command render in-session, approved/auto-run commands execute with output shown in-session, can issue several turns in a row, and quits cleanly.
-- **Risk retired:** Interaction model and token-streaming feasibility in the TUI.
+- **Risk retired:** Token-streaming feasibility and the bubbletea/lipgloss interaction model specifically — with session-lifecycle risk already retired by M3a, a problem found here is legible as a rendering problem, not a "did the loop even work" problem.
 
 ### M4 — Execution engine — merged into M2 (2026-07-12)
 
@@ -74,7 +123,7 @@ Same reasoning as M4: the reversibility classifier doesn't need a TUI either. It
 - **Goal:** Multi-turn memory so follow-up commands resolve against prior turns.
 - **Delivers:** In-memory history; rolling window that drops oldest turns near 75% of the 8K ceiling; bash-output compression before history append (decision D10).
 - **Closes:** *Session context manager*.
-- **Depends on:** M3 (multi-turn context only makes sense in a persistent session — CLI mode is one-shot by design) and M2 (needs real command output to compress).
+- **Depends on:** M3a (multi-turn context only makes sense once a persistent session exists — CLI mode is one-shot by design; the M3a/M3b split clarifies that M6 only needs M3a's session mechanics, not M3b's rendering) and M2 (needs real command output to compress).
 - **Done when:** "move it to Downloads" resolves "it" from the previous turn; verbose output is never stored at full length; context stays under the token ceiling across a long session.
 - **Risk retired:** Context overflow and pronoun/reference resolution.
 
@@ -87,21 +136,22 @@ Same reasoning as M4: the reversibility classifier doesn't need a TUI either. It
 - **Done when:** Every event type — `task_start`, `command_issued`, `command_result`, `confirmation_triggered`, `undo_invoked`, `task_end` — is written with all fields, and the output is parseable by the Python log parser.
 - **Risk retired:** Data-completeness — a missing field means re-running 20 irreproducible participant sessions.
 
-### M8 — Undo log ⬜
+### M8 — Undo telemetry integration ⬜
 
-- **Goal:** Make reversible operations actually reversible.
-- **Delivers:** A record of reversible operations and an undo command that restores prior state.
-- **Closes:** *Undo log*.
-- **Depends on:** M2 (reversibility classification), M7 (undo events must be logged).
-- **Done when:** A reversible operation (e.g. a move) can be undone to restore prior state, and the undo event is logged.
-- **Risk retired:** The reversibility guarantee that sits behind the confirmation model.
+**Narrowed 2026-08-21 (Session 22):** originally scoped as the whole undo capability, with a stated dependency on M7 "because undo events must be logged." That conflated two separable things — the mechanical ability to undo, which only needs M2 and has no real technical dependency on a telemetry system, and the study's requirement to log undo *invocations* as their own event type. The mechanical half is F2 above, done now, on M2 alone. What's left here really does need M7: wiring `synapse undo` to also emit an `undo_invoked` telemetry event once M7's logger exists.
+- **Goal:** Make undo invocations show up in the study's telemetry stream, alongside the other five event types M7 defines.
+- **Delivers:** `synapse undo` (F2) emits an `undo_invoked` event through M7's logger on every application (not just successful ones — a failed undo is still a data point).
+- **Closes:** The telemetry half of *Undo log* (`../docs/scope.md`) — the mechanical half is already closed by F2.
+- **Depends on:** F2 (done), M7 (undo events must be logged).
+- **Done when:** Every `synapse undo` invocation — successful, declined, or failed — produces an `undo_invoked` event with the fields M7's schema requires.
+- **Risk retired:** None new — F2 already retired the reversibility-guarantee risk this milestone used to own.
 
 ### M9 — GUI mode ⬜
 
 - **Goal:** The study-facing interface for novice users (decision D11).
-- **Delivers:** A fullscreen borderless conversational window approximating the active desktop, wrapping the same runtime built in M2, M3, M6–M8, launched within an XFCE (X11 session) host per D12. Also delivers the participant-accessible XFCE fallback (D20): logs every invocation as its own telemetry event type, separate from the six events M7 defines. TUI and CLI modes remain the server/remote and scripting targets respectively.
+- **Delivers:** A fullscreen borderless conversational window approximating the active desktop, wrapping the same runtime built in M2, M3a, M3b, M6–M8, launched within an XFCE (X11 session) host per D12. Also delivers the participant-accessible XFCE fallback (D20): logs every invocation as its own telemetry event type, separate from the six events M7 defines. TUI and CLI modes remain the server/remote and scripting targets respectively.
 - **Closes:** *SynapseOS machine — GUI mode* (infrastructure); *GUI-mode XFCE fallback*.
-- **Depends on:** M2, M3, M6, M7, M8 (a complete runtime).
+- **Depends on:** M2, F2, M3a, M3b, M6, M7, M8 (a complete runtime — GUI wraps the fully-rendered TUI, not just M3a's bare loop; F2 rather than a numbered milestone is where the actual undo mechanism now lives).
 - **Done when:** The runtime runs fullscreen within an XFCE X11 session (not Wayland — XFCE's Wayland session remains experimental per D12) and is usable by a novice without terminal knowledge; TUI and CLI modes still work; the fallback reliably returns the participant to a usable XFCE session on both an outright SynapseOS crash and a manually-triggered invocation, and every invocation is captured in the session log.
 - **Risk retired:** The novice-familiarity threat to study validity (a TUI study would conflate terminal unfamiliarity with interface quality). The fallback's reliability (does it actually recover the machine, every time) is a new risk this milestone must retire — an unreliable fallback is worse than none, since D20's validity argument depends on it working when invoked.
 
