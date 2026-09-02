@@ -1,11 +1,44 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"strings"
 	"testing"
 
 	"synapseos/internal/executor"
 )
+
+func TestConfirm(t *testing.T) {
+	cases := []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{"lowercase y", "y\n", true},
+		{"full yes", "yes\n", true},
+		{"uppercase Y", "Y\n", true},
+		{"mixed case Yes", "Yes\n", true},
+		{"surrounding whitespace", "  y  \n", true},
+		{"explicit no", "n\n", false},
+		{"empty line (bare enter)", "\n", false},
+		{"garbage input", "sure\n", false},
+		{"EOF with no input fails closed", "", false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var out bytes.Buffer
+			r := bufio.NewReader(strings.NewReader(tc.input))
+			if got := confirm(r, &out, "proceed?"); got != tc.want {
+				t.Errorf("confirm(%q) = %v, want %v", tc.input, got, tc.want)
+			}
+			if !strings.Contains(out.String(), "proceed?") {
+				t.Errorf("expected the prompt to be written to out, got %q", out.String())
+			}
+		})
+	}
+}
 
 func TestCleanCommand(t *testing.T) {
 	cases := []struct {
