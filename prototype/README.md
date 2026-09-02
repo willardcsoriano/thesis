@@ -11,22 +11,23 @@ This folder holds all SynapseOS prototype code — the runnable artifact behind 
 
 ## Status at a Glance
 
-Current milestone: **M2 — CLI mode: propose, classify, execute — complete** (all three stages validated live against Ollama 2026-07-12, and covered by automated tests as of Session 21 — see `build-order.md`). **Foundational Hardening (F1–F4), added Session 22, pulled forward ahead of TUI work** — F1 (classifier content-mutation coverage) and F2 (mechanical undo log) are done; F3 (rigorous, model-parameterized test suite) and F4 (typed-operation reliability experiment) are next, before M3a.
+Current milestone: **M2 — CLI mode: propose, classify, execute — complete** (all three stages validated live against Ollama 2026-07-12, and covered by automated tests as of Session 21 — see `build-order.md`). **Foundational Hardening (F1–F5), added Session 22, pulled forward ahead of TUI work — complete as of Session 26.** **M3a (persistent CLI loop, `synapse repl`) complete as of Session 27** and **M3b (TUI mode, `synapse tui` — full-screen rendering, token streaming, scrollback) complete as of Session 28**. Next up: M6 (session context).
 
-Three interface modes, ship-scoped by D19/D20: **CLI** (one-shot invocation, M2, done), **TUI** (persistent terminal session, M3a+M3b), **GUI** (fullscreen study takeover with a participant-accessible XFCE fallback, M9). CLI mode was built out to full completion (propose + execute + confirmation gate) before TUI work starts — TUI wraps that already-working core in an interactive surface rather than building execution and confirmation from scratch. M3 was split into two sub-milestones 2026-08-21: M3a proves persistent multi-turn session lifecycle cheaply (plain stdin loop, reusing M2's `runLoop` as-is), before M3b spends effort on the bubbletea/lipgloss rendering layer — see `build-order.md` for the full rationale. M3a is an internal build checkpoint, not a fourth interface mode (D19 still ships exactly three).
+Three interface modes, ship-scoped by D19/D20: **CLI** (one-shot invocation, M2, done), **TUI** (persistent terminal session, M3a + M3b, done), **GUI** (fullscreen study takeover with a participant-accessible XFCE fallback, M9). CLI mode was built out to full completion (propose + execute + confirmation gate) before TUI work starts — TUI wraps that already-working core in an interactive surface rather than building execution and confirmation from scratch. M3 was split into two sub-milestones 2026-08-21: M3a proves persistent multi-turn session lifecycle cheaply (plain stdin loop, reusing M2's `runLoop` as-is), before M3b spends effort on the bubbletea/lipgloss rendering layer — see `build-order.md` for the full rationale. M3a is an internal build checkpoint, not a fourth interface mode (D19 still ships exactly three).
 
 | Milestone | What it adds | Status |
 |---|---|---|
 | M2 | NL → Ollama → proposed bash, reversibility classification, `os/exec` execution — *is* CLI mode (D19) | ✅ done, validated live, test-covered |
 | F1 | Classifier coverage for content-mutating commands (`sed -i`, `awk -i`, `tee`, `truncate`) | ✅ done |
 | F2 | Mechanical undo log (`internal/undo`), disk-persisted, `synapse undo` subcommand | ✅ done |
-| F3 | Rigorous, model-parameterized engine test suite | ⬜ up next |
-| F4 | Typed-operation (filesystem-MCP-style) reliability experiment | ⬜ |
-| M3a | Persistent multi-turn stdin loop wrapping M2's `runLoop`, no rendering — interim risk-reduction step | ⬜ |
-| M3b | bubbletea/lipgloss TUI chat loop, wrapping M3a's loop | ⬜ |
+| F3 | Rigorous, model-parameterized engine test suite | ✅ done |
+| F4 | Typed-operation (filesystem-MCP-style) reliability experiment | ✅ done |
+| F5 | Guiltless undo hardening — trash, git-reset capture, permission-metadata backup | ✅ done |
+| M3a | Persistent multi-turn stdin loop (`synapse repl`) wrapping M2's `runLoop`, no rendering — interim risk-reduction step | ✅ done |
+| M3b | bubbletea/lipgloss TUI chat loop with token streaming and scrollback, wrapping M3a's loop | ✅ done |
 | M4 | *(merged into M2 — see `build-order.md`)* | — |
 | M5 | *(merged into M2 — see `build-order.md`)* | — |
-| M6 | Session context (rolling window, output compression) | ⬜ |
+| M6 | Session context (rolling window, output compression) | ⬜ up next |
 | M7 | Session logger (study telemetry) | ⬜ |
 | M8 | Undo log | ⬜ |
 | M9+ | GUI mode + XFCE fallback (D20) → fine-tuning pipeline → study instruments | ⬜ |
@@ -41,7 +42,7 @@ Per-milestone goals, dependencies, and definition-of-done: **`build-order.md`**.
 | `build-order.md` | Milestone sequence, gates, and definition-of-done |
 | `testing-plan.md` | The rigorous, model-parameterized engine test plan (F3/F4) — six layers from deterministic unit tests through a typed-operation reliability experiment |
 | `../docs/scope.md` | Full deliverables registry (what must exist) |
-| `../docs/decisions.md` | Architecture rationale (D1–D20) |
+| `../docs/decisions.md` | Architecture rationale (D1–D26) |
 | `../docs/interface-modes.md` | CLI/TUI/GUI boundaries — shared core, what each mode reuses vs. builds fresh, GUI kiosk-takeover mechanics |
 | `../docs/stack.md` | Implementation stack reference |
 | `../docs/vision.md` | Product vision and thesis hypothesis |

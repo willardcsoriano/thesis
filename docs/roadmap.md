@@ -12,7 +12,7 @@ This file is the single place to check where SynapseOS stands right now, across 
 
 | Horizon | Status | Detail |
 |---|---|---|
-| **H0 — Thesis prototype** | In build — M2 (CLI mode: propose, classify, execute, D19) complete, validated live 2026-07-12 and test-covered as of Session 21; next is M3a (persistent CLI loop, interim risk-reduction step), then M3b (TUI rendering) — both depend on M2 being fully complete | `scope.md` (deliverables checklist) · `prototype/build-order.md` (milestone sequence) · `prototype/README.md` (live status) |
+| **H0 — Thesis prototype** | In build — M2 (CLI mode: propose, classify, execute, D19) complete since 2026-07-12; Foundational Hardening (F1–F5: classifier corpus, live-model harness, executor edge cases, typed-op experiment, guiltless undo hardening) complete as of Session 26; M3a (persistent CLI loop via `synapse repl`) complete as of Session 27; M3b (TUI mode via `synapse tui` — full-screen rendering, token streaming, scrollback) complete as of Session 28; next is M6 (session context) | `scope.md` (deliverables checklist) · `prototype/build-order.md` (milestone sequence) · `prototype/README.md` (live status) |
 | **H1 — Beyond thesis (Overlay)** | Deferred, not started | `future-features.md` · `layers.md` |
 | **H2 — North star** | Vision, not a deliverable | `vision.md` |
 

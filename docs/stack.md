@@ -1,6 +1,6 @@
 ## Overview
 
-SynapseOS is built on a deliberate two-language split: Go owns the runtime (everything the user touches), and Python 3.12 owns the build pipeline (fine-tuning and evaluation, which run offline). Ollama acts as the bridge — it serves Qwen2.5-Coder-3B-Instruct via a REST API that both languages can call identically, decoupling the application from the inference engine. No IPC between Go and Python is needed; they are entirely separate concerns that never run at the same time. The deployed artifact is a single Go binary. Python is invoked only during model training and data analysis.
+SynapseOS is built on a deliberate two-language split: Go owns the runtime (everything the user touches), and Python 3.12 owns the build pipeline (fine-tuning and evaluation, which run offline). Ollama acts as the bridge — it serves Qwen2.5-Coder-3B-Instruct via a REST API that both languages can call identically, decoupling the application from the inference engine. No IPC between Go and Python is needed; they are entirely separate concerns that never run at the same time. The deployed artifact is a single Go binary. Python is invoked only during model training and data analysis. **Ollama's own role here is not fully settled** — `decisions.md` D8 raised an open, unresolved reconsideration of whether its full orchestration shell is worth keeping given SynapseOS's fixed single-model/single-target deployment, versus embedding the inference engine more directly; the description below reflects the current, not necessarily final, state.
 
 ## Table of Contents
 
@@ -31,12 +31,13 @@ The session manager, TUI, and execution engine. Ships as a single binary.
 
 | Concern | Library |
 |---|---|
-| TUI framework | [bubbletea](https://github.com/charmbracelet/bubbletea) |
-| TUI styling | [lipgloss](https://github.com/charmbracelet/lipgloss) |
-| Ollama client | HTTP streaming to `localhost:11434/api/generate` |
+| TUI framework | [bubbletea](https://github.com/charmbracelet/bubbletea) — v2 line, module path `charm.land/bubbletea/v2` (moved off `github.com/charmbracelet/...`, confirmed via `go get`), requires Go ≥ 1.25 (`prototype/go.mod` bumped for M3b — done) |
+| TUI styling | [lipgloss](https://github.com/charmbracelet/lipgloss) — v2 line, module path `charm.land/lipgloss/v2`, same Go ≥ 1.25 requirement |
+| TUI scrollback | [bubbles](https://github.com/charmbracelet/bubbles)/`viewport` — v2 line, module path `charm.land/bubbles/v2` |
+| Ollama client | HTTP to `localhost:11434/api/generate`, non-streaming today (`Stream: false`, `internal/ollama.Client.Generate`) — streaming (`stream: true`, newline-delimited JSON per token, `done: true` on the final line) is M3b's step 4, not yet built; verified current wire format via Ollama's own API docs before planning that step, not assumed |
 | Bash execution | `os/exec` — subprocess with stdout/stderr streaming |
 | Confirmation gate | Custom: classifies command reversibility before dispatch |
-| Undo log | Custom: records reversible operations for rollback |
+| Undo log | Custom: records reversible operations for rollback, and confirmed irreversible ones too via dedicated per-shape mechanisms (content backup, trash, metadata backup, git-reset capture — see `safety-model.md`) |
 | Session context | In-memory conversation history passed as prompt context |
 
 **Why Go here:** goroutines are a natural fit for streaming model tokens into the TUI as they arrive. Single binary deployment — no virtualenv, no pip installs on the evaluation machine.
