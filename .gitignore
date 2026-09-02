@@ -161,6 +161,10 @@ instance/
 # Claude Code local settings (machine-specific) + session log (private working notes)
 .claude/settings.local.json
 docs/session.md
+# Session scratch: raw in-progress capture (todo/done/dependencies), feeds
+# into docs/session.md, decisions.md, setup.md once processed — not itself
+# authoritative, never committed
+session-scratch/
 # <<< end pinned custom <<<
 
 # Sphinx documentation
