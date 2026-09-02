@@ -10,7 +10,7 @@ This is the reference for how SynapseOS's three interface modes — CLI, TUI, an
 - [1. Shared Core](#1-shared-core)
 - [2. Boundaries at a Glance](#2-boundaries-at-a-glance)
 - [3. CLI Mode (D19, M2 — done)](#3-cli-mode-d19-m2-done)
-- [4. TUI (Terminal User Interface) Mode (D11, M3a/M3b — next)](#4-tui-terminal-user-interface-mode-d11-m3am3b-next)
+- [4. TUI (Terminal User Interface) Mode (D11, M3a + M3b — done)](#4-tui-terminal-user-interface-mode-d11-m3a-m3b-done)
   - [Technical Stack](#technical-stack)
   - [Loop Cycle](#loop-cycle)
   - [What TUI Reuses vs. Adds](#what-tui-reuses-vs-adds)
@@ -27,8 +27,8 @@ This is the reference for how SynapseOS's three interface modes — CLI, TUI, an
 
 Every mode is a thin wrapper around the same three packages — nothing mode-specific happens inside them, and nothing about them assumes which mode is calling:
 
-- **`internal/ollama`** — the only code that talks to the model. `Generate` sends a non-streaming prompt and waits for the full response (what CLI mode uses); a streaming variant is TUI's one piece of unbuilt shared-core work (see §3).
-- **`internal/classifier`** — `Classify(cmd string) (Verdict, string)` pattern-matches a proposed command against known-irreversible shapes (`rm`, `dd`, `mkfs`, `shred`, `git reset --hard`, `git clean -f`, truncating redirects) and returns `Reversible` or `Irreversible` plus a human-readable reason. It has no notion of a terminal, a prompt, or a UI — it is pure logic, which is exactly what lets every mode reuse it unmodified.
+- **`internal/ollama`** — the only code that talks to the model. `Generate` sends a non-streaming prompt and waits for the full response (what CLI and REPL mode use); `GenerateStream` delivers the same result token-by-token over NDJSON (what TUI mode uses, opt-in per mode). A stream that ends without a completion marker is rejected outright rather than returned short — truncated text would still be a runnable command, and a different one.
+- **`internal/classifier`** — `Classify(cmd string) (Verdict, string)` pattern-matches a proposed command against known-irreversible shapes and returns `Reversible` or `Irreversible` plus a human-readable reason. Started as a short list (`rm`, `dd`, `mkfs`, `shred`, `git reset --hard`, `git clean -f`, truncating redirects) and has since grown substantially (F1: `sed -i`/`awk -i inplace`/`truncate`/unsafe `tee`; F3/D22: recursive `chmod`/`chown`, fetch-decode-exec, bare `eval`) — see `build-order.md` F1/F3 for the current full rule set. It has no notion of a terminal, a prompt, or a UI — it is pure logic, which is exactly what lets every mode reuse it unmodified.
 - **`internal/executor`** — `Run(ctx, cmd) Result` dispatches through `sh -c`, capturing stdout/stderr and the exit code. Also mode-agnostic: it doesn't know or care whether its caller is a one-shot process or a long-running session.
 
 ```
@@ -50,49 +50,52 @@ A mode's job is only ever: collect input, drive the core, render output. Every m
 
 | | **CLI** (D19) | **TUI** (D11) | **GUI** (D11, D12) |
 |---|---|---|---|
-| Process lifecycle | One-shot: propose → classify → (confirm) → execute → exit | Persistent: runs until the user quits | Persistent: launched at login, fills the session |
+| Process lifecycle | One-shot per invocation: a bounded, gated multi-step loop (propose → classify → (confirm) → execute → feed result back → repeat until done or step cap, D21) — not a single command | Persistent: runs until the user quits | Persistent: launched at login, fills the session |
 | State across turns | None — each invocation is independent | In-memory rolling history within the session (M6) | Same as TUI (wraps it) |
 | Model output rendering | Printed once generation finishes (blocking call) | Streamed token-by-token into a scrollable viewport | Same streaming, inside fullscreen chrome |
 | Confirmation gate UX | Print the command + reason, block on stdin `y`/`N` | Render inline in the chat view, wait for a keypress | Same inline pattern, fullscreen |
 | Audience / use case | Scripting, automation, one-off remote commands over SSH | Interactive terminal session, local or remote | Study Condition A — novice users, no terminal exposure |
-| Built by | **M2 — done** | M3a (interim loop) → M3b (rendering) — next | M9 |
+| Built by | **M2 — done** | M3a (interim loop) + M3b (rendering) — **both done** | M9 |
 | Escape hatch | N/A (process just exits) | N/A (it's already a normal terminal) | XFCE fallback, logged and excluded from primary analysis (D20) |
 
 **The one-line answer to "isn't TUI just CLI with a nicer UI?"**: mostly, but not only — the propose/classify/execute logic is identical and reused verbatim, but persistence (a session that outlives one task) and streaming (rendering tokens as they arrive instead of waiting for the full response) are real architectural additions, not visual polish. TUI is the first mode where "session" is a meaningful concept at all.
 
 ## 3. CLI Mode (D19, M2 — done)
 
-CLI mode is the one-shot interface: `synapse "<task>"` runs exactly one request through propose → classify → confirm-if-needed → execute, then exits. No conversation history, no persistent process — every invocation starts cold. This is deliberate, not a limitation to fix later: it's what makes CLI mode viable for scripting and one-off remote commands (`ssh host synapse "..."` behaves exactly like any other single-purpose CLI tool).
+CLI mode is the one-shot interface: `synapse "<task>"` runs one request through a bounded, gated multi-step loop (D21) — propose → classify → confirm-if-needed → execute → feed the result back so the model can propose the next step or signal done, repeating until complete or a hard step cap is hit — then exits. Not single-command execution: a task that genuinely needs several distinct actions (e.g. "make a folder, then move matching files into it") is handled within one invocation, with every step independently classified and gated, not just the first. No conversation history *across* invocations, no persistent process — every invocation starts cold. This is deliberate, not a limitation to fix later: it's what makes CLI mode viable for scripting and one-off remote commands (`ssh host synapse "..."` behaves exactly like any other single-purpose CLI tool).
 
 Because there's no session to render into, the confirmation gate is the simplest possible implementation: print the blocked command and why, then block on a single line of stdin. TUI reuses the same yes/no *decision* logic but renders the prompt differently (§4) — the UX difference is a rendering concern, not a logic difference, which is why it lives in the mode layer and not the shared core.
 
 Entry point: `cmd/synapse/main.go`. The built-in 8-task sample suite (`synapse` with no arguments) is a quality smoke test only — it calls `propose` but deliberately skips classify/execute, so running it never touches the real filesystem.
 
-## 4. TUI (Terminal User Interface) Mode (D11, M3a/M3b — next)
+## 4. TUI (Terminal User Interface) Mode (D11, M3a + M3b — done)
 
 TUI mode turns the one-shot CLI into a persistent, interactive session — the default target for local terminals and remote SSH connections where a real back-and-forth is wanted, as opposed to CLI mode's single-shot, script-friendly invocation.
 
-**Built in two sub-milestones (split 2026-08-21, see `build-order.md`):** M3a proves the persistent-session mechanics alone — a plain stdin loop wrapping M2's already-tested `runLoop`, no rendering — before M3b spends effort on the bubbletea/lipgloss layer below. This is a build-sequencing decision only; TUI mode itself is still one mode, unchanged from D11, and M3a is not something a user is meant to run as a deliverable in its own right.
+**Built in two sub-milestones (split 2026-08-21, see `build-order.md`):** M3a proved the persistent-session mechanics alone — a plain stdin loop wrapping M2's already-tested `runLoop`, no rendering — done as of Session 27, before M3b built the bubbletea/lipgloss layer below (done as of Session 28). This was a build-sequencing decision only; TUI mode itself is still one mode, unchanged from D11, and M3a is not something a user is meant to run as a deliverable in its own right.
 
 ### Technical Stack
 
 - **Framework:** [bubbletea](https://github.com/charmbracelet/bubbletea), implementing the Elm Architecture (Model-Update-View loop) in Go.
 - **Styling & layout:** [lipgloss](https://github.com/charmbracelet/lipgloss) for borders, grids, and typography.
-- **Viewport:** bubbletea's native scrollable viewport for terminal output.
+- **Viewport:** `bubbles/v2/viewport` for scrollable output (a separate module from bubbletea itself).
+- **Module paths:** all three live under `charm.land/…/v2`, not `github.com/charmbracelet/…` — the path moved with the v2 line. Requires Go ≥ 1.25.
 
 ### Loop Cycle
 
-1. **Model:** conversation history, current input, cursor position, loading/spinner state, execution logs.
-2. **Update:** listens for keystrokes; on `Enter`, fires an asynchronous `tea.Cmd` that calls `internal/ollama`'s streaming `Generate` variant (the one piece of shared-core work TUI adds — CLI never needed streaming since it renders once at the end). Tokens arrive over a goroutine channel into the view. If `internal/classifier` flags the proposed command as irreversible, the loop pauses in-view for confirmation instead of blocking on `bufio.Reader` the way CLI does.
-3. **View:** renders the input box, scrollable viewport, and status indicators via ANSI escape sequences.
+**As built (Session 28), which differs from this section's original sketch in one important way.** The sketch had `Update` calling the model directly. It does not — TUI mode never reimplements any part of the propose/classify/confirm/execute loop. The *same* `runLoop` that CLI and REPL mode use is injected as a `tui.TaskRunner` and driven on its own goroutine, so every reversibility verdict, confirmation gate, and undo-journal write is literally the same code in every mode and cannot drift between them.
+
+1. **Model:** transcript, viewport scroll state, current input, whether a task is running, and any outstanding confirmation prompt.
+2. **Update:** on `Enter`, launches the injected runner on a goroutine and returns immediately — `Update` must never block. Two channels bridge the synchronous loop into the event loop: the runner's `io.Writer` output arrives as messages (streamed token-by-token, since TUI passes `withTokenStreaming`), and when the loop hits an irreversible step its `confirmFn` publishes a confirmation request and *blocks* until `Update` — having rendered the prompt and taken a keypress — sends the verdict back. Ctrl+C mid-task cancels that task's context only; the session survives.
+3. **View:** renders the transcript through a `viewport`, plus either the input box, a working indicator, or the confirmation prompt — the last being the only bordered, colored element in the interface, so an irreversible-command gate can never be mistaken for ordinary output.
 
 ### What TUI Reuses vs. Adds
 
 | Reused unchanged | New in TUI |
 |---|---|
 | `internal/classifier` — same `Classify` call, same verdicts | Persistent process / session loop (bubbletea) |
-| `internal/executor` — same `Run` call, same `Result` shape | Streaming `Generate` variant in `internal/ollama` |
-| The reversibility-gate *decision logic* | In-session confirmation rendering (vs. blocking stdin read) |
+| `internal/executor` — same `Run` call, same `Result` shape | `GenerateStream` in `internal/ollama` (opt-in per mode; CLI/REPL stay non-streaming) |
+| `runLoop` itself — the whole propose/classify/confirm/execute loop, injected and driven, never reimplemented | In-session confirmation rendering (vs. blocking stdin read), and viewport scrollback |
 | | Multi-turn context (M6 — depends on TUI existing, not part of M3a/M3b itself) |
 
 ## 5. GUI Takeover Mode (D11, D12, M9 — study prototype)
@@ -153,6 +156,7 @@ Once the study concludes, SynapseOS can run as a standard desktop overlay instea
 |---|---|
 | Why do these three modes exist, and not some other split? | `decisions.md` D11 (TUI vs. GUI), D19 (CLI formalized as a third mode) |
 | Why does GUI have no escape hatch by default, and why was that reopened? | `decisions.md` D12, D20 |
-| What order are these built in, and what's each milestone's definition of done? | `build-order.md` M2 (CLI), M3a/M3b (TUI), M9 (GUI) |
+| What order are these built in, and what's each milestone's definition of done? | `build-order.md` M2 (CLI, done), M3a (interim loop, done)/M3b (rendering, next) (TUI), M9 (GUI) |
+| Why does a single CLI-mode invocation run more than one command sometimes? | `decisions.md` D21 (bounded, gated multi-step loop; full autonomy considered and rejected) |
 | What has the paper (Ch.3) committed to describing? | `research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html` Table 3.2 and Section 2.1 |
 | Where does each mode sit relative to the OS layers (kernel, userland, session layer)? | `layers.md` |

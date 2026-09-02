@@ -16,6 +16,7 @@ This is the operational reference for running the SynapseOS prototype locally: w
 
 - **Go 1.24+** — verify with `go version`.
 - **Ollama** — the inference server. Not bundled; install it and pull the model (below).
+- **A C compiler** (`build-essential` on Debian/Ubuntu) — optional. Only needed for `go test -race`; building and running the prototype itself needs nothing beyond the Go toolchain. `go test -race` requires cgo, which needs a real C compiler (`CGO_ENABLED=1 go test -race ./...`; without a compiler this fails with `cgo: C compiler "gcc" not found`).
 
 ## Install Ollama and the Model
 
@@ -45,6 +46,15 @@ go run ./cmd/synapse
 # Run one ad-hoc task
 go run ./cmd/synapse "find the 10 largest files under /var/log"
 
+# Persistent multi-task session (M3a) — one process, issue several tasks in a row
+go run ./cmd/synapse repl
+
+# Full-screen TUI mode (M3b) — streaming, scrollback; needs a real terminal
+go run ./cmd/synapse tui
+
+# Reverse the most recent auto-run or confirmed command
+go run ./cmd/synapse undo
+
 # Build a binary instead of go run
 go build -o bin/synapse ./cmd/synapse
 ./bin/synapse
@@ -61,8 +71,13 @@ go build -o bin/synapse ./cmd/synapse
 
 ```
 prototype/
-├── cmd/synapse/main.go        # entrypoint — milestone 2 skeleton (NL → proposed command)
-└── internal/ollama/client.go  # Ollama REST client (the only code that knows the inference engine)
+├── cmd/synapse/main.go          # entrypoint — one-shot task, persistent repl (M3a), and undo subcommands
+├── internal/ollama/client.go    # Ollama REST client (the only code that knows the inference engine)
+├── internal/classifier/         # reversibility classifier (pattern-matches known-irreversible command shapes)
+├── internal/executor/           # os/exec subprocess dispatch, stdout/stderr capture, exit-code surfacing
+├── internal/tui/                # TUI mode (M3b): bubbletea model, streaming, scrollback
+├── internal/undo/               # undo mechanisms: directory-diff, content-backup, trash, metadata, git-reset
+└── internal/typedops/           # typed file operations (F4 experiment; not wired into the default runtime path)
 ```
 
 ## Troubleshooting
