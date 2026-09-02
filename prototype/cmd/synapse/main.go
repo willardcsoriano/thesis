@@ -19,6 +19,8 @@
 //
 //	synapse                              # propose-only sample task suite
 //	synapse "find pdfs from this week"   # propose, classify, confirm, execute
+//	synapse repl                         # persistent session (M3a): issue several tasks in one process
+//	synapse tui                          # full-screen TUI mode (M3b): streaming, scrollback, in-session confirmation
 //	synapse undo                         # reverse the most recent auto-run reversible command
 //
 // Environment:
@@ -33,12 +35,15 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"synapseos/internal/classifier"
 	"synapseos/internal/executor"
 	"synapseos/internal/ollama"
+	"synapseos/internal/tui"
 	"synapseos/internal/undo"
 )
 
@@ -82,6 +87,18 @@ Rules:
 // exactly the failure mode the cap exists to prevent.
 const maxLoopSteps = 5
 
+// stepExecutionTimeout bounds how long a single executed step may run before
+// it is forcibly killed. Without this, a command that hangs — one that
+// blocks on stdin the harness never provides, an infinite loop, a stuck
+// network call — freezes the entire process indefinitely with no recovery
+// (verified gap, Session 23: runLoop previously passed the outer, unbounded
+// context straight through to executor.Run). Matches the model-generation
+// budget (proposeStep) rather than an arbitrary guess: long enough for
+// legitimate multi-file operations (a large find, a package install), short
+// enough that a hang becomes a bounded, reported failure instead of an
+// indefinite freeze.
+const stepExecutionTimeout = 120 * time.Second
+
 const doneSentinel = "DONE"
 
 // stepOutputChars caps how much of a single step's stdout/stderr gets fed
@@ -109,6 +126,66 @@ func main() {
 	client := ollama.New(os.Getenv("SYNAPSE_OLLAMA"))
 
 	ctx := context.Background()
+	args := os.Args[1:]
+
+	// Subcommands that never call the model are dispatched *before* any
+	// connectivity check. Gating them on Ollama would make them unavailable
+	// exactly when the model backend is down — and for `undo` that is a real
+	// safety problem, not just an inconvenience: the scenario undo exists for
+	// is "a destructive command already ran and I want it back", which is
+	// entirely filesystem state (internal/undo's journal, trash, and content
+	// backups) with no model involvement whatsoever. If Ollama crashed, was
+	// stopped, or the machine rebooted between the destructive command and the
+	// undo attempt, requiring a live model here would remove the safety net at
+	// the exact moment it is most likely to be needed. Fixed Session 28 (this
+	// was a real, verified defect dating to M2/F2, found by review, not a
+	// deliberate design choice — nothing in decisions.md justified it).
+	if len(args) == 1 {
+		switch args[0] {
+		case "undo":
+			journalPath, err := undo.DefaultJournalPath()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error: %v\n", err)
+				os.Exit(1)
+			}
+			reader := bufio.NewReader(os.Stdin)
+			os.Exit(runUndo(func(p string) bool { return confirm(reader, os.Stdout, p) }, os.Stdout, os.Stderr, journalPath))
+		case "tui":
+			// M3b step 3: the real execution loop is wired in, but TUI mode
+			// still launches without a connectivity precheck on purpose. A
+			// full-screen app that opens and reports the problem inside the
+			// session beats one that exits to a bare shell over a transient
+			// backend blip — an unreachable Ollama surfaces as an ordinary
+			// error line in the transcript on the first proposal attempt, and
+			// the session stays usable once the backend comes back.
+			journalPath, err := undo.DefaultJournalPath()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "warning: undo journal unavailable, this session won't be undoable: %v\n", err)
+				journalPath = ""
+			}
+			// The injected runner is runLoop itself, with only the client,
+			// model, and journal bound in. TUI mode therefore executes the
+			// exact same propose/classify/confirm/execute path as CLI and
+			// REPL mode — no reimplementation, so safety gating cannot drift
+			// between interface modes.
+			runner := func(taskCtx context.Context, task string, confirmFn func(string) bool, out, errOut io.Writer) int {
+				// withTokenStreaming is the one behavioral difference from
+				// CLI/REPL mode, and it is presentation-only: tokens render
+				// as they arrive instead of after generation finishes. The
+				// command still gets parsed from the fully assembled
+				// response and classified exactly as before.
+				return runLoop(taskCtx, client, model, task, confirmFn, out, errOut, journalPath, withTokenStreaming(out))
+			}
+			if err := tui.Run(runner); err != nil {
+				fmt.Fprintf(os.Stderr, "error: %v\n", err)
+				os.Exit(1)
+			}
+			return
+		}
+	}
+
+	// Everything below this point actually calls the model, so a failed
+	// connectivity check here is a genuine, actionable precondition failure.
 	if err := client.Ping(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n\nIs Ollama running? Start it with:\n  ollama serve\nand pull the model with:\n  ollama pull %s\n", err, model)
 		os.Exit(1)
@@ -116,10 +193,14 @@ func main() {
 
 	fmt.Printf("model: %s   endpoint: %s\n\n", model, client.BaseURL)
 
-	if args := os.Args[1:]; len(args) > 0 {
-		if len(args) == 1 && args[0] == "undo" {
-			runUndo(os.Stdout, os.Stderr)
-			return
+	if len(args) > 0 {
+		if len(args) == 1 && args[0] == "repl" {
+			journalPath, err := undo.DefaultJournalPath()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "warning: undo journal unavailable, this session won't be undoable: %v\n", err)
+				journalPath = ""
+			}
+			os.Exit(runREPL(ctx, client, model, journalPath, os.Stdin, os.Stdout, os.Stderr))
 		}
 		runAdHoc(ctx, client, model, strings.Join(args, " "))
 		return
@@ -163,7 +244,113 @@ func runAdHoc(ctx context.Context, client *ollama.Client, model, task string) {
 		fmt.Fprintf(os.Stderr, "warning: undo journal unavailable, this run won't be undoable: %v\n", err)
 		journalPath = ""
 	}
-	os.Exit(runLoop(ctx, client, model, task, confirm, os.Stdout, os.Stderr, journalPath))
+	reader := bufio.NewReader(os.Stdin)
+	confirmFn := func(prompt string) bool { return confirm(reader, os.Stdout, prompt) }
+	os.Exit(runLoop(ctx, client, model, task, confirmFn, os.Stdout, os.Stderr, journalPath))
+}
+
+// runREPL is M3a's persistent CLI loop: instead of one process per task
+// (runAdHoc), it reads one line of task input at a time from in and runs
+// each through the same runLoop, in the same long-running process, until
+// EOF or an explicit "exit"/"quit" line. Every task still goes through the
+// identical classify/confirm/execute path as the one-shot path — nothing
+// about the safety gating changes, only the process lifecycle around it.
+//
+// A single bufio.Reader wrapping in serves both the task-line reads and
+// every confirmation prompt a task's irreversible step triggers. This is
+// the one thing that must be gotten right for a persistent session:
+// bufio.Reader reads ahead into its own internal buffer, so a second,
+// independent reader wrapping the same in would silently steal input the
+// first reader hadn't asked for yet (e.g. a task typed right after
+// answering a confirmation prompt) — the exact "state leaked between
+// iterations" failure mode this milestone exists to retire. Confirmation
+// happens through confirm(reader, ...), not the outer per-task confirmFn
+// parameter runLoop normally takes, precisely so it shares that one reader.
+//
+// A task that fails (propose error, UNSUPPORTED, step limit, cancelled
+// confirmation) does not end the session — runLoop's own return code is
+// intentionally ignored here; the whole point of a persistent loop is that
+// one bad task doesn't force a restart to try another.
+func runREPL(ctx context.Context, client *ollama.Client, model, journalPath string, in io.Reader, out, errOut io.Writer) int {
+	fmt.Fprintln(out, "persistent session — type a task and press enter; type exit or quit (or Ctrl+D) to leave.")
+	fmt.Fprintln(out, "while a task is running, Ctrl+C cancels just that task and returns you here.")
+
+	reader := bufio.NewReader(in)
+	confirmFn := func(prompt string) bool { return confirm(reader, out, prompt) }
+
+	for {
+		fmt.Fprint(out, "> ")
+		line, readErr := reader.ReadString('\n')
+
+		if task := strings.TrimSpace(line); task != "" {
+			if strings.EqualFold(task, "exit") || strings.EqualFold(task, "quit") {
+				return 0
+			}
+			runTaskInterruptibly(ctx, client, model, task, confirmFn, out, errOut, journalPath)
+			fmt.Fprintln(out)
+		}
+
+		if readErr != nil {
+			return 0
+		}
+	}
+}
+
+// notifyInterrupts and stopInterrupts wrap signal.Notify/signal.Stop so
+// tests can drive the interrupt path without sending real signals to the
+// test process — the same dependency-indirection pattern already used for
+// os.Link in internal/undo and WaitDelay in internal/executor.
+var (
+	notifyInterrupts = func(c chan<- os.Signal) { signal.Notify(c, os.Interrupt) }
+	stopInterrupts   = func(c chan<- os.Signal) { signal.Stop(c) }
+)
+
+// runTaskInterruptibly runs exactly one task with Ctrl+C wired to cancel
+// that task alone, leaving the session alive — added Session 28 after a
+// review found that M3a, by making the process long-lived, had turned a
+// harmless behavior into a real one: in one-shot CLI mode Ctrl+C killed a
+// process that was about to exit anyway, but in a persistent session it
+// destroyed the whole session, which is precisely the thing M3a exists to
+// keep alive. Combined with stepExecutionTimeout (120s), a single hung
+// command could otherwise hold the session with no escape short of killing
+// everything.
+//
+// Interrupt handling is installed per task and torn down as soon as the
+// task finishes, deliberately: while sitting idle at the "> " prompt the
+// default SIGINT behavior applies, so Ctrl+C there still terminates the
+// process the way a user expects. Catching signals for the whole session
+// instead would swallow that, leaving Ctrl+C looking broken at the prompt.
+//
+// Known limitation, accepted rather than hidden: if the task is blocked on
+// a [y/N] confirmation when Ctrl+C arrives, the context is cancelled but
+// the pending os.Stdin read is not interrupted, so nothing visibly happens
+// until the next Enter — which the gate then treats as "no" and fails
+// closed. The outcome is correct and safe, just not instant. Fixing that
+// properly needs the stdin read moved off the main goroutine, which would
+// reintroduce exactly the two-readers-over-one-stream hazard M3a was built
+// to eliminate; not worth trading a real correctness guarantee for a
+// cosmetic improvement.
+func runTaskInterruptibly(ctx context.Context, client *ollama.Client, model, task string, confirmFn func(string) bool, out, errOut io.Writer, journalPath string) {
+	taskCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	sigCh := make(chan os.Signal, 1)
+	notifyInterrupts(sigCh)
+	defer stopInterrupts(sigCh)
+
+	watchDone := make(chan struct{})
+	defer close(watchDone)
+
+	go func() {
+		select {
+		case <-sigCh:
+			fmt.Fprintln(out, "\ncancelling this task — the session stays open.")
+			cancel()
+		case <-watchDone:
+		}
+	}()
+
+	runLoop(taskCtx, client, model, task, confirmFn, out, errOut, journalPath)
 }
 
 // runLoop is runAdHoc's testable core: propose the next command, classify
@@ -190,11 +377,37 @@ func runAdHoc(ctx context.Context, client *ollama.Client, model, task string) {
 // recorded: the user already explicitly approved the risk knowing there is
 // no undo, and this package's snapshot-diff approach structurally cannot
 // reconstruct deleted content anyway.
-func runLoop(ctx context.Context, client *ollama.Client, model, task string, confirmFn func(string) bool, out, errOut io.Writer, journalPath string) int {
+// loopOption tunes runLoop without widening its signature for the many
+// existing callers that need none of it — a variadic option keeps every
+// current call site (CLI, REPL, and eight test call sites) unchanged.
+type loopOption func(*loopConfig)
+
+type loopConfig struct {
+	// tokenSink, when non-nil, receives model output token-by-token as it
+	// is generated. Nil means non-streaming, which stays the default and
+	// the documented CLI/REPL behavior.
+	tokenSink io.Writer
+}
+
+// withTokenStreaming makes the loop stream generation into w as it
+// arrives. Used only by TUI mode; see docs/interface-modes.md for why
+// CLI mode deliberately renders once generation finishes instead.
+func withTokenStreaming(w io.Writer) loopOption {
+	return func(c *loopConfig) { c.tokenSink = w }
+}
+
+func runLoop(ctx context.Context, client *ollama.Client, model, task string, confirmFn func(string) bool, out, errOut io.Writer, journalPath string, opts ...loopOption) int {
+	var cfg loopConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	fmt.Fprintf(out, "each step may run for up to %s before it's automatically stopped.\n\n", stepExecutionTimeout)
+
 	var history []loopStep
 
 	for i := 1; i <= maxLoopSteps; i++ {
-		resp, cmd, err := proposeStep(ctx, client, model, task, history)
+		resp, cmd, err := proposeStep(ctx, client, model, task, history, cfg.tokenSink)
 		if err != nil {
 			fmt.Fprintf(errOut, "error: %v\n", err)
 			return 1
@@ -216,7 +429,14 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			return 0
 		}
 
-		verdict, reason := classifier.Classify(cmd)
+		// Resolved once per step and used both for the filesystem-aware
+		// classification below (cp-onto-existing-destination needs to know
+		// the destination's actual path) and for undo snapshotting — best
+		// effort either way; an unresolvable wd just degrades both to their
+		// no-filesystem-check behavior rather than failing the step.
+		wd, _ := os.Getwd()
+
+		verdict, reason := classifier.ClassifyForDir(cmd, wd)
 		if verdict == classifier.Irreversible {
 			fmt.Fprintf(out, "blocked: %s is irreversible — %s\n", cmd, reason)
 			if !confirmFn("run it anyway?") {
@@ -225,15 +445,33 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			}
 		}
 
-		wd, undoBefore := "", map[string]bool(nil)
-		if journalPath != "" && verdict == classifier.Reversible {
-			if w, err := os.Getwd(); err == nil {
-				wd = w
-				undoBefore, _ = undo.Snapshot(wd) // best-effort: a snapshot failure just disables recording for this step
+		// Reversible gets the directory-diff safety net (undoBefore); a
+		// confirmed Irreversible one gets whichever combination of
+		// pre-execution backups its shape calls for, via
+		// backupBeforeIrreversible — the "guiltless" half of
+		// accurate-and-guiltless (Sessions 24-26). Neither happens without
+		// journalPath, and every backup is best-effort: a failure degrades to
+		// "no safety net for this piece," never blocks execution the user
+		// already confirmed. More than one backup can legitimately apply to
+		// a single step when the command itself is a chain (e.g. "chmod -R
+		// 755 dir && rm other.txt" triggers both metadata backup and trash).
+		var undoBefore map[string]bool
+		var contentBackups []undo.ContentBackup
+		var trashed []undo.TrashedItem
+		var gitReset string
+		var metadataBackups []undo.MetadataBackup
+		if journalPath != "" && wd != "" {
+			switch verdict {
+			case classifier.Reversible:
+				undoBefore, _ = undo.Snapshot(wd)
+			case classifier.Irreversible:
+				contentBackups, trashed, gitReset, metadataBackups = backupBeforeIrreversible(ctx, cmd, wd, errOut)
 			}
 		}
 
-		result := executor.Run(ctx, cmd)
+		execCtx, execCancel := context.WithTimeout(ctx, stepExecutionTimeout)
+		result := executor.Run(execCtx, cmd)
+		execCancel()
 		if result.Err != nil {
 			fmt.Fprintf(errOut, "error: command did not run: %v\n", result.Err)
 			return 1
@@ -243,6 +481,9 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		}
 		if result.Stderr != "" {
 			fmt.Fprint(errOut, result.Stderr)
+		}
+		if result.TimedOut {
+			fmt.Fprintf(out, "command exceeded %s and was terminated.\n", stepExecutionTimeout)
 		}
 		fmt.Fprintf(out, "exit code: %d\n\n", result.ExitCode)
 
@@ -254,6 +495,24 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 					}
 				}
 			}
+		} else if len(contentBackups) > 0 || len(trashed) > 0 || gitReset != "" || len(metadataBackups) > 0 {
+			// Journaled regardless of exit code: every backup here was
+			// already taken before the command ran, so it's available to
+			// restore even if the command exited nonzero after partially
+			// applying its effect — exactly the surprising-outcome case this
+			// safety net exists for.
+			entry := undo.Entry{
+				Timestamp:       time.Now(),
+				Command:         cmd,
+				Dir:             wd,
+				ContentBackups:  contentBackups,
+				Trashed:         trashed,
+				GitReset:        gitReset,
+				MetadataBackups: metadataBackups,
+			}
+			if err := undo.AppendJournal(journalPath, entry); err != nil {
+				fmt.Fprintf(errOut, "warning: could not record undo entry: %v\n", err)
+			}
 		}
 
 		history = append(history, loopStep{command: cmd, result: result})
@@ -263,16 +522,123 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 	return 1
 }
 
+// backupBeforeIrreversible runs every pre-execution backup that applies to
+// a confirmed Irreversible cmd, matching each shape the classifier
+// recognizes to the mechanism that actually protects it: a content copy
+// for something that mutates a file's existing bytes in place, a hardlink
+// into trash for something that only removes a directory entry, a
+// captured commit SHA for a git reset, and a metadata record for a
+// recursive permission change. Every piece is independent and
+// best-effort — errOut gets a warning on failure, but nothing here ever
+// blocks the execution the user already confirmed.
+func backupBeforeIrreversible(ctx context.Context, cmd, wd string, errOut io.Writer) (contentBackups []undo.ContentBackup, trashed []undo.TrashedItem, gitReset string, metadataBackups []undo.MetadataBackup) {
+	targets := classifier.ContentMutationTargets(cmd, wd)
+	if dst, ok := classifier.CpOverwriteTarget(cmd, wd); ok {
+		targets = append(targets, dst)
+	}
+	if dst, ok := classifier.RawWriteOverwriteTarget(cmd, wd); ok {
+		targets = append(targets, dst)
+	}
+	if len(targets) > 0 {
+		var errs []error
+		contentBackups, errs = undo.BackupContent(targets)
+		for _, e := range errs {
+			fmt.Fprintf(errOut, "warning: could not back up a file before running: %v\n", e)
+		}
+	}
+
+	trashCandidates := classifier.TrashTargets(cmd, wd)
+	if dryRunCmd, ok := classifier.GitCleanDryRunCommand(cmd); ok {
+		dryCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		result := executor.Run(dryCtx, dryRunCmd)
+		cancel()
+		if result.Err != nil {
+			fmt.Fprintf(errOut, "warning: could not preview git clean's effect before running: %v\n", result.Err)
+		} else {
+			for _, p := range parseGitCleanDryRunOutput(result.Stdout) {
+				if !filepath.IsAbs(p) {
+					p = filepath.Join(wd, p)
+				}
+				trashCandidates = append(trashCandidates, p)
+			}
+		}
+	}
+	if len(trashCandidates) > 0 {
+		var errs []error
+		trashed, errs = undo.TrashPreserve(trashCandidates)
+		for _, e := range errs {
+			fmt.Fprintf(errOut, "warning: could not preserve a file before deleting it: %v\n", e)
+		}
+	}
+
+	if classifier.IsGitResetHard(cmd) {
+		sha, err := undo.CaptureGitHead(wd)
+		if err != nil {
+			fmt.Fprintf(errOut, "warning: could not capture git HEAD before resetting: %v\n", err)
+		} else {
+			gitReset = sha
+		}
+	}
+
+	if permTargets := classifier.RecursivePermissionTargets(cmd, wd); len(permTargets) > 0 {
+		var errs []error
+		metadataBackups, errs = undo.BackupMetadata(permTargets)
+		for _, e := range errs {
+			fmt.Fprintf(errOut, "warning: could not back up permissions before changing them: %v\n", e)
+		}
+	}
+
+	return contentBackups, trashed, gitReset, metadataBackups
+}
+
+// parseGitCleanDryRunOutput extracts the paths git clean -n reports it
+// would remove — "Would remove <path>" one per line, directories reported
+// with a trailing "/" — the exact shape verified empirically against a
+// real git repository (Session 26).
+func parseGitCleanDryRunOutput(stdout string) []string {
+	const prefix = "Would remove "
+	var paths []string
+	for _, line := range strings.Split(stdout, "\n") {
+		if rest, ok := strings.CutPrefix(line, prefix); ok {
+			paths = append(paths, strings.TrimSuffix(rest, "/"))
+		}
+	}
+	return paths
+}
+
 // proposeStep asks the model for the next command given task and everything
 // that has run so far, with the same deterministic decoding as propose.
-func proposeStep(ctx context.Context, client *ollama.Client, model, task string, history []loopStep) (*ollama.GenerateResponse, string, error) {
+func proposeStep(ctx context.Context, client *ollama.Client, model, task string, history []loopStep, tokenSink io.Writer) (*ollama.GenerateResponse, string, error) {
 	reqCtx, cancel := context.WithTimeout(ctx, 120*time.Second)
 	defer cancel()
 
-	resp, err := client.Generate(reqCtx, model, loopSystemPrompt, buildStepPrompt(task, history), map[string]any{"temperature": 0})
+	prompt := buildStepPrompt(task, history)
+	opts := map[string]any{"temperature": 0}
+
+	// Non-streaming is the default and stays the CLI/REPL behavior
+	// (docs/interface-modes.md: CLI renders "once generation finishes").
+	// Only a caller that supplies a sink — TUI mode — pays for streaming.
+	if tokenSink == nil {
+		resp, err := client.Generate(reqCtx, model, loopSystemPrompt, prompt, opts)
+		if err != nil {
+			return nil, "", err
+		}
+		return resp, cleanCommand(resp.Response), nil
+	}
+
+	resp, err := client.GenerateStream(reqCtx, model, loopSystemPrompt, prompt, opts, func(tok string) {
+		// Best effort: a failed write to the UI must never abort a
+		// generation that is otherwise fine.
+		fmt.Fprint(tokenSink, tok)
+	})
 	if err != nil {
 		return nil, "", err
 	}
+	// The command is still parsed from the fully assembled response, never
+	// from the streamed fragments — streaming changes only when text
+	// appears on screen, never what gets classified or executed. Combined
+	// with GenerateStream refusing to return a truncated stream at all,
+	// a partial generation can never reach the classifier.
 	return resp, cleanCommand(resp.Response), nil
 }
 
@@ -289,6 +655,9 @@ func buildStepPrompt(task string, history []loopStep) string {
 	b.WriteString("\n\nSteps already run:\n")
 	for i, s := range history {
 		fmt.Fprintf(&b, "%d. $ %s\n   exit code: %d\n", i+1, s.command, s.result.ExitCode)
+		if s.result.TimedOut {
+			fmt.Fprintf(&b, "   note: this command exceeded %s and was terminated before it could finish.\n", stepExecutionTimeout)
+		}
 		if out := strings.TrimSpace(s.result.Stdout); out != "" {
 			fmt.Fprintf(&b, "   stdout: %s\n", truncate(out, stepOutputChars))
 		}
@@ -315,21 +684,22 @@ func truncate(s string, n int) string {
 // than running silently. The journal entry is only removed (PopLastJournal)
 // after confirmation; declining leaves it in place so a later `synapse undo`
 // can still act on it.
-func runUndo(out, errOut io.Writer) {
-	path, err := undo.DefaultJournalPath()
+// runUndo is the `synapse undo` subcommand's testable core: peek the most
+// recent journal entry, show what applying it would do, and — if
+// confirmFn approves — pop it off the journal and apply it. Mirrors
+// runLoop's design (I/O and the confirmation prompt taken as parameters,
+// an exit code returned rather than os.Exit called directly) so it can be
+// tested against a scratch journal file and canned confirmation answers
+// instead of the real terminal and the real ~/.synapse/undo.log.
+func runUndo(confirmFn func(string) bool, out, errOut io.Writer, journalPath string) int {
+	entry, ok, err := undo.PeekLastJournal(journalPath)
 	if err != nil {
 		fmt.Fprintf(errOut, "error: %v\n", err)
-		os.Exit(1)
-	}
-
-	entry, ok, err := undo.PeekLastJournal(path)
-	if err != nil {
-		fmt.Fprintf(errOut, "error: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 	if !ok {
 		fmt.Fprintln(out, "nothing to undo.")
-		return
+		return 0
 	}
 
 	fmt.Fprintf(out, "undoing: %s\n  (ran in %s at %s)\n", entry.Command, entry.Dir, entry.Timestamp.Format(time.RFC3339))
@@ -339,26 +709,39 @@ func runUndo(out, errOut io.Writer) {
 	for _, c := range entry.Created {
 		fmt.Fprintf(out, "  remove: %s\n", c)
 	}
+	for _, cb := range entry.ContentBackups {
+		fmt.Fprintf(out, "  restore content: %s\n", cb.Path)
+	}
+	for _, item := range entry.Trashed {
+		fmt.Fprintf(out, "  restore from trash: %s\n", item.OriginalPath)
+	}
+	for _, mb := range entry.MetadataBackups {
+		fmt.Fprintf(out, "  restore permissions: %s\n", mb.Path)
+	}
+	if entry.GitReset != "" {
+		fmt.Fprintf(out, "  reset git HEAD back to: %s\n", entry.GitReset)
+	}
 	if len(entry.Unhandled) > 0 {
 		fmt.Fprintf(out, "  note: %d change(s) from this command could not be safely reconstructed and are not part of this undo: %v\n", len(entry.Unhandled), entry.Unhandled)
 	}
 
-	if !confirm("apply this undo?") {
+	if !confirmFn("apply this undo?") {
 		fmt.Fprintln(out, "cancelled.")
-		return
+		return 0
 	}
 
-	if _, _, err := undo.PopLastJournal(path); err != nil {
+	if _, _, err := undo.PopLastJournal(journalPath); err != nil {
 		fmt.Fprintf(errOut, "error: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 	if errs := undo.Apply(entry); len(errs) > 0 {
 		for _, e := range errs {
 			fmt.Fprintf(errOut, "error: %v\n", e)
 		}
-		os.Exit(1)
+		return 1
 	}
 	fmt.Fprintln(out, "undo complete.")
+	return 0
 }
 
 // propose sends task to the model with deterministic decoding (temperature
@@ -375,12 +758,18 @@ func propose(ctx context.Context, client *ollama.Client, model, task string) (*o
 	return resp, cleanCommand(resp.Response), nil
 }
 
-// confirm prints prompt and blocks for an explicit "y"/"yes" on stdin. Any
-// other input, including a read error or EOF, is treated as "no" — the
-// confirmation gate fails closed.
-func confirm(prompt string) bool {
-	fmt.Printf("%s [y/N] ", prompt)
-	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
+// confirm prints prompt to out and blocks for an explicit "y"/"yes" read
+// from r. Any other input, including a read error or EOF, is treated as
+// "no" — the confirmation gate fails closed. r and out are taken as
+// parameters — never os.Stdin/os.Stdout directly — so a persistent session
+// (runREPL) can share one reader between its task-line reads and every
+// confirmation prompt runLoop triggers along the way: two independent
+// readers over the same stdin would let one buffer input the other was
+// about to consume, which is exactly the state-leak risk M3a exists to
+// retire. It also lets tests assert on prompt text without a real terminal.
+func confirm(r *bufio.Reader, out io.Writer, prompt string) bool {
+	fmt.Fprintf(out, "%s [y/N] ", prompt)
+	line, err := r.ReadString('\n')
 	if err != nil {
 		return false
 	}
