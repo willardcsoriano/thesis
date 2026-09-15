@@ -3,7 +3,10 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,7 +16,7 @@ import (
 	"synapseos/internal/ollama"
 )
 
-// TestRunREPLProcessesMultipleTasksInOneProcess verifies M3a's core claim:
+// TestRunREPLProcessesMultipleTasksInOneProcess verifies M4's core claim:
 // several distinct tasks run through runLoop in a single runREPL call,
 // without the process restarting between them.
 func TestRunREPLProcessesMultipleTasksInOneProcess(t *testing.T) {
@@ -153,7 +156,7 @@ func TestRunREPLContinuesSessionAfterAFailedTask(t *testing.T) {
 }
 
 // TestRunREPLSharesOneReaderBetweenTasksAndConfirmations is the test that
-// actually exercises M3a's stated risk: "no leaked confirmation state,
+// actually exercises M4's stated risk: "no leaked confirmation state,
 // state carried correctly between iterations." The scripted input
 // interleaves an irreversible task, its "y" confirmation answer, and a
 // second task, all as separate lines of the same stream — exactly what a
@@ -242,7 +245,7 @@ func TestRunREPLDeclinedConfirmationDoesNotLeakIntoNextTask(t *testing.T) {
 }
 
 // TestRunREPLPrintsPromptAndGreeting verifies the minimal, plain-text UX
-// M3a scopes for (no bubbletea/styling): a startup line explaining how to
+// M4 scopes for (no bubbletea/styling): a startup line explaining how to
 // leave, and a "> " prompt before each read.
 func TestRunREPLPrintsPromptAndGreeting(t *testing.T) {
 	server := scriptedOllamaServer(t, nil)
@@ -264,7 +267,7 @@ func TestRunREPLPrintsPromptAndGreeting(t *testing.T) {
 }
 
 // TestRunREPLInterruptCancelsTaskButKeepsSessionAlive verifies the fix for
-// the M3a gap found in Session 28's review: an interrupt during a running
+// the M4 gap found in Session 28's review: an interrupt during a running
 // task must cancel that task alone and leave the session accepting further
 // tasks, rather than tearing down the whole process.
 //
@@ -335,5 +338,76 @@ func TestRunREPLInterruptCancelsTaskButKeepsSessionAlive(t *testing.T) {
 	}
 	if _, err := os.Stat(after); err != nil {
 		t.Errorf("expected the task after the interrupt to still run (session must survive): %v", err)
+	}
+}
+
+// --- session memory in the REPL (M6 step 4) --------------------------
+
+// TestRunREPLCarriesContextAcrossTasks is M6's headline claim at the
+// session level: the second task's prompt must contain the first task's
+// subject, or a follow-up pronoun has nothing to bind to.
+func TestRunREPLCarriesContextAcrossTasks(t *testing.T) {
+	var prompts []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		prompts = append(prompts, body["prompt"].(string))
+		// Step 1 of task 1 runs a command; everything after is DONE.
+		if len(prompts) == 1 {
+			json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: "echo made-report", Done: true})
+			return
+		}
+		json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: "DONE", Done: true})
+	}))
+	defer server.Close()
+
+	var out, errOut bytes.Buffer
+	in := strings.NewReader("create the report\nmove it to Downloads\n")
+	runREPL(context.Background(), ollama.New(server.URL), "m", "", in, &out, &errOut)
+
+	last := prompts[len(prompts)-1]
+	if !strings.Contains(last, "create the report") {
+		t.Errorf("second task's prompt lost the first task, so 'it' cannot resolve:\n%s", last)
+	}
+}
+
+// TestRunREPLContextCommandReportsMemory verifies the user can inspect
+// what "it" would bind to — the agreement check that has to happen before
+// issuing a destructive follow-up.
+func TestRunREPLContextCommandReportsMemory(t *testing.T) {
+	server := scriptedOllamaServer(t, []string{"echo hi", "DONE"})
+	defer server.Close()
+
+	var out, errOut bytes.Buffer
+	in := strings.NewReader("say hi\ncontext\n")
+	runREPL(context.Background(), ollama.New(server.URL), "m", "", in, &out, &errOut)
+
+	got := out.String()
+	if !strings.Contains(got, "remembering 1 task(s)") {
+		t.Errorf("context command did not report remembered tasks:\n%s", got)
+	}
+	if !strings.Contains(got, "say hi") {
+		t.Errorf("context command did not name the remembered task:\n%s", got)
+	}
+}
+
+// TestRunREPLClearCommandForgets verifies the escape hatch works, and —
+// the part that matters — that it is answered locally rather than sent to
+// the model. scriptedOllamaServer fails the test on an unscripted call,
+// so a "clear" that leaked through to generation would be caught here.
+func TestRunREPLClearCommandForgets(t *testing.T) {
+	server := scriptedOllamaServer(t, []string{"echo hi", "DONE"})
+	defer server.Close()
+
+	var out, errOut bytes.Buffer
+	in := strings.NewReader("say hi\nclear\ncontext\n")
+	runREPL(context.Background(), ollama.New(server.URL), "m", "", in, &out, &errOut)
+
+	got := out.String()
+	if !strings.Contains(got, "forgot 1 remembered task(s)") {
+		t.Errorf("clear did not report what it forgot:\n%s", got)
+	}
+	if !strings.Contains(got, "no conversation history yet") {
+		t.Errorf("context after clear should report an empty session:\n%s", got)
 	}
 }

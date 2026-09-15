@@ -16,9 +16,15 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"synapseos/internal/executor"
 	"synapseos/internal/ollama"
+	"synapseos/internal/session"
 	"synapseos/internal/undo"
 )
+
+// testAnswerText is what the mock returns for the D31 summarising call.
+// Distinctive so a test can assert the reply reached the user.
+const testAnswerText = "here is what happened, in plain language."
 
 // runGit runs a git subcommand in dir for test setup, failing the test on
 // error — used by the git-reset/git-clean integration tests below to build
@@ -41,6 +47,15 @@ func scriptedOllamaServer(t *testing.T, responses []string) *httptest.Server {
 	t.Helper()
 	var call int32
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The natural-language reply (D31) is a second kind of call with its
+		// own system prompt. It is served without consuming a scripted
+		// response so that a test's script stays a script of *commands* and
+		// the "called too many times" guard keeps its meaning.
+		body, _ := io.ReadAll(r.Body)
+		if bytes.Contains(body, []byte("You are reporting the outcome of a task")) {
+			json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: testAnswerText, EvalCount: 1})
+			return
+		}
 		i := int(atomic.AddInt32(&call, 1)) - 1
 		if i >= len(responses) {
 			t.Fatalf("ollama called %d times, only %d scripted responses", i+1, len(responses))
@@ -90,21 +105,37 @@ func TestRunLoopMultiStepReversibleNeverPromptsAndAppliesRealEffects(t *testing.
 // actually killed by it — added 2026-08-24 so a legitimately slow but
 // otherwise-fine command (a large find, a slow package mirror) doesn't look
 // like the tool silently hung.
-func TestRunLoopAnnouncesTheExecutionTimeoutUpfront(t *testing.T) {
-	server := scriptedOllamaServer(t, []string{"DONE"})
+// The execution-timeout notice belongs to a session, not to a task. It used
+// to print inside runLoop, which meant it repeated before every task in the
+// REPL and leaked into the TUI transcript, where the surrounding hint lines
+// already cover it. It is now emitted once by whichever entry point owns the
+// session.
+func TestSessionAnnouncesTheExecutionTimeoutOnceNotPerTask(t *testing.T) {
+	server := scriptedOllamaServer(t, []string{"DONE", "DONE"})
 	defer server.Close()
 
-	client := ollama.New(server.URL)
 	var out, errOut bytes.Buffer
-
-	code := runLoop(context.Background(), client, "m", "do nothing", neverConfirm(t), &out, &errOut, "")
-
+	code := runREPL(context.Background(), ollama.New(server.URL), "m", "",
+		strings.NewReader("do nothing\ndo nothing again\n"), &out, &errOut)
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
 	}
 	want := fmt.Sprintf("each step may run for up to %s", stepExecutionTimeout)
-	if !strings.Contains(out.String(), want) {
-		t.Errorf("stdout missing upfront timeout notice %q, got:\n%s", want, out.String())
+	if n := strings.Count(out.String(), want); n != 1 {
+		t.Errorf("timeout notice appeared %d times across two tasks, want exactly 1:\n%s", n, out.String())
+	}
+}
+
+// runLoop itself must stay silent about it, so the notice cannot reappear in
+// the TUI transcript by way of the shared execution path.
+func TestRunLoopItselfEmitsNoSessionPreamble(t *testing.T) {
+	server := scriptedOllamaServer(t, []string{"DONE"})
+	defer server.Close()
+
+	var out, errOut bytes.Buffer
+	runLoop(context.Background(), ollama.New(server.URL), "m", "do nothing", neverConfirm(t), &out, &errOut, "")
+	if strings.Contains(out.String(), "each step may run for up to") {
+		t.Errorf("runLoop printed the session preamble:\n%s", out.String())
 	}
 }
 
@@ -248,8 +279,32 @@ func TestRunLoopUnsupportedRequest(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if !strings.Contains(out.String(), "cannot be done with a shell command") {
-		t.Errorf("stdout missing the UNSUPPORTED explanation, got:\n%s", out.String())
+	got := out.String()
+	// The wording matters more than it looks. This is what a study
+	// participant meets on every boundary task, so it must do three things:
+	// state the limit, say what the system is for, and give a way forward.
+	// A response that only reports an internal verdict leaves the user
+	// stuck and depresses the usability scores for a reason that has
+	// nothing to do with the interface paradigm being measured.
+	if !strings.Contains(got, "couldn't work out a command") {
+		t.Errorf("the limit itself is not stated, got:\n%s", got)
+	}
+	if !strings.Contains(got, "files and folders, disk usage, processes, packages") {
+		t.Errorf("the response does not say what the system can do, got:\n%s", got)
+	}
+	// Fourth requirement, added 2026-09-15 after this message was hit in live
+	// testing: it must not assert *why* the request failed. UNSUPPORTED is
+	// emitted for at least three different reasons and distinguishes none of
+	// them, so naming one — the old wording claimed "visual tasks like
+	// editing images" every time — turns a failed `du` into a non-sequitur.
+	if strings.Contains(got, "not visual tasks like") {
+		t.Errorf("the response asserts a specific reason UNSUPPORTED was emitted; it cannot know one:\n%s", got)
+	}
+	if !strings.Contains(got, "for example") {
+		t.Errorf("the response offers no worked example to move forward with, got:\n%s", got)
+	}
+	if strings.Contains(got, "model reported") {
+		t.Errorf("the response reports an internal verdict rather than addressing the user, got:\n%s", got)
 	}
 }
 
@@ -1067,7 +1122,7 @@ func streamingOllamaServer(t *testing.T, fragments []string) *httptest.Server {
 	}))
 }
 
-// TestRunLoopStreamsTokensWhenEnabled verifies M3b step 4's wiring: with
+// TestRunLoopStreamsTokensWhenEnabled verifies M5 step 4's wiring: with
 // withTokenStreaming, model output reaches the sink in fragments as it is
 // generated, and the command still executes correctly — proving streaming
 // changed only when text appears, not what gets run.
@@ -1122,5 +1177,194 @@ func TestRunLoopDoesNotStreamByDefault(t *testing.T) {
 	}
 	if sawStream {
 		t.Error("runLoop requested a streaming response without withTokenStreaming — CLI/REPL mode must stay non-streaming")
+	}
+}
+
+// --- session context wiring (M6 step 3) ------------------------------
+
+// TestRunLoopRecordsTheTurnIntoSessionContext verifies a completed task
+// enters memory, which is the precondition for any follow-up resolving
+// against it.
+func TestRunLoopRecordsTheTurnIntoSessionContext(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "report.pdf")
+
+	server := scriptedOllamaServer(t, []string{fmt.Sprintf("touch %q", target), "DONE"})
+	defer server.Close()
+
+	sc := session.New()
+	var out, errOut bytes.Buffer
+	code := runLoop(context.Background(), ollama.New(server.URL), "m", "create report.pdf",
+		neverConfirm(t), &out, &errOut, "", withSessionContext(sc))
+
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
+	}
+	if sc.Len() != 1 {
+		t.Fatalf("session recorded %d turns, want 1", sc.Len())
+	}
+	if rendered := sc.Render(); !strings.Contains(rendered, "create report.pdf") {
+		t.Errorf("session lost the task text:\n%s", rendered)
+	}
+}
+
+// TestRunLoopFeedsPriorTurnsIntoTheNextPrompt is the property that makes
+// "move it to Downloads" work: the previous turn must actually reach the
+// model, not merely be stored.
+func TestRunLoopFeedsPriorTurnsIntoTheNextPrompt(t *testing.T) {
+	var prompts []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		prompts = append(prompts, body["prompt"].(string))
+		json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: "DONE", Done: true})
+	}))
+	defer server.Close()
+
+	sc := session.New()
+	sc.Append("create report.pdf", []session.Step{{Command: "touch report.pdf", Result: "ok"}})
+
+	var out, errOut bytes.Buffer
+	runLoop(context.Background(), ollama.New(server.URL), "m", "move it to Downloads",
+		neverConfirm(t), &out, &errOut, "", withSessionContext(sc))
+
+	if len(prompts) == 0 {
+		t.Fatal("model was never called")
+	}
+	if !strings.Contains(prompts[0], "report.pdf") {
+		t.Errorf("prior turn never reached the prompt, so 'it' is unresolvable:\n%s", prompts[0])
+	}
+	// The current task must still be present and readable as the newest thing.
+	if !strings.Contains(prompts[0], "move it to Downloads") {
+		t.Errorf("current task missing from prompt:\n%s", prompts[0])
+	}
+}
+
+// TestRunLoopWithoutSessionStaysStateless pins one-shot CLI mode's
+// contract: no option, no memory, no behavior change. Statelessness is
+// what makes CLI mode scriptable (D19), not an oversight to fix.
+func TestRunLoopWithoutSessionStaysStateless(t *testing.T) {
+	var prompts []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		prompts = append(prompts, body["prompt"].(string))
+		json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: "DONE", Done: true})
+	}))
+	defer server.Close()
+
+	var out, errOut bytes.Buffer
+	runLoop(context.Background(), ollama.New(server.URL), "m", "some task",
+		neverConfirm(t), &out, &errOut, "")
+
+	if strings.Contains(prompts[0], "Earlier in this session") {
+		t.Errorf("stateless run leaked a history section:\n%s", prompts[0])
+	}
+}
+
+// TestRunLoopRecordsPartialTurnOnFailure guards the deferred-record
+// design: a task that failed halfway still did whatever it did, and a
+// follow-up like "undo that" needs to see it. A partial turn is memory; a
+// missing one misrepresents what happened.
+func TestRunLoopRecordsPartialTurnOnFailure(t *testing.T) {
+	dir := t.TempDir()
+	made := filepath.Join(dir, "made.txt")
+
+	// First step succeeds, then the model errors out on the next propose.
+	var call int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if int(atomic.AddInt32(&call, 1)) == 1 {
+			json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: fmt.Sprintf("touch %q", made), Done: true})
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	sc := session.New()
+	var out, errOut bytes.Buffer
+	runLoop(context.Background(), ollama.New(server.URL), "make a file",
+		"make a file", neverConfirm(t), &out, &errOut, "", withSessionContext(sc))
+
+	if sc.Len() != 1 {
+		t.Fatalf("session recorded %d turns, want 1 — a partially-completed task must still be remembered", sc.Len())
+	}
+	if !strings.Contains(sc.Render(), "touch") {
+		t.Errorf("the step that did run is missing from memory:\n%s", sc.Render())
+	}
+}
+
+// TestRunLoopReportsDroppedTurns verifies the anti-silence guarantee
+// reaches the user, not just the data structure.
+func TestRunLoopReportsDroppedTurns(t *testing.T) {
+	// The task must actually execute a step: a task that does nothing is
+	// deliberately not recorded, so it could never trigger an eviction.
+	server := scriptedOllamaServer(t, []string{"echo hello", "DONE"})
+	defer server.Close()
+
+	// Tiny budget, pre-filled so this task's turn forces an eviction.
+	sc := session.NewWithBudget(15, 20)
+	for _, task := range []string{"old one", "old two", "old three"} {
+		sc.Append(task, []session.Step{{Command: "echo x", Result: strings.Repeat("y", 200)}})
+	}
+	sc.TakeDropped() // clear setup noise so we only observe runLoop's report
+
+	var out, errOut bytes.Buffer
+	runLoop(context.Background(), ollama.New(server.URL), "m", "new task",
+		neverConfirm(t), &out, &errOut, "", withSessionContext(sc))
+
+	if !strings.Contains(out.String(), "dropped") {
+		t.Errorf("eviction was not reported to the user; output was:\n%s", out.String())
+	}
+}
+
+// Observed live 2026-09-12: the model re-proposed an identical failing command
+// until the step cap, producing five identical error blocks and five steps of
+// telemetry for one real attempt. The loop now stops the second time it sees a
+// command that has already failed.
+func TestRepeatedFailingCommandStopsEarly(t *testing.T) {
+	t.Chdir(t.TempDir())
+	// Five identical failing proposals; only the first should ever run.
+	server := scriptedOllamaServer(t, []string{
+		"ls /definitely-not-here", "ls /definitely-not-here", "ls /definitely-not-here",
+		"ls /definitely-not-here", "ls /definitely-not-here",
+	})
+	defer server.Close()
+
+	var out, errOut bytes.Buffer
+	code := runLoop(context.Background(), ollama.New(server.URL), "m", "list a missing directory",
+		neverConfirm(t), &out, &errOut, "")
+
+	if code == 0 {
+		t.Fatal("a task that never succeeded returned success")
+	}
+	got := out.String()
+	if n := strings.Count(got, "exit code: 2"); n != 1 {
+		t.Errorf("the failing command ran %d times, want 1:\n%s", n, got)
+	}
+	if !strings.Contains(got, "already failed here") {
+		t.Errorf("no explanation given for stopping:\n%s", got)
+	}
+	if strings.Contains(errOut.String(), "step limit reached") {
+		t.Error("burned the whole step cap instead of stopping at the repeat")
+	}
+}
+
+// The warning has to reach the model, not just the loop — otherwise the only
+// defence is the stop, which fires after a wasted step.
+func TestFailedCommandsAreNamedInThePrompt(t *testing.T) {
+	h := []loopStep{
+		{command: "ls /missing", result: executor.Result{ExitCode: 2, Stderr: "No such file"}},
+		{command: "true", result: executor.Result{ExitCode: 0}},
+	}
+	p := buildStepPrompt("do a thing", h, "", "")
+	if !strings.Contains(p, "These commands already failed") {
+		t.Fatalf("prompt does not warn about failures:\n%s", p)
+	}
+	if !strings.Contains(p, "- ls /missing") {
+		t.Errorf("the failed command is not named:\n%s", p)
+	}
+	if strings.Contains(p, "- true") {
+		t.Error("a command that succeeded was listed as failed")
 	}
 }

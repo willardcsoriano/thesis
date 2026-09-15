@@ -19,7 +19,7 @@ func TestRunUndoNothingToUndo(t *testing.T) {
 	journalPath := filepath.Join(t.TempDir(), "does-not-exist.log")
 	var out, errOut bytes.Buffer
 
-	code := runUndo(neverConfirm(t), &out, &errOut, journalPath)
+	code := runUndo(neverConfirm(t), &out, &errOut, journalPath, nil, "")
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
 	}
@@ -56,7 +56,7 @@ func TestRunUndoAppliesMoveOnConfirm(t *testing.T) {
 	var confirmPrompted bool
 	confirmFn := func(prompt string) bool { confirmPrompted = true; return true }
 
-	code := runUndo(confirmFn, &out, &errOut, journalPath)
+	code := runUndo(confirmFn, &out, &errOut, journalPath, nil, "")
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
 	}
@@ -97,7 +97,7 @@ func TestRunUndoDeclinedLeavesEverythingIntact(t *testing.T) {
 	}
 
 	var out, errOut bytes.Buffer
-	code := runUndo(func(string) bool { return false }, &out, &errOut, journalPath)
+	code := runUndo(func(string) bool { return false }, &out, &errOut, journalPath, nil, "")
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0 (a declined undo is a clean cancel); stderr:\n%s", code, errOut.String())
 	}
@@ -142,7 +142,7 @@ func TestRunUndoDisplaysAndRestoresContentBackup(t *testing.T) {
 	}
 
 	var out, errOut bytes.Buffer
-	code := runUndo(func(string) bool { return true }, &out, &errOut, journalPath)
+	code := runUndo(func(string) bool { return true }, &out, &errOut, journalPath, nil, "")
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
 	}
@@ -181,7 +181,7 @@ func TestRunUndoDisplaysAndRestoresTrashedItem(t *testing.T) {
 	}
 
 	var out, errOut bytes.Buffer
-	code := runUndo(func(string) bool { return true }, &out, &errOut, journalPath)
+	code := runUndo(func(string) bool { return true }, &out, &errOut, journalPath, nil, "")
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
 	}
@@ -217,7 +217,7 @@ func TestRunUndoDisplaysAndRestoresMetadataBackup(t *testing.T) {
 	}
 
 	var out, errOut bytes.Buffer
-	code := runUndo(func(string) bool { return true }, &out, &errOut, journalPath)
+	code := runUndo(func(string) bool { return true }, &out, &errOut, journalPath, nil, "")
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
 	}
@@ -270,7 +270,7 @@ func TestRunUndoDisplaysAndAppliesGitReset(t *testing.T) {
 	}
 
 	var out, errOut bytes.Buffer
-	code := runUndo(func(string) bool { return true }, &out, &errOut, journalPath)
+	code := runUndo(func(string) bool { return true }, &out, &errOut, journalPath, nil, "")
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
 	}
@@ -294,7 +294,7 @@ func TestRunUndoShowsUnhandledNote(t *testing.T) {
 	}
 
 	var out, errOut bytes.Buffer
-	code := runUndo(func(string) bool { return true }, &out, &errOut, journalPath)
+	code := runUndo(func(string) bool { return true }, &out, &errOut, journalPath, nil, "")
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
 	}
@@ -312,7 +312,7 @@ func TestRunUndoPeekErrorIsReported(t *testing.T) {
 	}
 
 	var out, errOut bytes.Buffer
-	code := runUndo(neverConfirm(t), &out, &errOut, journalPath)
+	code := runUndo(neverConfirm(t), &out, &errOut, journalPath, nil, "")
 	if code != 1 {
 		t.Fatalf("exit code = %d, want 1", code)
 	}
@@ -344,7 +344,7 @@ func TestRunUndoPopFailureIsReported(t *testing.T) {
 	defer os.Chmod(journalPath, 0o644) // let t.TempDir() clean it up
 
 	var out, errOut bytes.Buffer
-	code := runUndo(func(string) bool { return true }, &out, &errOut, journalPath)
+	code := runUndo(func(string) bool { return true }, &out, &errOut, journalPath, nil, "")
 	if code != 1 {
 		t.Fatalf("exit code = %d, want 1; stdout:\n%s", code, out.String())
 	}
@@ -368,7 +368,7 @@ func TestRunUndoApplyFailureIsReported(t *testing.T) {
 	}
 
 	var out, errOut bytes.Buffer
-	code := runUndo(func(string) bool { return true }, &out, &errOut, journalPath)
+	code := runUndo(func(string) bool { return true }, &out, &errOut, journalPath, nil, "")
 	if code != 1 {
 		t.Fatalf("exit code = %d, want 1; stdout:\n%s", code, out.String())
 	}
