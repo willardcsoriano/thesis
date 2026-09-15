@@ -2,24 +2,24 @@
 
 ## Overview
 
-This is the reference for how SynapseOS's three interface modes — CLI, TUI, and GUI — relate to each other and to the shared Go runtime underneath them. All three wrap the same core (`internal/ollama`, `internal/classifier`, `internal/executor`); what differs is process lifecycle (one-shot vs. persistent), how model output is rendered (a single blocking print vs. streamed tokens vs. a fullscreen takeover), and audience (scripting/automation, an interactive terminal session, and the study's novice-facing kiosk). Read this when you need to know which mode owns a given piece of behavior, why a boundary is drawn where it is, or what a later mode inherits versus builds fresh. For *why* each mode exists at all, see `decisions.md` (D11, D12, D19, D20); for build sequencing and current status, see `build-order.md`.
+This is the reference for how SynapseOS's three interface modes — CLI, TUI, and GUI — relate to each other and to the shared Go runtime underneath them. All three wrap the same core (`internal/ollama`, `internal/classifier`, `internal/executor`); what differs is process lifecycle (one-shot vs. persistent), how model output is rendered (a single blocking print vs. streamed tokens), and audience (scripting/automation, an interactive terminal session, and the study's novice-facing fullscreen session). Since D27 the third of those is the *second* one launched fullscreen over a running XFCE desktop rather than a separately-built interface, so the meaningful boundary in this document is between one-shot and persistent, not between terminal and graphical. Read this when you need to know which mode owns a given piece of behavior, why a boundary is drawn where it is, or what a later mode inherits versus builds fresh. For *why* each mode exists at all, see `decisions.md` (D11, D12, D19, D20); for build sequencing and current status, see `build-order.md`.
 
 ## Table of Contents
 
 - [Overview](#overview)
 - [1. Shared Core](#1-shared-core)
 - [2. Boundaries at a Glance](#2-boundaries-at-a-glance)
-- [3. CLI Mode (D19, M2 — done)](#3-cli-mode-d19-m2-done)
-- [4. TUI (Terminal User Interface) Mode (D11, M3a + M3b — done)](#4-tui-terminal-user-interface-mode-d11-m3a-m3b-done)
+- [3. CLI Mode (D19, M1 — done)](#3-cli-mode-d19-m1-done)
+- [4. TUI (Terminal User Interface) Mode (D11, M4 + M5 — done)](#4-tui-terminal-user-interface-mode-d11-m4-m5-done)
   - [Technical Stack](#technical-stack)
   - [Loop Cycle](#loop-cycle)
   - [What TUI Reuses vs. Adds](#what-tui-reuses-vs-adds)
-- [5. GUI Takeover Mode (D11, D12, M9 — study prototype)](#5-gui-takeover-mode-d11-d12-m9-study-prototype)
-  - [The Takeover Mechanism (No Custom Compositor)](#the-takeover-mechanism-no-custom-compositor)
+- [5. GUI Mode (D11, D12, D27, M8 — study prototype)](#5-gui-mode-d11-d12-d27-m8-study-prototype)
+  - [Session Mechanism](#session-mechanism)
     - [Session registration — `/usr/share/xsessions/synapseos.desktop`](#session-registration-usrsharexsessionssynapseosdesktop)
-    - [Startup kiosk script — `/usr/bin/synapseos-session`](#startup-kiosk-script-usrbinsynapseos-session)
-  - [Packaging the GUI Application](#packaging-the-gui-application)
-  - [The XFCE Fallback (D20)](#the-xfce-fallback-d20)
+    - [Startup script — `/usr/bin/synapseos-session`](#startup-script-usrbinsynapseos-session)
+  - [Packaging](#packaging)
+  - [The XFCE Fallback (D20, simplified by D27)](#the-xfce-fallback-d20-simplified-by-d27)
 - [6. Post-Thesis "Overlay Mode" (D13 — deferred, not built)](#6-post-thesis-overlay-mode-d13-deferred-not-built)
 - [7. Cross-References](#7-cross-references)
 
@@ -55,12 +55,12 @@ A mode's job is only ever: collect input, drive the core, render output. Every m
 | Model output rendering | Printed once generation finishes (blocking call) | Streamed token-by-token into a scrollable viewport | Same streaming, inside fullscreen chrome |
 | Confirmation gate UX | Print the command + reason, block on stdin `y`/`N` | Render inline in the chat view, wait for a keypress | Same inline pattern, fullscreen |
 | Audience / use case | Scripting, automation, one-off remote commands over SSH | Interactive terminal session, local or remote | Study Condition A — novice users, no terminal exposure |
-| Built by | **M2 — done** | M3a (interim loop) + M3b (rendering) — **both done** | M9 |
+| Built by | **M1 — done** | M4 (interim loop) + M5 (rendering) — **both done** | M8 |
 | Escape hatch | N/A (process just exits) | N/A (it's already a normal terminal) | XFCE fallback, logged and excluded from primary analysis (D20) |
 
 **The one-line answer to "isn't TUI just CLI with a nicer UI?"**: mostly, but not only — the propose/classify/execute logic is identical and reused verbatim, but persistence (a session that outlives one task) and streaming (rendering tokens as they arrive instead of waiting for the full response) are real architectural additions, not visual polish. TUI is the first mode where "session" is a meaningful concept at all.
 
-## 3. CLI Mode (D19, M2 — done)
+## 3. CLI Mode (D19, M1 — done)
 
 CLI mode is the one-shot interface: `synapse "<task>"` runs one request through a bounded, gated multi-step loop (D21) — propose → classify → confirm-if-needed → execute → feed the result back so the model can propose the next step or signal done, repeating until complete or a hard step cap is hit — then exits. Not single-command execution: a task that genuinely needs several distinct actions (e.g. "make a folder, then move matching files into it") is handled within one invocation, with every step independently classified and gated, not just the first. No conversation history *across* invocations, no persistent process — every invocation starts cold. This is deliberate, not a limitation to fix later: it's what makes CLI mode viable for scripting and one-off remote commands (`ssh host synapse "..."` behaves exactly like any other single-purpose CLI tool).
 
@@ -68,11 +68,11 @@ Because there's no session to render into, the confirmation gate is the simplest
 
 Entry point: `cmd/synapse/main.go`. The built-in 8-task sample suite (`synapse` with no arguments) is a quality smoke test only — it calls `propose` but deliberately skips classify/execute, so running it never touches the real filesystem.
 
-## 4. TUI (Terminal User Interface) Mode (D11, M3a + M3b — done)
+## 4. TUI (Terminal User Interface) Mode (D11, M4 + M5 — done)
 
 TUI mode turns the one-shot CLI into a persistent, interactive session — the default target for local terminals and remote SSH connections where a real back-and-forth is wanted, as opposed to CLI mode's single-shot, script-friendly invocation.
 
-**Built in two sub-milestones (split 2026-08-21, see `build-order.md`):** M3a proved the persistent-session mechanics alone — a plain stdin loop wrapping M2's already-tested `runLoop`, no rendering — done as of Session 27, before M3b built the bubbletea/lipgloss layer below (done as of Session 28). This was a build-sequencing decision only; TUI mode itself is still one mode, unchanged from D11, and M3a is not something a user is meant to run as a deliverable in its own right.
+**Built in two sub-milestones (split 2026-08-21, see `build-order.md`):** M4 proved the persistent-session mechanics alone — a plain stdin loop wrapping M1's already-tested `runLoop`, no rendering — done as of Session 27, before M5 built the bubbletea/lipgloss layer below (done as of Session 28). This was a build-sequencing decision only; TUI mode itself is still one mode, unchanged from D11, and M4 is not something a user is meant to run as a deliverable in its own right.
 
 ### Technical Stack
 
@@ -96,15 +96,19 @@ TUI mode turns the one-shot CLI into a persistent, interactive session — the d
 | `internal/classifier` — same `Classify` call, same verdicts | Persistent process / session loop (bubbletea) |
 | `internal/executor` — same `Run` call, same `Result` shape | `GenerateStream` in `internal/ollama` (opt-in per mode; CLI/REPL stay non-streaming) |
 | `runLoop` itself — the whole propose/classify/confirm/execute loop, injected and driven, never reimplemented | In-session confirmation rendering (vs. blocking stdin read), and viewport scrollback |
-| | Multi-turn context (M6 — depends on TUI existing, not part of M3a/M3b itself) |
+| | Multi-turn context (M6 — depends on TUI existing, not part of M4/M5 itself) |
 
-## 5. GUI Takeover Mode (D11, D12, M9 — study prototype)
+## 5. GUI Mode (D11, D12, D27, M8 — study prototype)
 
-GUI mode is the fullscreen, study-facing interface for Condition A (novice users, no terminal exposure). It wraps the same core as TUI — propose/classify/execute, streamed rendering, in-session confirmation — inside a fullscreen takeover rather than a terminal window.
+GUI mode is the fullscreen, study-facing interface for Condition A (novice users, no terminal exposure).
 
-### The Takeover Mechanism (No Custom Compositor)
+**Rescoped 2026-09-12 by D27, and the change is structural rather than cosmetic.** SynapseOS is an agentic layer running *over* an ordinary XFCE desktop, not a replacement for the desktop shell, session manager, and application launcher. GUI mode is therefore **the existing TUI, launched fullscreen, with the XFCE session running beneath it** — not a second rendering layer, not a webview, not a custom session. The two packaging options previously weighed below collapse to the first one, and the "takeover" framing is retired: nothing is taken over.
 
-Instead of a full desktop session manager (`xfce4-session`) bringing up panels and desktop icons, the display manager (LightDM/GDM) boots a custom, minimal X11 session.
+What follows describes the session plumbing that remains. It is deliberately small, because the interface is already built.
+
+### Session Mechanism
+
+The display manager starts a session that launches the TUI fullscreen on top of a normal XFCE session, rather than in place of one.
 
 #### Session registration — `/usr/share/xsessions/synapseos.desktop`
 
@@ -117,27 +121,32 @@ Type=Application
 DesktopNames=SynapseOS
 ```
 
-#### Startup kiosk script — `/usr/bin/synapseos-session`
+#### Startup script — `/usr/bin/synapseos-session`
 
 ```bash
 #!/bin/bash
-# 1. Start the XFCE window manager in daemon mode in the background.
-# Provides window focusing, borders, and keybindings without panels.
-xfwm4 --daemon &
+# 1. Start the ordinary XFCE session. The user's desktop, file manager, and
+#    panels come up and stay up — SynapseOS layers on top of a working
+#    desktop rather than substituting for one (D27).
+xfce4-session &
 
-# 2. Run the SynapseOS app. 'exec' replaces the shell script process.
-# If SynapseOS exits/closes, the X session terminates, logging the user out.
-exec /usr/bin/synapseos-gui --fullscreen
+# 2. Launch the TUI fullscreen on top of it. If it exits, the XFCE session
+#    underneath is still there; the participant lands on a usable desktop
+#    rather than being logged out.
+exec kitty --start-as=fullscreen -- /usr/bin/synapse tui
 ```
 
-### Packaging the GUI Application
+### Packaging
 
-- **Option A — fullscreen terminal wrapper (humblest prototype):** configure a fast terminal emulator (`kitty`, `xfce4-terminal`) to launch borderless and fullscreen, running the TUI binary directly. With no desktop panels, the user is locked into this fullscreen terminal.
-- **Option B — Go webview wrapper:** wrap the Go program in a lightweight webview/GUI window (`github.com/webview/webview`, `fyne.io/fyne`), fullscreen and undecorated.
+A fast terminal emulator (`kitty`, `xfce4-terminal`) launched borderless and fullscreen, running the TUI binary. There is no second GUI application to build. The webview/Fyne option previously listed here was dropped with D27: it existed to make a replacement session feel like a desktop application, and there is no longer a replacement session.
 
-### The XFCE Fallback (D20)
+The practical consequence for the study is that **GUI mode and TUI mode are the same program in a different frame**, which is also why the study-mode readiness checkpoint has a TUI fallback that costs the research nothing — the two conditions differ in presentation, not in the execution path, the safety gate, or the telemetry.
 
-A participant-accessible path back to the underlying XFCE session, for when SynapseOS becomes unresponsive or the participant wants to stop mid-task. Every invocation is logged as its own telemetry event (task ID, timestamp, separate from M7's six standard event types); any task where it's invoked is scored "did not complete via SynapseOS" and excluded from the primary completion-time/error-rate analysis, with fallback-invocation rate reported as its own secondary metric. This is what keeps the participant safety net from silently contaminating the study's core causal claim — see `decisions.md` D20 for the full reasoning, and D12 for why the fallback needed reopening in the first place.
+### The XFCE Fallback (D20, simplified by D27)
+
+A participant-accessible path back to the desktop, for when SynapseOS becomes unresponsive or the participant wants to stop mid-task. Under D27 this is materially less fragile than it was: the XFCE session was never displaced, so falling back is ordinary window management rather than recovering a machine whose session manager has been replaced.
+
+Every invocation is logged as its own telemetry event (task ID, timestamp, separate from M7's six standard event types); any task where it's invoked is scored "did not complete via SynapseOS" and excluded from the primary completion-time/error-rate analysis, with fallback-invocation rate reported as its own secondary metric. This is what keeps the participant safety net from silently contaminating the study's core causal claim — see `decisions.md` D20 for the full reasoning, and D12 for why the fallback needed reopening in the first place.
 
 ## 6. Post-Thesis "Overlay Mode" (D13 — deferred, not built)
 
@@ -156,7 +165,7 @@ Once the study concludes, SynapseOS can run as a standard desktop overlay instea
 |---|---|
 | Why do these three modes exist, and not some other split? | `decisions.md` D11 (TUI vs. GUI), D19 (CLI formalized as a third mode) |
 | Why does GUI have no escape hatch by default, and why was that reopened? | `decisions.md` D12, D20 |
-| What order are these built in, and what's each milestone's definition of done? | `build-order.md` M2 (CLI, done), M3a (interim loop, done)/M3b (rendering, next) (TUI), M9 (GUI) |
+| What order are these built in, and what's each milestone's definition of done? | `build-order.md` M1 (CLI, done), M4 (interim loop, done)/M5 (rendering, next) (TUI), M8 (GUI) |
 | Why does a single CLI-mode invocation run more than one command sometimes? | `decisions.md` D21 (bounded, gated multi-step loop; full autonomy considered and rejected) |
 | What has the paper (Ch.3) committed to describing? | `research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html` Table 3.2 and Section 2.1 |
 | Where does each mode sit relative to the OS layers (kernel, userland, session layer)? | `layers.md` |

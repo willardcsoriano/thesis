@@ -46,10 +46,10 @@ go run ./cmd/synapse
 # Run one ad-hoc task
 go run ./cmd/synapse "find the 10 largest files under /var/log"
 
-# Persistent multi-task session (M3a) — one process, issue several tasks in a row
+# Persistent multi-task session (M4) — one process, issue several tasks in a row
 go run ./cmd/synapse repl
 
-# Full-screen TUI mode (M3b) — streaming, scrollback; needs a real terminal
+# Full-screen TUI mode (M5) — streaming, scrollback; needs a real terminal
 go run ./cmd/synapse tui
 
 # Reverse the most recent auto-run or confirmed command
@@ -71,11 +71,11 @@ go build -o bin/synapse ./cmd/synapse
 
 ```
 prototype/
-├── cmd/synapse/main.go          # entrypoint — one-shot task, persistent repl (M3a), and undo subcommands
+├── cmd/synapse/main.go          # entrypoint — one-shot task, persistent repl (M4), and undo subcommands
 ├── internal/ollama/client.go    # Ollama REST client (the only code that knows the inference engine)
 ├── internal/classifier/         # reversibility classifier (pattern-matches known-irreversible command shapes)
 ├── internal/executor/           # os/exec subprocess dispatch, stdout/stderr capture, exit-code surfacing
-├── internal/tui/                # TUI mode (M3b): bubbletea model, streaming, scrollback
+├── internal/tui/                # TUI mode (M5): bubbletea model, streaming, scrollback
 ├── internal/undo/               # undo mechanisms: directory-diff, content-backup, trash, metadata, git-reset
 └── internal/typedops/           # typed file operations (F4 experiment; not wired into the default runtime path)
 ```

@@ -159,3 +159,11 @@ Conversation history survives reboots. Each login session becomes a named thread
 SynapseOS accessed remotely over SSH — the TUI session runs on a server, the user connects from any terminal. Architecturally already supported (TUI + CLI-only = no display server dependency). The 2 vCPU / 4 GB RAM minimum maps directly to a Hetzner CX21 (~€5.83/mo) or equivalent.
 
 **Deferred because:** the thesis user study requires participants at a physical machine in a lab. Remote deployment is a product use case, not an evaluation condition. Worth one sentence in the thesis as a deployability claim.
+
+## Network access for the model
+
+**Deferred 2026-09-15.** Technically trivial — `curl` and `wget` are shell commands and the model can already propose them; nothing blocks it today. Deferred because it conflicts with the property that makes the system trustworthy: *everything it tells you traces to a command that ran on this machine*. Row 15 showed the model asserting things the output did not support; network access widens that door rather than narrowing it.
+
+Two further reasons it is not free: `algorithms.md` Entry 1 explicitly does not model effects outside the filesystem, so a command that uploads files is irreversible in a way no pre-image captures; and "inference runs locally, nothing leaves this computer" is in the abstract and is part of what study participants consent to.
+
+**The line worth keeping if this is ever revisited:** the network as a tool the machine uses (package installation already requires it, and is one of the four study task categories), never as a source of answers the system repeats back to the user.

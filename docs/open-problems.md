@@ -1,0 +1,55 @@
+# SynapseOS — Open Problems
+
+## Overview
+
+This is the live register of everything currently broken, blocked, or undecided. It holds **only open items**: when something is resolved its row moves out to `retrospective.md` along with how it was solved, so this file stays bounded by how much is outstanding rather than by how long the project has run. That property is deliberate — a register that accumulates history becomes expensive to read and stops being read. Entries are logged **when a problem is hit, before it is fixed**, because the fact that something was broken is evidence about the system and it is lost the moment the fix lands. Rows are one line each; anything needing a paragraph belongs in the file that owns it, linked from here. Read this first when picking up work, and add to it the moment something blocks.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [How this works](#how-this-works)
+- [Open](#open)
+- [Cross-references](#cross-references)
+
+## How this works
+
+- **Log on hit, not on fix.** A problem gets a row when it is encountered. Solving it immediately is fine; the row still gets written, because "this was broken and here is why" is the reusable part.
+- **One line.** Terse. If an entry needs explanation, it belongs in `decisions.md`, `algorithms.md`, `prior-art.md`, or `safety-model.md` — link it and keep the row short.
+- **Resolved rows leave.** Move them to `retrospective.md` with the resolution. Do not archive them here; two archives is one too many.
+- **Type** says what kind of thing will close it: `bug` (code), `decision` (a call nobody has made), `gap` (something missing), `blocked` (waiting on something external).
+- **Owner** is `us` or the person/process it waits on. A decision with no owner is a note, not a decision.
+
+## Open
+
+| # | Type | Problem | Owner | Where it lives |
+|---|---|---|---|---|
+| 1 | decision | Typed operations vs raw shell for file manipulation — F4 measured 100%/100% against 80%/60% in Session 25 and no call has been made since | you | `prior-art.md`, F6 in `build-order.md` |
+| 2 | decision | The core hands interfaces a flat `io.Writer`, so the TUI cannot tell a command from its output from the answer — progressive disclosure is unimplementable until the seam carries structure. **Now also blocks measurement**: Layer 7 has to scrape the transcript by line prefix to score what the user was told, and scoring the raw stream is what made three verifiers vacuous | you | `prior-art.md` (disclosure entry), `said()` in `layer7_test.go` |
+| 3 | decision | RQ1 ("how can a conversational interface layer be designed…") is answered by "we built it" — the weakest of the four questions now that there are four | you | Chapter 1 |
+| 5 | gap | No classifier rule for `apt`/`dpkg`/`systemctl` — `sudo apt purge nginx` classifies Reversible and auto-runs. Package management is one of the four study task categories | us | `safety-model.md` (known gaps) |
+| 6 | gap | Open-source coding-agent architecture survey not done — the run failed on a rate limit. Needed for the failure-recovery fix and to confirm nobody does recoverability | us | `prior-art.md` |
+| 7 | blocked | IRB application not submitted; ethics is the critical path and every study deliverable waits on it | you | `scope.md` Track B |
+| 8 | gap | `m5-tui-mode.md` and `m6-session-context.md` have never been completed by a human; both need a real TTY | you | `prototype/manual-tests/` |
+| 9 | decision | tview vs Bubble Tea for the TUI — raised early, never called; now gates M8 | you | `decisions.md` (no entry yet) |
+| 10 | gap | Nothing since commit `0dcd217` is committed — roughly 50 paths across prototype, docs, and paper | you | working tree |
+| 11 | gap | OSWorld figures in Chapter 2 were refreshed, but the leaderboard moves; the claim needs re-verifying before submission | us | `drift.md` |
+| 12 | decision | D31's answer layer is built, and `answerConversational` (2026-09-15) makes its local-answers claim true — but `scope.md` still does not list either as a deliverable | us | `decisions.md` D31, `scope.md` |
+| 4 | bug | `UNSUPPORTED` conflates "outside shell capability", "impossible here", and "not understood" — the model emits one sentinel for all three. **The misleading *message* is fixed** (2026-09-15: it no longer asserts a reason it cannot know), but the conflation is structural and only disappears with the tool-calling protocol (row 17), where a model that cannot act simply replies in prose | us | `loopSystemPrompt` in `cmd/synapse` |
+| 12b | bug | Plain-language phrasings fail where technical ones succeed — **66.7% vs ~91%** after the grounding fix (2026-09-14), down from a 50-point gap to ~25. Layer 8 shows the same shape independently (plain 60% vs technical 100% on the fork alone). Residual gap is comprehension, not grounding, and no architecture change addresses it | us | `testing-plan.md` Layers 7 and 8 |
+| 15 | bug | The answer layer states fluent, confident falsehoods when the command output does not support them — "All temporary files have been removed" after `rm -rf *~` matched nothing; "The largest file in this folder is 200K in size" where `200K` was `ls`'s `total` line. For non-experts an undetectable wrong answer is worse than a visible failure, and this is the thesis's trust claim inverted. Found 2026-09-14; **confirmed live 2026-09-15**: after `ls` listed a pre-existing `src/`, the system told the user "The directory you created is src" — it had created `a`, `b`, `c`. It named a directory from unrelated output and asserted authorship of it | us | `answerSystemPrompt` / `maybeAnswer` in `cmd/synapse`, D31 |
+| 16 | bug | The loop does not recognise it has already succeeded: U8 technical reached the correct end state at step 2, then proposed two more commands, broke it, and stopped on the repeat-failure guard — 0/3 clean exit with 3/3 intent satisfied. `mv` prints nothing, so exit 0 with no output is no evidence of completion. Relates to the termination-policy candidate rejected in `algorithms.md` | us | `runLoop` in `cmd/synapse` |
+| 17 | gap | Ollama never populates `tool_calls` for `qwen2.5-coder` (0 in 69 at 3B, 0 in 23 at 7B) — but the model *does* emit tool-call JSON in `content`, confirmed by direct curl 2026-09-15. The coding-agent architecture is reimplementable; what is missing is a tolerant parser. It must survive invented tool names (`print_message` for "hello") and arguments that echo the schema (`{"command":{"type":"string","value":"wc -l"}}`) | us | `prior-art.md`, `toolcall_probe_test.go` |
+| 18 | bug | Conversational input had no handler until 2026-09-15 — "hello" returned the visual-tasks message. Greetings and capability questions now answered locally per D31, and the `UNSUPPORTED` text no longer asserts a reason it cannot know. Open-ended chat ("are you human", "tell me a joke") still falls through to `UNSUPPORTED` | you | `answerConversational` in `cmd/synapse` |
+| 19 | bug | **Data loss, 2026-09-15 — mitigated, not solved.** `ls -d */ \| xargs rm -rf` was classified Irreversible and confirmed, then captured nothing and destroyed `src/`. Now: the confirmation prompt warns when a deletion's targets are runtime-computed, globs are expanded so `rm *.log` captures, `find -delete` no longer classifies Reversible, and find's `{}`/`\;` placeholders are no longer treated as paths. **Capture is still impossible** for pipes and substitution — that needs `algorithms.md` Entry 1, so consent is now informed rather than the loss prevented | us | `classifier.DeletionTargetsUnresolvable`, `algorithms.md` Entry 1 |
+| 23 | bug | Found while fixing row 19 and **worse than it**: `find . -name '*.tmp' -delete` classified **Reversible** and auto-ran with no confirmation and no capture — `-delete` is find's own action and never passes through `rm`, so no rm-based rule could see it. Fixed 2026-09-15; the lesson is that the pattern list's coverage is bounded by the tokens someone thought to name | us | `safety-model.md`, `classifier` |
+| 24 | bug | Also found fixing row 19: `TrashTargets` returned `{}` and `\;` as file paths for `find -exec rm`, and returned literal globs like `*.log` that match nothing on disk — claiming protection while every real deletion went uncaptured. Worse than extracting nothing, because it suppressed the unprotected warning. Fixed 2026-09-15 by expanding globs via `filepath.Glob` and rejecting placeholders | us | `classifier.TrashTargets` |
+| 20 | bug | **A read-only question became a destructive command.** "did you successfully delete those 3 folders?" proposed `rm -rf big.bin keep.txt log.txt one.log src two.log` — delete everything remaining. Only the user declining the prompt prevented total loss of the working directory. Verification intent must never produce mutation; nothing currently distinguishes the two | us | `loopSystemPrompt` in `cmd/synapse` |
+| 21 | bug | Pronoun scope over-broadens: "can you delete them?" (them = a, b, c) produced `ls -d */ \| xargs rm -rf`, targeting every directory including the pre-existing `src/`. Session context resolved the referent to a category rather than to the three named items | us | `internal/session`, `buildStepPrompt` |
+| 22 | bug | Multi-intent requests drop all but the last: "which folder are we even in right now? can you create 3 folders?" answered only the second. The first question was never addressed | us | `loopSystemPrompt` in `cmd/synapse` |
+| 13 | gap | Conversational behaviour had never been tested until 2026-09-13 — every prior live run was a single one-shot invocation, so multi-turn, pronoun resolution, and session memory were all unexercised despite being the product's central claim | us | `manual-tests/m6-session-context.md` |
+
+## Cross-references
+
+- `retrospective.md` — where rows go when they close, with the resolution. The archive; this file is not.
+- `scope.md` — deliverables that do not yet exist. A missing deliverable is not automatically a problem; it becomes one when it blocks something.
+- `../prototype/build-order.md` — milestone status. A milestone that is merely *next* does not belong here; one that is *stuck* does.

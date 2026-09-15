@@ -8,8 +8,8 @@ This document is a conceptual primer on how a Linux system is layered and exactl
 - [The Linux Stack, Bottom to Top](#the-linux-stack-bottom-to-top)
 - [Layer by Layer](#layer-by-layer)
 - [Where SynapseOS Sits](#where-synapseos-sits)
-  - [The clean framing: SynapseOS is a shell](#the-clean-framing-synapseos-is-a-shell)
-  - [One slot, two, three (or four) sets of clothes](#one-slot-two-three-or-four-sets-of-clothes)
+  - [The clean framing: SynapseOS is a shell — but an added one, not a successor](#the-clean-framing-synapseos-is-a-shell-but-an-added-one-not-a-successor)
+  - [One slot, several sets of clothes](#one-slot-several-sets-of-clothes)
 - [What SynapseOS Is *Not*](#what-synapseos-is-not)
 - [When It Becomes a "Distribution"](#when-it-becomes-a-distribution)
 - [FAQ — Common Confusions](#faq-common-confusions)
@@ -70,40 +70,39 @@ Both the shell and the desktop environment fill the *same conceptual slot*: the 
 SynapseOS is a **new interface layer at the session slot**. Two things are true about it at once, at different layers:
 
 - **Additive to the machine.** It adds a layer *on top of* the userland — a natural-language front-end over the existing command-line tools. It touches nothing below it. This is why the project is tractable and why app-dev skills transfer: it is an application, not an OS rewrite.
-- **Substitutive to the human.** The user no longer talks to a bash prompt or a desktop environment — they talk to SynapseOS. It *replaces the interface* the person used, even though it replaces nothing the machine runs.
+- **Additive to the human too, since D27.** This bullet previously read "substitutive": the user no longer talks to a bash prompt or a desktop environment, they talk to SynapseOS. That overstated it. D27 settled SynapseOS as an agentic layer running *over* an ordinary XFCE desktop that keeps working — the user still has their windows, their file manager, their browser, and SynapseOS is what they talk to when they want the machine to *do* something. What it substitutes for is *having to choose between the two existing interfaces at all* — a person who is at home in neither the shell's syntax nor the desktop's menu hierarchy now has a third route to the same machine. The shell is where SynapseOS grounds intent, because that is where the machine's full capability is reachable; it is not the interface being replaced, and neither is the desktop. Both keep working and both stay available.
 
 ```
         HUMAN
           │  natural language
-   ┌──────┴───────┐
-   │  SynapseOS   │   ADD this layer  →  it REPLACES the old prompt/DE at the surface
-   └──────┬───────┘
-   core userland (bash, coreutils…)   ← unchanged; SynapseOS calls it
+   ┌──────┴───────┐        ┌──────────────┐
+   │  SynapseOS   │        │  XFCE / bash │  ← still running, still usable (D27)
+   └──────┬───────┘        └──────┬───────┘
+          └────────┬──────────────┘
+   core userland (bash, coreutils…)   ← unchanged; both call it
    init · kernel · hardware           ← unchanged
 ```
 
-### The clean framing: SynapseOS is a shell
+### The clean framing: SynapseOS is a shell — but an added one, not a successor
 
-Every shell in history has been an abstraction layer that *replaced the previous shell*: `bash` is a layer over the userland; `zsh` added a layer and replaced bash for those who switched; `fish` did it again. A new shell is always simultaneously additive (to the machine) and substitutive (of the old interface) — there is no contradiction, that is simply what a shell **is**. SynapseOS is **the next shell — a conversational one**. That single sentence is honest (no new kernel), additive (a layer), a replacement (of the interface), and novel (no daily-driver shell takes natural language).
+Every shell in history has been an abstraction layer over the userland: `bash` is one, `zsh` added another, `fish` did it again. SynapseOS is **the next shell — a conversational one**, and that framing is honest (no new kernel), additive (a layer), and novel (no daily-driver shell takes natural language).
 
-### One slot, two, three (or four) sets of clothes
+Where the analogy needs care is succession. `zsh` *displaced* bash for those who switched; SynapseOS does not displace anything (D27). It sits beside the shell and the desktop rather than after them, and a user can move between all three in the same session. The reason is not caution — it is that the conversational interface cannot yet do what the graphical one does, so replacing either would remove capability from the user in exchange for convenience. A third option costs them nothing.
 
-| Mode | Substrate underneath | SynapseOS puts there… | Target |
-|---|---|---|---|
-| **CLI** | bare Debian, no DE — one-shot invocation (`synapse "<task>"` → proposed command → exit), no persistent session (D19) | a single-invocation command translator | scripting / automation / one-off remote use (D19) |
-| **TUI** | bare Debian, no DE — a local **agentic shell**: NL → local SLM → proposed command → confirmation gate → execution, comparable in interaction model to Claude Code's CLI agent loop but fully offline (D2, D3, D12) | the SynapseOS terminal interface | server / remote (D11) |
-| **GUI** | Debian + **XFCE** (X11 session), **invisible** — XFCE's Wayland session is still experimental, unsuitable for a reproducible study | the same SynapseOS app, launched **fullscreen within the XFCE session**; a participant-accessible fallback back to XFCE exists, logged and excluded from primary analysis (D20) | user study (D11, D12, D20) |
-| **Overlay** *(post-thesis)* | Debian + XFCE, **fully visible and usable** — nothing hidden, no escape hatch to guard against because there is nothing to escape | the same SynapseOS app, summoned via hotkey or systray icon, floating over the desktop | commercial product (D13) |
+### One slot, several sets of clothes
 
-All four are the **same program** — only the shell wrapped around it changes. In CLI, TUI, and GUI mode, the substrate is invisible: XFCE supplies the display session and window management without ever being seen, exactly as Debian supplies the kernel and userland invisibly (D12). In Overlay mode the substrate is deliberately visible — the traditional desktop stays fully intact, and SynapseOS is one hotkey away rather than the whole session (D13). GUI mode's fallback (D20) and Overlay mode are not the same thing: GUI mode's fallback is a logged, analysis-excluded safety net within an otherwise-strict study takeover; Overlay mode has no takeover to escape from in the first place — the traditional desktop is the default state, and SynapseOS is summoned into it.
+CLI, TUI, GUI, and the post-thesis Overlay are the **same program** — only the frame around it changes, and since D27 all of them layer onto a desktop that keeps running. The mode-by-mode breakdown (what each reuses, what it adds, which decision governs it) lives in `interface-modes.md`, which owns that question; it is not repeated here.
+
+The point that belongs to *this* document is narrower: whichever frame is used, SynapseOS occupies the same slot in the stack. It sits above the userland and below nothing — adding a layer, not replacing one.
 
 ## What SynapseOS Is *Not*
 
 Stating the boundary explicitly, because overclaiming here is a defense liability:
 
 - **Not a new operating system.** It contains no kernel. It runs on Debian's.
-- **Not a userland replacement.** It keeps and calls the userland; it replaces the *shell/session* above it.
-- **Not a desktop-environment reimplementation.** In GUI mode it runs *inside* a standard DE (XFCE) fullscreen — the DE keeps running underneath, invisible, not reimplemented or removed (see D12).
+- **Not a userland replacement.** It keeps and calls the userland; it replaces the *command line* above it.
+- **Not a desktop-environment replacement at all** (D27, superseding the earlier reading). In GUI mode it runs fullscreen *over* a standard DE (XFCE) that stays running and usable — not reimplemented, not removed, and not merely hidden. The desktop shell, session manager, and application launcher are all still XFCE's.
+- **Not tied to Linux as a claim.** Debian and XFCE are the substrate because an agent layer that observes and acts on a desktop session needs a platform that permits it, and Windows and macOS are proprietary. That is a methodological necessity, not a contribution and not a gap (D28).
 - **Not dishonest in claiming its own identity.** A reused, unadvertised substrate under a distinct branded identity is exactly how derivative distros work (Ubuntu/Debian, SteamOS/Arch, Pop!_OS/Ubuntu) — see D12 and "When It Becomes a Distribution" below.
 
 ## When It Becomes a "Distribution"
@@ -115,7 +114,7 @@ A Linux **distribution** is an integrated, bootable, installable whole. SynapseO
 | Kernel, bootloader, init, userland, `apt` | Reused from Debian |
 | **Default session = SynapseOS** | **The identity-defining contribution** |
 | GUI host (X session, window management) | Reused from XFCE, unadvertised (D12) |
-| Security/hardening defaults | The contribution — Ubuntu's exact playbook (`future-features.md`, Hardening Profiles) |
+| Security/hardening defaults | The contribution — Ubuntu's exact playbook (`notes/future-features.md`, Hardening Profiles) |
 | Installable ISO | debian-installer or live-build + an installer |
 | Branding / identity | Name, `/etc/os-release`, artwork |
 | Update + security channel | Own package repo riding on Debian updates |
@@ -124,7 +123,7 @@ Note the pattern: identity is a top layer (name, default session, branding); eve
 
 **Not all rows carry equal weight.** The default session is the *identity-defining* row — strip it and nothing distinguishes SynapseOS from a hardened Debian config; keep it alone and SynapseOS is still recognizably a different kind of system. Hardening is a *credibility* row — necessary for a serious, shippable product, and precedented (it's exactly how Ubuntu differentiates from bare Debian), but it is a commodity: most serious distros harden their defaults, so hardening alone does not make something feel like a different OS. If only one row can be gotten right first, it is the session, not the hardening profile (D13).
 
-Until a bootable image exists, SynapseOS is an **application** you install on Debian — not yet a distro, because the installable-whole and update-channel ingredients are missing. This packaging is deferred to build milestone M9+ (see `prototype/build-order.md`). Even as a derivative, the honest claim is *"a Debian-based distribution,"* never *"a from-scratch OS."*
+Until a bootable image exists, SynapseOS is an **application** you install on Debian — not yet a distro, because the installable-whole and update-channel ingredients are missing. This packaging is deferred to build milestone M8+ (see `prototype/build-order.md`). Even as a derivative, the honest claim is *"a Debian-based distribution,"* never *"a from-scratch OS."*
 
 ## FAQ — Common Confusions
 
@@ -155,7 +154,7 @@ Until a bootable image exists, SynapseOS is an **application** you install on De
 - **Kernel** — the core program that runs hardware, processes, and memory. Linux is a kernel.
 - **Userland** — everything that runs outside the kernel: libraries and command-line tools (`libc`, `coreutils`, `bash`, `grep`, `apt`).
 - **Shell** — the program that takes user commands. Text shells: `bash`, `zsh`. SynapseOS is a conversational shell.
-- **Display server / compositor** — draws pixels and routes input for graphical sessions. X11 uses a separate server + compositor; a Wayland **compositor** merges both roles. The thesis prototype uses XFCE's X11 session as the host (D12); a kiosk Wayland compositor (e.g. `cage`) or the `wlr-layer-shell` active-desktop mode are deferred post-thesis paths (`future-features.md`).
+- **Display server / compositor** — draws pixels and routes input for graphical sessions. X11 uses a separate server + compositor; a Wayland **compositor** merges both roles. The thesis prototype uses XFCE's X11 session as the host (D12); a kiosk Wayland compositor (e.g. `cage`) or the `wlr-layer-shell` active-desktop mode are deferred post-thesis paths (`notes/future-features.md`).
 - **Desktop environment (DE)** — a bundle of graphical session software: window manager, panels, file manager, settings (GNOME, KDE, XFCE).
 - **Session / interface layer** — the slot that greets the user at login; a shell (text) or a DE (graphical).
 - **Distribution (distro)** — an integrated, bootable, installable Linux whole (kernel + userland + package manager + installer + default environment + release process).
@@ -166,4 +165,4 @@ Until a bootable image exists, SynapseOS is an **application** you install on De
 - `stack.md` — the concrete technology at each layer SynapseOS uses.
 - `decisions.md` — D1 (Debian base), D7 (CLI-only scope), D8 (Go/Ollama stack), D11 (TUI vs GUI mode), D12 (distro identity vs. substrate: Debian+XFCE), D13 (Overlay product mode; hardening-vs-session weighting), D19 (CLI mode), D20 (GUI-mode XFCE fallback).
 - `vision.md` — the product horizons (H0 thesis → H2 commercial distro).
-- `prototype/build-order.md` — where the GUI/packaging work (M9+) sits in the build sequence.
+- `prototype/build-order.md` — where the GUI/packaging work (M8+) sits in the build sequence.

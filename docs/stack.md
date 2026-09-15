@@ -31,10 +31,10 @@ The session manager, TUI, and execution engine. Ships as a single binary.
 
 | Concern | Library |
 |---|---|
-| TUI framework | [bubbletea](https://github.com/charmbracelet/bubbletea) — v2 line, module path `charm.land/bubbletea/v2` (moved off `github.com/charmbracelet/...`, confirmed via `go get`), requires Go ≥ 1.25 (`prototype/go.mod` bumped for M3b — done) |
+| TUI framework | [bubbletea](https://github.com/charmbracelet/bubbletea) — v2 line, module path `charm.land/bubbletea/v2` (moved off `github.com/charmbracelet/...`, confirmed via `go get`), requires Go ≥ 1.25 (`prototype/go.mod` bumped for M5 — done) |
 | TUI styling | [lipgloss](https://github.com/charmbracelet/lipgloss) — v2 line, module path `charm.land/lipgloss/v2`, same Go ≥ 1.25 requirement |
 | TUI scrollback | [bubbles](https://github.com/charmbracelet/bubbles)/`viewport` — v2 line, module path `charm.land/bubbles/v2` |
-| Ollama client | HTTP to `localhost:11434/api/generate`, non-streaming today (`Stream: false`, `internal/ollama.Client.Generate`) — streaming (`stream: true`, newline-delimited JSON per token, `done: true` on the final line) is M3b's step 4, not yet built; verified current wire format via Ollama's own API docs before planning that step, not assumed |
+| Ollama client | HTTP to `localhost:11434/api/generate`, non-streaming today (`Stream: false`, `internal/ollama.Client.Generate`) — streaming (`stream: true`, newline-delimited JSON per token, `done: true` on the final line) is M5's step 4, not yet built; verified current wire format via Ollama's own API docs before planning that step, not assumed |
 | Bash execution | `os/exec` — subprocess with stdout/stderr streaming |
 | Confirmation gate | Custom: classifies command reversibility before dispatch |
 | Undo log | Custom: records reversible operations for rollback, and confirmed irreversible ones too via dedicated per-shape mechanisms (content backup, trash, metadata backup, git-reset capture — see `safety-model.md`) |

@@ -11,6 +11,11 @@ This is the reference for how SynapseOS decides whether a proposed command runs 
 - [Taxonomy: every currently classified shape, and its undo path](#taxonomy-every-currently-classified-shape-and-its-undo-path)
 - [So — is everything technically undoable?](#so-is-everything-technically-undoable)
 - [Known gaps (flagged, not yet closed)](#known-gaps-flagged-not-yet-closed)
+- [The algorithmic contribution: recoverability analysis](#the-algorithmic-contribution-recoverability-analysis)
+  - [Problem statement](#problem-statement)
+  - [Why the current design is not the answer](#why-the-current-design-is-not-the-answer)
+  - [Where the algorithmic work actually is](#where-the-algorithmic-work-actually-is)
+  - [Evaluation design](#evaluation-design)
 - [Cross-references](#cross-references)
 
 ## The two independent questions
@@ -54,10 +59,19 @@ A full filesystem journal (every byte of every write, forever) could in principl
 
 ## Known gaps (flagged, not yet closed)
 
-None currently open — D25 closed every gap this doc had previously flagged (`git clean -f`, `git reset --hard`, recursive `chmod`/`chown`, and `dd`/`mkfs` onto a regular file). The remaining unaddressed Irreversible shapes (`dd`/`mkfs` onto a block device, `shred`, `eval`, process-kill, fetch/decode-exec) are documented above as genuinely out of scope, not deferred.
+**Package and service management is unclassified.** `sudo apt purge nginx`, `sudo apt-get remove --purge git`, `sudo dpkg -r pkg`, and `sudo systemctl stop ssh` all classify **Reversible** and auto-execute with no confirmation. Verified 2026-09-09 by running the classifier directly; there is no rule for `apt`, `apt-get`, `dpkg`, or `systemctl` anywhere in `internal/classifier`. This matters beyond its own severity: "application and package management" is one of the four task categories the user study administers, so a participant will hit it. It is recorded here rather than patched because the patch is the wrong response — see the next section.
+
+The remaining unaddressed Irreversible shapes (`dd`/`mkfs` onto a block device, `shred`, `eval`, process-kill, fetch/decode-exec) are documented above as genuinely out of scope, not deferred.
+
+## The algorithmic contribution
+
+The recoverability-analysis algorithm (D29) is specified in `algorithms.md`, which owns the design record for everything this project builds rather than adopts. It is not duplicated here: this document owns the *taxonomy* — which command shape currently gets which undo path, and why — which is the reference the algorithm has to subsume, and the baseline it is measured against.
+
+The relationship between the two is worth stating plainly. Everything catalogued above is a hand-maintained list of named command shapes. It is the lower bound in `algorithms.md`'s evaluation, and the package-manager gap recorded in the previous section is the demonstration that the approach has reached its limit.
 
 ## Cross-references
 
 - `decisions.md` D19 (classifier baseline), D21 (execution model), D22 (classifier scope widened), D23 (content-backup undo), D24 (trash undo), D25 (git-reset/git-clean/metadata/dd-mkfs undo) — the "why" behind each mechanism this doc catalogs.
 - `prototype/internal/classifier/classifier.go` — `Classify`, `ClassifyForDir`, `ContentMutationTargets`, `CpOverwriteTarget`, `TrashTargets`, `RawWriteOverwriteTarget`, `RecursivePermissionTargets`, `IsGitResetHard`, `GitCleanDryRunCommand`; each rule's own comment explains its specific reasoning.
 - `prototype/internal/undo/undo.go` — package doc comment covers the same mechanism split described here, from the code's perspective.
+- `algorithms.md` — Entry 1, the recoverability-analysis algorithm that generalises this taxonomy.
