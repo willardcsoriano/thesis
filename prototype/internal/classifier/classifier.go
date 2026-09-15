@@ -2,7 +2,7 @@
 // automatically or must be confirmed by the user first.
 //
 // It is deliberately a pattern matcher, not a shell parser (see build-order.md
-// M2): known-destructive command shapes are matched against the proposed
+// M1): known-destructive command shapes are matched against the proposed
 // command text. This trades precision for something that ships and is easy to
 // audit — the patterns are a short, explicit list a reader can check against
 // their own risk tolerance. False positives (blocking a command that was
@@ -67,6 +67,17 @@ var rules = []rule{
 		name:    "mkfs",
 		pattern: regexp.MustCompile(`\bmkfs(\.\w+)?\b`),
 		reason:  "mkfs erases a filesystem's existing contents",
+	},
+	{
+		// Found 2026-09-15 while fixing the row 19 data loss: `find . -name
+		// '*.tmp' -delete` deletes files and classified **Reversible**, so
+		// it auto-ran with no confirmation and no capture. Strictly worse
+		// than row 19's case, which at least asked. `-delete` is find's own
+		// removal action and never passes through `rm`, so no rm-based rule
+		// could ever have seen it.
+		name:    "find -delete",
+		pattern: regexp.MustCompile(`\bfind\b[^|;&]*\s-delete\b`),
+		reason:  "find -delete removes every matching file with no built-in undo, and the matches are only known while it runs",
 	},
 	{
 		name:    "shred",
@@ -499,6 +510,8 @@ func lastTruncatingRedirectIndex(cmd string) int {
 // [^|;&]* boundary convention cpInvocation uses.
 var rmSegment = regexp.MustCompile(`\brm\b[^|;&]*`)
 
+var findDeletePattern = regexp.MustCompile(`\bfind\b[^|;&]*\s-delete\b`)
+
 // TrashTargets returns every file or directory path an rm invocation would
 // remove, resolved to absolute paths against wd, for internal/undo's
 // TrashPreserve to hardlink into a holding directory before a confirmed rm
@@ -521,6 +534,73 @@ var rmSegment = regexp.MustCompile(`\brm\b[^|;&]*`)
 // dropped along with the real flags — the same precision-for-auditability
 // trade this package makes throughout rather than implementing a real
 // getopt parser.
+// DeletionTargetsUnresolvable reports a deletion whose targets cannot be
+// determined from the command text, which means no pre-image can be captured
+// for it and undo will not be available.
+//
+// This is the gap that destroyed a directory on 2026-09-15
+// (open-problems.md row 19). `ls -d */ | xargs rm -rf` classifies
+// Irreversible correctly — the rule sees `rm` — but TrashTargets tokenises
+// the rm segment and finds only `-rf`, because the paths arrive through the
+// pipe at runtime. Capture therefore protected nothing, no journal entry was
+// written, and the user had already approved believing otherwise.
+//
+// Detecting the condition does not fix it: resolving those paths requires
+// the effect extraction and operator composition specified in
+// algorithms.md Entry 1, and there is no safe general way to preview the
+// producing side of a pipeline (unlike `git clean`, which has --dry-run).
+// What this makes possible is honest consent — telling the user, before they
+// answer, that this particular command cannot be undone.
+func DeletionTargetsUnresolvable(cmd, wd string) bool {
+	deletes := rmSegment.FindString(cmd) != "" || findDeletePattern.MatchString(cmd)
+	if !deletes {
+		return false
+	}
+	// find selects its own targets as it walks, so they are never knowable
+	// from the command text.
+	if findDeletePattern.MatchString(cmd) {
+		return true
+	}
+	// A runtime-computed token makes the whole deletion unprotectable, even
+	// when other operands resolved: `rm -rf keep.txt $(ls -d */)` captures
+	// keep.txt and destroys everything else uncaptured, which is exactly the
+	// partial protection that reads as full protection.
+	if seg := rmSegment.FindString(cmd); seg != "" && runtimeComputed.MatchString(seg) {
+		return true
+	}
+	if len(TrashTargets(cmd, wd)) > 0 {
+		return false
+	}
+	// A bare `rm` with no operands is a usage error, not a danger.
+	return regexp.MustCompile(`\brm\b\s+-\S+\s*$|\|\s*xargs\b|\$\(|` + "`" + `|\bfind\b.*-delete\b|-exec\b`).MatchString(cmd)
+}
+
+// runtimeComputed reports a token whose value is only known once the shell
+// runs it — command substitution or a variable. No static analysis can turn
+// it into a path, so a deletion containing one cannot be captured.
+var runtimeComputed = regexp.MustCompile(`\$\(|` + "`" + `|\$\{|\$\w`)
+
+// execPlaceholder matches find's own -exec syntax, which is not a path.
+func execPlaceholder(tok string) bool {
+	switch tok {
+	case "{}", ";", `\;`, `\`, "+":
+		return true
+	}
+	return false
+}
+
+// TrashTargets returns the paths an rm invocation would remove, resolved
+// against wd, for pre-execution capture.
+//
+// Glob tokens are expanded here rather than passed through literally. A
+// literal "*.log" is not a path: hardlinking it into trash fails, and the
+// deletion it stood for then runs uncaptured — the same failure as row 19
+// and far more common, since `rm *.log` is ordinary usage. Expansion uses
+// filepath.Glob, which reads the directory and executes nothing.
+//
+// Tokens whose value is computed at runtime are deliberately *not* guessed
+// at; DeletionTargetsUnresolvable reports their presence so the user can be
+// warned that undo will not cover the command.
 func TrashTargets(cmd, wd string) []string {
 	seg := rmSegment.FindString(cmd)
 	if seg == "" {
@@ -529,14 +609,21 @@ func TrashTargets(cmd, wd string) []string {
 	tokens := tokenizeShellWords(seg)
 	var targets []string
 	for _, tok := range tokens[1:] { // tokens[0] is "rm" itself
-		if strings.HasPrefix(tok, "-") {
+		if strings.HasPrefix(tok, "-") || execPlaceholder(tok) || runtimeComputed.MatchString(tok) {
 			continue
 		}
-		if filepath.IsAbs(tok) {
-			targets = append(targets, tok)
-		} else {
-			targets = append(targets, filepath.Join(wd, tok))
+		abs := tok
+		if !filepath.IsAbs(abs) {
+			abs = filepath.Join(wd, abs)
 		}
+		if strings.ContainsAny(tok, "*?[") {
+			matches, err := filepath.Glob(abs)
+			if err == nil {
+				targets = append(targets, matches...)
+			}
+			continue
+		}
+		targets = append(targets, abs)
 	}
 	return targets
 }

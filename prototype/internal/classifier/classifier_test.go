@@ -554,3 +554,52 @@ func TestCpOverwriteTarget(t *testing.T) {
 		}
 	})
 }
+
+// The 2026-09-15 data-loss case: a deletion whose targets exist only at
+// runtime. The classifier correctly calls these Irreversible, but no
+// pre-image can be captured for them, so the user must be told before they
+// approve rather than discovering it afterwards.
+func TestDeletionTargetsUnresolvable(t *testing.T) {
+	wd := t.TempDir()
+
+	t.Run("targets arriving through a pipe are unresolvable", func(t *testing.T) {
+		// The exact command that destroyed src/ in live testing.
+		for _, cmd := range []string{
+			"ls -d */ | xargs rm -rf",
+			"find . -name '*.log' | xargs rm",
+			"rm -rf $(ls -d */)",
+			"find . -name '*.tmp' -delete",
+			`find . -type f -exec rm {} \;`,
+		} {
+			if !DeletionTargetsUnresolvable(cmd, wd) {
+				t.Errorf("%q: targets are not statically resolvable but were reported as resolvable", cmd)
+			}
+			if len(TrashTargets(cmd, wd)) > 0 {
+				t.Errorf("%q: TrashTargets claimed targets it cannot actually know", cmd)
+			}
+		}
+	})
+
+	t.Run("named targets are resolvable and stay protected", func(t *testing.T) {
+		for _, cmd := range []string{
+			"rm a b c",
+			"rm -rf build",
+			"rm -f /tmp/thing.txt",
+		} {
+			if DeletionTargetsUnresolvable(cmd, wd) {
+				t.Errorf("%q: names its targets, should not be flagged unprotected", cmd)
+			}
+			if len(TrashTargets(cmd, wd)) == 0 {
+				t.Errorf("%q: named targets were not extracted", cmd)
+			}
+		}
+	})
+
+	t.Run("commands that delete nothing are not flagged", func(t *testing.T) {
+		for _, cmd := range []string{"ls -la", "echo hi", "git status", "cat log.txt"} {
+			if DeletionTargetsUnresolvable(cmd, wd) {
+				t.Errorf("%q: not a deletion, should not be flagged", cmd)
+			}
+		}
+	})
+}
