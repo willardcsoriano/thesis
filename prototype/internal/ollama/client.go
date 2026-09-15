@@ -4,7 +4,7 @@
 // system knows about the inference engine lives here, so swapping the local
 // SLM for a cloud OpenAI-compatible endpoint (decision D2) touches only this
 // package. Generate is the non-streaming call CLI mode uses; GenerateStream
-// is its token-by-token counterpart, added for TUI mode (M3b).
+// is its token-by-token counterpart, added for TUI mode (M5).
 package ollama
 
 import (

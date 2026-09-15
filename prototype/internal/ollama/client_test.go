@@ -313,7 +313,7 @@ func TestPingUnreachable(t *testing.T) {
 	}
 }
 
-// --- GenerateStream (M3b step 4) -------------------------------------
+// --- GenerateStream (M5 step 4) -------------------------------------
 
 // streamingServer returns a server that writes each supplied line as its
 // own NDJSON chunk and flushes between them, so the client genuinely sees

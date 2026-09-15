@@ -11,6 +11,7 @@ This is the rigorous testing plan for SynapseOS's execution engine (`internal/cl
 - [Layer 4 — Typed-Operation Reliability Experiment](#layer-4-typed-operation-reliability-experiment)
 - [Layer 5 — Executor Chaos/Edge-Case Testing](#layer-5-executor-chaosedge-case-testing)
 - [Layer 6 — Regression Harness](#layer-6-regression-harness)
+- [Layer 7 — Proficiency-Tiered Utterance Robustness](#layer-7-proficiency-tiered-utterance-robustness)
 - [Model Parameterization — a Cross-Cutting Requirement](#model-parameterization-a-cross-cutting-requirement)
 
 ## Layer 1 — Deterministic Unit Correctness
@@ -60,11 +61,97 @@ This is the rigorous testing plan for SynapseOS's execution engine (`internal/cl
 - **A command producing gigabytes of stdout** — `TestRunHandlesLargeStdout`, verified no pathological memory behavior in the `bytes.Buffer`-based capture.
 - **Non-UTF8/binary output** — `TestRunHandlesNonUTF8Output`, capture and prompt-feedback truncation both survive without corrupting the byte stream or crashing.
 - **A command expecting stdin** — `TestRunDoesNotHangOnCommandExpectingStdin`, verified the documented `os/exec` default (no stdin attached means the child sees EOF immediately) rather than assumed.
-- **Concurrent/overlapping runs** — `TestRunConcurrentOverlappingRuns`, relevant now that M3a's persistent loop is the next milestone. Verified under `-race` (Session 26, once `build-essential` was installed) with zero data races.
+- **Concurrent/overlapping runs** — `TestRunConcurrentOverlappingRuns`, relevant now that M4's persistent loop is the next milestone. Verified under `-race` (Session 26, once `build-essential` was installed) with zero data races.
 
 ## Layer 6 — Regression Harness
 
 **Status: built (Session 23).** Layers 1–2 are fast, deterministic, and run by default under `go test ./...`. Layers 3–5 need live infrastructure (a running Ollama server, possibly multiple pulled models) and must not slow down or break the default test run. **Method, as delivered:** every live-model-dependent test file carries `//go:build live` (`cmd/synapse/live_integration_test.go`, `cmd/synapse/layer4_test.go`), so `go test ./...` stays fast/deterministic by default and `go test -tags live ./...` runs the full suite including model-facing layers when a live Ollama server is available.
+
+## Layer 7 — Proficiency-Tiered Utterance Robustness
+
+`cmd/synapse/layer7_test.go`, `-tags live`. Added Session 32.
+
+Every other layer feeds the model a phrasing a developer wrote. This layer asks whether the system works for someone who cannot describe what they want in computer vocabulary — which is the population `vision.md` names as the target and the population the study's central claim is about.
+
+Each intent is phrased three ways: **plain** (everyday words, no computer vocabulary, names a goal not a mechanism), **interface** (GUI vocabulary — folder, file, application), and **technical** (shell vocabulary, tool names, flags). Scoring is on the fixture's real end state rather than on the command text, since many commands satisfy a request. Every (task, tier) pair gets a fresh fixture so one tier cannot influence the next.
+
+Two things are scored separately, and conflating them was the first run's main defect. **Intent satisfied** is the thesis metric: did the fixture reach the state the user asked for. **Clean exit** is an engineering metric: did the loop recognise it was finished. A task can reach the right end state and still exit non-zero — the command ran, then the loop kept going — and charging that to the phrasing would blame a termination defect on the user's vocabulary, which is the one thing this layer exists to measure cleanly.
+
+**First run, 2026-09-13, six tasks: 4/6 plain, 6/6 interface, 6/6 technical.** Superseded — the scoring was wrong in two ways described below, and its reading of the failures was falsified by the second run. Kept because the correction is the useful part.
+
+**Second run, 2026-09-14, `qwen2.5-coder:3b`, 12 tasks x 3 tiers x 3 repeats (108 live invocations, 480 s):**
+
+| Tier | Intent satisfied | Clean exit |
+|---|---|---|
+| plain | 18 / 36 — 50.0% | 24 / 36 — 66.7% |
+| interface | 30 / 36 — 83.3% | 33 / 36 — 91.7% |
+| technical | 36 / 36 — 100.0% | 33 / 36 — 91.7% |
+
+Plain-to-technical gap: **50.0 points**. Every cell scored 0/3 or 3/3 — with `temperature: 0` the failures are deterministic, so these are properties of the system, not model variance, and three repeats mainly confirm that.
+
+**Two scoring defects were fixed before these numbers were taken, and both had been inflating the result:**
+
+1. Scoring required `verify(...) && exitCode == 0`, which charged loop-termination defects to the phrasing. U8's *technical* tier — `mkdir -p logs && mv *.log logs/`, a phrasing that cannot be misunderstood — scored 0/3 for this reason while leaving the files correctly relocated.
+2. Three verifiers substring-matched the whole transcript, so SynapseOS's own bookkeeping satisfied them: `Contains(out, "2")` was satisfied by `step 2:`, and `Contains(out, "4")` by the `4` in a latency. Those tasks passed at every tier regardless of what the model did.
+
+They had been cancelling out: the plain headline was 50% before and after, but technical moved 91.7% → 100% and the gap 41.7 → 50.0. `TestLayer7ScoringHelpers` now covers each case that was previously mis-scored.
+
+**Fixing (2) required scraping the transcript by line prefix** (`said()` in the test) to separate command output from the loop's narration. That is a symptom of `open-problems.md` row 2 — the core hands every interface a flat `io.Writer` — which was filed as a TUI progressive-disclosure issue and is now also blocking measurement. The scraper is deliberately left visible as evidence for that row.
+
+**The failures are not primarily comprehension failures.** Of the 24 failing runs:
+
+| Cause | Where | Runs |
+|---|---|---|
+| **No working-directory grounding.** `loopSystemPrompt` never states the cwd, so "here" and "this folder" resolve to nothing and the model emits a literal placeholder — `du -sh /path/to/folder`, `mkdir -p /path/to/log/folder && mv /var/log/*`. The technical tier writes `.` and passes | U11 plain+interface, U8 plain, U1 plain | ~12 |
+| **Wrong command concept.** `df -h` for "what's taking up the most room here" (disk-free, not directory size); `ls -lh \| sort -rh \| head -1` selecting the `total` line; `grep -c "WARNING"` against a log containing `WARN` | U2 plain+interface, U10 plain | 9 |
+| **Confabulated success.** `rm -rf *~` matched nothing and exited 0; the answer layer reported "All temporary files have been removed" | U5 plain | 3 |
+
+The first row is a bug in this system and is cheap to fix; it accounts for roughly half the gap. **The reported 50-point gap is therefore an upper bound on any claim about plain language being intrinsically harder to serve**, and must not be cited as a model-capability finding until grounding is fixed and the suite re-run.
+
+Two further findings, tracked in `open-problems.md`:
+
+- **`UNSUPPORTED` is the terminal symptom in 12 of the 24 failures.** After an ordinary command failure the model emits `UNSUPPORTED`, and the user is told the request is a "visual task like editing images" — for "how much space is this folder using". This is that row's existing complaint, now measured rather than anecdotal.
+- **The answer layer states fluent, confident falsehoods when the output does not support them** — "All temporary files have been removed" (nothing was), "The largest file in this folder is 200K in size" (`200K` was the `total` line, not a filename). For a system whose claim is that non-experts can rely on it, an undetectable wrong answer is worse than a visible failure.
+
+**This layer deliberately asserts nothing.** A low plain-tier score is a finding about the system and the model, not a failing build. It is reported and tracked; prompt-engineering it away would destroy the measurement the study exists to make.
+
+**Known validity limit:** the plain phrasings are authored, not observed. They are a stand-in for real user language until the pilot study supplies actual utterances, and the pilot should replace them. A corpus of invented novice speech is a hypothesis about how novices speak.
+
+## Layer 8 — Tool-Call Fork Probe
+
+`cmd/synapse/toolcall_probe_test.go`, `-tags live`. Added Session 33 (2026-09-15).
+
+Every other layer measures the current architecture. This one measures whether a *different* one is viable, and it exists because the alternative — rewriting `runLoop` around tool-calling and discovering afterwards that the model cannot do it — is expensive and irreversible.
+
+**The question.** Coding agents do not classify input as chat-or-task. Tool-calling *is* the fork: the model emits a tool call when it wants to act and prose when it does not, from one prompt, with no router. If that works here, four open problems close at once (rows 1, 2, 4, 16) and the `UNSUPPORTED` sentinel disappears. So: does `qwen2.5-coder` fork correctly?
+
+**Design.** 23 utterances across five registers — social, plain, interface, technical, and a **trap** register of conversational openers wrapped around real work ("hi, can you tell me how much space this folder uses"). Scoring is on the fork alone, not on whether the command was right. The two errors are counted separately and are not symmetric:
+
+- **Prose when action was needed** is dangerous. The user asked for work, the model chatted, nothing happened — a silent non-execution the user has no way to detect.
+- **Call when prose was needed** is cheap. Noisy and wrong, but visible.
+
+**First run — and the mistake in it.** Reading only Ollama's `tool_calls` field: **0 tool calls in 69 attempts at 3B, 0 in 23 at 7B.** The conclusion drawn — that the architecture was unavailable on this stack — was wrong, and wrong twice over. `prior-art.md` had already recorded 0/20 from Session 25 and was not read first. And the measurement was taken one layer too high: a direct request to `/api/chat` shows the model emitting well-formed tool calls as JSON **in the content field**, which Ollama never parses into `tool_calls`. `ollama show` confirms the model declares a `tools` capability whose template renders the offered tools. The capability was never missing; the structured parsing was.
+
+**Second run, through `internal/toolcall`** — the tolerant parser that recovers the call from content, normalises the argument shapes this model actually produces, and rejects tool names that were never offered:
+
+| Register | Before (native field) | After (parser) |
+|---|---|---|
+| social | 100%* | 100% |
+| plain | 0% | 60.0% |
+| interface | 0% | 100% |
+| technical | 0% | 100% |
+| **trap** | 0% | **100%** |
+| **overall** | **0%** | **91.3%** |
+
+\* An artifact: the model emitted prose for everything, so it passed every case where prose happened to be correct and failed every case where action was needed.
+
+Prose-when-action-needed fell from **45 to 6**. Invented or unusable calls: **0** across 69 live replies — the parser recovered every schema-echoed argument and rejected every hallucinated tool name. Same model, same prompts, same corpus; only the parser changed.
+
+**What the run also settled.** Tool choice came out **typed 15, bash 24** — the model does discriminate between the typed registry and raw bash rather than defaulting to one. That is live evidence for the F6 decision (`open-problems.md` row 1), open since Session 25.
+
+**The residual weakness is the plain tier at 60%**, the same plain-versus-technical gap Layer 7 measures. The fork is close to solved; comprehension of plain phrasing is not, and no change of architecture addresses that.
+
+**Status:** the parser is built and tested (`internal/toolcall`, unit-tested offline against replies captured live). It is **not wired into `runLoop`** — the CLI still uses the sentinel protocol. That rewrite changes the loop's core contract and needs a decision entry before it starts.
 
 ## Model Parameterization — a Cross-Cutting Requirement
 
