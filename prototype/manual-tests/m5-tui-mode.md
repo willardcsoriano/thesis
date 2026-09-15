@@ -1,10 +1,17 @@
 ## Overview
 
-This is the hands-on manual test suite for **milestone M3b — TUI mode**, created as that milestone's final step per the `manual-tests/` convention. It covers only what M3b added: the full-screen terminal interface, token-by-token streaming, scrollback, and the confirmation gate rendered as UI instead of a stdin prompt. The propose/classify/execute mechanics underneath are unchanged and already covered by `m2-cli-mode-and-undo-safety-net.md`. Six steps, roughly fifteen minutes, everything destructive confined to a disposable scratch directory. **This suite matters more than the previous two**: unlike CLI and REPL mode, a full-screen TUI cannot be driven by piping input, so nobody — including the assistant that built it — has ever run this end-to-end. Your terminal is genuinely the first.
+This is the hands-on manual test suite for **milestone M5 — TUI mode**, created as that milestone's final step per the `manual-tests/` convention. It covers only what M5 added: the full-screen terminal interface, token-by-token streaming, scrollback, and the confirmation gate rendered as UI instead of a stdin prompt. The propose/classify/execute mechanics underneath are unchanged and already covered by `m1-cli-mode-and-undo-safety-net.md`. Six steps, roughly fifteen minutes, everything destructive confined to a disposable scratch directory. **This suite matters more than the previous two**: unlike CLI and REPL mode, a full-screen TUI cannot be driven by piping input, so it went into a real terminal almost entirely unexercised. Its first real run, on 2026-09-08, immediately found two rendering defects that every automated test had missed (see below) — which is the clearest possible evidence that running this by hand is not a formality.
 
 ## Automated coverage — what's already been machine-verified
 
-`internal/tui` sits at 96.3% coverage across 27 tests, clean under `-race`: the confirmation bridge (y/Y approves, n/N/esc/enter fail closed, unrelated keys ignored), task lifecycle, ctrl+c cancelling a task without ending the session, viewport sizing, and scroll-preservation. `internal/ollama`'s streaming path adds 8 more, including a safety test that a truncated stream is rejected outright rather than handed on as a shorter command. Several are mutation-verified — the code was deliberately broken to confirm the test fails.
+`internal/tui` sits at 95.7% coverage across 29 tests, clean under `-race` over 20 repeats: the confirmation bridge (y/Y approves, n/N/esc/enter fail closed, unrelated keys ignored), task lifecycle, ctrl+c cancelling a task without ending the session, viewport sizing, and scroll-preservation. `internal/ollama`'s streaming path adds 8 more, including a safety test that a truncated stream is rejected outright rather than handed on as a shorter command. Several are mutation-verified — the code was deliberately broken to confirm the test fails.
+
+**Two of those tests exist because this suite's first real run found bugs they should have caught.** Both were fixed on 2026-09-08 and are worth knowing about while you re-run this:
+
+- **Streamed fragments rendered as separate lines** — the model streams `UNS`, then `UPPORTED`, with no newline between them, and the transcript treated each chunk as a finished line, so the screen read `UNS` / `UPPORTED` stacked vertically. The old test had actually *encoded* the bug: it appended newline-less strings and asserted each became its own line, so it passed while asserting the wrong thing.
+- **Output arrived out of source order** — starting a task registered a second listener on the event channel without consuming one, leaving two goroutines racing to receive from it. Delivery order to the renderer became undefined (`model reported…` printing above the `step 1:` line that precedes it), and it compounded: every task started added another receiver.
+
+Neither needed a TTY to catch. What was actually missing was a test of the path output really takes — writer → event channel → renderer — rather than messages hand-constructed in the test. That test now exists (`TestTaskOutputReachesTheTranscriptInSourceOrder`) and both bugs were mutation-verified: reintroducing either one fails it.
 
 What none of that proves: **every one of those tests bypasses the real terminal.** Bubble Tea needs an actual TTY, which the build environment does not have, so the compiled binary has never rendered to a real screen, never redrawn on a resize, and never had a human key pressed at it. Colors, borders, alt-screen behavior, cursor placement, flicker, and whether streaming *feels* responsive are all unverified by construction. That gap is this suite's entire purpose.
 
@@ -56,7 +63,7 @@ Check, and note anything off:
 
 ## 2. Streaming — watch a command appear token by token
 
-This is what M3b added over the REPL. Type a task and watch **how** the answer arrives:
+This is what M5 added over the REPL. Type a task and watch **how** the answer arrives:
 
 ```
 > list the files in this directory

@@ -1,6 +1,6 @@
 ## Overview
 
-This is the hands-on manual test suite for milestone **M3a — persistent CLI loop**, created as that milestone's final step per the `manual-tests/` convention (see `m2-cli-mode-and-undo-safety-net.md` for the M2 + Foundational Hardening suite this one sits alongside). It only exercises what M3a specifically added — `synapse repl`, a persistent multi-task session — not the classify/confirm/execute mechanics underneath it, which `m2-cli-mode-and-undo-safety-net.md` already covers and which don't change here. Five steps: starting a session and running two tasks without the process restarting, leaving cleanly two different ways, confirming a failed task doesn't kill the session, and the one thing actually worth being careful about — that a confirmation answer and the next typed task never get confused with each other. There's also a note on the one thing that deliberately doesn't work yet (`undo` as a typed line inside the session). Run this before moving on to M3b to confirm M3a's own claim — a persistent session actually behaves correctly — rather than trusting the build log.
+This is the hands-on manual test suite for milestone **M4 — persistent CLI loop**, created as that milestone's final step per the `manual-tests/` convention (see `m1-cli-mode-and-undo-safety-net.md` for the M1 + Foundational Hardening suite this one sits alongside). It only exercises what M4 specifically added — `synapse repl`, a persistent multi-task session — not the classify/confirm/execute mechanics underneath it, which `m1-cli-mode-and-undo-safety-net.md` already covers and which don't change here. Five steps: starting a session and running two tasks without the process restarting, leaving cleanly two different ways, confirming a failed task doesn't kill the session, and the one thing actually worth being careful about — that a confirmation answer and the next typed task never get confused with each other. There's also a note on the one thing that deliberately doesn't work yet (`undo` as a typed line inside the session). Run this before moving on to M5 to confirm M4's own claim — a persistent session actually behaves correctly — rather than trusting the build log.
 
 ## Table of Contents
 
@@ -17,20 +17,20 @@ This is the hands-on manual test suite for milestone **M3a — persistent CLI lo
 
 ## Automated coverage — what's already been machine-verified
 
-`cmd/synapse/repl_test.go` covers `runREPL` at 100%: multiple tasks in one process, clean exit (`exit`/`quit`/EOF), a failed task not ending the session, and the same interleaved-input risk Step 4 below asks you to feel for yourself — including a mutation test proving that specific check isn't passing by accident (`build-order.md`'s M3a entry has the detail). What it doesn't prove: those tests run against a mocked model and an in-memory input stream, not a real terminal — that gap is this suite's whole job.
+`cmd/synapse/repl_test.go` covers `runREPL` at 100%: multiple tasks in one process, clean exit (`exit`/`quit`/EOF), a failed task not ending the session, and the same interleaved-input risk Step 4 below asks you to feel for yourself — including a mutation test proving that specific check isn't passing by accident (`build-order.md`'s M4 entry has the detail). What it doesn't prove: those tests run against a mocked model and an in-memory input stream, not a real terminal — that gap is this suite's whole job.
 
 ## Recording your session
 
-Same tool as `m2-cli-mode-and-undo-safety-net.md`, `script` — see that file for the full explanation of why (it captures your typed `[y/N]` answers too, which plain output logging would miss). Quick version, using its own log file so this suite's transcript doesn't mix with `m2-cli-mode-and-undo-safety-net.md`'s:
+Same tool as `m1-cli-mode-and-undo-safety-net.md`, `script` — see that file for the full explanation of why (it captures your typed `[y/N]` answers too, which plain output logging would miss). Quick version, using its own log file so this suite's transcript doesn't mix with `m1-cli-mode-and-undo-safety-net.md`'s:
 
 ```sh
-mkdir -p ~/.synapse/test-logs   # only needed once — skip if you already ran m2-cli-mode-and-undo-safety-net.md
+mkdir -p ~/.synapse/test-logs   # only needed once — skip if you already ran m1-cli-mode-and-undo-safety-net.md
 script ~/.synapse/test-logs/m3a-session.txt   # starts recording this whole terminal session into that file
 # ... now you're inside a recorded shell — run every step below here ...
 exit   # stops recording, at the very end of the whole suite
 ```
 
-Because every step below happens *inside* one continuous `synapse repl` session (or the shell around it), there's no per-command `script -a -c` wrapping here the way `m2-cli-mode-and-undo-safety-net.md` uses for its one-shot invocations — you start recording once, at the top, and everything typed and shown from here on is captured automatically.
+Because every step below happens *inside* one continuous `synapse repl` session (or the shell around it), there's no per-command `script -a -c` wrapping here the way `m1-cli-mode-and-undo-safety-net.md` uses for its one-shot invocations — you start recording once, at the top, and everything typed and shown from here on is captured automatically.
 
 ## 0. Build (skip if you already have a fresh binary)
 
@@ -39,18 +39,18 @@ cd ~/repos/thesis/prototype   # moves into the project's prototype folder
 go build -o bin/synapse ./cmd/synapse   # compiles the program into a runnable file
 ```
 
-`go build` prints nothing on success — see `m2-cli-mode-and-undo-safety-net.md`'s Step 0 if that looks like nothing happened. Confirm with `ls -la bin/synapse` if unsure.
+`go build` prints nothing on success — see `m1-cli-mode-and-undo-safety-net.md`'s Step 0 if that looks like nothing happened. Confirm with `ls -la bin/synapse` if unsure.
 
 ## 1. Start a session and run two tasks without restarting
 
-Work in a throwaway directory, same discipline as `m2-cli-mode-and-undo-safety-net.md`:
+Work in a throwaway directory, same discipline as `m1-cli-mode-and-undo-safety-net.md`:
 
 ```sh
 mkdir -p /tmp/synapse-repl-test && cd /tmp/synapse-repl-test   # creates a disposable test folder and moves into it
 ~/repos/thesis/prototype/bin/synapse repl   # starts the persistent session
 ```
 
-Expect a greeting line (`persistent session — type a task and press enter; type exit or quit (or Ctrl+D) to leave.`) and a `>` prompt. Now type two unrelated tasks, one after another, **without the binary restarting between them** — that's the entire point of M3a:
+Expect a greeting line (`persistent session — type a task and press enter; type exit or quit (or Ctrl+D) to leave.`) and a `>` prompt. Now type two unrelated tasks, one after another, **without the binary restarting between them** — that's the entire point of M4:
 
 ```
 > create a file called one.txt
@@ -147,7 +147,7 @@ Expect this to be sent to the model as a task (it'll likely come back `UNSUPPORT
 
 ## What to check if something looks wrong
 
-- **A task's model output looks plausible but wrong** — same as `m2-cli-mode-and-undo-safety-net.md`: a model-accuracy limit, not something this milestone's own mechanics are responsible for.
+- **A task's model output looks plausible but wrong** — same as `m1-cli-mode-and-undo-safety-net.md`: a model-accuracy limit, not something this milestone's own mechanics are responsible for.
 - **The session hangs after answering a confirmation prompt** — that's the failure mode Step 4 is designed to surface; capture the full `script` transcript rather than closing the terminal, it's the only record of exactly what was typed and in what order.
 - **`ls` after Step 1 shows only one file, not two** — the second task may not have run at all; check the transcript for whether a second `>` prompt even appeared.
 - **Everything here is uncommitted working-tree state**, not a released build — `git status` in `prototype/` if you want to see exactly what you're running.

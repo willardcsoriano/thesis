@@ -1,6 +1,6 @@
 ## Overview
 
-This is the hands-on manual test suite for **milestone M2 (CLI mode) and Foundational Hardening (F1–F5)** — not a reference doc, a script to follow. It assumes Ollama is already installed and running with the model pulled (see `setup.md` if not) and walks through building the binary, then six concrete steps: a safe propose-only look, a real auto-run reversible task, triggering the confirmation gate on an irreversible one and undoing it, and specifically exercising the trash/git-reset/permission-metadata undo mechanisms F5 added. Everything destructive happens in a disposable scratch directory, never your real files. There's also a section on recording a full transcript of your run, since SynapseOS itself doesn't keep one yet — useful if you want to hand someone else the actual log instead of a paraphrase. Use this whenever you want to verify the prototype behaves the way a session claims it does, rather than taking a status report on faith. **M3a's persistent session (`synapse repl`) has its own dedicated suite** — see `m3a-persistent-loop.md` — since testing it thoroughly needs a different shape of walkthrough than the one-shot invocations here.
+This is the hands-on manual test suite for **milestone M1 (CLI mode) and Foundational Hardening (F1–F5)** — not a reference doc, a script to follow. It assumes Ollama is already installed and running with the model pulled (see `setup.md` if not) and walks through building the binary, then six concrete steps: a safe propose-only look, a real auto-run reversible task, triggering the confirmation gate on an irreversible one and undoing it, and specifically exercising the trash/git-reset/permission-metadata undo mechanisms F5 added. Everything destructive happens in a disposable scratch directory, never your real files. There's also a section on recording a full transcript of your run, since SynapseOS itself doesn't keep one yet — useful if you want to hand someone else the actual log instead of a paraphrase. Use this whenever you want to verify the prototype behaves the way a session claims it does, rather than taking a status report on faith. **M4's persistent session (`synapse repl`) has its own dedicated suite** — see `m4-persistent-loop.md` — since testing it thoroughly needs a different shape of walkthrough than the one-shot invocations here.
 
 ## Table of Contents
 
@@ -142,7 +142,7 @@ script -a -c "~/repos/thesis/prototype/bin/synapse 'make everything in target wo
 
 Confirm it, check `ls -l target/file.txt` shows wide-open permissions. Then `synapse undo` — expect `restore permissions: .../target/file.txt`, and the original `0640` mode back after confirming.
 
-**That's the full M2 + Foundational Hardening suite.** If you also want to try `synapse repl` (the persistent multi-task session, M3a), that's `m3a-persistent-loop.md` — a separate suite, since it needs a different recording shape (one continuous session instead of per-command invocations) and its own edge cases to test properly.
+**That's the full M1 + Foundational Hardening suite.** If you also want to try `synapse repl` (the persistent multi-task session, M4), that's `m4-persistent-loop.md` — a separate suite, since it needs a different recording shape (one continuous session instead of per-command invocations) and its own edge cases to test properly.
 
 ## What to check if something looks wrong
 
