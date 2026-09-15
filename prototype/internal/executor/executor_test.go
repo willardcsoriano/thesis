@@ -173,7 +173,7 @@ func TestRunDoesNotHangOnCommandExpectingStdin(t *testing.T) {
 }
 
 // TestRunConcurrentOverlappingRuns guards against shared-state bugs between
-// simultaneous invocations — relevant once M3a's persistent loop exists and
+// simultaneous invocations — relevant once M4's persistent loop exists and
 // a user could plausibly trigger overlapping steps. Run -race against this.
 func TestRunConcurrentOverlappingRuns(t *testing.T) {
 	const n = 20
