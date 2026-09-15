@@ -1,4 +1,4 @@
-// Package tui implements TUI mode (M3b, D11): the bubbletea interface
+// Package tui implements TUI mode (M5, D11): the bubbletea interface
 // wrapping the same shared core (internal/ollama, internal/classifier,
 // internal/executor) every mode reuses.
 //
@@ -68,7 +68,7 @@ var (
 type TaskRunner func(ctx context.Context, task string, confirm func(string) bool, out, errOut io.Writer) int
 
 // transcriptLimit caps how many rendered lines are retained. A viewport
-// with real scrollback is step 5 of the M3b build sequence; until then
+// with real scrollback is step 5 of the M5 build sequence; until then
 // this bounds memory and keeps the view from growing without limit.
 const transcriptLimit = 200
 
@@ -88,11 +88,23 @@ type Model struct {
 	view  viewport.Model
 	run   TaskRunner
 
+	// mouseOn controls whether the view asks the terminal for mouse
+	// reporting. It defaults to off: turning it on hands the terminal's
+	// pointer to this program, which takes drag-to-select with it, and
+	// losing copy-paste in a tool whose whole output is text is a worse
+	// trade than losing the wheel. PgUp/PgDn scroll either way.
+	mouseOn bool
+
 	// ready guards against rendering the viewport before the first
 	// WindowSizeMsg tells us the real terminal dimensions.
 	ready bool
 
 	transcript []string
+	// lineOpen reports whether the last transcript line is mid-write —
+	// i.e. the most recent chunk did not end in a newline, so the next
+	// one continues it. Streaming makes this the common case, not an
+	// edge case.
+	lineOpen bool
 
 	// events carries messages from the running task's goroutine into the
 	// bubbletea event loop. Buffered: the task writes output faster than
@@ -131,7 +143,8 @@ func NewModel(run TaskRunner) Model {
 		transcript: []string{
 			headerStyle.Render("SynapseOS — TUI mode"),
 			hintStyle.Render("Type a task and press enter. Ctrl+C cancels a running task; at an idle prompt it quits."),
-			hintStyle.Render("PgUp/PgDn scroll the transcript, including while a confirmation is pending."),
+			hintStyle.Render("PgUp/PgDn scroll the transcript, including while a confirmation is pending. Text is selectable; type mouse to trade that for wheel scrolling."),
+			hintStyle.Render("Follow-ups can refer back (\"move it to Downloads\"). Type context to see what's remembered, clear to forget it."),
 			"",
 		},
 	}
@@ -161,9 +174,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleKey(msg)
 
 	case tea.WindowSizeMsg:
-		// Reserve rows for the input line, the prompt/status line, and
-		// the surrounding blank lines so the viewport never overflows
-		// the terminal and pushes the input box off-screen.
+		// Reserve exactly the rows View() emits below the viewport: one
+		// newline closing the viewport, one blank separator, the input or
+		// status line, and its trailing newline. Derived from View rather
+		// than guessed — the previous hardcoded value was a guess that
+		// could not be checked without looking at a running terminal.
 		const chromeHeight = 4
 		m.view.SetWidth(msg.Width)
 		m.view.SetHeight(max(1, msg.Height-chromeHeight))
@@ -172,8 +187,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.refreshViewport()
 		return m, nil
 
+	case tea.MouseWheelMsg:
+		// The alt-screen buffer replaces the terminal's own scrollback, so
+		// without forwarding the wheel the transcript is unreachable by any
+		// means except PgUp/PgDn. Handled here rather than by the catch-all
+		// below because that path feeds the text input, which ignores it.
+		var cmd tea.Cmd
+		m.view, cmd = m.view.Update(msg)
+		return m, cmd
+
 	case outputMsg:
-		m.transcript = appendTranscript(m.transcript, string(msg))
+		m.transcript, m.lineOpen = appendChunk(m.transcript, m.lineOpen, string(msg))
 		m.refreshViewport()
 		return m, waitForEvent(m.events)
 
@@ -185,7 +209,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.running = false
 		m.pendingConfirm = ""
 		m.cancelTask = nil
-		m.transcript = appendTranscript(m.transcript, "")
+		// Close any half-written line before the blank separator, so a
+		// task ending mid-fragment doesn't merge into the next one.
+		if m.lineOpen {
+			m.transcript, m.lineOpen = appendChunk(m.transcript, true, "\n")
+		}
+		m.transcript, m.lineOpen = appendChunk(m.transcript, m.lineOpen, "\n")
 		m.refreshViewport()
 		return m, waitForEvent(m.events)
 	}
@@ -195,13 +224,80 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// wrapLine breaks one transcript line to width columns on word boundaries,
+// returning the pieces. The viewport clips rather than wraps, so anything
+// longer than the terminal is simply invisible without this — which is how
+// the header ended up truncated mid-sentence in live use.
+//
+// Width is measured in runes, not bytes, so multi-byte characters are not
+// split. This is deliberately not full grapheme-aware wrapping: transcript
+// content is command output and ASCII prose, and a dependency on a text
+// segmentation library is not worth the one edge case it would buy.
+func wrapLine(line string, width int) []string {
+	if width < 2 || len([]rune(line)) <= width {
+		return []string{line}
+	}
+	var out []string
+	var cur []rune
+	flush := func() {
+		out = append(out, string(cur))
+		cur = cur[:0]
+	}
+	for _, word := range strings.Fields(line) {
+		w := []rune(word)
+		switch {
+		case len(cur) == 0 && len(w) > width:
+			// A single token longer than the line: hard-split it rather
+			// than overflow, since no word boundary exists to break on.
+			for len(w) > width {
+				out = append(out, string(w[:width]))
+				w = w[width:]
+			}
+			cur = append(cur, w...)
+		case len(cur) == 0:
+			cur = append(cur, w...)
+		case len(cur)+1+len(w) <= width:
+			cur = append(cur, ' ')
+			cur = append(cur, w...)
+		default:
+			flush()
+			cur = append(cur, w...)
+		}
+	}
+	if len(cur) > 0 || len(out) == 0 {
+		flush()
+	}
+	// Preserve a deliberately blank line rather than collapsing it away;
+	// blank lines are the transcript's separator between tasks.
+	if line == "" {
+		return []string{""}
+	}
+	return out
+}
+
 // refreshViewport re-renders the transcript into the viewport and pins
 // the view to the newest output. Auto-scrolling only when the user is
 // already at the bottom is deliberate: if they have scrolled up to read
 // earlier output, new output must not yank the view away from them.
 func (m *Model) refreshViewport() {
 	atBottom := m.view.AtBottom()
-	m.view.SetContent(strings.Join(m.transcript, "\n"))
+
+	width := m.view.Width()
+	rendered := make([]string, 0, len(m.transcript))
+	for _, line := range m.transcript {
+		rendered = append(rendered, wrapLine(line, width)...)
+	}
+
+	// Pad from the top so short transcripts sit against the input line
+	// instead of leaving a block of dead space between the last output and
+	// the prompt. The viewport is a fixed-height window: without this the
+	// content renders at the top and the remaining rows render blank, which
+	// is what the gap above the prompt actually was.
+	if h := m.view.Height(); h > len(rendered) {
+		rendered = append(make([]string, h-len(rendered)), rendered...)
+	}
+
+	m.view.SetContent(strings.Join(rendered, "\n"))
 	if atBottom {
 		m.view.GotoBottom()
 	}
@@ -221,7 +317,7 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// it quits, which is what a user expects there.
 		if m.running && m.cancelTask != nil {
 			m.cancelTask()
-			m.transcript = appendTranscript(m.transcript, "\ncancelling this task — the session stays open.\n")
+			m.transcript, m.lineOpen = appendChunk(m.transcript, m.lineOpen, "\ncancelling this task — the session stays open.\n")
 			return m, nil
 		}
 		return m, tea.Quit
@@ -266,8 +362,21 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if task == "" {
 			return m, nil
 		}
+		// Handled here rather than in the task runner because it is view
+		// state, not something the execution loop knows or should know.
+		if strings.EqualFold(task, "mouse") {
+			m.mouseOn = !m.mouseOn
+			m.input.SetValue("")
+			note := "mouse scrolling off — drag to select and copy as usual."
+			if m.mouseOn {
+				note = "mouse scrolling on — the terminal's own text selection is disabled while it is; type mouse again to turn it off."
+			}
+			m.transcript, m.lineOpen = appendChunk(m.transcript, m.lineOpen, note+"\n")
+			m.refreshViewport()
+			return m, nil
+		}
 		m.input.SetValue("")
-		m.transcript = appendTranscript(m.transcript, "> "+task+"\n")
+		m.transcript, m.lineOpen = appendChunk(m.transcript, m.lineOpen, "> "+task+"\n")
 		return m.startTask(task)
 	}
 
@@ -284,7 +393,7 @@ func (m Model) answerConfirm(ok bool) (tea.Model, tea.Cmd) {
 	if ok {
 		verdict = "y"
 	}
-	m.transcript = appendTranscript(m.transcript, verdict+"\n")
+	m.transcript, m.lineOpen = appendChunk(m.transcript, m.lineOpen, verdict+"\n")
 	m.answers <- ok // buffered by one; never blocks the UI thread
 	return m, nil
 }
@@ -310,7 +419,16 @@ func (m Model) startTask(task string) (tea.Model, tea.Cmd) {
 		events <- taskDoneMsg{code: code}
 	}()
 
-	return m, waitForEvent(m.events)
+	// Deliberately no waitForEvent here. Exactly one listener may be
+	// outstanding at a time: Init starts it, and every branch that
+	// *consumes* an event re-issues exactly one, holding the count at
+	// one. startTask consumes nothing — it runs off a keypress — so
+	// issuing a listener here would leave two goroutines receiving from
+	// the same channel, with delivery order to Update undefined. That
+	// produced visibly out-of-order output in live use (a "model
+	// reported..." line printing before the "step 1:" line above it),
+	// and it compounded: every task started added another receiver.
+	return m, nil
 }
 
 func (m Model) View() tea.View {
@@ -337,6 +455,14 @@ func (m Model) View() tea.View {
 
 	v := tea.NewView(b.String())
 	v.AltScreen = true
+	// Mouse reporting is view state in bubbletea v2, not a program option,
+	// and it is off unless asked for: enabling it makes the terminal send
+	// clicks and drags here instead of performing a native selection, so
+	// the transcript stops being copyable. Toggled with the `mouse`
+	// command for anyone who prefers wheel scrolling to selection.
+	if m.mouseOn {
+		v.MouseMode = tea.MouseModeCellMotion
+	}
 	return v
 }
 
@@ -350,16 +476,38 @@ func (w msgWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// appendTranscript adds a chunk as one or more lines, trimming the
-// trailing newline the writers emit so blank lines aren't doubled, and
-// bounding total retained lines.
-func appendTranscript(lines []string, chunk string) []string {
-	chunk = strings.TrimSuffix(chunk, "\n")
-	lines = append(lines, strings.Split(chunk, "\n")...)
+// appendChunk adds a chunk of output to the transcript, honouring the
+// fact that a chunk is not necessarily a whole line.
+//
+// This distinction is the entire point of the function. Streaming
+// delivers whatever fragment the model produced — "UNS", then
+// "UPPORTED" — with no newline between them, while the loop's own status
+// writes ("step 1: ...\n") are newline-terminated. Treating every chunk
+// as a complete line renders the former as two separate lines, which is
+// exactly what a real terminal showed before this was fixed. The `open`
+// flag carries whether the last line is still being written to, so a
+// fragment continues it instead of starting a new one; the returned flag
+// is the caller's new state.
+func appendChunk(lines []string, open bool, chunk string) ([]string, bool) {
+	if chunk == "" {
+		return lines, open
+	}
+
+	endsLine := strings.HasSuffix(chunk, "\n")
+	parts := strings.Split(strings.TrimSuffix(chunk, "\n"), "\n")
+
+	for i, part := range parts {
+		if i == 0 && open && len(lines) > 0 {
+			lines[len(lines)-1] += part
+			continue
+		}
+		lines = append(lines, part)
+	}
+
 	if len(lines) > transcriptLimit {
 		lines = lines[len(lines)-transcriptLimit:]
 	}
-	return lines
+	return lines, !endsLine
 }
 
 // Run starts TUI mode against the real terminal, driving the supplied

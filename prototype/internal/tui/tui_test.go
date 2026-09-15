@@ -232,7 +232,7 @@ func TestTaskDoneRestoresIdlePrompt(t *testing.T) {
 }
 
 // TestEnterRunsTaskThroughInjectedRunner verifies the wiring that makes
-// M3b step 3 meaningful: the typed task reaches the injected runner
+// M5 step 3 meaningful: the typed task reaches the injected runner
 // verbatim, and whatever that runner writes lands in the transcript.
 func TestEnterRunsTaskThroughInjectedRunner(t *testing.T) {
 	var (
@@ -361,16 +361,27 @@ func TestMsgWriterCopiesItsBuffer(t *testing.T) {
 	}
 }
 
-func TestAppendTranscriptBoundsRetainedLines(t *testing.T) {
+// TestAppendChunkBoundsRetainedLines checks the transcript cap.
+//
+// Note the trailing newlines: an earlier version of this test appended
+// bare "line N" strings with no newline and expected each to become its
+// own line, which quietly encoded the very bug that later showed up on
+// screen as "UNS" / "UPPORTED" on separate lines. A chunk without a
+// newline is a *fragment*, not a line, and the test now says so.
+func TestAppendChunkBoundsRetainedLines(t *testing.T) {
 	var lines []string
+	open := false
 	for i := 0; i < transcriptLimit*2; i++ {
-		lines = appendTranscript(lines, fmt.Sprintf("line %d", i))
+		lines, open = appendChunk(lines, open, fmt.Sprintf("line %d\n", i))
 	}
 	if len(lines) > transcriptLimit {
 		t.Errorf("transcript grew to %d lines, want at most %d", len(lines), transcriptLimit)
 	}
 	if last := lines[len(lines)-1]; last != fmt.Sprintf("line %d", transcriptLimit*2-1) {
 		t.Errorf("newest line was trimmed; last = %q", last)
+	}
+	if open {
+		t.Error("line should be closed: every chunk ended with a newline")
 	}
 }
 
@@ -459,7 +470,7 @@ func TestViewShowsWorkingIndicatorWhileRunning(t *testing.T) {
 	}
 }
 
-// --- viewport / scrollback (M3b step 5) ------------------------------
+// --- viewport / scrollback (M5 step 5) ------------------------------
 
 func sizeMsg(w, h int) tea.WindowSizeMsg {
 	return tea.WindowSizeMsg{Width: w, Height: h}
@@ -582,5 +593,247 @@ func TestViewRendersBeforeFirstWindowSize(t *testing.T) {
 	}
 	if content := m.View().Content; !strings.Contains(content, "SynapseOS") {
 		t.Errorf("pre-size view missing header, got:\n%s", content)
+	}
+}
+
+// --- streamed-fragment rendering (regression, found in live use) -----
+
+// TestStreamedFragmentsFormOneLine is the bug a real terminal exposed and
+// every earlier test missed: streaming delivers mid-line fragments
+// ("UNS", then "UPPORTED"), and appendChunk was treating each chunk as a
+// complete line. The screen showed
+//
+//	UNS
+//	UPPORTED
+//
+// instead of "UNSUPPORTED". Nothing here needs a TTY — the earlier tests
+// simply only ever appended whole lines, so the whole-vs-partial
+// distinction was never exercised.
+func TestStreamedFragmentsFormOneLine(t *testing.T) {
+	var lines []string
+	open := false
+	for _, frag := range []string{"UNS", "UPPORTED"} {
+		lines, open = appendChunk(lines, open, frag)
+	}
+	if len(lines) != 1 {
+		t.Fatalf("got %d lines %q, want 1 — streamed fragments must continue the same line", len(lines), lines)
+	}
+	if lines[0] != "UNSUPPORTED" {
+		t.Errorf("line = %q, want %q", lines[0], "UNSUPPORTED")
+	}
+	if !open {
+		t.Error("line should still be open: no newline has arrived yet")
+	}
+}
+
+func TestAppendChunkLineBoundaries(t *testing.T) {
+	cases := []struct {
+		name   string
+		chunks []string
+		want   []string
+	}{
+		{"newline closes a line", []string{"abc\n", "def"}, []string{"abc", "def"}},
+		{"fragments then newline", []string{"ab", "cd\n"}, []string{"abcd"}},
+		{"embedded newline splits", []string{"a\nb"}, []string{"a", "b"}},
+		{"multiple lines at once", []string{"one\ntwo\nthree\n"}, []string{"one", "two", "three"}},
+		{"empty chunk is a no-op", []string{"abc", ""}, []string{"abc"}},
+		{"continuation across a closed line", []string{"x\n", "y", "z"}, []string{"x", "yz"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var lines []string
+			open := false
+			for _, c := range tc.chunks {
+				lines, open = appendChunk(lines, open, c)
+			}
+			if len(lines) != len(tc.want) {
+				t.Fatalf("got %q, want %q", lines, tc.want)
+			}
+			for i := range tc.want {
+				if lines[i] != tc.want[i] {
+					t.Errorf("line %d = %q, want %q (full: %q)", i, lines[i], tc.want[i], lines)
+				}
+			}
+		})
+	}
+}
+
+// TestStartTaskDoesNotAddASecondEventListener guards the concurrency bug
+// that scrambled output ordering in live use.
+//
+// Exactly one waitForEvent Cmd may be outstanding at a time. Init starts
+// one, and every branch that *consumes* an event re-issues exactly one,
+// keeping the count at one. startTask consumes nothing — it is triggered
+// by a keypress — so if it also issued a listener there would be two
+// goroutines receiving from the same channel, and which one wins is
+// undefined. That is precisely what produced a transcript where "model
+// reported..." printed before the "step 1:" line that logically precedes
+// it, and it compounds: every task started would add another receiver.
+func TestStartTaskDoesNotAddASecondEventListener(t *testing.T) {
+	blocked := make(chan struct{})
+	run := func(ctx context.Context, _ string, _ func(string) bool, _, _ io.Writer) int {
+		close(blocked)
+		<-ctx.Done()
+		return 0
+	}
+
+	m := NewModel(run)
+	m.input.SetValue("do a thing")
+	_, cmd := m.Update(enterKey())
+
+	select {
+	case <-blocked:
+	case <-time.After(2 * time.Second):
+		t.Fatal("task never started")
+	}
+
+	if cmd != nil {
+		t.Error("startTask returned a Cmd; it must return nil — the listener started in Init is still outstanding, and issuing another creates two concurrent receivers on one channel, which loses message ordering")
+	}
+}
+
+// --- end-to-end output path (the live-found regression) --------------
+
+// TestTaskOutputReachesTheTranscriptInSourceOrder is the test whose
+// absence let both live-found M5 bugs ship. Every other test in this
+// file hands Update a message it constructed itself; none of them
+// exercised the path a real task's output actually takes — Fprint into
+// the injected io.Writer, through msgWriter, across the events channel,
+// into Update, onto the transcript.
+//
+// It drives that whole path under the same protocol bubbletea's runtime
+// uses: exactly one listener outstanding, each event fed to Update
+// before the next is pulled. Both symptoms seen in a real terminal are
+// asserted directly — a streamed word split across lines ("UNS" /
+// "UPPORTED"), and output arriving out of source order.
+func TestTaskOutputReachesTheTranscriptInSourceOrder(t *testing.T) {
+	run := func(_ context.Context, _ string, _ func(string) bool, out, errOut io.Writer) int {
+		fmt.Fprint(out, "step 1: asking the model for a command\n")
+		// Streamed tokens arrive as bare fragments with no newline
+		// between them — the shape that broke rendering.
+		for _, fragment := range []string{"UNS", "UPP", "ORTED"} {
+			fmt.Fprint(out, fragment)
+		}
+		fmt.Fprint(out, "\n")
+		fmt.Fprint(errOut, "model reported it cannot do this task\n")
+		return 1
+	}
+
+	m := NewModel(run)
+	m.input.SetValue("do the impossible")
+
+	next, cmd := m.handleKey(enterKey())
+	m = next.(Model)
+	if cmd != nil {
+		t.Fatal("starting a task must not issue a second event listener: " +
+			"two concurrent receivers on the events channel make delivery order undefined")
+	}
+
+	for done := false; !done; {
+		select {
+		case msg := <-m.events:
+			if _, isDone := msg.(taskDoneMsg); isDone {
+				done = true
+			}
+			m = step(t, m, msg)
+		case <-time.After(5 * time.Second):
+			t.Fatal("timed out waiting for task events")
+		}
+	}
+
+	indexOf := func(want string) int {
+		for i, line := range m.transcript {
+			if strings.Contains(line, want) {
+				return i
+			}
+		}
+		t.Fatalf("transcript has no line containing %q, got:\n%s", want, strings.Join(m.transcript, "\n"))
+		return -1
+	}
+
+	for _, split := range []string{"UNS", "UPP", "ORTED"} {
+		for _, line := range m.transcript {
+			if strings.TrimSpace(line) == split {
+				t.Errorf("streamed fragment %q rendered as its own transcript line; "+
+					"fragments must continue the open line, got:\n%s", split, strings.Join(m.transcript, "\n"))
+			}
+		}
+	}
+
+	step1, unsupported, reported := indexOf("step 1:"), indexOf("UNSUPPORTED"), indexOf("model reported")
+	if !(step1 < unsupported && unsupported < reported) {
+		t.Errorf("output out of source order: step 1 at %d, UNSUPPORTED at %d, model-reported at %d\n%s",
+			step1, unsupported, reported, strings.Join(m.transcript, "\n"))
+	}
+}
+
+// The viewport clips rather than wraps, so without this the header was
+// truncated mid-sentence in live use and long command output vanished off
+// the right edge.
+func TestWrapLineBreaksOnWordBoundaries(t *testing.T) {
+	got := wrapLine("the quick brown fox jumps", 10)
+	want := []string{"the quick", "brown fox", "jumps"}
+	if len(got) != len(want) {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("got %q, want %q", got, want)
+		}
+	}
+	for i, line := range got {
+		if len([]rune(line)) > 10 {
+			t.Errorf("line %d exceeds width: %q", i, line)
+		}
+	}
+}
+
+// A single token longer than the terminal has no word boundary to break on
+// and must be split rather than allowed to overflow — long paths and URLs in
+// command output are the common case.
+func TestWrapLineHardSplitsOverlongTokens(t *testing.T) {
+	got := wrapLine("/very/long/path/that/never/breaks", 10)
+	if len(got) < 2 {
+		t.Fatalf("overlong token was not split: %q", got)
+	}
+	for _, line := range got {
+		if len([]rune(line)) > 10 {
+			t.Errorf("piece exceeds width: %q", line)
+		}
+	}
+}
+
+func TestWrapLinePreservesBlankSeparators(t *testing.T) {
+	if got := wrapLine("", 40); len(got) != 1 || got[0] != "" {
+		t.Errorf("blank line became %q; blank lines separate tasks in the transcript", got)
+	}
+}
+
+func TestWrapLineLeavesShortLinesAlone(t *testing.T) {
+	if got := wrapLine("short", 40); len(got) != 1 || got[0] != "short" {
+		t.Errorf("got %q, want [short]", got)
+	}
+}
+
+// Short transcripts must sit against the input line. Without top padding the
+// viewport renders content at the top and blank rows beneath it, which is
+// what the gap above the prompt actually was.
+func TestShortTranscriptIsPushedToTheBottom(t *testing.T) {
+	m := NewModel(func(context.Context, string, func(string) bool, io.Writer, io.Writer) int { return 0 })
+	next, _ := m.Update(tea.WindowSizeMsg{Width: 40, Height: 20})
+	m = next.(Model)
+
+	content := m.view.View()
+	lines := strings.Split(content, "\n")
+	if len(lines) < 2 {
+		t.Fatalf("viewport rendered %d lines", len(lines))
+	}
+	if strings.TrimSpace(lines[0]) != "" {
+		t.Errorf("first viewport row is content, so the transcript is top-aligned and leaves a gap above the prompt: %q", lines[0])
+	}
+	joined := strings.TrimRight(content, " \n")
+	tail := joined[strings.LastIndex(joined, "\n")+1:]
+	if strings.TrimSpace(tail) == "" {
+		t.Error("last viewport row is blank; content is not pinned to the bottom")
 	}
 }
