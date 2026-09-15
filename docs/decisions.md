@@ -32,6 +32,11 @@ This file records architectural and research design decisions that have been mad
   - [D24 — `internal/undo` gains a second, cheaper undo mechanism: hardlink-based trash for pure deletions](#d24-internalundo-gains-a-second-cheaper-undo-mechanism-hardlink-based-trash-for-pure-deletions)
   - [D25 — Four remaining known undo gaps closed: git reset --hard, git clean -f, recursive chmod/chown, and dd/mkfs onto a regular file](#d25-four-remaining-known-undo-gaps-closed-git-reset---hard-git-clean--f-recursive-chmodchown-and-ddmkfs-onto-a-regular-file)
   - [D26 — TUI mode drives the same execution loop, rather than reimplementing it](#d26-tui-mode-drives-the-same-execution-loop-rather-than-reimplementing-it)
+  - [D27 — SynapseOS is an agentic layer *over* the existing desktop session, not a replacement for it](#d27-synapseos-is-an-agentic-layer-over-the-existing-desktop-session-not-a-replacement-for-it)
+  - [D28 — Linux/XFCE is a methodological necessity, not the contribution](#d28-linuxxfce-is-a-methodological-necessity-not-the-contribution)
+  - [D29 — The thesis's algorithmic contribution is recoverability analysis of generated shell commands](#d29-the-thesiss-algorithmic-contribution-is-recoverability-analysis-of-generated-shell-commands)
+  - [D30 — Generated commands stay visible to the user](#d30-generated-commands-stay-visible-to-the-user)
+  - [D31 — Results are reported in natural language, not dumped as raw output](#d31-results-are-reported-in-natural-language-not-dumped-as-raw-output)
 
 ## Decisions
 
@@ -83,7 +88,7 @@ Research data on Moondream 2 (1.9B params, ScreenSpot F1@0.5 = 80.4) and Qwen2.5
 
 ### D5 — Within-subjects user study design, 20 participants
 
-**Status:** In SA3.1 Section 3.2
+**Status:** In SA3.1 Section 3.2. **Revised 2026-09-12 (Session 31): the sample is now 40 participants (20 novice, 20 command-line fluent).** The heading keeps its original number and wording as an identifier; the figure below does not hold. The original 20 rested on a power analysis that was simply wrong — it claimed a medium effect (*d* = 0.5) at 80% power needed 17 participants, where a paired-samples comparison at α = 0.05 two-tailed needs 34. At 40 the study has roughly 87% power for *d* = 0.5 and detects down to *d* = 0.45, with margin for attrition and for the exclusions D14's screening rule produces. The condition × group interaction — which is what the study's central claim actually rests on — remains the least-powered comparison in the design and is reported descriptively rather than as a confirmatory test.
 
 The user study uses a within-subjects design: all 20 participants complete both conditions (SynapseOS and conventional Debian desktop). Condition order is counterbalanced (10 participants complete SynapseOS first, 10 complete the desktop first). Participants are split into two populations: 10 novice users and 10 power users, recruited from Mapúa University – Makati.
 
@@ -117,7 +122,7 @@ SynapseOS executes only shell-expressible operations. The system's capability bo
 
 ### D8 — Implementation stack: Go runtime, Python build pipeline, Ollama inference server
 
-**Status:** In SA3.1 Table 3.1. **Reconsideration raised, unresolved 2026-07-15** — whether Ollama's full orchestration shell (model registry, multi-backend hardware detection, multi-client HTTP scheduling) is worth keeping given SynapseOS's fixed single-model/single-target/single-user deployment, versus embedding the inference engine more directly. Not yet decided; tracked in `brainstorm.md`.
+**Status:** In SA3.1 Table 3.1. **Reconsideration raised, unresolved 2026-07-15** — whether Ollama's full orchestration shell (model registry, multi-backend hardware detection, multi-client HTTP scheduling) is worth keeping given SynapseOS's fixed single-model/single-target/single-user deployment, versus embedding the inference engine more directly. Not yet decided; tracked in `notes/brainstorm.md`.
 
 **Go** owns the runtime — everything the user touches during the study: the TUI session manager (bubbletea + lipgloss), bash subprocess execution and stdout/stderr streaming, Ollama API client (HTTP streaming to localhost:11434), confirmation gate, and undo log.
 
@@ -145,7 +150,11 @@ Condition B is each participant's primary OS — Windows 11, macOS, or Linux wit
 
 ### D10 — Conversation memory model: session-scoped, rolling window, output compression
 
-**Status:** Reflected in SA3.1 Section 2.1; scope.md session context manager item
+**Status:** Reflected in SA3.1 Section 2.1; scope.md session context manager item. **Amended 2026-09-02 (Session 29) — the token ceiling this decision names was measured and is wrong in both directions.**
+
+**Verified correction:** this entry assumed an "8K token limit (Qwen2.5-Coder-3B-Instruct hard ceiling)". Neither half holds. The model's own reported `context_length` is **32768**, not 8192 — so 8K was never the model's ceiling. More importantly, Ollama's *runtime* default `num_ctx` is **2048** regardless of model capability, and it **truncates silently**: a ~6000-token prompt came back with `prompt_eval_count = 2050` and a perfectly cheerful response, having never seen most of its own input. Setting `num_ctx: 8192` explicitly in the options map raised the same prompt to a measured 5535 tokens. Both figures were measured against the live server, not read from documentation.
+
+Two consequences. First, any rolling-window budget written against "8K" would have been wrong by 4× in the direction that matters — the real ceiling was a quarter of the assumed one, and overflow produces no error to notice. Second, the runtime must set `num_ctx` explicitly rather than inherit a default; the budget below is only meaningful once it does. The rolling-window *design* is unchanged — only the number it is measured against, and the requirement to set it deliberately.
 
 SynapseOS uses session-scoped in-memory conversation context. History lives in a Go slice of message structs for the duration of one login session and is cleared on logout or reboot. No persistence layer is required for the thesis prototype.
 
@@ -153,17 +162,17 @@ Context overflow is handled by a rolling window: when accumulated history approa
 
 **Why:** Session-scoped memory eliminates the storage, privacy, and context-management complexity of persistent history entirely and keeps the evaluation environment clean and reproducible across participants. Rolling window is simpler than conversational summarization and sufficient at the 3B parameter scale. Output compression is necessary because a single `find /` result can run to thousands of tokens and would crowd out all prior context.
 
-**Rejected:** Pure stateless (zero memory) — breaks pronoun resolution and multi-turn follow-up commands ("move it to Downloads" requires knowing what "it" was). Persistent memory across reboots — adds SQLite storage, session boundary logic, and history deletion UX; deferred to future-features.md. Conversational summarization — adds a second inference call per compression event; more complex than rolling window and not warranted for thesis scope.
+**Rejected:** Pure stateless (zero memory) — breaks pronoun resolution and multi-turn follow-up commands ("move it to Downloads" requires knowing what "it" was). Persistent memory across reboots — adds SQLite storage, session boundary logic, and history deletion UX; deferred to notes/future-features.md. Conversational summarization — adds a second inference call per compression event; more complex than rolling window and not warranted for thesis scope.
 
 ---
 
 ### D11 — Study interface mode: GUI (fullscreen conversational interface)
 
-**Status:** Reflected in SA3.1 Table 3.1, paragraph after Table 3.2, and Section 3.5
+**Status:** Reflected in SA3.1 Table 3.1, paragraph after Table 3.2, and Section 3.5. **Rescoped by D27 (2026-09-12):** the study interface is still fullscreen, but it is the TUI launched over a live XFCE desktop rather than a separately-built graphical interface replacing the session. The reasoning below — that novices must not be studied through a bare terminal — is unaffected and is why fullscreen presentation is retained.
 
 The user study evaluates SynapseOS in GUI mode — a fullscreen conversational interface running on a graphical desktop environment. This is the primary product target for general and non-technical users. The TUI mode (terminal-based, no display server required) is the server and remote deployment target and is not evaluated in the user study.
 
-The thesis prototype GUI is a fullscreen borderless window approximating the active desktop aesthetic; the full wallpaper-layer active desktop (wlr-layer-shell integration) remains deferred to future-features.md.
+The thesis prototype GUI is a fullscreen borderless window approximating the active desktop aesthetic; the full wallpaper-layer active desktop (wlr-layer-shell integration) remains deferred to notes/future-features.md.
 
 **Why:** The study population includes novice users for whom a terminal interface would introduce a significant familiarity barrier independent of SynapseOS's core capability. Evaluating in GUI mode tests the interface as it would be experienced by its intended general-user audience. A TUI-mode study of novice users would conflate terminal unfamiliarity with interface quality, undermining the validity of the comparison.
 
@@ -173,7 +182,7 @@ The thesis prototype GUI is a fullscreen borderless window approximating the act
 
 ### D12 — Distro identity vs. implementation substrate: Debian + XFCE (GUI), bare Debian (TUI)
 
-**Status:** Refines D1 and D11. Not yet in a chapter — record for final compilation. GUI mode's "no escape hatch" claim below is refined by D20 (participant-accessible fallback, logged and excluded from primary analysis).
+**Status:** Refines D1 and D11. Not yet in a chapter — record for final compilation. GUI mode's "no escape hatch" claim below is refined by D20 (participant-accessible fallback, logged and excluded from primary analysis) and **superseded by D27 (2026-09-12)**: XFCE is no longer a hidden substrate but a running, usable desktop that SynapseOS layers on top of. The distro-identity reasoning below still holds — a reused substrate under a distinct identity is how derivative distros work — but the "invisible XFCE" framing does not. **D28 additionally reframes why Debian/XFCE at all:** it is the only substrate that permits this, Windows and macOS being proprietary, which is a methodological necessity rather than a platform claim.
 
 SynapseOS presents to the user as its own distribution — its own name and identity — while the substrate underneath is reused and never surfaced to the user. The substrate is mode-dependent:
 
@@ -182,7 +191,7 @@ SynapseOS presents to the user as its own distribution — its own name and iden
 
 **Why this is not dishonest:** distro identity has always been a branding and packaging layer over a reused base, invisible to the end user — Ubuntu never surfaces "Debian" to a desktop user, SteamOS never surfaces "Arch," Pop!_OS never surfaces "Ubuntu." SynapseOS qualifies as a distribution once packaged as a bootable Debian(+XFCE) derivative with its own default session, branding, and update channel (see `layers.md`, "When It Becomes a Distribution") — a real distro, with a reused and unadvertised substrate, exactly like its predecessors.
 
-**Rejected:** a custom kiosk Wayland compositor (`cage`) as the GUI host for the thesis prototype — adds a new toolchain and packaging surface for no benefit over a fullscreen window in a standard DE session; the wallpaper-layer / `wlr-layer-shell` active-desktop mode remains the eventual post-thesis product target (`future-features.md`). **Amended by D20:** this decision originally also rejected any participant path back to XFCE during Condition A, on the grounds that it would confound the within-subjects comparison (D5, D9). D20 reopens this — a participant-accessible fallback now exists — but keeps the comparison clean by scoring and excluding fallback-invoked tasks rather than by denying access. See D20 for the full reasoning.
+**Rejected:** a custom kiosk Wayland compositor (`cage`) as the GUI host for the thesis prototype — adds a new toolchain and packaging surface for no benefit over a fullscreen window in a standard DE session; the wallpaper-layer / `wlr-layer-shell` active-desktop mode remains the eventual post-thesis product target (`notes/future-features.md`). **Amended by D20:** this decision originally also rejected any participant path back to XFCE during Condition A, on the grounds that it would confound the within-subjects comparison (D5, D9). D20 reopens this — a participant-accessible fallback now exists — but keeps the comparison clean by scoring and excluding fallback-invoked tasks rather than by denying access. See D20 for the full reasoning.
 
 ---
 
@@ -190,13 +199,13 @@ SynapseOS presents to the user as its own distribution — its own name and iden
 
 **Status:** Post-thesis product direction. Does not affect the study design (D5, D9, D11) or D12. Not in any chapter — vision/roadmap only.
 
-Beyond the thesis prototype, the commercial product target is a second mode where the traditional desktop (Debian + XFCE) stays fully visible and usable, and SynapseOS is summoned on demand — a global hotkey (via XFCE's `xfconf` keyboard-shortcut settings) or a systray icon opens a floating conversational window; the user can otherwise operate the desktop manually (drag-and-drop, the file manager, any traditional app) exactly as before. This is a lower-effort near-term instantiation of the wallpaper-layer active-desktop concept already recorded in `future-features.md` — the same idea, without requiring `wlr-layer-shell`/Tauri: XDG autostart plus a hotkey/systray launcher is sufficient.
+Beyond the thesis prototype, the commercial product target is a second mode where the traditional desktop (Debian + XFCE) stays fully visible and usable, and SynapseOS is summoned on demand — a global hotkey (via XFCE's `xfconf` keyboard-shortcut settings) or a systray icon opens a floating conversational window; the user can otherwise operate the desktop manually (drag-and-drop, the file manager, any traditional app) exactly as before. This is a lower-effort near-term instantiation of the wallpaper-layer active-desktop concept already recorded in `notes/future-features.md` — the same idea, without requiring `wlr-layer-shell`/Tauri: XDG autostart plus a hotkey/systray launcher is sufficient.
 
-This does not conflict with D12: D12 describes the *study* substrate (fullscreen takeover, no escape hatch, required for a clean within-subjects comparison); D13 describes the *product* substrate (full coexistence, by design). They are different modes of the same runtime — same Go binary, same Ollama backend, same confirmation gate and execution engine (M2–M8) — the only difference is the shell wrapped around it, matching the existing TUI/GUI "one slot, two sets of clothes" pattern (`layers.md`).
+This does not conflict with D12: D12 describes the *study* substrate (fullscreen takeover, no escape hatch, required for a clean within-subjects comparison); D13 describes the *product* substrate (full coexistence, by design). **Narrowed by D27 (2026-09-12):** with SynapseOS layering over a live desktop in every mode, the distance between the two shrank to whether it fills the screen by default (study) or is summoned into a visible desktop (product). They are different modes of the same runtime — same Go binary, same Ollama backend, same confirmation gate and execution engine (M1–M7) — the only difference is the shell wrapped around it, matching the existing TUI/GUI "one slot, two sets of clothes" pattern (`layers.md`).
 
 **Why coexistence is deferred from the thesis:** allowing the participant to fall back to the traditional GUI during Condition A would confound the within-subjects comparison (D5) — a result could no longer be attributed to the conversational interface specifically. The strict takeover (D12) is what makes the study's causal claim clean; the overlay is what makes the eventual product adoptable. Building both from one runtime lets the study protect its validity while the product still ships the friction-free experience users will actually want.
 
-**On the distro claim — weighing D12/D13 against hardening:** the default session (D12's takeover in the study; D13's overlay in the product) is the identity-defining reason SynapseOS can be called its own distribution — it is what a user actually experiences, and it is genuinely uncommon (no daily-driver OS ships a conversational agent as its primary interaction layer). Hardening (`future-features.md`, Hardening Profiles) is real and worth doing — it mirrors exactly how Ubuntu differentiates from bare Debian — but it is a commodity, credibility-class signal, not an identity-class one: nearly every serious distro hardens its defaults, so hardening alone does not distinguish SynapseOS from the crowd. If forced to choose one item to get right before the "own distro" claim is defensible, it is the agentic session (D12/D13), not the hardening profile.
+**On the distro claim — weighing D12/D13 against hardening:** the default session (D12's takeover in the study; D13's overlay in the product) is the identity-defining reason SynapseOS can be called its own distribution — it is what a user actually experiences, and it is genuinely uncommon (no daily-driver OS ships a conversational agent as its primary interaction layer). Hardening (`notes/future-features.md`, Hardening Profiles) is real and worth doing — it mirrors exactly how Ubuntu differentiates from bare Debian — but it is a commodity, credibility-class signal, not an identity-class one: nearly every serious distro hardens its defaults, so hardening alone does not distinguish SynapseOS from the crowd. If forced to choose one item to get right before the "own distro" claim is defensible, it is the agentic session (D12/D13), not the hardening profile.
 
 **Rejected:** treating the overlay/coexistence model as the thesis design — see D12's rejection of "true coexistence" for the study-validity reasoning. Leading with hardening as the primary "why this is a distro" argument — it is supporting evidence, not the load-bearing claim.
 
@@ -240,9 +249,9 @@ All chapters use IEEE/ACM-style numbered in-text citations `[n]` against a share
 
 ### D17 — Shared master bibliography; number [21] reserved/unused
 
-**Status:** Bookkeeping across the Ch.1/Ch.2/Ch.3 reference lists.
+**Status:** Bookkeeping across the Ch.1/Ch.2/Ch.3 reference lists. **Superseded 2026-09-09 (Session 31):** the vacancy was closed by renumbering, and the bibliography has since grown to `[1]`–`[44]`.
 
-The chapters draw from one shared master bibliography numbered `[1]`–`[25]`; each chapter's reference list contains only the entries that chapter cites. Number `[21]` is currently unassigned and is intentionally left vacant.
+The chapters draw from one shared master bibliography; each chapter's reference list contains only the entries that chapter cites. Number `[21]` was previously left vacant. That was reversed: a deliberately empty slot in a numbered list reads as an error to every reader who notices it and cannot be distinguished from one, so entries `[22]`–`[25]` were renumbered down and the list made contiguous. It has since been extended with the agentic-OS landscape, the comparative-evaluation precedent, and the HCI foundations (D28, D29), and every entry's metadata was verified against its primary record rather than written from memory.
 
 **Why:** Renumbering to close the gap would desync the already-submitted Ch.1 and Ch.3 reference lists — every in-text `[22]`–`[25]` citation would have to shift, across two submitted chapters, for a purely cosmetic gain. Leaving `[21]` reserved preserves numbering stability across chapters at zero risk. Citation integrity is verified per chapter (every cited number is defined and every defined number is cited); `[21]` is simply never cited. If a suitable source surfaces during final compilation it can occupy `[21]` without disturbing any existing number.
 
@@ -254,7 +263,7 @@ The chapters draw from one shared master bibliography numbered `[1]`–`[25]`; e
 
 **Status:** To be reflected in SA3.1 Section 1.2b and Section 1.5, and in the ethics application package's recruitment plan.
 
-Recruitment for the n = 20 sample (10 novice, 10 power user) adds a floor: at least 2 participants must have each of Windows, macOS, and Linux as their primary OS. The remaining 14 participants are unconstrained by OS background.
+Recruitment for the sample adds a floor: at least 2 participants must have each of Windows, macOS, and Linux as their primary OS, with the remainder unconstrained by OS background. **Revised 2026-09-12 (Session 31), following D5's move to n = 40:** the floor scales to 4 per background. A minimum of 2 in a 40-participant sample is close to vacuous — it would admit 36 Windows users and still be satisfied. The binding constraint on this quota is the Linux-primary *novice* cell: a daily Linux user with no command-line familiarity is close to a null set on a university campus, and if it cannot be filled the Linux quota is met from command-line-fluent participants alone, with the resulting imbalance reported rather than concealed.
 
 **Why:** Without a floor, the realized sample could end up all one OS (e.g., 18 Windows / 1 macOS / 1 Linux), leaving the per-OS exploratory subgroup analysis (D15, SA3.1 Section 3.2/3.4) unable to say anything about the underrepresented OS at all. A floor of 2 guarantees every OS background has at least a minimal, non-singleton presence without materially constraining recruitment — macOS users are expected to be the scarcest population reachable through Mapúa University – Makati's general recruitment channels, and 2 is judged achievable without delaying the timeline.
 
@@ -266,9 +275,9 @@ Recruitment for the n = 20 sample (10 novice, 10 power user) adds a floor: at le
 
 **Status:** Refines D11. Reflected in SA3.1 Table 3.2 and the paragraph following it. **Execution model refined by D21** — CLI mode is still a single non-persistent invocation (no session survives between separate `synapse` calls), but a single invocation now runs a bounded multi-step loop internally rather than exactly one command; see D21.
 
-SynapseOS ships three interface modes, not two: **CLI** (one-shot invocation — `synapse "<task>"` translates a single natural-language request into a proposed command and exits; no persistent session), **TUI** (persistent full-screen chat session, D11), and **GUI** (fullscreen conversational takeover, evaluated in the study, D11/D12). CLI mode is not new work — it is the M2 walking skeleton's existing behavior (`prototype/cmd/synapse/main.go`), promoted from a disposable stepping-stone toward M3 to a permanent, separately-named, shipped mode. It targets scripting, automation, and one-off remote invocations over SSH where a persistent interactive session is unnecessary overhead.
+SynapseOS ships three interface modes, not two: **CLI** (one-shot invocation — `synapse "<task>"` translates a single natural-language request into a proposed command and exits; no persistent session), **TUI** (persistent full-screen chat session, D11), and **GUI** (fullscreen conversational takeover, evaluated in the study, D11/D12). CLI mode is not new work — it is the M1 walking skeleton's existing behavior (`prototype/cmd/synapse/main.go`), promoted from a disposable stepping-stone toward M3 to a permanent, separately-named, shipped mode. It targets scripting, automation, and one-off remote invocations over SSH where a persistent interactive session is unnecessary overhead.
 
-**Why:** M2 and M3 are genuinely different interaction shapes — one-shot request/response versus a persistent multi-turn conversation — not two maturity stages of the same feature. Collapsing CLI into "TUI without the chrome" would either force M3 to also support a non-interactive invocation path (extra branching in the TUI's own state machine) or quietly drop the one-shot use case once M3 lands, losing real utility (cron jobs, quick remote commands, shell pipelines) for no benefit. Naming it separately means M2's harness stays a permanent, useful artifact instead of throwaway scaffolding.
+**Why:** CLI mode and TUI mode are genuinely different interaction shapes — one-shot request/response versus a persistent multi-turn conversation — not two maturity stages of the same feature. Collapsing CLI into "TUI without the chrome" would either force M3 to also support a non-interactive invocation path (extra branching in the TUI's own state machine) or quietly drop the one-shot use case once M3 lands, losing real utility (cron jobs, quick remote commands, shell pipelines) for no benefit. Naming it separately means M1's harness stays a permanent, useful artifact instead of throwaway scaffolding.
 
 **Rejected:** Folding CLI into TUI as a single mode with two invocation styles — the interaction shapes are different enough (stateless vs. stateful) that conflating them in the same mode name obscures the actual distinction a user or a script author needs to reason about.
 
@@ -276,7 +285,7 @@ SynapseOS ships three interface modes, not two: **CLI** (one-shot invocation —
 
 ### D20 — GUI-mode fallback to XFCE: participant-accessible, logged, and excluded from primary analysis
 
-**Status:** Amends D12. To be reflected in SA3.1 Table 3.1, Table 3.2, the paragraph following Table 3.2, and Section 3.5 (Threats to Validity).
+**Status:** Amends D12. To be reflected in SA3.1 Table 3.1, Table 3.2, the paragraph following Table 3.2, and Section 3.5 (Threats to Validity). **Simplified by D27 (2026-09-12):** the fallback now returns the participant to a desktop that was running the whole time, rather than recovering a machine whose session had been displaced. The analysis treatment below — logged, task excluded from the primary comparison, invocation rate reported separately — is unchanged, and is the part that protects the study's causal claim.
 
 GUI mode gains a fallback path: a participant can return to the underlying XFCE session — already running invisibly beneath SynapseOS's fullscreen window, per D12 — if SynapseOS becomes unresponsive or they want to stop using it mid-task. Unlike D12's original no-escape-hatch design, this fallback is participant-accessible, not facilitator-only. Every invocation is logged as a discrete telemetry event (participant ID, task ID, timestamp). Any task during which it is invoked is excluded from the primary SynapseOS-condition completion-time and error-rate comparison for that task — scored as "did not complete via SynapseOS" rather than silently counted as a success — and fallback-invocation rate is reported as its own secondary, exploratory metric (how often participants reached for it, and under which task categories).
 
@@ -288,13 +297,13 @@ GUI mode gains a fallback path: a participant can return to the underlying XFCE 
 
 ### D21 — CLI-mode execution model: bounded, gated multi-step loop, not full autonomy
 
-**Status:** Refines D19 (M2). Reflected in SA3.1 Table 3.2, footnote 8, and the paragraph following the table (2026-07-15).
+**Status:** Refines D19 (M1). Reflected in SA3.1 Table 3.2, footnote 8, and the paragraph following the table (2026-07-15).
 
 A single `synapse "<task>"` invocation runs a bounded loop, not exactly one command: propose a command → classify its reversibility → confirm if irreversible → execute → feed the result (stdout, stderr, exit code) back to the model, which then either proposes the next command toward the same task or signals the task is complete. Every proposed command at every step passes through the same classifier and confirmation gate individually — there is no batch approval, and no step is granted trust carried over from a prior step's confirmation. The loop ends when the model signals completion or a fixed hard step cap is reached, whichever comes first; hitting the cap is reported as an explicit "step limit reached" failure, never silently treated as success. The 8-task sample suite stays propose-only and is unaffected.
 
 **Why:** Single-command execution left a real capability gap: some tasks genuinely require multiple distinct actions (e.g., creating destination folders before sorting files into them) or a corrected retry after a failed attempt, neither of which a single proposed command can express. A bounded loop closes that gap without adopting full autonomy, which was considered and rejected below for reasons already established in this project's own literature review, not just an engineering preference.
 
-**Rejected:** Full autonomy — the model deciding step count and task completion unsupervised, with the confirmation gate weakened, removed, or trusted-once-then-bypassed for later steps. Two independent reasons. First, capability: Qwen2.5-Coder-3B already produced a semantically wrong command at single-shot difficulty during live validation (`build-order.md` M2 status — the `dpkg-query`/`grep` mismatch); autonomous multi-step loops additionally require the model to judge its own task completion and avoid drifting from the original intent across turns, a harder capability that degrades faster at small parameter counts, and errors compound across unsupervised steps rather than self-correcting. Second, and more fundamentally for a thesis specifically: full autonomy would recategorize what SynapseOS is being evaluated as. SA2's own literature review (Section 2.9) explicitly distinguishes curated-benchmark evaluation — which "assess[es] the autonomous task completion of agents acting on a user's behalf" — from human-centered evaluation of "the performance of a human working through an interface," and identifies the latter as the underserved gap this study fills. Full autonomy moves SynapseOS toward the former category, undermining the comparison the study is designed to make. NaSh [3] and VoicePilot [5], both already cited as motivating the confirmation gate itself, reach the same conclusion from a safety and usability angle — NaSh because unguarded LLM output "may be unintended or unexplainable," VoicePilot because its own user study with motor-impaired participants derived preview-and-confirm as a design necessity, not an option.
+**Rejected:** Full autonomy — the model deciding step count and task completion unsupervised, with the confirmation gate weakened, removed, or trusted-once-then-bypassed for later steps. Two independent reasons. First, capability: Qwen2.5-Coder-3B already produced a semantically wrong command at single-shot difficulty during live validation (`build-order.md` M1 status — the `dpkg-query`/`grep` mismatch); autonomous multi-step loops additionally require the model to judge its own task completion and avoid drifting from the original intent across turns, a harder capability that degrades faster at small parameter counts, and errors compound across unsupervised steps rather than self-correcting. Second, and more fundamentally for a thesis specifically: full autonomy would recategorize what SynapseOS is being evaluated as. SA2's own literature review (Section 2.9) explicitly distinguishes curated-benchmark evaluation — which "assess[es] the autonomous task completion of agents acting on a user's behalf" — from human-centered evaluation of "the performance of a human working through an interface," and identifies the latter as the underserved gap this study fills. Full autonomy moves SynapseOS toward the former category, undermining the comparison the study is designed to make. NaSh [3] and VoicePilot [5], both already cited as motivating the confirmation gate itself, reach the same conclusion from a safety and usability angle — NaSh because unguarded LLM output "may be unintended or unexplainable," VoicePilot because its own user study with motor-impaired participants derived preview-and-confirm as a design necessity, not an option.
 
 **Also rejected:** Retry-only-on-failure (re-attempt the same failed command with its error appended, but never propose a genuinely different next command). Simpler to implement, but too narrow — it only helps when a single correct command exists and the model merely malformed it, not when a task inherently requires several distinct actions in sequence, which is the more common shape of the capability gap being addressed here.
 
@@ -302,7 +311,7 @@ A single `synapse "<task>"` invocation runs a bounded loop, not exactly one comm
 
 ### D22 — Classifier scope widened beyond filesystem reversibility: fetch/decode-and-execute and recursive permission changes
 
-**Status:** Extends the reversibility classifier described under M2/D19. Reflected in `prototype/internal/classifier/classifier.go` and `prototype/testing-plan.md` Layer 2 (Session 23).
+**Status:** Extends the reversibility classifier described under M1/D19. Reflected in `prototype/internal/classifier/classifier.go` and `prototype/testing-plan.md` Layer 2 (Session 23).
 
 The reversibility classifier's job broadens from "will this destroy local file content with no undo" to also cover two related risk shapes surfaced while building the Layer 2 adversarial corpus (`testing-plan.md`): (1) fetch-and-execute / decode-and-execute — a command that pipes fetched remote content (`curl`/`wget`) or decoded content (`base64 -d`) directly into a shell interpreter (`sh`/`bash`/`zsh`) is now classified Irreversible, and (2) recursive permission/ownership changes (`chmod -R`, `chown -R`) are now classified Irreversible, while a single-file `chmod`/`chown` stays Reversible. A bare `eval` invocation is also now classified Irreversible, since the classifier cannot inspect a dynamically constructed string before it runs.
 
@@ -349,7 +358,7 @@ Each of the four gaps needed a different mechanism, matched to what actually cha
 
 ### D26 — TUI mode drives the same execution loop, rather than reimplementing it
 
-**Status:** Implemented in `prototype/internal/tui` and `cmd/synapse/main.go`'s `tui` subcommand (M3b, Session 28).
+**Status:** Implemented in `prototype/internal/tui` and `cmd/synapse/main.go`'s `tui` subcommand (M5, Session 28).
 
 `runLoop` is synchronous and blocks mid-task to ask a y/n question; bubbletea's `Update` must never block. The natural-looking resolution is to rebuild the propose → classify → confirm → execute cycle as a TUI state machine, with each stage an async `tea.Cmd`. Rejected. TUI mode instead receives the *identical* `runLoop` as an injected `tui.TaskRunner` and drives it on its own goroutine, bridged by two channels: the loop's `io.Writer` output arrives as messages, and its `confirmFn` publishes a confirmation request then blocks until `Update` — having rendered the prompt and taken a keypress — sends the verdict back.
 
@@ -358,3 +367,104 @@ Each of the four gaps needed a different mechanism, matched to what actually cha
 **Rejected:** A TUI-local state machine (idiomatic bubbletea, but duplicates safety-critical logic — the thing `interface-modes.md` explicitly warns against). Moving `runLoop` into an `internal/` package so `tui` could import it directly — a larger refactor touching every existing test call site, for no benefit over injection, and it would couple the UI package to the runtime's dependencies.
 
 **Deliberate consequence, not a bug:** a keystroke arriving *before* a confirmation prompt renders is discarded, where CLI/REPL's line-buffered stdin would have queued it. Kept because the safer reading is the right one — a pre-typed `y` must never approve a destructive command the user hasn't seen described. Pinned by test so it can't be "fixed" back into type-ahead approval.
+
+---
+
+### D27 — SynapseOS is an agentic layer *over* the existing desktop session, not a replacement for it
+
+**Status:** Decided 2026-09-12 (Session 31). Supersedes the framing carried by D19/D20 and by Chapter 1's scope, which described SynapseOS as replacing the desktop shell, session manager, and application launcher.
+
+The product is an agent the user can direct in natural language, running on top of an ordinary XFCE desktop that stays exactly where it is. The user still has their windows, their file manager, their browser. SynapseOS is the layer they talk to when they want the machine to *do* something — the same shape as an agentic coding assistant, generalised from a code repository to the whole machine.
+
+**Why:** the previous framing promised the destruction of a working desktop in exchange for an interface that cannot yet do visual tasks at all. That is a bad trade for a user and an unnecessary one for the research: the thesis question is whether *conversation is a better way to direct a computer*, and that is answerable with the agent layered on rather than substituted in. It also removes an enormous amount of unbuilt scope — session manager, application launcher, desktop shell — none of which was ever the contribution.
+
+**What it changes:** M8 collapses from "build a GUI desktop environment" to "launch the existing TUI fullscreen as an XFCE session, with the participant-accessible fallback already specified." The confirmation gate, the undo journal, and the execution loop are untouched — they were always the substance.
+
+**Rejected:** full session replacement (D19/D20's original reading). It was chosen when the project imagined the interface as the whole environment; once the wedge narrowed to shell-expressible operations (D7), replacing the graphical session meant removing capabilities the system cannot provide substitutes for.
+
+---
+
+### D28 — Linux/XFCE is a methodological necessity, not the contribution
+
+**Status:** Decided 2026-09-12 (Session 31). Supersedes the second of Chapter 1's three research gaps ("no Linux desktop coverage").
+
+The prototype targets Debian 13 with XFCE because an agent layer that observes and acts on a desktop session requires a substrate that permits it. Windows and macOS are proprietary and do not. The platform is where the experiment is *possible*, not what the experiment is *about*.
+
+**Why:** "no one has done this on Linux" is a platform-coverage claim, and platform-coverage claims are the weakest kind of contribution and the fastest to expire — a single shipped product invalidates them, and several already have (see `drift.md`, agentic-OS landscape). Necessity is a permanent argument: it cannot be falsified by someone else shipping a Linux agent, because it was never a novelty claim. It also states the real constraint honestly rather than dressing a limitation as a finding.
+
+**What it changes:** Gap 2 in Chapter 1 becomes a scope-and-feasibility justification rather than a gap. Generalisation to Windows and macOS stays a limitation in §3.5, which is where it belonged.
+
+---
+
+### D29 — The thesis's algorithmic contribution is recoverability analysis of generated shell commands
+
+**Status:** Decided 2026-09-12 (Session 31), in response to adviser feedback that the project has no identified algorithmic contribution. **Revised 2026-09-14** — scope widened from one algorithm to four decision procedures over a shared formal object; see the revision note below. Specification now in `algorithms.md` (moved there 2026-09-13; `safety-model.md` keeps the taxonomy and is the baseline the work must beat).
+
+The problem: *given an arbitrary shell command produced by a language model, decide whether its effects are recoverable, and where they are not, compute the minimal set of pre-images sufficient to restore the prior state.*
+
+**Revision, 2026-09-14 — the formal model is now stated explicitly; the scope is unchanged.**
+
+A second adviser review asked six questions of the proposal: what specific algorithm, what formal model supports it, how it differs from existing command filters, against which baselines, which measurable results would show it is better, and whether any contribution survives if the conversational interface is removed. The last was answered "probably no" for the manuscript as written, and that reading was correct — the proposal introduced this decision's algorithm as a *fourth* research question appended to three HCI ones. D32 records the restructure that answers it.
+
+What this decision gains is one thing only: the **effect semantics** underlying the algorithm — a shell AST mapped to a set of filesystem effects that compose through the operator structure — is now written down as a named formal model in `algorithms.md` rather than left implicit inside the approach. That was a genuine gap, and "what formal model supports it" is a fair question that the entry previously could not answer crisply.
+
+**What this decision does not gain: scope.** The contribution remains the verdict plus the minimal recovery plan, exactly as decided on 2026-09-12.
+
+On 2026-09-14 this entry was briefly revised to widen the contribution to *four* decision procedures over the shared semantics, promoting risk-tiered gating and termination policy out of the rejection list below. That revision was withdrawn the same day. The stated argument — that neither is standalone once an effect set exists to define it over — is not wrong, but it was not what drove the change: four procedures answer "what specific algorithm are you proposing?" more impressively than one, and nothing the project had actually learned overturned the original judgements of "too thin alone" and "not a contribution on its own". Widening a contribution under review pressure, using reasoning assembled after the fact, is the failure this log exists to make visible rather than to hide. The rejections below stand unchanged.
+
+**Rejected, with reasons.** *Pre-execution verification* (does the command do what was asked?) — strong, and supported by reference [27]'s finding that verification is what makes CLI agents outperform GUI agents, but nothing of it is built and its evaluation entangles with model quality. *Failure recovery and reformulation* — a real defect (the loop repeats an identical failing command to the step cap), but with a 3B model it is impossible to separate the algorithm's contribution from the model's ceiling, and a panel will ask. *Context compression*, *risk-tiered gating*, *termination policy* — each too thin to carry a thesis alone; the first two remain available as extensions.
+
+---
+
+### D30 — Generated commands stay visible to the user
+
+**Status:** Decided 2026-09-12 (Session 31). Corrects a claim in Chapter 3's Conceptual Framework.
+
+The paper currently states that "the shell command is an implementation detail invisible to the user." It is not, and it must not be.
+
+**Why:** the confirmation gate is the thesis's central safety claim and RQ2's entire subject. A user cannot meaningfully approve what they cannot see — an invisible-command design degrades the gate to "may I do something?", which is not consent. Visibility is also what makes intent-parsing accuracy observable to the participant, and it matches the reference product class: agentic coding assistants show every command and block on the dangerous ones.
+
+**What it changes:** the sentence comes out of the Conceptual Framework. Nothing in the runtime changes, because the runtime never implemented the claim.
+
+---
+
+### D31 — Results are reported in natural language, not dumped as raw output
+
+**Status:** Decided 2026-09-12 (Session 31). Closes a gap between `vision.md`'s stated product and the prototype's behaviour.
+
+After a command executes, the model turns its output into a sentence that answers what was asked — "there are four files in logs", "the largest is `big.bin` at 200 KB". Raw stdout and the exit code remain available and are still logged verbatim for the study's telemetry; the *reply* is the answer, not the transcript.
+
+**Why:** `vision.md` defines the product as a dialogue and names "why is my laptop slow right now" as a complete instruction — a question expecting an answer. Chapter 3 already claims the user "receives results in natural language." Neither was true: the prototype printed `4` and `exit code: 0`. This is the single largest gap between what the project says it is and what it does, and it is why the interface reads as unresponsive on first contact even when it has executed correctly.
+
+**Scope boundary, deliberate:** this makes the system answer *about the machine and about what it did*. It does not make it a general conversational assistant — the model is never asked to answer from its own knowledge instead of from command output. Capability questions ("what can you do") are answered locally, without invoking the model, for the same reason `context` and `clear` are.
+
+**Amended 2026-09-15 — the local answers described above did not exist until now.** The sentence about capability questions being answered locally described an intention, not the code: no handler was written, so greetings and capability questions fell through to the translation loop. The model, asked to turn "hello" into a shell command, correctly concluded it could not and emitted `UNSUPPORTED` — and the user was told their greeting was a visual task like editing images. Found in live testing, and it is the first thing any user types.
+
+`answerConversational` now handles greetings, capability questions, and thanks locally and deterministically. Matching is exact on normalised input rather than by prefix, because the dangerous direction is swallowing work that opened politely: "hi" is a greeting, "hi, delete the logs" is a task.
+
+**Still out of scope, and now measured rather than asserted:** open-ended conversation ("are you human?", "tell me a joke") still falls through. It now reaches a message that does not claim to know why it failed, which is an improvement, but it is not conversation. Whether to support it is open — `open-problems.md` row 18 — and it interacts with the tool-calling protocol in row 17, where a model that has nothing to call simply replies in prose and the question resolves itself.
+
+---
+
+### D32 — The algorithm becomes RQ1; the two contributions are independent, not subordinate
+
+**Status:** Decided 2026-09-14 (Session 33), after a second adviser review. Supersedes the research-question ordering the manuscript has carried since Session 16.
+
+The recoverability algorithm (D29) becomes **RQ1**, ahead of the three interface questions, and its evaluation moves to §3.1 ahead of the user study. The algorithm and the user study are presented as **two independent contributions of different kinds** — one algorithmic, evaluated against a labelled corpus; one empirical, evaluated through participants — reported separately because they are established separately.
+
+**Why.** The test the reviewer applied was: *if the conversational interface were removed, would a research contribution remain?* For the manuscript as written the answer was no, and that was a fair reading of it rather than a misreading. It was not, however, a fair reading of the project — `algorithms.md` and D29 had already made recoverability analysis a contribution. The paper had simply not caught up with its own documents, which is the failure mode `README.md`'s tier rule exists to prevent: when a chapter and a doc disagree, the doc is right and the chapter is stale by definition.
+
+So this is not a change of research direction. Nothing in `algorithms.md`, `build-order.md`, or the runtime changes because of it. What changes is which claim the prose leads with.
+
+**The scope limit, which is the point of this entry.** An earlier draft of this decision went further: it described the conversational interface as "the application domain and evaluation setting for the algorithm". That was withdrawn. The reviewer's question was whether *a* contribution survives without the interface — answering "yes, RQ1 does" never required subordinating everything else, and the interface is not a setting: it is three of the four research questions, the entire 40-participant study, and the substantial majority of Chapter 3 and the appendices. Demoting it in the prose would have misdescribed the thesis in order to sound more like a computer-science thesis, which is a worse failure than the one being corrected.
+
+It is also not a concession that interaction-model research would be invalid. HCI theses are legitimate and this project's interface work is real. It is a judgement that the CS-department bar is the operative one here, and that the project clears it without giving up anything it wanted, because the analyser genuinely does not depend on the interface: it takes a command as a string, and its evaluation is corpus-based with no participants.
+
+**What changes in the manuscript.**
+
+- RQ order: the recoverability question becomes RQ1; the three interface questions follow as RQ2–RQ4.
+- The abstract names the algorithm as the technical contribution while still opening on the problem the interface addresses.
+- §3.5 (algorithm evaluation) becomes §3.1, ahead of the user-study design, and needs to grow: two pages is not proportionate to a primary contribution, and that thinness is a real outstanding problem rather than a formatting one.
+- The two evaluations are stated as independent: the corpus study answers RQ1 without participants, the user study answers RQ2–RQ4 and waits on IRB.
+
+**Cost, accepted knowingly.** This is the most expensive tier in the repo — re-export, hardcoded TOC page-number re-derivation, ITRD compliance recheck. It is justified only because the idea being rendered was settled in `algorithms.md` first, so the chapters present finished work rather than thinking on the page.
