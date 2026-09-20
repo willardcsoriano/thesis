@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -393,4 +394,14 @@ func TestAnswerConversational(t *testing.T) {
 			}
 		}
 	})
+}
+
+// TestMain turns the effect analysis off for the tests that predate it, so they
+// keep exercising the list classifier they were written against. Tests of the
+// analysis set SYNAPSE_ANALYSIS themselves.
+func TestMain(m *testing.M) {
+	if os.Getenv("SYNAPSE_ANALYSIS") == "" {
+		os.Setenv("SYNAPSE_ANALYSIS", "off")
+	}
+	os.Exit(m.Run())
 }

@@ -47,6 +47,7 @@ import (
 	"time"
 
 	"synapseos/internal/classifier"
+	"synapseos/internal/effects"
 	"synapseos/internal/executor"
 	"synapseos/internal/ollama"
 	"synapseos/internal/session"
@@ -721,8 +722,14 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		wd, _ := os.Getwd()
 
 		verdict, reason := classifier.ClassifyForDir(cmd, wd)
-		if verdict == classifier.Irreversible {
-			fmt.Fprintf(out, "blocked: %s is irreversible — %s\n", cmd, reason)
+		gd := analysisDecision(ctx, cmd, wd)
+		if verdict == classifier.Irreversible || (gd != nil && gd.Confirm) {
+			if verdict == classifier.Irreversible {
+				fmt.Fprintf(out, "blocked: %s is irreversible — %s\n", cmd, reason)
+			} else {
+				reason = firstReason(gd)
+				fmt.Fprintf(out, "blocked: %s needs confirmation — %s\n", cmd, reason)
+			}
 			// Consent has to cover recoverability, not just danger. D30
 			// argues that showing the command is what makes approval
 			// consent; row 19 showed that is not sufficient. A user shown
@@ -731,6 +738,11 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			// only exist at runtime. Saying so before the prompt is the
 			// difference between an informed yes and an uninformed one.
 			unprotected := journalPath != "" && wd != "" && classifier.DeletionTargetsUnresolvable(cmd, wd)
+			if gd != nil && journalPath != "" {
+				// With the analysis on, the warning follows what it could actually
+				// capture, not just the list's guess about run-time targets.
+				unprotected = !gd.Confident || gd.Verdict.Class == effects.Unrecoverable
+			}
 			if unprotected {
 				fmt.Fprintln(out, "  WARNING: this command decides what to delete while it runs, so I cannot")
 				fmt.Fprintln(out, "  copy anything first. undo will NOT be able to bring it back.")
@@ -759,14 +771,25 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		// a single step when the command itself is a chain (e.g. "chmod -R
 		// 755 dir && rm other.txt" triggers both metadata backup and trash).
 		var undoBefore map[string]bool
+		var undoBeforeIDs map[string]undo.FileID
+		var gateEntry *undo.Entry
 		var contentBackups []undo.ContentBackup
 		var trashed []undo.TrashedItem
 		var gitReset string
 		var metadataBackups []undo.MetadataBackup
-		if journalPath != "" && wd != "" {
+		if journalPath != "" && wd != "" && gd != nil && gd.Confident {
+			// The analysis found nothing it could not resolve, so its effect set is
+			// complete and its plan replaces the legacy backups for this step.
+			e, errs := gd.Capture(wd, cmd)
+			for _, err := range errs {
+				fmt.Fprintf(errOut, "warning: could not capture before running: %v\n", err)
+			}
+			gateEntry = &e
+		} else if journalPath != "" && wd != "" {
 			switch verdict {
 			case classifier.Reversible:
 				undoBefore, _ = undo.Snapshot(wd)
+				undoBeforeIDs, _ = undo.SnapshotIDs(wd)
 			case classifier.Irreversible:
 				contentBackups, trashed, gitReset, metadataBackups = backupBeforeIrreversible(ctx, cmd, wd, errOut)
 				// Snapshot regardless. When capture found nothing to copy —
@@ -818,9 +841,18 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		}
 		fmt.Fprintf(out, "exit code: %d\n\n", result.ExitCode)
 
-		if wd != "" && undoBefore != nil && result.ExitCode == 0 {
+		if gateEntry != nil {
+			// Journaled whatever the exit code: the captures were taken before the
+			// command ran, so they can restore even a command that failed partway.
+			if !gateEntry.IsNoop() {
+				if err := undo.AppendJournal(journalPath, *gateEntry); err != nil {
+					fmt.Fprintf(errOut, "warning: could not record undo entry: %v\n", err)
+				}
+			}
+		} else if wd != "" && undoBefore != nil && result.ExitCode == 0 {
 			if after, err := undo.Snapshot(wd); err == nil {
-				if entry := undo.BuildEntry(wd, cmd, undoBefore, after); !entry.IsNoop() {
+				afterIDs, _ := undo.SnapshotIDs(wd)
+				if entry := undo.BuildEntryIDs(wd, cmd, undoBefore, after, undoBeforeIDs, afterIDs); !entry.IsNoop() {
 					if err := undo.AppendJournal(journalPath, entry); err != nil {
 						fmt.Fprintf(errOut, "warning: could not record undo entry: %v\n", err)
 					}
