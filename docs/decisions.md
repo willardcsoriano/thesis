@@ -37,6 +37,8 @@ This file records architectural and research design decisions that have been mad
   - [D29 — The thesis's algorithmic contribution is recoverability analysis of generated shell commands](#d29-the-thesiss-algorithmic-contribution-is-recoverability-analysis-of-generated-shell-commands)
   - [D30 — Generated commands stay visible to the user](#d30-generated-commands-stay-visible-to-the-user)
   - [D31 — Results are reported in natural language, not dumped as raw output](#d31-results-are-reported-in-natural-language-not-dumped-as-raw-output)
+  - [D32 — The algorithm becomes RQ1; the two contributions are independent, not subordinate](#d32-the-algorithm-becomes-rq1-the-two-contributions-are-independent-not-subordinate)
+  - [D33 — File manipulation runs on typed operations; the shell handles the remainder](#d33-file-manipulation-runs-on-typed-operations-the-shell-handles-the-remainder)
 
 ## Decisions
 
@@ -414,6 +416,8 @@ On 2026-09-14 this entry was briefly revised to widen the contribution to *four*
 
 **Rejected, with reasons.** *Pre-execution verification* (does the command do what was asked?) — strong, and supported by reference [27]'s finding that verification is what makes CLI agents outperform GUI agents, but nothing of it is built and its evaluation entangles with model quality. *Failure recovery and reformulation* — a real defect (the loop repeats an identical failing command to the step cap), but with a 3B model it is impossible to separate the algorithm's contribution from the model's ceiling, and a panel will ask. *Context compression*, *risk-tiered gating*, *termination policy* — each too thin to carry a thesis alone; the first two remain available as extensions.
 
+**Narrowed 2026-09-20 — see D34.** The contribution is now composition through wrappers and resolution of run-time targets feeding a minimal capture plan, not verdicts for every command. Everything above stands as the record of how the contribution was first chosen.
+
 ---
 
 ### D30 — Generated commands stay visible to the user
@@ -468,3 +472,77 @@ It is also not a concession that interaction-model research would be invalid. HC
 - The two evaluations are stated as independent: the corpus study answers RQ1 without participants, the user study answers RQ2–RQ4 and waits on IRB.
 
 **Cost, accepted knowingly.** This is the most expensive tier in the repo — re-export, hardcoded TOC page-number re-derivation, ITRD compliance recheck. It is justified only because the idea being rendered was settled in `algorithms.md` first, so the chapters present finished work rather than thinking on the page.
+
+---
+
+### D33 — File manipulation runs on typed operations; the shell handles the remainder
+
+**Status:** Decided 2026-09-20. Resolves the decision half of F6 (`prototype/build-order.md`); the implementation half is still open.
+
+File-manipulation tasks — find, move, delete, rename, copy, the five operations in `internal/typedops` — are dispatched as typed calls. Everything else continues through generated bash under the existing classifier and undo journal. Two tracks, chosen deliberately rather than inherited.
+
+**Why.**
+
+- **The measurement.** F4 put raw bash at 80% call validity and 60% task success on the 3B model, against 100% and 100% for typed operations on the same tasks.
+- **Independent convergence.** Claude Code and Aider both split the work the same way: typed tools for file edits, with recovery attached, and a shell for the remainder, with none (`prior-art.md`, recovery-coverage entry; from published documentation, not source). Adopting a design that shipped tools already converged on is what the adopt-by-default rule (`vision.md`) asks for.
+- **A cleaner scope for the algorithm.** A typed call names its targets on its face, so it needs no static analysis. What is left for D29's algorithm is the shell: chains, redirects, substitution, package and process commands. That is a narrower claim than "one algorithm covers everything", and a more defensible one.
+
+**Rejected.** Staying on raw bash for everything: it leaves the reliability gap F4 measured in place and has no support from what comparable tools do. Adopting MCP wholesale: the protocol assumes a server process, and D8 fixes a single local binary; the pattern transfers without the plumbing, as F4's implementation already showed.
+
+**What this obliges, so that it is not a silent split.**
+
+- Chapter 3 must state plainly that file-manipulation tasks are dispatched through typed operations while the other categories use generated bash. F4's numbers make the headline results better for one category, and reporting them as the system's results without saying so would misdescribe what was measured.
+- The confirmation gate and undo journal must apply to typed calls as they do to bash. That is a requirement on F6's implementation; this entry does not specify how.
+- A1's corpus must be checked against the narrower role: the algorithm's evaluation takes a command as a string and does not depend on how the runtime dispatches, so the corpus stays valid, but it should still contain enough decidable, non-trivial shell commands once file-manipulation shapes are set aside (`prior-art.md`, typed-operations entry, "the honest test").
+
+**Amended 2026-09-20.** D34 narrows the algorithm's claim further. Package, service, and process commands, which the paragraph above lists among what is left for the algorithm, are outside the effect model and always ask; what the algorithm claims is composition through wrappers and target resolution for filesystem effects. The typed-operation decision itself is unchanged and its implementation is still open.
+
+---
+
+### D34 — The algorithm is narrowed to composition and target resolution; the verdict alone is not the contribution
+
+**Status:** Decided 2026-09-20. Narrows D29; supersedes the framing of D29's problem statement ("decide whether the effects of an arbitrary generated command are recoverable") and of `algorithms.md` Entry 1 as originally written.
+
+The recoverability algorithm claims two abilities, and only these:
+
+- **Composition through wrappers.** A generated line is analysed as the commands that actually mutate something, seen through `find -exec`, `xargs`, `for` loops, command and process substitution, pipelines, redirects, `sh -c`, and `sudo` and its relatives, with earlier parts of the line visible to later ones.
+- **Resolution of run-time targets.** Where a target is computed while the command runs (`rm $(ls *.log)`, `find … -delete`, `xargs rm`, `git clean -f`, `tar -x`, `rsync --delete`), the analysis learns the concrete targets by running a form of that command that cannot change anything, so that a capture plan covering exactly those targets can be made before the command runs.
+
+Single named commands with explicit targets stay with the list, which handled them in the pilot. A command the analysis does not model is **unknown, and unknown asks**: it fails closed, and it captures nothing.
+
+**Why.** D29 was chosen in response to adviser feedback, and its premise — that a hand-kept list is structurally inadequate — was argued after the choice, not tested before it. The pilot in `algorithms.md` ("Pilot — is a list already enough?", rounds 1, 2, and 2b) tested it. Its result, stated as the design record states it: a list flipped to fail closed accounts for the whole *verdict* advantage over the current classifier on the pilot data, so the verdict is not the contribution. What a fail-closed list cannot do is protect anything: it asks about everything it does not know and captures nothing, and it cannot tell a rename or a new-file redirect from a deletion, so it asks more often. The effect analysis captured the targets it resolved and asked less. The measured advantage is capture coverage and lower friction, and both trace to the two abilities above. That evidence is a pilot: one annotator, few dangerous commands in the realistic sample, fixtures written after the round-2 results were seen. A held-out round (a fresh sample, labelled and given fixtures before the analyser is run, with the analyser frozen) is the result that would carry weight, and it is pending.
+
+**What changes.**
+
+- **RQ1** is reworded from determining recoverability "more accurately than an enumerated list" to whether composition-aware analysis with target resolution protects more of what a generated command destroys, and asks less often, than a list and than a list flipped to fail closed.
+- **Algorithm 1** gains a RESOLVE step: before a wrapper's targets are declared unresolved, a read-only dry run is attempted, and it is run only if the same analysis proves it read-only. It also gains an overlay of what earlier parts of a line created or removed, and a MovedTo refinement so a rename or move needs no capture (not compression: the harness showed moving compressed bytes back is not an undo).
+- **Primary metrics** become silent loss and capture coverage (the share of recoverable-with-capture commands whose plan actually restores the prior state, verified by executing in a sandbox and diffing). False-negative reporting is kept.
+- **Baselines** become three: the current list (L0), a list flipped to fail closed (L1), and the effect analysis (ALG). Two primary comparisons follow, so the statistics gain a Holm correction.
+- **The corpus** is stratified by command shape as well as by effect kind, and its ground truth is defined relative to a stated filesystem state per command (a fixture). The pilot showed that a state-aware analysis cannot be scored against state-free labels.
+
+**Rejected.**
+
+- *Keeping the broad claim.* The pilot did not support it, and a claim the evidence does not support is the failure D29's own revision note describes.
+- *A language model as the analyser.* It is probabilistic and cannot give the one-sided soundness the design rests on: a wrong "safe" answer loses data. The project's own logs show this model stating confident falsehoods (`open-problems.md` rows 15 and 20).
+- *Hardening the list only.* It cannot resolve run-time targets, so it cannot capture them, and the pilot's largest gap was exactly the deletions the list asks about and then protects nothing for. It also remains the baseline and the fallback, which is where it belongs.
+
+**A required limit, stated wherever the algorithm is described.** The analyser's rule table is itself a list: a per-command table of effects and flags. The claim is what is built on top of it — composition, resolution, and the capture plan — and that unknown commands fail closed where a list fails open. It is not a claim to have eliminated enumeration.
+
+**Still open, in `open-problems.md`.** The default gate policy (ask on every capturable command, or capture silently and ask only when unrecoverable), the ground-truth definition for the corpus, the second annotator, and whether resolution runs when no read-only sandbox is available.
+
+### D35 — The gate is default-on and strict; package and service state is modelled; ground truth is automated; dependencies are hoarded
+
+**Status:** Decided 2026-09-20. Resolves the eight owner decisions (C1–C8) left open by D34.
+
+- **C1, gate policy.** The effect analysis is on by default in *strict* mode (ask unless recoverable with no capture). `SYNAPSE_ANALYSIS=capture` captures silently and asks only when unrecoverable; `off` restores the list alone. The list is still consulted, so the analysis can add a confirmation and never remove one.
+- **C2, ground truth.** State-relative: every corpus item carries its fixture and the analysis is run against that same fixture.
+- **C3, labelling.** No human labellers. Ground truth is produced by executing each command in a bubblewrap sandbox on its fixture and diffing the tree (`internal/oracle`, `cmd/corpusgen`). Commands that do not run cleanly are excluded and counted. Commands whose effect the filesystem cannot show form an external partition, never executed and labelled unrecoverable by construction. The generator shares no code with `internal/effects`.
+- **C4, RQ1 wording.** Accepted as revised in the paper, with the narrowing disclosed to the adviser (D34).
+- **C5, resolution without a sandbox.** Resolution stays on only where bubblewrap works; without it, anything needing resolution asks. Bubblewrap is a stated requirement of the evaluation and study machines.
+- **C6, package and service state.** Not left as a limitation. The analysis asks the system's own tools (`apt-get -s`, `dpkg-query`, `apt-cache policy`, `systemctl is-active` and `is-enabled`) what a command would do and derives an inverse command; the undo journal stores and runs it (`undo.Entry.Inverses`, run after trash and before content restore, with privilege if the original had it, printing the command if it fails). Removing a package whose old version is no longer offered is unrecoverable; purging captures the configuration files as removals. Maintainer scripts and other package managers stay outside the model.
+- **C7, editors and pagers.** Treated as read-only interactive tools, as before.
+- **C8, NL2Bash.** Cited as Lin et al. (LREC 2018), reference [51]; the raw dataset is GPL-3.0 and git-ignored, only sampled commands are kept.
+
+**Dependencies.** The distribution will be a bootable image, so every dependency is named in `distro/manifest.tsv`, checked by `distro/check.sh`, and collected by `distro/hoard.sh` (debs with their closure, Go modules, the Go toolchain, model blobs) into the git-ignored `distro/hoard/`. Existing tools are preferred over new code throughout.
+
+**Process.** Agility over ceremony: `make ci` (format, vet, tests) runs in GitHub Actions; the corpus is generated from a seed and regenerated in seconds of human time. The one piece of rigour kept is validity: a development corpus is used to fix the analysis and a second corpus, from a fresh seed, is run once after the rule table is frozen and is the reported result.

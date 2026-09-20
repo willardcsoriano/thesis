@@ -10,12 +10,9 @@ This is the reference for how SynapseOS decides whether a proposed command runs 
 - [The two independent questions](#the-two-independent-questions)
 - [Taxonomy: every currently classified shape, and its undo path](#taxonomy-every-currently-classified-shape-and-its-undo-path)
 - [So — is everything technically undoable?](#so-is-everything-technically-undoable)
-- [Known gaps (flagged, not yet closed)](#known-gaps-flagged-not-yet-closed)
-- [The algorithmic contribution: recoverability analysis](#the-algorithmic-contribution-recoverability-analysis)
-  - [Problem statement](#problem-statement)
-  - [Why the current design is not the answer](#why-the-current-design-is-not-the-answer)
-  - [Where the algorithmic work actually is](#where-the-algorithmic-work-actually-is)
-  - [Evaluation design](#evaluation-design)
+- [Known gaps and their status](#known-gaps-and-their-status)
+- [The algorithmic contribution](#the-algorithmic-contribution)
+- [The effect analysis, and what it does to this taxonomy](#the-effect-analysis-and-what-it-does-to-this-taxonomy)
 - [Cross-references](#cross-references)
 
 ## The two independent questions
@@ -57,17 +54,28 @@ No, but as of D25 the undoable surface covers every Irreversible shape that has 
 
 A full filesystem journal (every byte of every write, forever) could in principle make even these recoverable — that's a fundamentally different, much heavier architecture (closer to a copy-on-write filesystem or transactional journal than a targeted safety net), and out of scope here by design, matching this package's stated trade of a narrow, auditable mechanism over a general one.
 
-## Known gaps (flagged, not yet closed)
+## Known gaps and their status
 
-**Package and service management is unclassified.** `sudo apt purge nginx`, `sudo apt-get remove --purge git`, `sudo dpkg -r pkg`, and `sudo systemctl stop ssh` all classify **Reversible** and auto-execute with no confirmation. Verified 2026-09-09 by running the classifier directly; there is no rule for `apt`, `apt-get`, `dpkg`, or `systemctl` anywhere in `internal/classifier`. This matters beyond its own severity: "application and package management" is one of the four task categories the user study administers, so a participant will hit it. It is recorded here rather than patched because the patch is the wrong response — see the next section.
+**Package and service management is unclassified by the list, and covered by the effect analysis.** `sudo apt purge nginx`, `sudo apt-get remove --purge git`, `sudo dpkg -r pkg`, and `sudo systemctl stop ssh` all classify **Reversible** and auto-execute with no confirmation. Verified 2026-09-09 by running the classifier directly; there is no rule for `apt`, `apt-get`, `dpkg`, or `systemctl` anywhere in `internal/classifier`. This matters beyond its own severity: "application and package management" is one of the four task categories the user study administers, so a participant will hit it. It was recorded here rather than patched in the list because the patch is the wrong response — see the sections below. With the effect analysis on by default the running system no longer auto-executes these: it models package and service state and can invert the change, described in the last section. The list itself is unchanged and still has no such rule.
 
-The remaining unaddressed Irreversible shapes (`dd`/`mkfs` onto a block device, `shred`, `eval`, process-kill, fetch/decode-exec) are documented above as genuinely out of scope, not deferred.
+The remaining unaddressed Irreversible shapes (`dd`/`mkfs` onto a block device, `shred`, `eval`, process-kill, fetch/decode-exec) are documented above as genuinely out of scope, not deferred. `eval` and process-kill still ask under the analysis; nothing is captured for them.
 
 ## The algorithmic contribution
 
 The recoverability-analysis algorithm (D29) is specified in `algorithms.md`, which owns the design record for everything this project builds rather than adopts. It is not duplicated here: this document owns the *taxonomy* — which command shape currently gets which undo path, and why — which is the reference the algorithm has to subsume, and the baseline it is measured against.
 
-The relationship between the two is worth stating plainly. Everything catalogued above is a hand-maintained list of named command shapes. It is the lower bound in `algorithms.md`'s evaluation, and the package-manager gap recorded in the previous section is the demonstration that the approach has reached its limit.
+The relationship between the two is worth stating plainly. Everything catalogued above is a hand-maintained list of named command shapes. It is the lower bound in `algorithms.md`'s evaluation, and the package-manager gap recorded in the previous section is the demonstration that the approach has reached its limit: closing it in the list would mean another hand-written rule per tool, while the analysis asks the package tools directly.
+
+## The effect analysis, and what it does to this taxonomy
+
+`prototype/internal/effects` is the successor to the pattern list in this document, built under `decisions.md` D29 and narrowed by D34. It derives a command's filesystem effects from its syntax rather than matching its name, sees through wrappers (`find -exec`, `xargs`, loops, substitutions, `sh -c`, `sudo`), resolves targets computed at run time with read-only dry runs (inside a bubblewrap sandbox; without bubblewrap resolution is off and such commands ask), and plans a minimal capture from the mechanisms catalogued above. It is joined to the confirmation gate by `internal/gate` and is **on by default in strict mode**: `SYNAPSE_ANALYSIS=strict|capture|off`, where `off` restores the list classifier alone. It was opt-in until 2026-09-20.
+
+Four consequences for how this document should be read:
+
+- **The list stays the baseline and the fallback, and the gate is a union.** The list is always consulted, and the analysis can add a confirmation and never remove one. It is also the lower bound in the evaluation (`algorithms.md`, "L0").
+- **The package and service gap is closed by modelling, within limits.** `internal/effects/pkgstate.go` asks the system's own tools what a command would do (`apt-get -s`, `dpkg-query`, `apt-cache policy`, `dpkg-deb -f`, `systemctl is-active` and `is-enabled`) and derives an inverse command. Install inverts to purge, or to remove if configuration remains; remove or purge inverts to an install of the exact prior version if a repository still offers it, otherwise it is unrecoverable; upgrade inverts to a downgrade; start and stop, and enable and disable, invert each other; mask inverts to unmask (and enable); `service NAME ACTION` is mapped to `systemctl`. Purge also captures the configuration files it would remove, as removals. `undo.Entry` carries these as `Inverses`, and `undo.Apply` runs them after trash and before content restore, with elevated privilege if the original had it, and prints the command for the user to run if it fails. **Not modelled:** maintainer scripts and service start-up side effects, network mutations, and other package managers (pip, npm, snap and the like). Those stay unrecoverable unless plainly read-only, so they ask. Process, account, and firewall state also stay outside the model and always ask.
+- **The undo mechanisms above are joined by inverse commands.** The analysis chooses among the mechanisms in this taxonomy for filesystem changes, and adds inverse commands for package and service state, where there is no file to capture.
+- **The taxonomy above remains the reference for which capture mechanism fits which change.**
 
 ## Cross-references
 
