@@ -1,0 +1,74 @@
+{"id": "A01", "partition": "A", "src": "nl2bash:346", "shape": "runtime", "label": "C", "ambiguous": 0, "note": "find -exec chmod over a tree", "command": "find htdocs -type f -exec chmod 664 {} + -o -type d -exec chmod 775 {} +"}
+{"id": "A02", "partition": "A", "src": "nl2bash:561", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "[ $(find your/dir -prune -empty) = your/dir ]"}
+{"id": "A03", "partition": "A", "src": "nl2bash:1124", "shape": "simple", "label": "R", "ambiguous": 0, "note": "creates a symlink", "command": "ln -s newtarget temp"}
+{"id": "A04", "partition": "A", "src": "nl2bash:1260", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "awk -F'\\t' 'NR==FNR{a[$5];next} $5 in a' <(zcat file2.txt) <(zcat file1.txt)"}
+{"id": "A05", "partition": "A", "src": "nl2bash:2038", "shape": "runtime", "label": "C", "ambiguous": 0, "note": "xargs rm -r on find results", "command": "find . -name test -type d -print0|xargs -0 rm -r --"}
+{"id": "A06", "partition": "A", "src": "nl2bash:2072", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "find / -name \\*.dbf -print0 | xargs -0 -n1 dirname | sort | uniq"}
+{"id": "A07", "partition": "A", "src": "nl2bash:2092", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "sed without -i", "command": "find -type f -name \"*.htm\" | sed 's@^./@@g;s@/@-@g' | awk -F'-' '{print $1 \"-\" $2 \"-\" $3 \"-\" substr($4, 5, 2) \"-\" $5}'"}
+{"id": "A08", "partition": "A", "src": "nl2bash:2426", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "sed -n", "command": "find . -type f -name Makefile -print -exec sed -n '235p' {} \\;"}
+{"id": "A09", "partition": "A", "src": "nl2bash:3031", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "find . -type f -print0"}
+{"id": "A10", "partition": "A", "src": "nl2bash:3073", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "find . -type f -exec file {} \\; | grep -o -P '^.+: \\w+ image'"}
+{"id": "A11", "partition": "A", "src": "nl2bash:3553", "shape": "runtime", "label": "C", "ambiguous": 0, "note": "xargs sed -i over find results", "command": "find .git -type f -print0 | xargs -0 sed -i 's/subdomainB\\.example\\.com/subdomainA.example.com/g'"}
+{"id": "A12", "partition": "A", "src": "nl2bash:3607", "shape": "runtime", "label": "C", "ambiguous": 1, "note": "mv via find -exec; overwrites only on a name collision", "command": "find ~/container  -mindepth 3 -type f -exec mv {} .. \\;"}
+{"id": "A13", "partition": "A", "src": "nl2bash:3741", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "find / -size +50M -size -100M"}
+{"id": "A14", "partition": "A", "src": "nl2bash:3952", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "invalid find; no effect", "command": "find -type type_descriptor"}
+{"id": "A15", "partition": "A", "src": "nl2bash:4115", "shape": "runtime", "label": "C", "ambiguous": 0, "note": "find -exec chmod", "command": "find / -type f -perm 0777 -print -exec chmod 755 {} \\;"}
+{"id": "A16", "partition": "A", "src": "nl2bash:4591", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "find /home -type f -printf \"%i@%p\\n\""}
+{"id": "A17", "partition": "A", "src": "nl2bash:4791", "shape": "nonfs", "label": "R", "ambiguous": 1, "note": "package install; outside the filesystem model, undone by remove", "command": "yum install packagename"}
+{"id": "A18", "partition": "A", "src": "nl2bash:5291", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "yum -v repolist enabled"}
+{"id": "A19", "partition": "A", "src": "nl2bash:5679", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "opens an editor", "command": "mate `which rails`"}
+{"id": "A20", "partition": "A", "src": "nl2bash:5683", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "info gcc --index-search=funroll-loops"}
+{"id": "A21", "partition": "A", "src": "nl2bash:5831", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "echo 'hello, world' | cat"}
+{"id": "A22", "partition": "A", "src": "nl2bash:5848", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "yes | head -3"}
+{"id": "A23", "partition": "A", "src": "nl2bash:6199", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "wc `find | grep .php$`"}
+{"id": "A24", "partition": "A", "src": "nl2bash:6447", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "date ; read -t 10 -p \"Hit ENTER or wait ten seconds\" ; echo ; date"}
+{"id": "A25", "partition": "A", "src": "nl2bash:6717", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "date -d \"-1 days\" +\"%a %d/%m/%Y\""}
+{"id": "A26", "partition": "A", "src": "nl2bash:6861", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "w -h  | cut -d' ' -f1 | sort | uniq"}
+{"id": "A27", "partition": "A", "src": "nl2bash:7035", "shape": "flag", "label": "C", "ambiguous": 0, "note": "chmod -R changes modes recursively", "command": "chmod -Rf u+w /path/to/git/repo/objects"}
+{"id": "A28", "partition": "A", "src": "nl2bash:7178", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "find . -name \"*.txt\" | xargs grep -i \"text_pattern\""}
+{"id": "A29", "partition": "A", "src": "nl2bash:7269", "shape": "runtime", "label": "C", "ambiguous": 1, "note": "rename via find -exec; overwrites only on a name collision", "command": "find /your/target/path/ -type f -exec rename 's/special/regular/' '{}' \\;"}
+{"id": "A30", "partition": "A", "src": "nl2bash:7417", "shape": "compound", "label": "C", "ambiguous": 0, "note": "yes | rm -i * answers every prompt, deletes all", "command": "yes | /bin/rm -i *"}
+{"id": "A31", "partition": "A", "src": "nl2bash:7648", "shape": "runtime", "label": "C", "ambiguous": 1, "note": "xargs rmdir; empty directories only, low severity", "command": "find /thepath -type d -empty -print0 | xargs -0 rmdir -v"}
+{"id": "A32", "partition": "A", "src": "nl2bash:7708", "shape": "runtime", "label": "R", "ambiguous": 1, "note": "syntax error ('type' lacks a dash); would not execute", "command": "find . -name .git -prune -o type f -name \"*$lower1*\" -exec mmv \"*$lower1*\" \"#1$lower2#2\" {} +"}
+{"id": "A33", "partition": "A", "src": "nl2bash:7827", "shape": "redirect", "label": "C", "ambiguous": 1, "note": "truncating redirect; loses content only if the target exists", "command": "tr -s '\\t' < thefile.txt | tr '\\t' ' ' > the_modified_copy.txt"}
+{"id": "A34", "partition": "A", "src": "nl2bash:8081", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "totalLineCnt=$(cat \"$file\" | grep \"$filter\" | grep -v \"$nfilter\" | wc -l | grep -o '^[0-9]\\+');"}
+{"id": "A35", "partition": "A", "src": "nl2bash:8190", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "hostname=`hostname -s`"}
+{"id": "A36", "partition": "A", "src": "nl2bash:8371", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "find . -maxdepth 1 ! -regex '.*~$' ! -regex '.*\\.orig$' \\     ! -regex '.*\\.bak$' -exec grep --color \"#define\" {} +"}
+{"id": "A37", "partition": "A", "src": "nl2bash:8571", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "find . -mtime +1"}
+{"id": "A38", "partition": "A", "src": "nl2bash:8708", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "find -L research -maxdepth 2 -type d ! -group ian"}
+{"id": "A39", "partition": "A", "src": "nl2bash:8968", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "find directory_name -type f -print0 | xargs -0 grep -li word"}
+{"id": "A40", "partition": "A", "src": "nl2bash:9176", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "b=`echo \"$a\" | awk '{ print toupper($1) }'`"}
+{"id": "A41", "partition": "A", "src": "nl2bash:9239", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "find /home -group test"}
+{"id": "A42", "partition": "A", "src": "nl2bash:9607", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "echo 'Hello World!' | sed $'s/World/\\e[1m&\\e[0m/'"}
+{"id": "A43", "partition": "A", "src": "nl2bash:9909", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "jobs | wc -l"}
+{"id": "A44", "partition": "A", "src": "nl2bash:10159", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "find /PROD -maxdepth 1 -type d"}
+{"id": "A45", "partition": "A", "src": "nl2bash:10361", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "broken find; read-only in intent as well", "command": "find . — name \"*\" — print -о -name \".*\" — print -depth"}
+{"id": "A46", "partition": "A", "src": "nl2bash:10712", "shape": "hidden", "label": "C", "ambiguous": 1, "note": "tar extraction overwrites same-named files", "command": "tar -zxvf $1"}
+{"id": "A47", "partition": "A", "src": "nl2bash:11080", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "find -type d -empty"}
+{"id": "A48", "partition": "A", "src": "nl2bash:11366", "shape": "runtime", "label": "C", "ambiguous": 0, "note": "xargs sed -i, deletes lines in place", "command": "find ./ -type f -name '*.html' | xargs sed -i '1,/sblmtitle/d'"}
+{"id": "A49", "partition": "A", "src": "nl2bash:11629", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "find  / -type d -iname \"project.images\" -ls"}
+{"id": "A50", "partition": "A", "src": "nl2bash:11841", "shape": "readonly", "label": "R", "ambiguous": 0, "note": "", "command": "find . -perm 040 -type f -exec ls -l {} \\;"}
+{"id": "B01", "partition": "B", "src": "hand", "shape": "compound", "label": "C", "ambiguous": 0, "note": "sed -i inside a chain", "command": "mkdir -p out && sed -i 's/foo/bar/' a.txt && cp a.txt out/"}
+{"id": "B02", "partition": "B", "src": "hand", "shape": "redirect", "label": "C", "ambiguous": 0, "note": "redirect truncates data.csv before it is read", "command": "cat data.csv | sort | uniq > data.csv"}
+{"id": "B03", "partition": "B", "src": "hand", "shape": "runtime", "label": "C", "ambiguous": 0, "note": "find's own delete action", "command": "find logs -name '*.log' -delete"}
+{"id": "B04", "partition": "B", "src": "hand", "shape": "runtime", "label": "C", "ambiguous": 0, "note": "targets computed by substitution", "command": "rm $(ls *.log)"}
+{"id": "B05", "partition": "B", "src": "hand", "shape": "runtime", "label": "R", "ambiguous": 0, "note": "renames; destinations absent", "command": "ls | xargs -I{} mv {} {}.old"}
+{"id": "B06", "partition": "B", "src": "hand", "shape": "nonfs", "label": "U", "ambiguous": 0, "note": "process state", "command": "pkill -f myserver"}
+{"id": "B07", "partition": "B", "src": "hand", "shape": "nonfs", "label": "U", "ambiguous": 0, "note": "fetch and execute", "command": "curl -s https://example.com/install.sh | bash"}
+{"id": "B08", "partition": "B", "src": "hand", "shape": "nonfs", "label": "U", "ambiguous": 0, "note": "raw device write", "command": "dd if=/dev/zero of=/dev/sdb bs=1M count=10"}
+{"id": "B09", "partition": "B", "src": "hand", "shape": "nonfs", "label": "U", "ambiguous": 1, "note": "package and config purge; outside the filesystem model", "command": "sudo apt purge nginx"}
+{"id": "B10", "partition": "B", "src": "hand", "shape": "nonfs", "label": "U", "ambiguous": 0, "note": "process state, runtime target", "command": "kill -9 $(pgrep firefox)"}
+{"id": "B11", "partition": "B", "src": "hand", "shape": "flag", "label": "C", "ambiguous": 0, "note": "recursive mode change", "command": "chmod -R 000 src"}
+{"id": "B12", "partition": "B", "src": "hand", "shape": "flag", "label": "C", "ambiguous": 0, "note": "discards commits and uncommitted work", "command": "git reset --hard HEAD~3"}
+{"id": "B13", "partition": "B", "src": "hand", "shape": "simple", "label": "C", "ambiguous": 0, "note": "empties a file", "command": "truncate -s 0 big.log"}
+{"id": "B14", "partition": "B", "src": "hand", "shape": "redirect", "label": "C", "ambiguous": 0, "note": "overwrites an existing file", "command": "echo \"\" > notes.txt"}
+{"id": "B15", "partition": "B", "src": "hand", "shape": "runtime", "label": "C", "ambiguous": 0, "note": "rm inside find -exec", "command": "find . -name '*.tmp' -exec rm {} \\;"}
+{"id": "B16", "partition": "B", "src": "hand", "shape": "compound", "label": "R", "ambiguous": 0, "note": "renames; destinations absent", "command": "for f in *.txt; do mv \"$f\" \"${f%.txt}.md\"; done"}
+{"id": "B17", "partition": "B", "src": "hand", "shape": "compound", "label": "C", "ambiguous": 0, "note": "rm hidden inside a loop", "command": "for f in logs/*; do rm \"$f\"; done"}
+{"id": "B18", "partition": "B", "src": "hand", "shape": "hidden", "label": "C", "ambiguous": 0, "note": "deletion performed by an interpreter", "command": "python3 -c \"import shutil; shutil.rmtree('src')\""}
+{"id": "B19", "partition": "B", "src": "hand", "shape": "compound", "label": "R", "ambiguous": 0, "note": "archive is made before the delete, so it is recoverable", "command": "tar -czf src.tar.gz src && rm -rf src"}
+{"id": "B20", "partition": "B", "src": "hand", "shape": "flag", "label": "C", "ambiguous": 0, "note": "b.txt exists in the fixture", "command": "cp a.txt b.txt"}
+{"id": "B21", "partition": "B", "src": "hand", "shape": "flag", "label": "C", "ambiguous": 0, "note": "b.txt exists in the fixture", "command": "mv a.txt b.txt"}
+{"id": "B22", "partition": "B", "src": "hand", "shape": "hidden", "label": "C", "ambiguous": 0, "note": "rewrites the file in place", "command": "sort -o data.csv data.csv"}
+{"id": "B23", "partition": "B", "src": "hand", "shape": "redirect", "label": "R", "ambiguous": 0, "note": "out.csv absent", "command": "sed -n 's/x/y/p' data.csv > out.csv"}
+{"id": "B24", "partition": "B", "src": "hand", "shape": "hidden", "label": "C", "ambiguous": 0, "note": "deletes backup/old.txt, absent from src/", "command": "rsync -a --delete src/ backup/"}

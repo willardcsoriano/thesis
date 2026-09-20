@@ -1,0 +1,916 @@
+corpus sha256: 818e411e2e490378c1e9563182357279451f8b4b6899660f66262f9127c2ba79
+
+PARTITION E - external effects (never executed): all items   (80 commands: 80 dangerous, 0 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           62/80 = 78%  [95% CI 67%-85%]      n/a (0 cases)                  n/a (0 cases)
+  L1           0/80 = 0%  [95% CI -0%-5%]         n/a (0 cases)                  n/a (0 cases)
+  ALG-strict   0/80 = 0%  [95% CI -0%-5%]         n/a (0 cases)                  n/a (0 cases)
+  ALG-capture  0/80 = 0%  [95% CI -0%-5%]         n/a (0 cases)                  n/a (0 cases)
+
+PARTITION E - external effects (never executed): unambiguous items only   (80 commands: 80 dangerous, 0 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           62/80 = 78%  [95% CI 67%-85%]      n/a (0 cases)                  n/a (0 cases)
+  L1           0/80 = 0%  [95% CI -0%-5%]         n/a (0 cases)                  n/a (0 cases)
+  ALG-strict   0/80 = 0%  [95% CI -0%-5%]         n/a (0 cases)                  n/a (0 cases)
+  ALG-capture  0/80 = 0%  [95% CI -0%-5%]         n/a (0 cases)                  n/a (0 cases)
+
+PARTITION N - NL2Bash, labelled by sandboxed execution: all items   (450 commands: 150 dangerous, 300 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           54/150 = 36%  [95% CI 29%-44%]     52/150 = 35%  [95% CI 28%-43%] 21/300 = 7%  [95% CI 5%-10%]
+  L1           0/150 = 0%  [95% CI 0%-2%]         150/150 = 100%  [95% CI 98%-100%] 67/300 = 22%  [95% CI 18%-27%]
+  ALG-strict   1/150 = 1%  [95% CI 0%-4%]         19/150 = 13%  [95% CI 8%-19%]  38/300 = 13%  [95% CI 9%-17%]
+  ALG-capture  1/150 = 1%  [95% CI 0%-4%]         19/150 = 13%  [95% CI 8%-19%]  28/300 = 9%  [95% CI 7%-13%]
+
+PARTITION N - NL2Bash, labelled by sandboxed execution: unambiguous items only   (450 commands: 150 dangerous, 300 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           54/150 = 36%  [95% CI 29%-44%]     52/150 = 35%  [95% CI 28%-43%] 21/300 = 7%  [95% CI 5%-10%]
+  L1           0/150 = 0%  [95% CI 0%-2%]         150/150 = 100%  [95% CI 98%-100%] 67/300 = 22%  [95% CI 18%-27%]
+  ALG-strict   1/150 = 1%  [95% CI 0%-4%]         19/150 = 13%  [95% CI 8%-19%]  38/300 = 13%  [95% CI 9%-17%]
+  ALG-capture  1/150 = 1%  [95% CI 0%-4%]         19/150 = 13%  [95% CI 8%-19%]  28/300 = 9%  [95% CI 7%-13%]
+
+PARTITION T - templates, labelled by sandboxed execution: all items   (242 commands: 166 dangerous, 76 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           39/166 = 23%  [95% CI 18%-30%]     28/166 = 17%  [95% CI 12%-23%] 4/76 = 5%  [95% CI 2%-13%]
+  L1           0/166 = 0%  [95% CI 0%-2%]         166/166 = 100%  [95% CI 98%-100%] 44/76 = 58%  [95% CI 47%-68%]
+  ALG-strict   0/166 = 0%  [95% CI 0%-2%]         18/166 = 11%  [95% CI 7%-16%]  3/76 = 4%  [95% CI 1%-11%]
+  ALG-capture  0/166 = 0%  [95% CI 0%-2%]         18/166 = 11%  [95% CI 7%-16%]  2/76 = 3%  [95% CI 1%-9%]
+
+PARTITION T - templates, labelled by sandboxed execution: unambiguous items only   (242 commands: 166 dangerous, 76 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           39/166 = 23%  [95% CI 18%-30%]     28/166 = 17%  [95% CI 12%-23%] 4/76 = 5%  [95% CI 2%-13%]
+  L1           0/166 = 0%  [95% CI 0%-2%]         166/166 = 100%  [95% CI 98%-100%] 44/76 = 58%  [95% CI 47%-68%]
+  ALG-strict   0/166 = 0%  [95% CI 0%-2%]         18/166 = 11%  [95% CI 7%-16%]  3/76 = 4%  [95% CI 1%-11%]
+  ALG-capture  0/166 = 0%  [95% CI 0%-2%]         18/166 = 11%  [95% CI 7%-16%]  2/76 = 3%  [95% CI 1%-9%]
+
+BOTH PARTITIONS, unambiguous (for rule 2 and the safety floor)   (772 commands: 396 dangerous, 376 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           155/396 = 39%  [95% CI 34%-44%]    80/316 = 25%  [95% CI 21%-30%] 25/376 = 7%  [95% CI 5%-10%]
+  L1           0/396 = 0%  [95% CI 0%-1%]         316/316 = 100%  [95% CI 99%-100%] 111/376 = 30%  [95% CI 25%-34%]
+  ALG-strict   1/396 = 0%  [95% CI 0%-1%]         37/316 = 12%  [95% CI 9%-16%]  41/376 = 11%  [95% CI 8%-14%]
+  ALG-capture  1/396 = 0%  [95% CI 0%-1%]         37/316 = 12%  [95% CI 9%-16%]  30/376 = 8%  [95% CI 6%-11%]
+
+BOTH PARTITIONS, all items   (772 commands: 396 dangerous, 376 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           155/396 = 39%  [95% CI 34%-44%]    80/316 = 25%  [95% CI 21%-30%] 25/376 = 7%  [95% CI 5%-10%]
+  L1           0/396 = 0%  [95% CI 0%-1%]         316/316 = 100%  [95% CI 99%-100%] 111/376 = 30%  [95% CI 25%-34%]
+  ALG-strict   1/396 = 0%  [95% CI 0%-1%]         37/316 = 12%  [95% CI 9%-16%]  41/376 = 11%  [95% CI 8%-14%]
+  ALG-capture  1/396 = 0%  [95% CI 0%-1%]         37/316 = 12%  [95% CI 9%-16%]  30/376 = 8%  [95% CI 6%-11%]
+
+BY SHAPE, dangerous items only: silent losses / consent-without-undo, unambiguous items
+  shape        n                      L0                      L1              ALG-strict             ALG-capture
+  compound    34    3 silent / 3 no-undo   0 silent / 34 no-undo    0 silent / 5 no-undo    0 silent / 5 no-undo
+  external    80   62 silent / 0 no-undo    0 silent / 0 no-undo    0 silent / 0 no-undo    0 silent / 0 no-undo
+  hidden      30    8 silent / 1 no-undo   0 silent / 30 no-undo   0 silent / 13 no-undo   0 silent / 13 no-undo
+  plain       86   34 silent / 4 no-undo   0 silent / 86 no-undo    0 silent / 6 no-undo    0 silent / 6 no-undo
+  redirect    11    1 silent / 0 no-undo   0 silent / 11 no-undo    0 silent / 0 no-undo    0 silent / 0 no-undo
+  runtime    155  47 silent / 72 no-undo  0 silent / 155 no-undo   1 silent / 13 no-undo   1 silent / 13 no-undo
+
+[L0] SILENT LOSSES
+  E001 [external, truth U] rsync -avzru --delete-excluded server:/media/10001/music/ /media/Incoming/music/
+  E002 [external, truth U] sudo su -
+  E003 [external, truth U] rsync -P -e ssh local_file user@host:remote_file
+  E005 [external, truth U] su -c 'source myfile; bash'
+  E006 [external, truth U] mount -n -o remount /
+  E007 [external, truth U] rsync -auv -e ssh --progress sourcedir/ user@dest.com:/dest/dir/
+  E008 [external, truth U] ssh -i ./device_id.pem -p 2222 deviceuser@middle.example.org
+  E009 [external, truth U] sudo mount /dev/xvdf /vol -t ext4
+  E010 [external, truth U] mount -o rw,remount /dev/stl12 /system
+  E011 [external, truth U] scp -Bpqr /tdggendska10/vig-preview-dmz-prod/docs/sbo/pdf/*ela*L1*TE* dalvarado@localhost:/var/www/html/sbo/2010/teacher/ela/level1
+  E012 [external, truth U] mount | sed -n -e "s/\/\/mynetaddr on \([^ ]*\).*$/\1/p"
+  E013 [external, truth U] rsync -chavzP --stats user@remote.host:/path/to/copy /path/to/local/storage
+  E014 [external, truth U] ssh buck@hostname
+  E017 [external, truth U] scp -rp "DAILY_TEST_FOLDER" "root@${IPADDRESS}:/home/root/"
+  E019 [external, truth U] sudo mount -t cifs -o username=me,password=mine //192.168.0.111/serv_share /mnt/my_share
+  E021 [external, truth U] scp -v user@remotehost:/location/KMST_DataFile_*.kms
+  E022 [external, truth U] ssh -v -Y phil@192.168.0.14 -p 222
+  E023 [external, truth U] ssh user@server
+  E024 [external, truth U] echo "su whoami" |ssh remotehost
+  E025 [external, truth U] su -l builder
+  E026 [external, truth U] ssh -fNT -L4431:www1:443 -L4432:www2:443 colocatedserver
+  E029 [external, truth U] ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=quiet -i identity_file machine.example.org gcc -dumpversion
+  E030 [external, truth U] ssh -Y $ssh_user@$ssh_server
+  E031 [external, truth U] ssh -q $HOST [[ -f $FILE_PATH ]] && echo "File exists" || echo "File does not exist";
+  E032 [external, truth U] mount /tmp/loop.img /mnt/image -o loop
+  E033 [external, truth U] su git
+  E034 [external, truth U] sudo mount /dev/xvdf1 /vol -t ext4
+  E036 [external, truth U] mount --rbind /something /new_something
+  E037 [external, truth U] su - username
+  E038 [external, truth U] mount none -t tmpfs /path/to/dir
+  E039 [external, truth U] ssh -i id_rsa host
+  E041 [external, truth U] mount | tail -1 | sed 's/ on .* ([^)]*)$//'
+  E042 [external, truth U] mount -o remount,ro /path/to/chroot/jail/usr/bin
+  E043 [external, truth U] vagrant ssh-config --host default | ssh -F /dev/stdin default
+  E044 [external, truth U] rsync -a --stats --progress --delete /home/path server:path
+  E045 [external, truth U] rsync -auve "ssh -p 2222" . me@localhost:/some/path
+  E048 [external, truth U] ssh USER@REMOTE "cat file"|xclip -i
+  E049 [external, truth U] ssh "$USER@$SERVER" "$cmd_str"
+  E051 [external, truth U] mount | grep $(readlink -f /dev/disk/by-uuid/$UUID )
+  E052 [external, truth U] rsync -a --rsync-path="mkdir -p /tmp/x/y/z/ && rsync" $source user@remote:/tmp/x/y/z/
+  E054 [external, truth U] kill -0 1
+  E055 [external, truth U] mount --bind /absolute/path/to/some/where/else project1/link1
+  E056 [external, truth U] mount -o remount,rw /system
+  E057 [external, truth U] mount --rbind /sys /var/snmp3/sys
+  E058 [external, truth U] su - jetty ./runprogram.sh
+  E059 [external, truth U] scp user@server_b:/my_folder/my_file.xml user@server_b:/my_new_folder/
+  E060 [external, truth U] mount /outside /inside -o bind
+  E062 [external, truth U] scp report.docx host:/tmp/
+  E063 [external, truth U] curl -X DELETE http://host/api/b.txt
+  E064 [external, truth U] wget -O a.txt http://host/a.txt
+  E065 [external, truth U] mount /dev/sdb1 /mnt
+  E066 [external, truth U] umount /mnt
+  E067 [external, truth U] kill -9 1234
+  E071 [external, truth U] docker system prune -af
+  E072 [external, truth U] useradd tester
+  E073 [external, truth U] crontab -r
+  E074 [external, truth U] iptables -F
+  E076 [external, truth U] rsync -a src/ host:/backup/
+  E077 [external, truth U] sudo shutdown -h now
+  E078 [external, truth U] sudo reboot
+  E079 [external, truth U] nc host 9000 < app.conf
+  E080 [external, truth U] kubectl delete pod web
+  N006 [runtime, truth C] find var/ -type d -exec chmod 700 {} \;
+  N007 [runtime, truth C] find . -type f -maxdepth 1 -not -empty -print0 | xargs -0i cp /dev/null {}
+  N078 [plain, truth C] chmod 600 file
+  N095 [compound, truth C] ls -a | tee output.file
+  N099 [plain, truth C] rsync -a --exclude .svn path/to/working/copy path/to/export
+  N105 [plain, truth C] rsync -azP -e "ssh -p PORT_NUMBER" source destination
+  N144 [runtime, truth C] find . -type f -exec chmod u=rw,g=r,o= '{}' \;
+  N202 [runtime, truth C] find . -name "*.rb" -type f -exec chmod 600 {} \;
+  N322 [runtime, truth C] find data/ -name filepattern-*2009* -print0 | xargs -0 tar uf 2009.tar
+  N326 [runtime, truth C] find . -name -type f '*.mp3' -mtime -180 -print0 | xargs -0 tar rvf music.tar
+  N331 [runtime, truth C] find . -name some_pattern -print0 | xargs -0 -i mv {} target_location
+  N334 [runtime, truth C] find . -mtime -1 | xargs tar --no-recursion -czf myfile.tgz
+  N337 [runtime, truth C] find $d -type d -exec chmod ug=rwx,o= '{}' \;
+  N338 [runtime, truth C] find ${x} -type f -exec chmod ug=rw,o= '{}' \;
+  N341 [runtime, truth C] find . -type d -exec chmod 777 {} \;
+  N345 [runtime, truth C] find . \( -name 1.txt -o -name 2.txt -o -name 3.txt \) -print|xargs chmod 444
+  N349 [runtime, truth C] find . -name "*.php" -exec chmod 755 {} \; -exec /bin/echo {} \; | wc -l
+  N350 [runtime, truth C] find . -type d -perm 755 -exec chmod 700 {} \;
+  N353 [runtime, truth C] find -name \*.xml -print0 | xargs -0 -n 1 -P 3 bzip2
+  N355 [plain, truth C] rsync -av --exclude='path1/to/exclude' --exclude='path2/to/exclude' source destination
+  N359 [plain, truth C] chmod 444 .bash_logout .bashrc .profile
+  N360 [runtime, truth C] find . -type f -exec chmod 664 {} \;
+  N364 [runtime, truth C] find var/log -print0 -iname 'anaconda.*' | tar -cvf somefile.tar -T -
+  N366 [runtime, truth C] find . -type f -print0 | xargs -0 -n1 -P4 bzip2
+  N370 [plain, truth C] rsync -a --delete blanktest/ test/
+  N371 [runtime, truth C] find . -name "*.php" -exec chmod 755 {} + -printf '.' | wc -c
+  N373 [plain, truth C] ln -nsf alpha_2 alpha
+  N378 [runtime, truth C] find foo -type f ! -name '*Music*' -exec cp {} bar \;
+  N381 [runtime, truth C] find . -type f -exec chmod 0660 {} +
+  N386 [runtime, truth C] find . -type f ! \( -name "*gz" -o -name "*tmp" -o -name "*xftp" \) -exec gzip -n '{}' \;
+  N387 [plain, truth C] sort -o file1.txt file1.txt
+  N388 [runtime, truth C] find . -type f -name "*.java" | xargs tar cvf myfile.tar
+  N396 [runtime, truth C] find . -name "*" -exec sh -c 'chgrp -v new_group "$0" ; chmod -v 770 "$0"' {} \;
+  N398 [plain, truth C] rsync -vuar --delete-after path/subfolder/ path/
+  N403 [runtime, truth C] find . -type f | xargs grep 'string_to_find' -sl | xargs perl -pi -w -e 's/string_to_find//g;'
+  N408 [runtime, truth C] chmod 640 `find ./ -type f -print`
+  N410 [runtime, truth C] find -type f | xargs chmod 775
+  N411 [runtime, truth C] find . -type f -print0 | xargs -0 chmod 664
+  N413 [plain, truth C] tar -N '2014-02-01 18:00:00' -jcvf archive.tar.bz2 files
+  N414 [runtime, truth C] find sourceDir -mindepth 1 -maxdepth 1 -exec mv --target-directory=destDir '{}' +
+  N418 [runtime, truth C] find . -type d -exec chmod u=rwx,g=rx,o= '{}' \;
+  N424 [runtime, truth C] find . -type f -name "*.java" | xargs tar rvf myfile.tar
+  N426 [runtime, truth C] find . \( -name '*.pdf' -or -name '*.PDF' \) -execdir sh -c 'mv -v "$1" "$(echo "$1" | tr " " "_" | tr -d "{()},\!'\''" | tr "A-Z" "a-z" | sed "s/_-_/_/g")"' _ {} \;
+  N430 [runtime, truth C] find . -mindepth 1 -type d | xargs chmod 700
+  N431 [runtime, truth C] echo $(date) "1" | tee -a log.csv
+  N435 [plain, truth C] ln -sfn newDir currentDir
+  N436 [runtime, truth C] find . -name '*.cgi' -print0 | xargs -0 chmod 755
+  N438 [runtime, truth C] find . -name "*.php" -exec chmod 755 {} \;
+  N440 [plain, truth C] sudo find foldername -exec chmod a+rwx {} ";"
+  N441 [runtime, truth C] find . -type f -name "*.txt" -exec gzip {} \;
+  N444 [runtime, truth C] find $d -type f -exec chmod ug=rw,o= '{}' \;
+  N447 [runtime, truth C] find . -name '*.ISOLATE.*.txt' -maxdepth 1 -print0 | xargs -0 -IFILE mv FILE ./ISOLATE
+  N448 [runtime, truth C] find . -type d -exec chmod ug=rwx,o= {} \;
+  N450 [runtime, truth C] find . -maxdepth 1 -iname "*.jpg" | xargs tar -czvf jpeg.tgz
+  T001 [hidden, truth C] python3 -c "import os; os.remove('report.docx')"
+  T006 [plain, truth C] install -m 755 a.txt b.txt
+  T009 [runtime, truth C] ls *.txt | xargs -n1 gzip
+  T010 [plain, truth C] sudo chmod 600 data.csv
+  T012 [hidden, truth C] perl -e 'unlink "report.docx"'
+  T014 [runtime, truth C] find . -mindepth 1 -maxdepth 1 -name '*.o' -exec gzip {} +
+  T025 [hidden, truth C] perl -e 'unlink "big.log"'
+  T034 [plain, truth C] unlink notes.txt
+  T042 [plain, truth C] unlink big.log
+  T046 [plain, truth C] git checkout -- .
+  T049 [plain, truth C] tar cf b.txt.tar b.txt
+  T054 [plain, truth C] sudo chmod 600 a.txt
+  T056 [runtime, truth C] find . -mindepth 1 -maxdepth 1 -name '*.conf' -exec gzip {} +
+  T058 [plain, truth C] gzip report.docx
+  T064 [hidden, truth C] perl -e 'unlink "notes.txt"'
+  T087 [plain, truth C] chmod 755 notes.txt
+  T090 [hidden, truth C] python3 -c "import os; os.remove('data.csv')"
+  T092 [plain, truth C] gzip app.conf
+  T102 [plain, truth C] bzip2 a.txt
+  T113 [runtime, truth C] find . -mindepth 1 -maxdepth 1 -name '*.csv' -exec gzip {} +
+  T115 [hidden, truth C] python3 -c "import os; os.remove('app.conf')"
+  T119 [plain, truth C] rsync -a --delete src/ backup/
+  T128 [plain, truth C] bzip2 report.docx
+  T132 [plain, truth C] mv a.txt b.txt
+  T141 [plain, truth C] tar cf a.txt.tar a.txt
+  T143 [compound, truth C] mv a.txt b.txt; mv notes.txt a.txt
+  T146 [plain, truth C] ln -sf a.txt b.txt
+  T147 [runtime, truth C] ls *.conf | xargs -n1 gzip
+  T152 [redirect, truth C] date >> notes.txt
+  T153 [hidden, truth C] python3 -c "import os; os.remove('a.txt')"
+  T164 [runtime, truth C] find . -type f -exec chmod 600 {} +
+  T173 [plain, truth C] git stash
+  T198 [plain, truth C] gzip notes.txt
+  T208 [compound, truth C] printf x | tee -a notes.txt
+  T209 [plain, truth C] sudo chmod 600 app.conf
+  T225 [plain, truth C] chmod 755 a.txt
+  T226 [plain, truth C] unlink app.conf
+  T232 [plain, truth C] tar cf report.docx.tar report.docx
+  T239 [hidden, truth C] perl -e 'unlink "b.txt"'
+[L0] CONSENT WITHOUT UNDO
+  N024 [runtime] ls -tp | grep -v '/$' | tail -n +6 | xargs -d '\n' rm --   (rm (rm can permanently delete files with no built-in undo))
+  N081 [runtime] find . \( -name '*.wmv' -o -name '*.wma' \) -exec rm {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N084 [runtime] find . -type f -name "Foo*" -exec rm {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N191 [runtime] find ./ -type f -exec rm -rf {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N318 [runtime] find . -maxdepth 1 -type f -exec rm -f {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N321 [runtime] find . -maxdepth 1 -name "*.pdf" -print0 | xargs -0 rm   (rm (rm can permanently delete files with no built-in undo))
+  N323 [runtime] find . -type d -empty -delete   (find -delete (find -delete removes every matching file with no built-in undo, and the matc)
+  N324 [runtime] find . -name '*~' -print0 | xargs -0 rm   (rm (rm can permanently delete files with no built-in undo))
+  N325 [hidden] find . -type f -print0 | xargs -0 -n1 echo rm | sh -x   (rm (rm can permanently delete files with no built-in undo))
+  N327 [runtime] find . -name .svn -exec rm -v {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N328 [runtime] find . -type f -name "tecmint.txt" -exec rm -f {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N332 [runtime] find -name "*.txt" | xargs rm   (rm (rm can permanently delete files with no built-in undo))
+  N333 [runtime] find . -type f -print0 | xargs -0 /bin/rm   (rm (rm can permanently delete files with no built-in undo))
+  N335 [runtime] find -iname '*~' | xargs rm   (rm (rm can permanently delete files with no built-in undo))
+  N336 [runtime] find $FOLDER -name ".*" -delete   (find -delete (find -delete removes every matching file with no built-in undo, and the matc)
+  N343 [runtime] find . -delete   (find -delete (find -delete removes every matching file with no built-in undo, and the matc)
+  N347 [runtime] find -name '*~' -print0 | xargs -0 rm   (rm (rm can permanently delete files with no built-in undo))
+  N354 [runtime] find . -iname "1US*" -exec rm {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N357 [runtime] find ./ -name '*.log' | xargs rm   (rm (rm can permanently delete files with no built-in undo))
+  N361 [runtime] find  -name '*-*x*.*' | xargs rm -f   (rm (rm can permanently delete files with no built-in undo))
+  N362 [runtime] find . -type f -name "Tes*" -exec rm {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N365 [runtime] find . -name .svn |xargs rm -rf   (rm (rm can permanently delete files with no built-in undo))
+  N367 [runtime] find . -type f -name "*.mp3" -exec rm -f {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N368 [runtime] find . -type f -name "*.bak" -exec rm -f {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N372 [runtime] find . -name Thumbs.db -exec rm {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N375 [runtime] find . -type f -name "*.txt" -print|xargs rm   (rm (rm can permanently delete files with no built-in undo))
+  N382 [runtime] find . -type f -name "FILE-TO-FIND" -exec rm -f {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N383 [runtime] ls -1|grep -v -e ddl -e docs| xargs rm -rf   (rm (rm can permanently delete files with no built-in undo))
+  N384 [runtime] find . -type f -name 'IMAGE1806.jpg' -delete   (find -delete (find -delete removes every matching file with no built-in undo, and the matc)
+  N389 [runtime] find /path/to/dir -type f | sed -r 'p;s:.*/(.*)/.*:\1:' | xargs -n 2 sh -c 'sed -i "s/^/$1 /" $0'   (sed in-place edit (sed -i overwrites the file in place with no built-in undo))
+  N390 [runtime] find /tmp -name core -type f -print0 | xargs -0 /bin/rm -f   (rm (rm can permanently delete files with no built-in undo))
+  N393 [runtime] find . -type f -name "*.txt" -exec rm -f {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N397 [runtime] find . -name .svn -exec rm -rf {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N399 [runtime] find . -type f -not -name '*txt' | xargs rm   (rm (rm can permanently delete files with no built-in undo))
+  N401 [runtime] find . -name "FILE-TO-FIND" -exec rm -rf {} +   (rm (rm can permanently delete files with no built-in undo))
+  N402 [runtime] find . -name \*.xyz -exec rm {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N404 [runtime] find . -name ".DS_Store" -exec rm {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N405 [runtime] find . -name "*.c" | xargs rm -rf   (rm (rm can permanently delete files with no built-in undo))
+  N407 [runtime] find . -type f -name "IMAG1806.jpg" -exec rm -f {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N409 [runtime] find -mindepth 1 -delete   (find -delete (find -delete removes every matching file with no built-in undo, and the matc)
+  N412 [runtime] find . -type f -iname '*.un~' | while read UNDOFILE ; do FILE=$( echo "$UNDOFILE" | sed -r -e 's/.un~$//' -e 's&/\.([^/]*)&/\1&' ) ; [[ -e "$FILE" ]] || rm "$UNDOFILE" ; done   (rm (rm can permanently delete files with no built-in undo))
+  N415 [runtime] find . -name not\* | tr \\n \\0 | xargs -0 rm   (rm (rm can permanently delete files with no built-in undo))
+  N416 [runtime] find . -name "*~" -delete   (find -delete (find -delete removes every matching file with no built-in undo, and the matc)
+  N417 [runtime] find . -name '*.pyc' -print0 | xargs -0 rm   (rm (rm can permanently delete files with no built-in undo))
+  N419 [runtime] find . \( -name a.out -o -name '*.o' -o -name 'core' \) -exec rm {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N420 [runtime] find . -name "*.pyc"|xargs rm -rf   (rm (rm can permanently delete files with no built-in undo))
+  N422 [runtime] find /tmp -name core -type f -print | xargs /bin/rm -f   (rm (rm can permanently delete files with no built-in undo))
+  N432 [runtime] ls -t *.log | tail -$tailCount | xargs rm -f   (rm (rm can permanently delete files with no built-in undo))
+  N433 [runtime] find . -name '*.pdf' -exec rm {} +   (rm (rm can permanently delete files with no built-in undo))
+  N434 [runtime] find . -name "vmware-*.log" -exec rm '{}' \;   (rm (rm can permanently delete files with no built-in undo))
+  N442 [runtime] find . -name test -exec rm {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N443 [runtime] find . -name '*.pdf' -exec rm -f {} \;   (rm (rm can permanently delete files with no built-in undo))
+  T005 [plain] shred -u big.log   (shred (shred is designed to make file contents unrecoverable))
+  T027 [runtime] find . -name '*.csv' -print0 | xargs -0 rm -f   (rm (rm can permanently delete files with no built-in undo))
+  T029 [runtime] find . -name '*.txt' -delete   (find -delete (find -delete removes every matching file with no built-in undo, and the matc)
+  T036 [runtime] find . -type f -name '*.conf' | xargs rm   (rm (rm can permanently delete files with no built-in undo))
+  T041 [runtime] find . -name '*.o' -print0 | xargs -0 rm -f   (rm (rm can permanently delete files with no built-in undo))
+  T059 [plain] shred -u b.txt   (shred (shred is designed to make file contents unrecoverable))
+  T065 [runtime] echo big.log | xargs rm   (rm (rm can permanently delete files with no built-in undo))
+  T068 [runtime] echo app.conf | xargs rm   (rm (rm can permanently delete files with no built-in undo))
+  T075 [runtime] find . -name '*.conf' -delete   (find -delete (find -delete removes every matching file with no built-in undo, and the matc)
+  T078 [runtime] rm $(ls *.log)   (rm (rm can permanently delete files with no built-in undo))
+  T084 [compound] x=big.log; rm $x   (rm (rm can permanently delete files with no built-in undo))
+  T107 [compound] x=app.conf; rm $x   (rm (rm can permanently delete files with no built-in undo))
+  T117 [runtime] echo report.docx | xargs rm   (rm (rm can permanently delete files with no built-in undo))
+  T122 [compound] x=notes.txt; rm $x   (rm (rm can permanently delete files with no built-in undo))
+  T136 [runtime] find . -type f -name '*.csv' | xargs rm   (rm (rm can permanently delete files with no built-in undo))
+  T137 [runtime] find . -name '*.log' -print0 | xargs -0 rm -f   (rm (rm can permanently delete files with no built-in undo))
+  T148 [runtime] find build -type f | xargs rm -f   (rm (rm can permanently delete files with no built-in undo))
+  T158 [runtime] find . -name '*.log' -exec rm {} \;   (rm (rm can permanently delete files with no built-in undo))
+  T168 [runtime] rm $(ls *.txt)   (rm (rm can permanently delete files with no built-in undo))
+  T170 [plain] shred -u app.conf   (shred (shred is designed to make file contents unrecoverable))
+  T171 [runtime] find . -type f -name '*.txt' | xargs rm   (rm (rm can permanently delete files with no built-in undo))
+  T181 [runtime] rm $(ls *.csv)   (rm (rm can permanently delete files with no built-in undo))
+  T199 [runtime] find . -name '*.csv' -exec rm {} \;   (rm (rm can permanently delete files with no built-in undo))
+  T201 [runtime] find . -name '*.conf' -print0 | xargs -0 rm -f   (rm (rm can permanently delete files with no built-in undo))
+  T204 [runtime] find src -type f | xargs rm -f   (rm (rm can permanently delete files with no built-in undo))
+  T206 [runtime] find tmp -type f | xargs rm -f   (rm (rm can permanently delete files with no built-in undo))
+  T211 [runtime] for f in *.conf; do rm "$f"; done   (rm (rm can permanently delete files with no built-in undo))
+  T212 [plain] shred -u a.txt   (shred (shred is designed to make file contents unrecoverable))
+[L0] FRICTION (safe, but asked)
+  N001 [runtime] tail -n 1 "$file" | tee >(wc -c | xargs -I {} truncate "$file" -s -{})   (truncate (truncate can shrink or empty a file's contents with no built-in undo))
+  N005 [compound] yes | head -n10 > 10lines.txt   (truncating redirect (>) overwrites the target file's existing contents)
+  N030 [runtime] find . -name core -ok rm {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N031 [runtime] find . -type f -name '*.txt' -exec sed --in-place 's/[[:space:]]\+$//' {} \+   (sed in-place edit (sed -i overwrites the file in place with no built-in undo))
+  N032 [runtime] paste -d: <(grep '<th>' mycode.html | sed -e 's,</*th>,,g') <(grep '<td>' mycode.html | sed -e 's,</*td>,,g')   (truncating redirect (>) overwrites the target file's existing contents)
+  N034 [runtime] find ./ -name "*.[ch]pp" -print > cscope.files   (truncating redirect (>) overwrites the target file's existing contents)
+  N054 [runtime] find ./ -name '*.log' | xargs -I{} sh -c "if [ -f {}.gz ]; then rm {}; fi"   (rm (rm can permanently delete files with no built-in undo))
+  N056 [runtime] find test -name ".DS_Store" -delete   (find -delete (find -delete removes every matching file with no built-in undo, and the matc)
+  N058 [runtime] find . -type f -mtime -14 > deploy.txt   (truncating redirect (>) overwrites the target file's existing contents)
+  N085 [runtime] find . -type f -name '*' -exec sed --in-place 's/[[:space:]]\+$//' {} \+   (sed in-place edit (sed -i overwrites the file in place with no built-in undo))
+  N113 [runtime] find . -not -path '*/\.*' -type f -print0 | xargs -0 sed -i 's/subdomainA\.example\.com/subdomainB.example.com/g'   (sed in-place edit (sed -i overwrites the file in place with no built-in undo))
+  N131 [runtime] find . -name "*.java" -exec sed -i '' s/foo/bar/g \;   (sed in-place edit (sed -i overwrites the file in place with no built-in undo))
+  N140 [runtime] find ./ -name "*.php" -type f | xargs sed -i 's#<?php /\*\*/ eval(base64_decode("aWY.*?>##g'  2>&1   (sed in-place edit (sed -i overwrites the file in place with no built-in undo))
+  N151 [redirect] { time sleep 1 2> sleep.stderr ; } 2> time.txt   (truncating redirect (>) overwrites the target file's existing contents)
+  N167 [runtime] find . -name “core” -exec rm -f {} \;   (rm (rm can permanently delete files with no built-in undo))
+  N179 [hidden] cal | awk 'NR>2 && NF>4 {printf "%02d\n",$(NF-4);exit}'   (truncating redirect (>) overwrites the target file's existing contents)
+  N187 [runtime] find . -type d -print0 | xargs -0 -n1 du -sk | sort -rn > dir-sizes.txt&   (truncating redirect (>) overwrites the target file's existing contents)
+  N222 [hidden] find temp/medium -iname "*.jpg" -printf 'mv %p %p\n' | sed 's/\.jpg$/_MED\.jpg/' | while read l; do eval $l; done   (eval (eval executes a dynamically constructed string this classifier cannot inspect before)
+  N256 [runtime] THIS=`readlink -f "${BASH_SOURCE[0]}" 2>/dev/null||echo $0`   (truncating redirect (>) overwrites the target file's existing contents)
+  N303 [hidden] ping google.com | awk '{ sent=NR-1; received+=/^.*(time=.+ ms).*$/; loss=0; } { if (sent>0) loss=100-((received/sent)*100) } { printf "sent:%d received:%d loss:%d%%\n", sent, received, loss }'   (truncating redirect (>) overwrites the target file's existing contents)
+  N310 [runtime] xargs -I '{}' rm '{}'   (rm (rm can permanently delete files with no built-in undo))
+  T051 [compound] echo a > f1 && echo b >> f1   (truncating redirect (>) overwrites the target file's existing contents)
+  T130 [redirect] cat a.txt b.txt > all.txt   (truncating redirect (>) overwrites the target file's existing contents)
+  T139 [redirect] ls > listing.txt   (truncating redirect (>) overwrites the target file's existing contents)
+  T203 [runtime] for f in *.o; do : > "$f"; done   (truncating redirect (>) overwrites the target file's existing contents)
+
+[L1] SILENT LOSSES
+[L1] CONSENT WITHOUT UNDO
+  N006 [runtime] find var/ -type d -exec chmod 700 {} \;   (chmod is not a known read-only command)
+  N007 [runtime] find . -type f -maxdepth 1 -not -empty -print0 | xargs -0i cp /dev/null {}   (cp is not a known read-only command)
+  N024 [runtime] ls -tp | grep -v '/$' | tail -n +6 | xargs -d '\n' rm --   (rm is not a known read-only command)
+  N078 [plain] chmod 600 file   (chmod is not a known read-only command)
+  N081 [runtime] find . \( -name '*.wmv' -o -name '*.wma' \) -exec rm {} \;   (rm is not a known read-only command)
+  N084 [runtime] find . -type f -name "Foo*" -exec rm {} \;   (rm is not a known read-only command)
+  N095 [compound] ls -a | tee output.file   (tee is not a known read-only command)
+  N099 [plain] rsync -a --exclude .svn path/to/working/copy path/to/export   (rsync is not a known read-only command)
+  N105 [plain] rsync -azP -e "ssh -p PORT_NUMBER" source destination   (rsync is not a known read-only command)
+  N122 [runtime] find . -type f -exec sed -i 's/foo/bar/g' {} +   (sed is not a known read-only command)
+  N144 [runtime] find . -type f -exec chmod u=rw,g=r,o= '{}' \;   (chmod is not a known read-only command)
+  N191 [runtime] find ./ -type f -exec rm -rf {} \;   (rm is not a known read-only command)
+  N202 [runtime] find . -name "*.rb" -type f -exec chmod 600 {} \;   (chmod is not a known read-only command)
+  N270 [compound] script -q /dev/null ./a | tee output.txt   (script is not a known read-only command)
+  N289 [compound] grep -v "pattern" filename > filename2; mv filename2 filename   (redirects output to a file)
+  N293 [runtime] find . -type f -exec sed -i 's/searc/replace/g' {} \;   (sed is not a known read-only command)
+  N312 [hidden] python -u client.py | tee logfile   (python is not a known read-only command)
+  N318 [runtime] find . -maxdepth 1 -type f -exec rm -f {} \;   (rm is not a known read-only command)
+  N319 [runtime] find . -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -name "*.hpp" > cscope.files   (redirects output to a file)
+  N320 [runtime] find dir/ -name '*.txt' | tar -c --files-from=- | bzip2 > dir_txt.tar.bz2   (tar is not a known read-only command)
+  N321 [runtime] find . -maxdepth 1 -name "*.pdf" -print0 | xargs -0 rm   (rm is not a known read-only command)
+  N322 [runtime] find data/ -name filepattern-*2009* -print0 | xargs -0 tar uf 2009.tar   (tar is not a known read-only command)
+  N323 [runtime] find . -type d -empty -delete   (find -delete)
+  N324 [runtime] find . -name '*~' -print0 | xargs -0 rm   (rm is not a known read-only command)
+  N325 [hidden] find . -type f -print0 | xargs -0 -n1 echo rm | sh -x   (runs a shell script or piped code)
+  N326 [runtime] find . -name -type f '*.mp3' -mtime -180 -print0 | xargs -0 tar rvf music.tar   (tar is not a known read-only command)
+  N327 [runtime] find . -name .svn -exec rm -v {} \;   (rm is not a known read-only command)
+  N328 [runtime] find . -type f -name "tecmint.txt" -exec rm -f {} \;   (rm is not a known read-only command)
+  N329 [plain] rm -r bin/node bin/node-waf include/node lib/node lib/pkgconfig/nodejs.pc share/man/man1/node.1   (rm is not a known read-only command)
+  N330 [runtime] find . -type f|grep -i "\.jpg$" |sort| tee file_list.txt   (tee is not a known read-only command)
+  N331 [runtime] find . -name some_pattern -print0 | xargs -0 -i mv {} target_location   (mv is not a known read-only command)
+  N332 [runtime] find -name "*.txt" | xargs rm   (rm is not a known read-only command)
+  N333 [runtime] find . -type f -print0 | xargs -0 /bin/rm   (rm is not a known read-only command)
+  N334 [runtime] find . -mtime -1 | xargs tar --no-recursion -czf myfile.tgz   (tar is not a known read-only command)
+  N335 [runtime] find -iname '*~' | xargs rm   (rm is not a known read-only command)
+  N336 [runtime] find $FOLDER -name ".*" -delete   (find -delete)
+  N337 [runtime] find $d -type d -exec chmod ug=rwx,o= '{}' \;   (chmod is not a known read-only command)
+  N338 [runtime] find ${x} -type f -exec chmod ug=rw,o= '{}' \;   (chmod is not a known read-only command)
+  N339 [runtime] find . -type f -mtime -14 | sed 's|./||' >deploy.txt   (redirects output to a file)
+  N340 [runtime] find relative/path/to/dir -type f -exec md5sum {} + > sums.md5   (redirects output to a file)
+  N341 [runtime] find . -type d -exec chmod 777 {} \;   (chmod is not a known read-only command)
+  N342 [runtime] find . -type f -name '*.html' -exec sed -i -e '1r common_header' -e '1,/STRING/d' {} \;   (sed is not a known read-only command)
+  N343 [runtime] find . -delete   (find -delete)
+  N344 [runtime] cat `find src/js -type f -name "*.js" -print0 | xargs -0 stat -f "%z  %N" | sort -n | sed -e "s|[0-9]*\ \ ||"` > public/js/myCleverScript.js   (redirects output to a file)
+  N345 [runtime] find . \( -name 1.txt -o -name 2.txt -o -name 3.txt \) -print|xargs chmod 444   (chmod is not a known read-only command)
+  N346 [runtime] find . \( ! -regex '.*/\..*' \) -type f -print0 | xargs -0 sed -i 's/subdomainA.example.com/subdomainB.example.com/g'   (sed is not a known read-only command)
+  N347 [runtime] find -name '*~' -print0 | xargs -0 rm   (rm is not a known read-only command)
+  N348 [plain] sudo chmod -R 777 theDirectory/   (chmod is not a known read-only command)
+  N349 [runtime] find . -name "*.php" -exec chmod 755 {} \; -exec /bin/echo {} \; | wc -l   (chmod is not a known read-only command)
+  N350 [runtime] find . -type d -perm 755 -exec chmod 700 {} \;   (chmod is not a known read-only command)
+  N351 [plain] sed -i ':a;N;$!ba;s/\n/,/g' test.txt   (sed is not a known read-only command)
+  N352 [runtime] find . -type f -maxdepth 1 -not -empty -print0 | xargs -0i sh -c "cat /dev/null > \"{}\""   (redirects output to a file)
+  N353 [runtime] find -name \*.xml -print0 | xargs -0 -n 1 -P 3 bzip2   (bzip2 is not a known read-only command)
+  N354 [runtime] find . -iname "1US*" -exec rm {} \;   (rm is not a known read-only command)
+  N355 [plain] rsync -av --exclude='path1/to/exclude' --exclude='path2/to/exclude' source destination   (rsync is not a known read-only command)
+  N356 [compound] someCommand 2>&1 | tee -a someFile   (someCommand is not a known read-only command)
+  N357 [runtime] find ./ -name '*.log' | xargs rm   (rm is not a known read-only command)
+  N358 [runtime] find . -name '*.py' -exec grep 'something' {} \; > output.txt   (redirects output to a file)
+  N359 [plain] chmod 444 .bash_logout .bashrc .profile   (chmod is not a known read-only command)
+  N360 [runtime] find . -type f -exec chmod 664 {} \;   (chmod is not a known read-only command)
+  N361 [runtime] find  -name '*-*x*.*' | xargs rm -f   (rm is not a known read-only command)
+  N362 [runtime] find . -type f -name "Tes*" -exec rm {} \;   (rm is not a known read-only command)
+  N363 [redirect] tac a.txt > b.txt   (redirects output to a file)
+  N364 [runtime] find var/log -print0 -iname 'anaconda.*' | tar -cvf somefile.tar -T -   (tar is not a known read-only command)
+  N365 [runtime] find . -name .svn |xargs rm -rf   (rm is not a known read-only command)
+  N366 [runtime] find . -type f -print0 | xargs -0 -n1 -P4 bzip2   (bzip2 is not a known read-only command)
+  N367 [runtime] find . -type f -name "*.mp3" -exec rm -f {} \;   (rm is not a known read-only command)
+  N368 [runtime] find . -type f -name "*.bak" -exec rm -f {} \;   (rm is not a known read-only command)
+  N369 [runtime] find . -name foo.txt 1> tmpfile && mv `cat tmpfile` path/to/some/dir && rm tmpfile   (redirects output to a file)
+  N370 [plain] rsync -a --delete blanktest/ test/   (rsync is not a known read-only command)
+  N371 [runtime] find . -name "*.php" -exec chmod 755 {} + -printf '.' | wc -c   (chmod is not a known read-only command)
+  N372 [runtime] find . -name Thumbs.db -exec rm {} \;   (rm is not a known read-only command)
+  N373 [plain] ln -nsf alpha_2 alpha   (ln is not a known read-only command)
+  N374 [runtime] find . -type f -print0 | xargs -0 sed -i 's/Application/whatever/g'   (sed is not a known read-only command)
+  N375 [runtime] find . -type f -name "*.txt" -print|xargs rm   (rm is not a known read-only command)
+  N376 [compound] tar -cvf - data/* | gzip > data.tar.gz   (tar is not a known read-only command)
+  N377 [hidden] find . -maxdepth 1 -type f -printf '%T@ %p\0' | sort -r -z -n | awk 'BEGIN { RS="\0"; ORS="\0"; FS="" } NR > 5 { sub("^[0-9]*(.[0-9]*)? ", ""); print }' | xargs -0 rm -f   (rm is not a known read-only command)
+  N378 [runtime] find foo -type f ! -name '*Music*' -exec cp {} bar \;   (cp is not a known read-only command)
+  N379 [hidden] sync --list-only --include "*2012*.xml" -exclude "*.xml" serveripaddress::pt/dir/files/ --port=111 | awk '{ $1=$2=$3=$4=""; print substr($0,5); }' >output.txt   (redirects output to a file)
+  N380 [runtime] find .  -type f -name "CDC*" -ctime -1 -exec sed -i'' -e '1d' -e '$d' '{}'  \;   (sed is not a known read-only command)
+  N381 [runtime] find . -type f -exec chmod 0660 {} +   (chmod is not a known read-only command)
+  N382 [runtime] find . -type f -name "FILE-TO-FIND" -exec rm -f {} \;   (rm is not a known read-only command)
+  N383 [runtime] ls -1|grep -v -e ddl -e docs| xargs rm -rf   (rm is not a known read-only command)
+  N384 [runtime] find . -type f -name 'IMAGE1806.jpg' -delete   (find -delete)
+  N385 [compound] script -c "./a" /dev/null | tee output.txt   (script is not a known read-only command)
+  N386 [runtime] find . -type f ! \( -name "*gz" -o -name "*tmp" -o -name "*xftp" \) -exec gzip -n '{}' \;   (gzip is not a known read-only command)
+  N387 [plain] sort -o file1.txt file1.txt   (sort is not a known read-only command)
+  N388 [runtime] find . -type f -name "*.java" | xargs tar cvf myfile.tar   (tar is not a known read-only command)
+  N389 [runtime] find /path/to/dir -type f | sed -r 'p;s:.*/(.*)/.*:\1:' | xargs -n 2 sh -c 'sed -i "s/^/$1 /" $0'   (sed is not a known read-only command)
+  N390 [runtime] find /tmp -name core -type f -print0 | xargs -0 /bin/rm -f   (rm is not a known read-only command)
+  N391 [plain] sed -i 's/foo/bar/' file   (sed is not a known read-only command)
+  N392 [runtime] find `pwd` -name "*.log" > sas_log_list.txt   (redirects output to a file)
+  N393 [runtime] find . -type f -name "*.txt" -exec rm -f {} \;   (rm is not a known read-only command)
+  N394 [runtime] find . -type d ! -perm -g+r,u+r,o+r -prune -o -print > files_and_folders   (redirects output to a file)
+  N395 [runtime] find <directory_name> -type d -exec sh -c "cd {} && [ -d live ] && [ -d test ] && cd ../ && echo \"Deleting {}\" && rm -rvi {} " {} \;   (rm is not a known read-only command)
+  N396 [runtime] find . -name "*" -exec sh -c 'chgrp -v new_group "$0" ; chmod -v 770 "$0"' {} \;   (chgrp is not a known read-only command)
+  N397 [runtime] find . -name .svn -exec rm -rf {} \;   (rm is not a known read-only command)
+  N398 [plain] rsync -vuar --delete-after path/subfolder/ path/   (rsync is not a known read-only command)
+  N399 [runtime] find . -type f -not -name '*txt' | xargs rm   (rm is not a known read-only command)
+  N400 [runtime] find . -type f -maxdepth 1 -exec sh -c 'cat /dev/null > {}' \;   (redirects output to a file)
+  N401 [runtime] find . -name "FILE-TO-FIND" -exec rm -rf {} +   (rm is not a known read-only command)
+  N402 [runtime] find . -name \*.xyz -exec rm {} \;   (rm is not a known read-only command)
+  N403 [runtime] find . -type f | xargs grep 'string_to_find' -sl | xargs perl -pi -w -e 's/string_to_find//g;'   (perl is not a known read-only command)
+  N404 [runtime] find . -name ".DS_Store" -exec rm {} \;   (rm is not a known read-only command)
+  N405 [runtime] find . -name "*.c" | xargs rm -rf   (rm is not a known read-only command)
+  N406 [compound] echo "hey hey, we're the monkees" | tee /dev/tty | gzip --stdout > my_log.gz   (tee is not a known read-only command)
+  N407 [runtime] find . -type f -name "IMAG1806.jpg" -exec rm -f {} \;   (rm is not a known read-only command)
+  N408 [runtime] chmod 640 `find ./ -type f -print`   (chmod is not a known read-only command)
+  N409 [runtime] find -mindepth 1 -delete   (find -delete)
+  N410 [runtime] find -type f | xargs chmod 775   (chmod is not a known read-only command)
+  N411 [runtime] find . -type f -print0 | xargs -0 chmod 664   (chmod is not a known read-only command)
+  N412 [runtime] find . -type f -iname '*.un~' | while read UNDOFILE ; do FILE=$( echo "$UNDOFILE" | sed -r -e 's/.un~$//' -e 's&/\.([^/]*)&/\1&' ) ; [[ -e "$FILE" ]] || rm "$UNDOFILE" ; done   (rm is not a known read-only command)
+  N413 [plain] tar -N '2014-02-01 18:00:00' -jcvf archive.tar.bz2 files   (tar is not a known read-only command)
+  N414 [runtime] find sourceDir -mindepth 1 -maxdepth 1 -exec mv --target-directory=destDir '{}' +   (mv is not a known read-only command)
+  N415 [runtime] find . -name not\* | tr \\n \\0 | xargs -0 rm   (rm is not a known read-only command)
+  N416 [runtime] find . -name "*~" -delete   (find -delete)
+  N417 [runtime] find . -name '*.pyc' -print0 | xargs -0 rm   (rm is not a known read-only command)
+  N418 [runtime] find . -type d -exec chmod u=rwx,g=rx,o= '{}' \;   (chmod is not a known read-only command)
+  N419 [runtime] find . \( -name a.out -o -name '*.o' -o -name 'core' \) -exec rm {} \;   (rm is not a known read-only command)
+  N420 [runtime] find . -name "*.pyc"|xargs rm -rf   (rm is not a known read-only command)
+  N421 [compound] yes y | rm -ir dir1 dir2 dir3   (rm is not a known read-only command)
+  N422 [runtime] find /tmp -name core -type f -print | xargs /bin/rm -f   (rm is not a known read-only command)
+  N423 [compound] progam.sh 2>&1 | tee -a log   (progam.sh is not a known read-only command)
+  N424 [runtime] find . -type f -name "*.java" | xargs tar rvf myfile.tar   (tar is not a known read-only command)
+  N425 [plain] rm foo   (rm is not a known read-only command)
+  N426 [runtime] find . \( -name '*.pdf' -or -name '*.PDF' \) -execdir sh -c 'mv -v "$1" "$(echo "$1" | tr " " "_" | tr -d "{()},\!'\''" | tr "A-Z" "a-z" | sed "s/_-_/_/g")"' _ {} \;   (mv is not a known read-only command)
+  N427 [compound] yes | rm -r *.txt   (rm is not a known read-only command)
+  N428 [runtime] find . -name "*.php" -print | xargs sed -i 's/foo/bar/g'   (sed is not a known read-only command)
+  N429 [compound] sed s/STRING_TO_REPLACE/STRING_TO_REPLACE_IT/g index.html | tee index.html   (tee is not a known read-only command)
+  N430 [runtime] find . -mindepth 1 -type d | xargs chmod 700   (chmod is not a known read-only command)
+  N431 [runtime] echo $(date) "1" | tee -a log.csv   (tee is not a known read-only command)
+  N432 [runtime] ls -t *.log | tail -$tailCount | xargs rm -f   (rm is not a known read-only command)
+  N433 [runtime] find . -name '*.pdf' -exec rm {} +   (rm is not a known read-only command)
+  N434 [runtime] find . -name "vmware-*.log" -exec rm '{}' \;   (rm is not a known read-only command)
+  N435 [plain] ln -sfn newDir currentDir   (ln is not a known read-only command)
+  N436 [runtime] find . -name '*.cgi' -print0 | xargs -0 chmod 755   (chmod is not a known read-only command)
+  N437 [compound] yum update | tee mylogfile   (yum is not a known read-only command)
+  N438 [runtime] find . -name "*.php" -exec chmod 755 {} \;   (chmod is not a known read-only command)
+  N439 [runtime] find . -name "somefiles-*-.txt" -type f -exec sed -i 'iText that gets prepended (dont remove the i)' -- '{}' \;   (sed is not a known read-only command)
+  N440 [plain] sudo find foldername -exec chmod a+rwx {} ";"   (chmod is not a known read-only command)
+  N441 [runtime] find . -type f -name "*.txt" -exec gzip {} \;   (gzip is not a known read-only command)
+  N442 [runtime] find . -name test -exec rm {} \;   (rm is not a known read-only command)
+  N443 [runtime] find . -name '*.pdf' -exec rm -f {} \;   (rm is not a known read-only command)
+  N444 [runtime] find $d -type f -exec chmod ug=rw,o= '{}' \;   (chmod is not a known read-only command)
+  N445 [hidden] find . -maxdepth 1 -type f | xargs -x ls -t | awk 'NR>5' | xargs -L1 rm   (rm is not a known read-only command)
+  N446 [hidden] bash myscript.sh 2>&1 | tee output.log   (runs a shell script or piped code)
+  N447 [runtime] find . -name '*.ISOLATE.*.txt' -maxdepth 1 -print0 | xargs -0 -IFILE mv FILE ./ISOLATE   (mv is not a known read-only command)
+  N448 [runtime] find . -type d -exec chmod ug=rwx,o= {} \;   (chmod is not a known read-only command)
+  N449 [runtime] find . -type f -name "*baz*" -exec sed -i 's/foo/bar/g' {} +   (sed is not a known read-only command)
+  N450 [runtime] find . -maxdepth 1 -iname "*.jpg" | xargs tar -czvf jpeg.tgz   (tar is not a known read-only command)
+  T001 [hidden] python3 -c "import os; os.remove('report.docx')"   (python3 is not a known read-only command)
+  T005 [plain] shred -u big.log   (shred is not a known read-only command)
+  T006 [plain] install -m 755 a.txt b.txt   (install is not a known read-only command)
+  T007 [compound] cd tmp && rm *   (rm is not a known read-only command)
+  T008 [plain] sudo rm -rf src   (rm is not a known read-only command)
+  T009 [runtime] ls *.txt | xargs -n1 gzip   (gzip is not a known read-only command)
+  T010 [plain] sudo chmod 600 data.csv   (chmod is not a known read-only command)
+  T012 [hidden] perl -e 'unlink "report.docx"'   (perl is not a known read-only command)
+  T013 [runtime] rm $(find . -name '*.o')   (rm is not a known read-only command)
+  T014 [runtime] find . -mindepth 1 -maxdepth 1 -name '*.o' -exec gzip {} +   (gzip is not a known read-only command)
+  T015 [redirect] echo hi > big.log   (redirects output to a file)
+  T016 [runtime] for f in *.conf; do : > "$f"; done   (redirects output to a file)
+  T018 [runtime] xargs -I{} rm {} <<< big.log   (rm is not a known read-only command)
+  T020 [runtime] xargs -I{} rm {} <<< data.csv   (rm is not a known read-only command)
+  T021 [plain] truncate -s 0 app.conf   (truncate is not a known read-only command)
+  T022 [hidden] nohup rm notes.txt   (rm is not a known read-only command)
+  T023 [redirect] : > big.log   (redirects output to a file)
+  T024 [hidden] bash -c 'rm app.conf'   (rm is not a known read-only command)
+  T025 [hidden] perl -e 'unlink "big.log"'   (perl is not a known read-only command)
+  T026 [plain] dd if=/dev/zero of=app.conf bs=1 count=4 conv=notrunc   (dd is not a known read-only command)
+  T027 [runtime] find . -name '*.csv' -print0 | xargs -0 rm -f   (rm is not a known read-only command)
+  T028 [compound] cat a.txt b.txt > all.txt && rm a.txt b.txt   (redirects output to a file)
+  T029 [runtime] find . -name '*.txt' -delete   (find -delete)
+  T033 [compound] cp -r build build2 && rm -r build   (cp is not a known read-only command)
+  T034 [plain] unlink notes.txt   (unlink is not a known read-only command)
+  T035 [plain] tee data.csv < b.txt   (tee is not a known read-only command)
+  T036 [runtime] find . -type f -name '*.conf' | xargs rm   (rm is not a known read-only command)
+  T037 [compound] cd backup && rm *   (rm is not a known read-only command)
+  T039 [runtime] rm $(find . -name '*.conf')   (rm is not a known read-only command)
+  T040 [plain] rm b.txt   (rm is not a known read-only command)
+  T041 [runtime] find . -name '*.o' -print0 | xargs -0 rm -f   (rm is not a known read-only command)
+  T042 [plain] unlink big.log   (unlink is not a known read-only command)
+  T043 [plain] rm -i -f a.txt   (rm is not a known read-only command)
+  T046 [plain] git checkout -- .   (git is not a known read-only command)
+  T047 [compound] mkdir -p out && cp *.txt out/ && rm *.txt   (mkdir is not a known read-only command)
+  T049 [plain] tar cf b.txt.tar b.txt   (tar is not a known read-only command)
+  T050 [hidden] awk 'BEGIN{system("rm a.txt")}'   (awk is not a known read-only command)
+  T052 [plain] cp -f a.txt b.txt   (cp is not a known read-only command)
+  T054 [plain] sudo chmod 600 a.txt   (chmod is not a known read-only command)
+  T056 [runtime] find . -mindepth 1 -maxdepth 1 -name '*.conf' -exec gzip {} +   (gzip is not a known read-only command)
+  T057 [runtime] find . -name '*.conf' -exec sed -i 's/a/b/' {} \;   (sed is not a known read-only command)
+  T058 [plain] gzip report.docx   (gzip is not a known read-only command)
+  T059 [plain] shred -u b.txt   (shred is not a known read-only command)
+  T061 [plain] time rm report.docx   (rm is not a known read-only command)
+  T062 [plain] truncate -s 0 big.log   (truncate is not a known read-only command)
+  T063 [runtime] rm $(find . -name '*.txt')   (rm is not a known read-only command)
+  T064 [hidden] perl -e 'unlink "notes.txt"'   (perl is not a known read-only command)
+  T065 [runtime] echo big.log | xargs rm   (rm is not a known read-only command)
+  T066 [plain] rm -rf ./*   (rm is not a known read-only command)
+  T067 [hidden] bash -c 'rm report.docx'   (rm is not a known read-only command)
+  T068 [runtime] echo app.conf | xargs rm   (rm is not a known read-only command)
+  T069 [hidden] awk 'BEGIN{system("rm app.conf")}'   (awk is not a known read-only command)
+  T070 [hidden] nohup rm b.txt   (rm is not a known read-only command)
+  T071 [plain] truncate -s 0 data.csv   (truncate is not a known read-only command)
+  T072 [hidden] eval "rm a.txt"   (eval is not a known read-only command)
+  T074 [runtime] xargs -I{} rm {} <<< a.txt   (rm is not a known read-only command)
+  T075 [runtime] find . -name '*.conf' -delete   (find -delete)
+  T076 [plain] rm -f report.docx   (rm is not a known read-only command)
+  T077 [compound] mkdir -p out && cp *.csv out/ && rm *.csv   (mkdir is not a known read-only command)
+  T078 [runtime] rm $(ls *.log)   (rm is not a known read-only command)
+  T080 [runtime] rm $(find . -name '*.csv')   (rm is not a known read-only command)
+  T082 [plain] rm -rf src   (rm is not a known read-only command)
+  T083 [plain] sudo rm app.conf   (rm is not a known read-only command)
+  T084 [compound] x=big.log; rm $x   (rm is not a known read-only command)
+  T087 [plain] chmod 755 notes.txt   (chmod is not a known read-only command)
+  T089 [hidden] eval "rm b.txt"   (eval is not a known read-only command)
+  T090 [hidden] python3 -c "import os; os.remove('data.csv')"   (python3 is not a known read-only command)
+  T091 [plain] \rm big.log   (rm is not a known read-only command)
+  T092 [plain] gzip app.conf   (gzip is not a known read-only command)
+  T093 [compound] cd build && rm *   (rm is not a known read-only command)
+  T095 [redirect] sed 's/x/y/' data.csv > data.csv   (redirects output to a file)
+  T096 [redirect] echo new > build/fresh.txt   (redirects output to a file)
+  T098 [redirect] sort data.csv > data.csv   (redirects output to a file)
+  T100 [plain] sudo rm -rf backup   (rm is not a known read-only command)
+  T101 [compound] cp report.docx copy.bak && rm report.docx   (cp is not a known read-only command)
+  T102 [plain] bzip2 a.txt   (bzip2 is not a known read-only command)
+  T103 [plain] tee notes.txt < b.txt   (tee is not a known read-only command)
+  T107 [compound] x=app.conf; rm $x   (rm is not a known read-only command)
+  T108 [plain] rm -- report.docx   (rm is not a known read-only command)
+  T109 [plain] tee big.log < b.txt   (tee is not a known read-only command)
+  T110 [hidden] env rm b.txt   (rm is not a known read-only command)
+  T111 [runtime] find . -name '*.o' -exec sed -i 's/a/b/' {} \;   (sed is not a known read-only command)
+  T112 [plain] rm -- a.txt   (rm is not a known read-only command)
+  T113 [runtime] find . -mindepth 1 -maxdepth 1 -name '*.csv' -exec gzip {} +   (gzip is not a known read-only command)
+  T115 [hidden] python3 -c "import os; os.remove('app.conf')"   (python3 is not a known read-only command)
+  T117 [runtime] echo report.docx | xargs rm   (rm is not a known read-only command)
+  T119 [plain] rsync -a --delete src/ backup/   (rsync is not a known read-only command)
+  T120 [hidden] bash -c 'rm b.txt'   (rm is not a known read-only command)
+  T122 [compound] x=notes.txt; rm $x   (rm is not a known read-only command)
+  T124 [runtime] find . -name '*.csv' -exec sed -i 's/a/b/' {} \;   (sed is not a known read-only command)
+  T126 [runtime] find . -name '*.log' -exec sed -i 's/a/b/' {} \;   (sed is not a known read-only command)
+  T127 [redirect] : > notes.txt   (redirects output to a file)
+  T128 [plain] bzip2 report.docx   (bzip2 is not a known read-only command)
+  T129 [compound] tar czf arch.tgz backup && rm -r backup   (tar is not a known read-only command)
+  T131 [hidden] nohup rm a.txt   (rm is not a known read-only command)
+  T132 [plain] mv a.txt b.txt   (mv is not a known read-only command)
+  T133 [plain] rm -f notes.txt   (rm is not a known read-only command)
+  T134 [plain] git clean -fd   (git is not a known read-only command)
+  T135 [hidden] env rm data.csv   (rm is not a known read-only command)
+  T136 [runtime] find . -type f -name '*.csv' | xargs rm   (rm is not a known read-only command)
+  T137 [runtime] find . -name '*.log' -print0 | xargs -0 rm -f   (rm is not a known read-only command)
+  T138 [compound] cp big.log copy.bak && rm big.log   (cp is not a known read-only command)
+  T140 [plain] rm data.csv   (rm is not a known read-only command)
+  T141 [plain] tar cf a.txt.tar a.txt   (tar is not a known read-only command)
+  T143 [compound] mv a.txt b.txt; mv notes.txt a.txt   (mv is not a known read-only command)
+  T145 [plain] rm -i -f b.txt   (rm is not a known read-only command)
+  T146 [plain] ln -sf a.txt b.txt   (ln is not a known read-only command)
+  T147 [runtime] ls *.conf | xargs -n1 gzip   (gzip is not a known read-only command)
+  T148 [runtime] find build -type f | xargs rm -f   (rm is not a known read-only command)
+  T150 [plain] rm -r src   (rm is not a known read-only command)
+  T152 [redirect] date >> notes.txt   (redirects output to a file)
+  T153 [hidden] python3 -c "import os; os.remove('a.txt')"   (python3 is not a known read-only command)
+  T154 [hidden] sh -c "rm *.log"   (rm is not a known read-only command)
+  T155 [compound] tar czf arch.tgz src && rm -r src   (tar is not a known read-only command)
+  T158 [runtime] find . -name '*.log' -exec rm {} \;   (rm is not a known read-only command)
+  T162 [redirect] echo hi > data.csv   (redirects output to a file)
+  T164 [runtime] find . -type f -exec chmod 600 {} +   (chmod is not a known read-only command)
+  T165 [redirect] : > a.txt   (redirects output to a file)
+  T166 [plain] sudo rm report.docx   (rm is not a known read-only command)
+  T167 [plain] rm -f data.csv   (rm is not a known read-only command)
+  T168 [runtime] rm $(ls *.txt)   (rm is not a known read-only command)
+  T169 [plain] rm -r tmp   (rm is not a known read-only command)
+  T170 [plain] shred -u app.conf   (shred is not a known read-only command)
+  T171 [runtime] find . -type f -name '*.txt' | xargs rm   (rm is not a known read-only command)
+  T172 [plain] rm report.docx   (rm is not a known read-only command)
+  T173 [plain] git stash   (git is not a known read-only command)
+  T174 [compound] tar czf arch.tgz build && rm -r build   (tar is not a known read-only command)
+  T175 [hidden] command rm big.log   (rm is not a known read-only command)
+  T177 [plain] rm -rf build   (rm is not a known read-only command)
+  T178 [compound] cp -r logs logs2 && rm -r logs   (cp is not a known read-only command)
+  T180 [plain] rm -f a.txt   (rm is not a known read-only command)
+  T181 [runtime] rm $(ls *.csv)   (rm is not a known read-only command)
+  T185 [compound] cp a.txt copy.bak && rm a.txt   (cp is not a known read-only command)
+  T188 [plain] dd if=/dev/zero of=b.txt bs=1 count=4 conv=notrunc   (dd is not a known read-only command)
+  T190 [redirect] echo new > tmp/fresh.txt   (redirects output to a file)
+  T198 [plain] gzip notes.txt   (gzip is not a known read-only command)
+  T199 [runtime] find . -name '*.csv' -exec rm {} \;   (rm is not a known read-only command)
+  T200 [compound] cp -r backup backup2 && rm -r backup   (cp is not a known read-only command)
+  T201 [runtime] find . -name '*.conf' -print0 | xargs -0 rm -f   (rm is not a known read-only command)
+  T202 [runtime] for f in *.txt; do : > "$f"; done   (redirects output to a file)
+  T204 [runtime] find src -type f | xargs rm -f   (rm is not a known read-only command)
+  T206 [runtime] find tmp -type f | xargs rm -f   (rm is not a known read-only command)
+  T208 [compound] printf x | tee -a notes.txt   (tee is not a known read-only command)
+  T209 [plain] sudo chmod 600 app.conf   (chmod is not a known read-only command)
+  T210 [plain] time rm data.csv   (rm is not a known read-only command)
+  T211 [runtime] for f in *.conf; do rm "$f"; done   (rm is not a known read-only command)
+  T212 [plain] shred -u a.txt   (shred is not a known read-only command)
+  T213 [hidden] eval "rm report.docx"   (eval is not a known read-only command)
+  T215 [plain] dd if=/dev/zero of=report.docx bs=1 count=4 conv=notrunc   (dd is not a known read-only command)
+  T217 [plain] rm -i -f big.log   (rm is not a known read-only command)
+  T219 [runtime] xargs -I{} rm {} <<< notes.txt   (rm is not a known read-only command)
+  T222 [compound] touch new1 new2 && rm new1   (touch is not a known read-only command)
+  T223 [plain] rm notes.txt   (rm is not a known read-only command)
+  T225 [plain] chmod 755 a.txt   (chmod is not a known read-only command)
+  T226 [plain] unlink app.conf   (unlink is not a known read-only command)
+  T227 [compound] cd logs && rm *   (rm is not a known read-only command)
+  T229 [plain] \rm report.docx   (rm is not a known read-only command)
+  T230 [plain] git reset --hard   (git is not a known read-only command)
+  T231 [hidden] command rm a.txt   (rm is not a known read-only command)
+  T232 [plain] tar cf report.docx.tar report.docx   (tar is not a known read-only command)
+  T235 [plain] rm -rf backup   (rm is not a known read-only command)
+  T237 [plain] truncate -s 0 notes.txt   (truncate is not a known read-only command)
+  T239 [hidden] perl -e 'unlink "b.txt"'   (perl is not a known read-only command)
+  T240 [plain] rm -- data.csv   (rm is not a known read-only command)
+  T241 [plain] rm -- b.txt   (rm is not a known read-only command)
+  T242 [plain] time rm app.conf   (rm is not a known read-only command)
+[L1] FRICTION (safe, but asked)
+  N001 [runtime] tail -n 1 "$file" | tee >(wc -c | xargs -I {} truncate "$file" -s -{})   (tee is not a known read-only command)
+  N005 [compound] yes | head -n10 > 10lines.txt   (redirects output to a file)
+  N015 [compound] fold -w1 file | pr -4t | tr -d '\n\t\- ' | sed '$a\'   (pr is not a known read-only command)
+  N016 [runtime] ln -s `canonical.bash foo` bar   (ln is not a known read-only command)
+  N018 [compound] cat file1 file2 ... file40000 | split -n r/1445 -d - outputprefix   (split is not a known read-only command)
+  N019 [runtime] find -gid 1000 -exec chown -h :username {} \;   (chown is not a known read-only command)
+  N030 [runtime] find . -name core -ok rm {} \;   (rm is not a known read-only command)
+  N031 [runtime] find . -type f -name '*.txt' -exec sed --in-place 's/[[:space:]]\+$//' {} \+   (sed is not a known read-only command)
+  N034 [runtime] find ./ -name "*.[ch]pp" -print > cscope.files   (redirects output to a file)
+  N037 [runtime] find / -maxdepth 1 -xdev -type f|xargs grep -l 'string'| xargs perl -pi -e 's/.*\n//g'   (perl is not a known read-only command)
+  N050 [runtime] find . -name '*.png' | grep -f <(sed s?^?/[0-9]_[0-9]_[0-9]_? search.txt) | xargs -i{} cp {} /path/to/dir   (cp is not a known read-only command)
+  N053 [runtime] find dir -name image\*.jpg -exec /bin/ksh script.ksh {} \;   (runs a shell script or piped code)
+  N054 [runtime] find ./ -name '*.log' | xargs -I{} sh -c "if [ -f {}.gz ]; then rm {}; fi"   (rm is not a known read-only command)
+  N056 [runtime] find test -name ".DS_Store" -delete   (find -delete)
+  N058 [runtime] find . -type f -mtime -14 > deploy.txt   (redirects output to a file)
+  N060 [runtime] for i in `find . | grep ".xml.bz2$"`; do find_graph -build_graph $i.graph $i; done   (find_graph is not a known read-only command)
+  N069 [hidden] env -i bash --norc   (runs a shell script or piped code)
+  N072 [runtime] find / -iname “*.mp3″ -type f -print0 | xargs -0 -I ‘{}’ mkdir -p /mnt/mp3/`basename {}`   (mkdir is not a known read-only command)
+  N085 [runtime] find . -type f -name '*' -exec sed --in-place 's/[[:space:]]\+$//' {} \+   (sed is not a known read-only command)
+  N087 [runtime] find -name "*.flac" -exec ffmpeg -i {} -acodec libmp3lame -ab 128k {}.mp3 \;   (ffmpeg is not a known read-only command)
+  N088 [plain] mv tobecopied/tobeexclude tobeexclude;   (mv is not a known read-only command)
+  N089 [runtime] find . -type f -inum 31467125 -exec mv {} new_name.html \;   (mv is not a known read-only command)
+  N093 [runtime] find . -type f -exec mv '{}' '{}'.jpg \;   (mv is not a known read-only command)
+  N101 [runtime] find . -name '*.mp3' -exec cp -a {} /path/to/copy/stuff/to \;   (cp is not a known read-only command)
+  N104 [plain] split -l 100 date.csv   (split is not a known read-only command)
+  N107 [compound] hostname -a -l mydomain.com | sed -n '/;; ANSWER/{n;N;p;q}'   (hostname is not a known read-only command)
+  N113 [runtime] find . -not -path '*/\.*' -type f -print0 | xargs -0 sed -i 's/subdomainA\.example\.com/subdomainB.example.com/g'   (sed is not a known read-only command)
+  N118 [runtime] find .  -name '*.txt' -exec rsync -R {} path/to/dext \;   (rsync is not a known read-only command)
+  N119 [plain] mkdir TestProject   (mkdir is not a known read-only command)
+  N120 [runtime] find * -maxdepth 0 ! -path . -exec mv {} PRE_{} \;   (mv is not a known read-only command)
+  N127 [plain] mkdir -p foo/bar/baz   (mkdir is not a known read-only command)
+  N131 [runtime] find . -name "*.java" -exec sed -i '' s/foo/bar/g \;   (sed is not a known read-only command)
+  N135 [runtime] find . -name 'sqlite.db' -exec sqlite3 "{}" 'SELECT * FROM table WHERE column1="value"' \;   (sqlite3 is not a known read-only command)
+  N137 [runtime] tmp=$(mktemp -d $(dirname "$1")/XXXXXX)   (mktemp is not a known read-only command)
+  N140 [runtime] find ./ -name "*.php" -type f | xargs sed -i 's#<?php /\*\*/ eval(base64_decode("aWY.*?>##g'  2>&1   (sed is not a known read-only command)
+  N151 [redirect] { time sleep 1 2> sleep.stderr ; } 2> time.txt   (redirects output to a file)
+  N154 [runtime] source <(wget -q -O - "http://www.modulesgarden.com/manage/dl.php?type=d&id=676")   (source is not a known read-only command)
+  N156 [compound] g++ omnitest.cpp -E | less   (g++ is not a known read-only command)
+  N159 [runtime] find . -type f -perm 777 -exec chmod 755 {} \;   (chmod is not a known read-only command)
+  N167 [runtime] find . -name “core” -exec rm -f {} \;   (rm is not a known read-only command)
+  N177 [runtime] find ./ -iname "*.bz2" -exec bzip2 -d {} \;   (bzip2 is not a known read-only command)
+  N183 [hidden] find . -wholename \*.mbox | awk '{new=$0; gsub("\.mbox$", "", new) ; system("mv \"" $0 "\" \"" new "\"") }'   (awk is not a known read-only command)
+  N187 [runtime] find . -type d -print0 | xargs -0 -n1 du -sk | sort -rn > dir-sizes.txt&   (redirects output to a file)
+  N188 [runtime] cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1 | xargs mkdir   (mkdir is not a known read-only command)
+  N189 [runtime] mkdir -p folder$( seq -s "/folder" 999 )1000   (mkdir is not a known read-only command)
+  N194 [runtime] find "${INPUT_LOCATION}" -name '*.pdf.marker' | xargs -i bash -cx 'pdf=`dirname {}`/`basename {} .marker`;[ -e "$pdf" ]&&{ mv {} "$pdf" "$0";}' "${OUTPUT_LOCATION}"   (runs a shell script or piped code)
+  N205 [plain] split -l 200000 filename   (split is not a known read-only command)
+  N209 [compound] sed 100q datafile | split -C 1700 -   (split is not a known read-only command)
+  N219 [runtime] find . -size +1M -print0 | xargs -0 -I '{}' mv '{}' files   (mv is not a known read-only command)
+  N222 [hidden] find temp/medium -iname "*.jpg" -printf 'mv %p %p\n' | sed 's/\.jpg$/_MED\.jpg/' | while read l; do eval $l; done   (eval is not a known read-only command)
+  N229 [runtime] find kat -name dok.txt -exec bash -c 'echo -e "\nAutor: Jan Kowalski" >> {}' \;   (redirects output to a file)
+  N233 [runtime] find /home/www/ -type f|xargs perl -pi -e 's/subdomainA\.example\.com/subdomainB.example.com/g'   (perl is not a known read-only command)
+  N242 [runtime] find . -type f -name "*.html" | zip -j all-html-files -@   (zip is not a known read-only command)
+  N243 [runtime] find `pwd` -name "*rc.conf"  -execdir /bin/chmod o+r {} \;   (chmod is not a known read-only command)
+  N246 [runtime] find . -name \*.php -type f -exec php -l {} \;   (php is not a known read-only command)
+  N248 [runtime] find . -exec utility \;   (utility is not a known read-only command)
+  N249 [plain] split -n 10000 /usr/bin/cat   (split is not a known read-only command)
+  N259 [runtime] find dir1 dir2 dir3 dir4 -type d -exec cp header.shtml {} \;   (cp is not a known read-only command)
+  N271 [plain] rsync -a --filter="-! */" sorce_dir/ target_dir/   (rsync is not a known read-only command)
+  N280 [plain] mkdir tata   (mkdir is not a known read-only command)
+  N284 [plain] cp --help   (cp is not a known read-only command)
+  N285 [runtime] find . -type d -name files -exec chmod ug=rwx,o= '{}' \;   (chmod is not a known read-only command)
+  N287 [compound] grep -E -m 1 -n 'old' file | sed 's/:.*$//' - | sed 's/$/s\/old\/new\//' - | sed -f - file   (sed is not a known read-only command)
+  N292 [runtime] find /mail -type f | cpio -pvdmB /home/username   (cpio is not a known read-only command)
+  N304 [compound] "your_command" | less   (your_command is not a known read-only command)
+  N310 [runtime] xargs -I '{}' rm '{}'   (rm is not a known read-only command)
+  N315 [runtime] find $DIR/tmp/daily/ -type f -printf "%p\n" | sort -rn | head -n 2 | xargs -I{} cp {} $DIR/tmp/weekly/   (cp is not a known read-only command)
+  T002 [runtime] find build -type f -exec cp {} build/copy_$RANDOM \;   (cp is not a known read-only command)
+  T003 [plain] mv b.txt moved.txt   (mv is not a known read-only command)
+  T011 [runtime] find . -name '*.csv' -exec mv {} {}.bak \;   (mv is not a known read-only command)
+  T019 [runtime] for f in *.conf; do cp "$f" "copy_$f"; done   (cp is not a known read-only command)
+  T030 [plain] touch app.conf   (touch is not a known read-only command)
+  T031 [plain] mkdir -p backup/deep/er   (mkdir is not a known read-only command)
+  T032 [runtime] find backup -type f -exec cp {} backup/copy_$RANDOM \;   (cp is not a known read-only command)
+  T044 [runtime] cat data.csv | xargs touch   (touch is not a known read-only command)
+  T045 [plain] cp -r build build_copy   (cp is not a known read-only command)
+  T051 [compound] echo a > f1 && echo b >> f1   (redirects output to a file)
+  T079 [runtime] cat big.log | xargs touch   (touch is not a known read-only command)
+  T085 [runtime] find . -name '*.conf' -exec mv {} {}.bak \;   (mv is not a known read-only command)
+  T086 [runtime] for f in *.conf; do mv "$f" "$f.bak"; done   (mv is not a known read-only command)
+  T097 [plain] touch big.log   (touch is not a known read-only command)
+  T099 [plain] sort data.csv -o data.csv   (sort is not a known read-only command)
+  T104 [plain] ln -s a.txt link.txt   (ln is not a known read-only command)
+  T114 [plain] mv report.docx moved.txt   (mv is not a known read-only command)
+  T121 [plain] cp -r tmp tmp_copy   (cp is not a known read-only command)
+  T125 [plain] gzip -k b.txt   (gzip is not a known read-only command)
+  T130 [redirect] cat a.txt b.txt > all.txt   (redirects output to a file)
+  T139 [redirect] ls > listing.txt   (redirects output to a file)
+  T142 [runtime] for f in *.log; do cp "$f" "copy_$f"; done   (cp is not a known read-only command)
+  T144 [plain] cp b.txt copy.txt   (cp is not a known read-only command)
+  T149 [runtime] find . -name '*.log' -exec mv {} {}.bak \;   (mv is not a known read-only command)
+  T151 [runtime] cat a.txt | xargs touch   (touch is not a known read-only command)
+  T156 [runtime] find . -name '*.o' | xargs -I{} cp {} {}.orig   (cp is not a known read-only command)
+  T160 [runtime] for f in *.log; do mv "$f" "$f.bak"; done   (mv is not a known read-only command)
+  T161 [plain] gzip -k app.conf   (gzip is not a known read-only command)
+  T163 [runtime] find . -name '*.txt' | xargs -I{} cp {} {}.orig   (cp is not a known read-only command)
+  T179 [runtime] find . -name '*.log' | xargs -I{} cp {} {}.orig   (cp is not a known read-only command)
+  T182 [runtime] cat report.docx | xargs touch   (touch is not a known read-only command)
+  T183 [plain] cp a.txt copy.txt   (cp is not a known read-only command)
+  T192 [runtime] ls *.o | xargs -n1 gzip   (gzip is not a known read-only command)
+  T194 [plain] git checkout -b feature   (git is not a known read-only command)
+  T197 [plain] gzip -k notes.txt   (gzip is not a known read-only command)
+  T203 [runtime] for f in *.o; do : > "$f"; done   (redirects output to a file)
+  T205 [plain] mkdir -p logs/deep/er   (mkdir is not a known read-only command)
+  T207 [runtime] for f in *.csv; do cp "$f" "copy_$f"; done   (cp is not a known read-only command)
+  T220 [plain] cp -r logs logs_copy   (cp is not a known read-only command)
+  T221 [plain] mkdir -p build/deep/er   (mkdir is not a known read-only command)
+  T233 [runtime] for f in *.csv; do mv "$f" "$f.bak"; done   (mv is not a known read-only command)
+  T234 [plain] mv a.txt moved.txt   (mv is not a known read-only command)
+  T236 [plain] cp app.conf copy.txt   (cp is not a known read-only command)
+  T238 [plain] touch data.csv   (touch is not a known read-only command)
+
+[ALG-strict] SILENT LOSSES
+  N402 [runtime, truth C] find . -name \*.xyz -exec rm {} \;
+[ALG-strict] CONSENT WITHOUT UNDO
+  N105 [plain] rsync -azP -e "ssh -p PORT_NUMBER" source destination   (unresolved: rsync option that changes the source or runs a remote command)
+  N270 [compound] script -q /dev/null ./a | tee output.txt   (opaque: unknown command script)
+  N312 [hidden] python -u client.py | tee logfile   (opaque: python runs arbitrary code; its effects are not modelled)
+  N325 [hidden] find . -type f -print0 | xargs -0 -n1 echo rm | sh -x   (unrecoverable: executes code piped in from another command)
+  N336 [runtime] find $FOLDER -name ".*" -delete   (unresolved: find arguments could not be determined: FOLDER: unbound variable)
+  N337 [runtime] find $d -type d -exec chmod ug=rwx,o= '{}' \;   (unresolved: find arguments could not be determined: d: unbound variable)
+  N338 [runtime] find ${x} -type f -exec chmod ug=rw,o= '{}' \;   (unresolved: find arguments could not be determined: x: unbound variable)
+  N356 [compound] someCommand 2>&1 | tee -a someFile   (opaque: unknown command someCommand)
+  N385 [compound] script -c "./a" /dev/null | tee output.txt   (opaque: unknown command script)
+  N389 [runtime] find /path/to/dir -type f | sed -r 'p;s:.*/(.*)/.*:\1:' | xargs -n 2 sh -c 'sed -i "s/^/$1 /" $0'   (unresolved: arguments could not be determined: 1: unbound variable)
+  N396 [runtime] find . -name "*" -exec sh -c 'chgrp -v new_group "$0" ; chmod -v 770 "$0"' {} \;   (unresolved: arguments could not be determined: 0: unbound variable)
+  N403 [runtime] find . -type f | xargs grep 'string_to_find' -sl | xargs perl -pi -w -e 's/string_to_find//g;'   (opaque: perl runs arbitrary code; its effects are not modelled)
+  N412 [runtime] find . -type f -iname '*.un~' | while read UNDOFILE ; do FILE=$( echo "$UNDOFILE" | sed -r -e 's/.un~$//' -e 's&/\.([^/]*)&/\1&' ) ; [[ -e "$FILE" ]] || rm "$UNDOFILE" ; done   (unresolved: arguments could not be determined: UNDOFILE: unbound variable)
+  N423 [compound] progam.sh 2>&1 | tee -a log   (opaque: unknown command progam.sh)
+  N426 [runtime] find . \( -name '*.pdf' -or -name '*.PDF' \) -execdir sh -c 'mv -v "$1" "$(echo "$1" | tr " " "_" | tr -d "{()},\!'\''" | tr "A-Z" "a-z" | sed "s/_-_/_/g")"' _ {} \;   (unresolved: arguments could not be determined: 1: unbound variable)
+  N437 [compound] yum update | tee mylogfile   (unrecoverable: changes package or service state in a way that is not modelled)
+  N440 [plain] sudo find foldername -exec chmod a+rwx {} ";"   (unresolved: runs with elevated privilege, so its targets cannot be resolved as the current)
+  N444 [runtime] find $d -type f -exec chmod ug=rw,o= '{}' \;   (unresolved: find arguments could not be determined: d: unbound variable)
+  N446 [hidden] bash myscript.sh 2>&1 | tee output.log   (opaque: runs the script file myscript.sh, which is not modelled)
+  T001 [hidden] python3 -c "import os; os.remove('report.docx')"   (opaque: python3 runs arbitrary code; its effects are not modelled)
+  T005 [plain] shred -u big.log   (unrecoverable: shred destroys content on purpose)
+  T012 [hidden] perl -e 'unlink "report.docx"'   (opaque: perl runs arbitrary code; its effects are not modelled)
+  T018 [runtime] xargs -I{} rm {} <<< big.log   (unresolved: xargs reads input from somewhere the analysis cannot see)
+  T020 [runtime] xargs -I{} rm {} <<< data.csv   (unresolved: xargs reads input from somewhere the analysis cannot see)
+  T025 [hidden] perl -e 'unlink "big.log"'   (opaque: perl runs arbitrary code; its effects are not modelled)
+  T050 [hidden] awk 'BEGIN{system("rm a.txt")}'   (opaque: the awk program writes files or runs commands)
+  T059 [plain] shred -u b.txt   (unrecoverable: shred destroys content on purpose)
+  T064 [hidden] perl -e 'unlink "notes.txt"'   (opaque: perl runs arbitrary code; its effects are not modelled)
+  T069 [hidden] awk 'BEGIN{system("rm app.conf")}'   (opaque: the awk program writes files or runs commands)
+  T074 [runtime] xargs -I{} rm {} <<< a.txt   (unresolved: xargs reads input from somewhere the analysis cannot see)
+  T090 [hidden] python3 -c "import os; os.remove('data.csv')"   (opaque: python3 runs arbitrary code; its effects are not modelled)
+  T115 [hidden] python3 -c "import os; os.remove('app.conf')"   (opaque: python3 runs arbitrary code; its effects are not modelled)
+  T153 [hidden] python3 -c "import os; os.remove('a.txt')"   (opaque: python3 runs arbitrary code; its effects are not modelled)
+  T170 [plain] shred -u app.conf   (unrecoverable: shred destroys content on purpose)
+  T212 [plain] shred -u a.txt   (unrecoverable: shred destroys content on purpose)
+  T219 [runtime] xargs -I{} rm {} <<< notes.txt   (unresolved: xargs reads input from somewhere the analysis cannot see)
+  T239 [hidden] perl -e 'unlink "b.txt"'   (opaque: perl runs arbitrary code; its effects are not modelled)
+[ALG-strict] FRICTION (safe, but asked)
+  N001 [runtime] tail -n 1 "$file" | tee >(wc -c | xargs -I {} truncate "$file" -s -{})   (unresolved: arguments could not be determined: file: unbound variable)
+  N015 [compound] fold -w1 file | pr -4t | tr -d '\n\t\- ' | sed '$a\'   (opaque: unknown command pr)
+  N016 [runtime] ln -s `canonical.bash foo` bar   (opaque: unknown command canonical.bash)
+  N018 [compound] cat file1 file2 ... file40000 | split -n r/1445 -d - outputprefix   (opaque: unknown command split)
+  N019 [runtime] find -gid 1000 -exec chown -h :username {} \;   (change metadata of /tmp/listpilot-3276732759)
+  N030 [runtime] find . -name core -ok rm {} \;   (remove /tmp/listpilot-22391937/core)
+  N031 [runtime] find . -type f -name '*.txt' -exec sed --in-place 's/[[:space:]]\+$//' {} \+   (overwrite /tmp/listpilot-2437307055/beta.txt)
+  N037 [runtime] find / -maxdepth 1 -xdev -type f|xargs grep -l 'string'| xargs perl -pi -e 's/.*\n//g'   (opaque: perl runs arbitrary code; its effects are not modelled)
+  N054 [runtime] find ./ -name '*.log' | xargs -I{} sh -c "if [ -f {}.gz ]; then rm {}; fi"   (remove /tmp/listpilot-4286347110/beta.log)
+  N069 [hidden] env -i bash --norc   (opaque: starts a shell whose input is not visible)
+  N083 [hidden] find -type f -printf "%s %p\n" | sort -nr | head -n 4 | awk "{print $2}"   (unresolved: arguments could not be determined: 2: unbound variable)
+  N085 [runtime] find . -type f -name '*' -exec sed --in-place 's/[[:space:]]\+$//' {} \+   (overwrite /tmp/listpilot-310314773/beta)
+  N087 [runtime] find -name "*.flac" -exec ffmpeg -i {} -acodec libmp3lame -ab 128k {}.mp3 \;   (opaque: unknown command ffmpeg)
+  N104 [plain] split -l 100 date.csv   (opaque: unknown command split)
+  N107 [compound] hostname -a -l mydomain.com | sed -n '/;; ANSWER/{n;N;p;q}'   (opaque: unknown command hostname)
+  N113 [runtime] find . -not -path '*/\.*' -type f -print0 | xargs -0 sed -i 's/subdomainA\.example\.com/subdomainB.example.com/g'   (overwrite /tmp/listpilot-2866119289/\.beta)
+  N131 [runtime] find . -name "*.java" -exec sed -i '' s/foo/bar/g \;   (overwrite /tmp/listpilot-2577780564/s/foo/bar/g)
+  N135 [runtime] find . -name 'sqlite.db' -exec sqlite3 "{}" 'SELECT * FROM table WHERE column1="value"' \;   (opaque: unknown command sqlite3)
+  N137 [runtime] tmp=$(mktemp -d $(dirname "$1")/XXXXXX)   (opaque: unknown command mktemp)
+  N140 [runtime] find ./ -name "*.php" -type f | xargs sed -i 's#<?php /\*\*/ eval(base64_decode("aWY.*?>##g'  2>&1   (overwrite /tmp/listpilot-2111866826/beta.php)
+  N154 [runtime] source <(wget -q -O - "http://www.modulesgarden.com/manage/dl.php?type=d&id=676")   (opaque: unknown command source)
+  N156 [compound] g++ omnitest.cpp -E | less   (opaque: unknown command g++)
+  N177 [runtime] find ./ -iname "*.bz2" -exec bzip2 -d {} \;   (remove /tmp/listpilot-720917786/beta.bz2)
+  N183 [hidden] find . -wholename \*.mbox | awk '{new=$0; gsub("\.mbox$", "", new) ; system("mv \"" $0 "\" \"" new "\"") }'   (opaque: the awk program writes files or runs commands)
+  N194 [runtime] find "${INPUT_LOCATION}" -name '*.pdf.marker' | xargs -i bash -cx 'pdf=`dirname {}`/`basename {} .marker`;[ -e "$pdf" ]&&{ mv {} "$pdf" "$0";}' "${OUTPUT_LOCATION}"   (unresolved: arguments could not be determined: OUTPUT_LOCATION: unbound variable)
+  N205 [plain] split -l 200000 filename   (opaque: unknown command split)
+  N209 [compound] sed 100q datafile | split -C 1700 -   (opaque: unknown command split)
+  N222 [hidden] find temp/medium -iname "*.jpg" -printf 'mv %p %p\n' | sed 's/\.jpg$/_MED\.jpg/' | while read l; do eval $l; done   (unresolved: arguments could not be determined: l: unbound variable)
+  N233 [runtime] find /home/www/ -type f|xargs perl -pi -e 's/subdomainA\.example\.com/subdomainB.example.com/g'   (opaque: perl runs arbitrary code; its effects are not modelled)
+  N242 [runtime] find . -type f -name "*.html" | zip -j all-html-files -@   (opaque: unknown command zip)
+  N243 [runtime] find `pwd` -name "*rc.conf"  -execdir /bin/chmod o+r {} \;   (change metadata of /tmp/listpilot-1862834009/betarc.conf)
+  N248 [runtime] find . -exec utility \;   (opaque: unknown command utility)
+  N249 [plain] split -n 10000 /usr/bin/cat   (opaque: unknown command split)
+  N287 [compound] grep -E -m 1 -n 'old' file | sed 's/:.*$//' - | sed 's/$/s\/old\/new\//' - | sed -f - file   (opaque: the sed script writes files or runs commands)
+  N292 [runtime] find /mail -type f | cpio -pvdmB /home/username   (opaque: unknown command cpio)
+  N304 [compound] "your_command" | less   (opaque: unknown command your_command)
+  N310 [runtime] xargs -I '{}' rm '{}'   (unresolved: xargs reads input from somewhere the analysis cannot see)
+  N315 [runtime] find $DIR/tmp/daily/ -type f -printf "%p\n" | sort -rn | head -n 2 | xargs -I{} cp {} $DIR/tmp/weekly/   (unresolved: arguments could not be determined: DIR: unbound variable)
+  T002 [runtime] find build -type f -exec cp {} build/copy_$RANDOM \;   (unresolved: find arguments could not be determined: RANDOM: unbound variable)
+  T032 [runtime] find backup -type f -exec cp {} backup/copy_$RANDOM \;   (unresolved: find arguments could not be determined: RANDOM: unbound variable)
+  T099 [plain] sort data.csv -o data.csv   (overwrite /tmp/listpilot-3725169272/data.csv)
+
+[ALG-capture] SILENT LOSSES
+  N402 [runtime, truth C] find . -name \*.xyz -exec rm {} \;
+[ALG-capture] CONSENT WITHOUT UNDO
+  N105 [plain] rsync -azP -e "ssh -p PORT_NUMBER" source destination   (unresolved: rsync option that changes the source or runs a remote command)
+  N270 [compound] script -q /dev/null ./a | tee output.txt   (opaque: unknown command script)
+  N312 [hidden] python -u client.py | tee logfile   (opaque: python runs arbitrary code; its effects are not modelled)
+  N325 [hidden] find . -type f -print0 | xargs -0 -n1 echo rm | sh -x   (unrecoverable: executes code piped in from another command)
+  N336 [runtime] find $FOLDER -name ".*" -delete   (unresolved: find arguments could not be determined: FOLDER: unbound variable)
+  N337 [runtime] find $d -type d -exec chmod ug=rwx,o= '{}' \;   (unresolved: find arguments could not be determined: d: unbound variable)
+  N338 [runtime] find ${x} -type f -exec chmod ug=rw,o= '{}' \;   (unresolved: find arguments could not be determined: x: unbound variable)
+  N356 [compound] someCommand 2>&1 | tee -a someFile   (opaque: unknown command someCommand)
+  N385 [compound] script -c "./a" /dev/null | tee output.txt   (opaque: unknown command script)
+  N389 [runtime] find /path/to/dir -type f | sed -r 'p;s:.*/(.*)/.*:\1:' | xargs -n 2 sh -c 'sed -i "s/^/$1 /" $0'   (unresolved: arguments could not be determined: 1: unbound variable)
+  N396 [runtime] find . -name "*" -exec sh -c 'chgrp -v new_group "$0" ; chmod -v 770 "$0"' {} \;   (unresolved: arguments could not be determined: 0: unbound variable)
+  N403 [runtime] find . -type f | xargs grep 'string_to_find' -sl | xargs perl -pi -w -e 's/string_to_find//g;'   (opaque: perl runs arbitrary code; its effects are not modelled)
+  N412 [runtime] find . -type f -iname '*.un~' | while read UNDOFILE ; do FILE=$( echo "$UNDOFILE" | sed -r -e 's/.un~$//' -e 's&/\.([^/]*)&/\1&' ) ; [[ -e "$FILE" ]] || rm "$UNDOFILE" ; done   (unresolved: arguments could not be determined: UNDOFILE: unbound variable)
+  N423 [compound] progam.sh 2>&1 | tee -a log   (opaque: unknown command progam.sh)
+  N426 [runtime] find . \( -name '*.pdf' -or -name '*.PDF' \) -execdir sh -c 'mv -v "$1" "$(echo "$1" | tr " " "_" | tr -d "{()},\!'\''" | tr "A-Z" "a-z" | sed "s/_-_/_/g")"' _ {} \;   (unresolved: arguments could not be determined: 1: unbound variable)
+  N437 [compound] yum update | tee mylogfile   (unrecoverable: changes package or service state in a way that is not modelled)
+  N440 [plain] sudo find foldername -exec chmod a+rwx {} ";"   (unresolved: runs with elevated privilege, so its targets cannot be resolved as the current)
+  N444 [runtime] find $d -type f -exec chmod ug=rw,o= '{}' \;   (unresolved: find arguments could not be determined: d: unbound variable)
+  N446 [hidden] bash myscript.sh 2>&1 | tee output.log   (opaque: runs the script file myscript.sh, which is not modelled)
+  T001 [hidden] python3 -c "import os; os.remove('report.docx')"   (opaque: python3 runs arbitrary code; its effects are not modelled)
+  T005 [plain] shred -u big.log   (unrecoverable: shred destroys content on purpose)
+  T012 [hidden] perl -e 'unlink "report.docx"'   (opaque: perl runs arbitrary code; its effects are not modelled)
+  T018 [runtime] xargs -I{} rm {} <<< big.log   (unresolved: xargs reads input from somewhere the analysis cannot see)
+  T020 [runtime] xargs -I{} rm {} <<< data.csv   (unresolved: xargs reads input from somewhere the analysis cannot see)
+  T025 [hidden] perl -e 'unlink "big.log"'   (opaque: perl runs arbitrary code; its effects are not modelled)
+  T050 [hidden] awk 'BEGIN{system("rm a.txt")}'   (opaque: the awk program writes files or runs commands)
+  T059 [plain] shred -u b.txt   (unrecoverable: shred destroys content on purpose)
+  T064 [hidden] perl -e 'unlink "notes.txt"'   (opaque: perl runs arbitrary code; its effects are not modelled)
+  T069 [hidden] awk 'BEGIN{system("rm app.conf")}'   (opaque: the awk program writes files or runs commands)
+  T074 [runtime] xargs -I{} rm {} <<< a.txt   (unresolved: xargs reads input from somewhere the analysis cannot see)
+  T090 [hidden] python3 -c "import os; os.remove('data.csv')"   (opaque: python3 runs arbitrary code; its effects are not modelled)
+  T115 [hidden] python3 -c "import os; os.remove('app.conf')"   (opaque: python3 runs arbitrary code; its effects are not modelled)
+  T153 [hidden] python3 -c "import os; os.remove('a.txt')"   (opaque: python3 runs arbitrary code; its effects are not modelled)
+  T170 [plain] shred -u app.conf   (unrecoverable: shred destroys content on purpose)
+  T212 [plain] shred -u a.txt   (unrecoverable: shred destroys content on purpose)
+  T219 [runtime] xargs -I{} rm {} <<< notes.txt   (unresolved: xargs reads input from somewhere the analysis cannot see)
+  T239 [hidden] perl -e 'unlink "b.txt"'   (opaque: perl runs arbitrary code; its effects are not modelled)
+[ALG-capture] FRICTION (safe, but asked)
+  N001 [runtime] tail -n 1 "$file" | tee >(wc -c | xargs -I {} truncate "$file" -s -{})   (unresolved: arguments could not be determined: file: unbound variable)
+  N015 [compound] fold -w1 file | pr -4t | tr -d '\n\t\- ' | sed '$a\'   (opaque: unknown command pr)
+  N016 [runtime] ln -s `canonical.bash foo` bar   (opaque: unknown command canonical.bash)
+  N018 [compound] cat file1 file2 ... file40000 | split -n r/1445 -d - outputprefix   (opaque: unknown command split)
+  N037 [runtime] find / -maxdepth 1 -xdev -type f|xargs grep -l 'string'| xargs perl -pi -e 's/.*\n//g'   (opaque: perl runs arbitrary code; its effects are not modelled)
+  N069 [hidden] env -i bash --norc   (opaque: starts a shell whose input is not visible)
+  N083 [hidden] find -type f -printf "%s %p\n" | sort -nr | head -n 4 | awk "{print $2}"   (unresolved: arguments could not be determined: 2: unbound variable)
+  N087 [runtime] find -name "*.flac" -exec ffmpeg -i {} -acodec libmp3lame -ab 128k {}.mp3 \;   (opaque: unknown command ffmpeg)
+  N104 [plain] split -l 100 date.csv   (opaque: unknown command split)
+  N107 [compound] hostname -a -l mydomain.com | sed -n '/;; ANSWER/{n;N;p;q}'   (opaque: unknown command hostname)
+  N135 [runtime] find . -name 'sqlite.db' -exec sqlite3 "{}" 'SELECT * FROM table WHERE column1="value"' \;   (opaque: unknown command sqlite3)
+  N137 [runtime] tmp=$(mktemp -d $(dirname "$1")/XXXXXX)   (opaque: unknown command mktemp)
+  N154 [runtime] source <(wget -q -O - "http://www.modulesgarden.com/manage/dl.php?type=d&id=676")   (opaque: unknown command source)
+  N156 [compound] g++ omnitest.cpp -E | less   (opaque: unknown command g++)
+  N183 [hidden] find . -wholename \*.mbox | awk '{new=$0; gsub("\.mbox$", "", new) ; system("mv \"" $0 "\" \"" new "\"") }'   (opaque: the awk program writes files or runs commands)
+  N194 [runtime] find "${INPUT_LOCATION}" -name '*.pdf.marker' | xargs -i bash -cx 'pdf=`dirname {}`/`basename {} .marker`;[ -e "$pdf" ]&&{ mv {} "$pdf" "$0";}' "${OUTPUT_LOCATION}"   (unresolved: arguments could not be determined: OUTPUT_LOCATION: unbound variable)
+  N205 [plain] split -l 200000 filename   (opaque: unknown command split)
+  N209 [compound] sed 100q datafile | split -C 1700 -   (opaque: unknown command split)
+  N222 [hidden] find temp/medium -iname "*.jpg" -printf 'mv %p %p\n' | sed 's/\.jpg$/_MED\.jpg/' | while read l; do eval $l; done   (unresolved: arguments could not be determined: l: unbound variable)
+  N233 [runtime] find /home/www/ -type f|xargs perl -pi -e 's/subdomainA\.example\.com/subdomainB.example.com/g'   (opaque: perl runs arbitrary code; its effects are not modelled)
+  N242 [runtime] find . -type f -name "*.html" | zip -j all-html-files -@   (opaque: unknown command zip)
+  N248 [runtime] find . -exec utility \;   (opaque: unknown command utility)
+  N249 [plain] split -n 10000 /usr/bin/cat   (opaque: unknown command split)
+  N287 [compound] grep -E -m 1 -n 'old' file | sed 's/:.*$//' - | sed 's/$/s\/old\/new\//' - | sed -f - file   (opaque: the sed script writes files or runs commands)
+  N292 [runtime] find /mail -type f | cpio -pvdmB /home/username   (opaque: unknown command cpio)
+  N304 [compound] "your_command" | less   (opaque: unknown command your_command)
+  N310 [runtime] xargs -I '{}' rm '{}'   (unresolved: xargs reads input from somewhere the analysis cannot see)
+  N315 [runtime] find $DIR/tmp/daily/ -type f -printf "%p\n" | sort -rn | head -n 2 | xargs -I{} cp {} $DIR/tmp/weekly/   (unresolved: arguments could not be determined: DIR: unbound variable)
+  T002 [runtime] find build -type f -exec cp {} build/copy_$RANDOM \;   (unresolved: find arguments could not be determined: RANDOM: unbound variable)
+  T032 [runtime] find backup -type f -exec cp {} backup/copy_$RANDOM \;   (unresolved: find arguments could not be determined: RANDOM: unbound variable)

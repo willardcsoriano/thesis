@@ -1,0 +1,35 @@
+seed 20260923; 3312 NL2Bash candidates drawn (templates are not drawn)
+items: 772 total; partitions map[E:80 N:450 T:242]; labels map[C:316 R:376 U:80]
+
+partition shape label count
+  E  external  U  80
+  N  compound  C  12
+  N  compound  R  35
+  N  hidden    C  6
+  N  hidden    R  19
+  N  plain     C  17
+  N  plain     R  38
+  N  redirect  C  1
+  N  redirect  R  1
+  N  runtime   C  114
+  N  runtime   R  207
+  T  compound  C  22
+  T  compound  R  4
+  T  hidden    C  24
+  T  plain     C  69
+  T  plain     R  30
+  T  redirect  C  10
+  T  redirect  R  2
+  T  runtime   C  41
+  T  runtime   R  40
+
+excluded (ran, did not finish cleanly; never labelled):
+  command not installed                              133
+  harness error                                      2
+  non-zero exit                                      876
+  template: command not installed                    1
+  template: harness error                            3
+  template: non-zero exit                            13
+  template: wrote outside the fixture or needed privilege 4
+  timed out                                          186
+  wrote outside the fixture or needed privilege      116

@@ -16,3 +16,7 @@ coverage.*
 # regenerated every run, reviewed locally, never a committed artifact
 live_classifier_report.json
 layer4_report.json
+manual-tests/bench-results/
+
+# Raw NL2Bash download (GPL-3.0); fetched locally, never committed
+/pilot/nl2bash_all.*
