@@ -1,0 +1,47 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make *)",
+      "Bash(go build *)",
+      "Bash(go vet *)",
+      "Bash(go test *)",
+      "Bash(gofmt *)",
+      "Bash(~/.local/go/bin/go *)",
+      "Bash(python3 prototype/pilot/*)",
+      "Bash(sha256sum *)",
+      "Bash(jq *)",
+      "Agent(fork)",
+      "Agent(Explore)",
+      "Agent(general-purpose)"
+    ],
+    "ask": [
+      "Bash(git push *)"
+    ]
+  },
+  "env": {
+    "BASH_DEFAULT_TIMEOUT_MS": "300000",
+    "BASH_MAX_TIMEOUT_MS": "1200000"
+  },
+  "autoMode": {
+    "environment": [
+      "### Thesis project (SynapseOS)",
+      "**Trusted repo**: /home/willard/projects/thesis — a Go prototype plus a written thesis. Routine here: go build/vet/test, make targets, python3 scripts under prototype/pilot, editing files under the repo and the session scratchpad, and git on feature branches (never main; pushing is not routine and is asked about).",
+      "**Local model server**: Ollama on 127.0.0.1:11435 (started with OLLAMA_HOST, `ollama serve`, `ollama pull qwen2.5-coder:*`); models come from ollama.com. Routine.",
+      "**Sandboxed execution**: prototype/cmd/recoverycheck and cmd/listpilot run commands only inside bubblewrap (`bwrap --ro-bind / /` with one writable fixture directory, `--unshare-all`); resolver commands are proven read-only first. Running these is routine and does not touch real user data.",
+      "**Trusted read-only sources**: code.claude.com docs, go.dev/dl, proxy.golang.org, raw.githubusercontent.com/TellinaTool/nl2bash (dataset, GPL-3.0, kept out of git), github.com/mvdan/sh."
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/projects/claude-config/claude/hooks/guard-bash.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
