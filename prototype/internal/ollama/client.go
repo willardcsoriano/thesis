@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -44,11 +45,30 @@ func New(baseURL string) *Client {
 // generateRequest is the POST /api/generate body. Fields mirror the documented
 // Ollama contract; Stream selects between Generate and GenerateStream.
 type generateRequest struct {
-	Model   string         `json:"model"`
-	Prompt  string         `json:"prompt"`
-	System  string         `json:"system,omitempty"`
-	Stream  bool           `json:"stream"`
-	Options map[string]any `json:"options,omitempty"`
+	Model     string         `json:"model"`
+	Prompt    string         `json:"prompt"`
+	System    string         `json:"system,omitempty"`
+	Stream    bool           `json:"stream"`
+	Options   map[string]any `json:"options,omitempty"`
+	KeepAlive string         `json:"keep_alive,omitempty"`
+}
+
+// defaultKeepAlive overrides Ollama's own default (5m) so the model stays
+// resident for a full interactive session instead of being evicted and
+// reloaded mid-conversation. Session 32 traced an apparent 34s generation
+// stall to exactly this: not slow inference, but a cold reload after the
+// idle window lapsed — indistinguishable from real latency in the
+// transcript, and easy to mistake for "the model is too slow" (or "too
+// small") when it is really "the model was not there yet." Override with
+// SYNAPSE_KEEP_ALIVE (Ollama's own duration syntax, e.g. "10m", or "-1" to
+// never unload) if 30 minutes doesn't fit a given session's shape.
+const defaultKeepAlive = "30m"
+
+func keepAlive() string {
+	if v := os.Getenv("SYNAPSE_KEEP_ALIVE"); v != "" {
+		return v
+	}
+	return defaultKeepAlive
 }
 
 // GenerateResponse is the reply body. With stream=false it is the whole
@@ -76,11 +96,12 @@ func (r *GenerateResponse) Latency() time.Duration {
 // for defaults.
 func (c *Client) Generate(ctx context.Context, model, system, prompt string, options map[string]any) (*GenerateResponse, error) {
 	body, err := json.Marshal(generateRequest{
-		Model:   model,
-		Prompt:  prompt,
-		System:  system,
-		Stream:  false,
-		Options: options,
+		Model:     model,
+		Prompt:    prompt,
+		System:    system,
+		Stream:    false,
+		Options:   options,
+		KeepAlive: keepAlive(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
@@ -134,11 +155,12 @@ func (c *Client) Generate(ctx context.Context, model, system, prompt string, opt
 // executor at all.
 func (c *Client) GenerateStream(ctx context.Context, model, system, prompt string, options map[string]any, onToken func(string)) (*GenerateResponse, error) {
 	body, err := json.Marshal(generateRequest{
-		Model:   model,
-		Prompt:  prompt,
-		System:  system,
-		Stream:  true,
-		Options: options,
+		Model:     model,
+		Prompt:    prompt,
+		System:    system,
+		Stream:    true,
+		Options:   options,
+		KeepAlive: keepAlive(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
