@@ -374,8 +374,8 @@
   <p class="toc-entry level-2"><a href="#sec2">Section 2: Procedure / Experiment</a><span class="toc-page">42</span></p>
   <p class="toc-entry level-2"><a href="#sec3">Section 3: System Testing</a><span class="toc-page">49</span></p>
 
-  <p class="toc-entry" style="font-weight: bold; margin-top: 0.8em;"><a href="#sec-master-references">REFERENCES</a><span class="toc-page">66</span></p>
-  <p class="toc-entry" style="font-weight: bold; margin-top: 0.8em;"><a href="#sec-appendices">APPENDICES</a><span class="toc-page">71</span></p>
+  <p class="toc-entry" style="font-weight: bold; margin-top: 0.8em;"><a href="#sec-master-references">REFERENCES</a><span class="toc-page">67</span></p>
+  <p class="toc-entry" style="font-weight: bold; margin-top: 0.8em;"><a href="#sec-appendices">APPENDICES</a><span class="toc-page">72</span></p>
 </div>
 
 <div class="toc-block" id="list-of-tables" style="page-break-before: always;">
@@ -384,10 +384,10 @@
   <p class="toc-entry"><a href="#table-2-1">Table 2.1: Comparative analysis of surveyed systems along the four-layer pipeline</a><span class="toc-page">29</span></p>
   <p class="toc-entry"><a href="#table-3-1">Table 3.1: Study evaluation machines</a><span class="toc-page">38</span></p>
   <p class="toc-entry"><a href="#table-3-2">Table 3.2: SynapseOS minimum deployment requirements</a><span class="toc-page">39</span></p>
-  <p class="toc-entry"><a href="#table-3-3">Table 3.3: Metrics for the recoverability algorithm, and what each is for</a><span class="toc-page">57</span></p>
+  <p class="toc-entry"><a href="#table-3-3">Table 3.3: Metrics for the recoverability algorithm, and what each is for</a><span class="toc-page">58</span></p>
   <p class="toc-entry"><a href="#table-3-4">Table 3.4: Paired comparisons of the effect analysis against each list on the held-out corpus, with Holm-corrected significance</a><span class="toc-page">60</span></p>
-  <p class="toc-entry"><a href="#appendix-c">Table C.1: Custom cross-platform task suite &mdash; core tasks</a><span class="toc-page">73</span></p>
-  <p class="toc-entry"><a href="#appendix-c">Table C.2: Boundary tasks &mdash; outside shell expressibility</a><span class="toc-page">74</span></p>
+  <p class="toc-entry"><a href="#appendix-c">Table C.1: Custom cross-platform task suite &mdash; core tasks</a><span class="toc-page">74</span></p>
+  <p class="toc-entry"><a href="#appendix-c">Table C.2: Boundary tasks &mdash; outside shell expressibility</a><span class="toc-page">75</span></p>
 </div>
 
 <div class="toc-block" id="list-of-figures">
@@ -400,7 +400,7 @@
 
 <div id="abstract-page" style="page-break-before: always; page-break-after: always;">
   <h1 style="font-size: 12pt; font-weight: bold; line-height: 2.0; margin-bottom: 30pt; text-align: center;">ABSTRACT</h1>
-  <p style="line-height: 1.0; text-indent: 1.50cm;">A computer can do far more than most people using it can reach.&nbsp; The command line expresses nearly any operation a system supports, but only for someone who can write a scripting language such as bash or PowerShell.&nbsp; This study designs, implements, and evaluates SynapseOS, a conversational interface layer in which the user states an intention in ordinary language and the system carries it out through shell commands on Linux, with inference running locally.&nbsp; Letting a language model act on a real system raises a problem the interface cannot solve: a generated command may destroy data before its author can read it, and existing safeguards judge a command by its name rather than by what it does.&nbsp; The principal technical contribution is an algorithm that finds what a generated command will change before it runs.&nbsp; It sees through the wrappers a line hides its effects behind &mdash; <em>find -exec</em>, <em>xargs</em>, loops, and command substitution &mdash; and resolves targets computed at run time with read-only dry runs, so that exactly what would be lost can be captured and the command undone.&nbsp; It is evaluated on a labelled corpus against the pattern matching it extends and against a list that refuses everything it does not recognise, reporting commands that lose data silently and the share of captures that restore the prior state.&nbsp; SynapseOS is evaluated separately, in a within-subjects study against each participant&rsquo;s own operating system.&nbsp; The two evaluations are independent.</p>
+  <p style="line-height: 1.0; text-indent: 1.50cm;">The command line can express nearly any operation a computer supports, but only for someone who can write a scripting language. This study designs, implements, and evaluates SynapseOS, a conversational interface layer in which the user states an intention in ordinary language and the system carries it out through shell commands on Linux, with inference running locally. Letting a language model act on a real system raises a problem the interface cannot solve: a generated command may destroy data before its author can read it, and existing safeguards judge a command by its name rather than by what it does. The principal technical contribution is an algorithm that finds what a generated command will change before it runs. It sees through wrappers such as <em>find -exec</em>, <em>xargs</em>, loops, and command substitution, and resolves targets computed at run time with read-only dry runs, so that what would be lost can be captured and the command undone. On a held-out corpus of 776 commands labelled by sandboxed execution, a pattern list let 41% of the commands that lose something run silently, against 0.2% for the algorithm, which also captured and restored 88% of executable losses; a list that refuses everything it does not recognise was as safe but restored none. SynapseOS is also evaluated in a within-subjects study against each participant&rsquo;s own operating system; the two evaluations are independent.</p>
   <p style="text-indent: 0; margin-top: 24pt; line-height: 2.0;"><strong>Keywords:</strong> conversational interface, human-computer interaction, local language model, Linux desktop, user study</p>
 </div>
 
@@ -893,6 +893,7 @@ The distinction matters because enumeration does not compose. A pattern list mat
   <tr><td>Display</td><td>CLI mode / TUI mode: any terminal or remote connection; no graphical environment required. GUI mode: graphical desktop environment required.</td></tr>
   <tr><td>Language Model</td><td>Locally-hosted small language model (~1.8 GB)<sup class="fn"><a href="#ch3-fn2">2</a></sup>; CPU-only inference; no GPU required. A cloud language model backend is planned as an optional, user-configured alternative; it is not implemented in the thesis prototype.</td></tr>
   <tr><td>Shell</td><td>GNU bash. Commands generated by the intent parser are dispatched through <code>bash -c</code>; a POSIX-only shell such as dash is insufficient, since generated commands may use bash-specific syntax.</td></tr>
+  <tr><td>Filesystem</td><td>ext4 root, the Debian default. It has no cheap snapshots or reflinks, so a full copy of a working directory before each command costs time and space proportional to its size; the capture plan exists to avoid that cost. A copy-on-write filesystem such as btrfs or XFS would make capture cheaper and is left as future work.</td></tr>
   <tr><td>Sandbox</td><td>bubblewrap. The analysis runs its read-only resolvers with the whole filesystem mounted read-only inside it. Without it, resolution is switched off and any command that needs it asks, so the system stays safe and only becomes more cautious.</td></tr>
   <tr><td>Inference Server</td><td>Local inference server (Ollama)<sup class="fn"><a href="#ch3-fn3">3</a></sup>; manages model lifecycle, loading, and query serving on the host machine.</td></tr>
 </table>
