@@ -15,7 +15,7 @@ A Linux distribution that replaces the conventional graphical session layer — 
 
 - **Alexandra Sulit**
 - **Willard Soriano**
-- **Allyson Vivar**
+- **Steven Evian Lozano**
 
 Department of Computer Science  
 Mapúa University – Makati
