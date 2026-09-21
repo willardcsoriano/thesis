@@ -1,0 +1,20 @@
+corpus: 776 items; 409 lose something or are external; 329 executable losses
+recovery check applied to ALG-strict coverage (616 items with a restore result)
+
+measure           vs     n ALG wins ALG loses  p (exact)  p (Holm)  risk diff    95% CI (Newcombe) odds ratio
+silent loss       L0   409      165         0    4.3e-50   1.3e-49     +0.403     [+0.356, +0.452]        inf
+silent loss       L1   409        0         0          1         1     +0.000     [-0.009, +0.009]        inf
+capture coverage  L0   329      156        15    9.4e-31   1.9e-30     +0.429     [+0.363, +0.488]       10.4
+capture coverage  L1   329      289         0      2e-87     8e-87     +0.878     [+0.837, +0.909]        inf
+
+risk difference is positive when ALG-strict is better (less silent loss, or more coverage).
+ALG wins: items where ALG-strict is right and the baseline is wrong; ALG loses: the reverse.
+
+silent loss       L0            166/409  =  40.6%  [Wilson 35.9%, 45.4%]
+silent loss       L1              1/409  =   0.2%  [Wilson 0.0%, 1.4%]
+silent loss       ALG-strict      1/409  =   0.2%  [Wilson 0.0%, 1.4%]
+silent loss       ALG-capture     1/409  =   0.2%  [Wilson 0.0%, 1.4%]
+capture coverage  L0            148/329  =  45.0%  [Wilson 39.7%, 50.4%]
+capture coverage  L1              0/329  =   0.0%  [Wilson -0.0%, 1.2%]
+capture coverage  ALG-strict    289/329  =  87.8%  [Wilson 83.9%, 90.9%]
+capture coverage  ALG-capture   289/329  =  87.8%  [Wilson 83.9%, 90.9%]
