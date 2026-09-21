@@ -62,6 +62,8 @@ func main() {
 	exclude := flag.String("exclude", "pilot/corpus.jsonl,pilot/corpus2.jsonl,pilot/corpus3.jsonl", "corpora whose NL2Bash items must not be reused")
 	out := flag.String("out", "pilot/corpus4.jsonl", "corpus output")
 	report := flag.String("report", "pilot/oracle_report4.txt", "report output")
+	from := flag.String("from", "", "label commands from this file (index<TAB>model<TAB>command) instead of sampling NL2Bash; no templates, no quotas")
+	part := flag.String("partition", "M", "partition letter for -from items")
 	flag.Parse()
 
 	bw := oracle.Bwrap()
@@ -71,6 +73,11 @@ func main() {
 	}
 	rng := rand.New(rand.NewSource(*seed))
 	rep := newReport()
+	if *from != "" {
+		items := labelFile(bw, *seed, *from, *part, rep)
+		writeOut(items, *out, *report, rep, *seed)
+		return
+	}
 
 	var items []item
 	if *nl2bash != "" {
@@ -79,9 +86,12 @@ func main() {
 	if *useTemplates {
 		items = append(items, drawTemplates(bw, rng, *seed, *nTmpl, rep)...)
 	}
-	number(items)
+	writeOut(items, *out, *report, rep, *seed)
+}
 
-	f, err := os.Create(*out)
+func writeOut(items []item, out, report string, rep *report, seed int64) {
+	number(items)
+	f, err := os.Create(out)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -94,12 +104,54 @@ func main() {
 	}
 	w.Flush()
 	f.Close()
-	rep.summarise(items, *seed)
-	if err := os.WriteFile(*report, []byte(rep.text()), 0o644); err != nil {
+	rep.summarise(items, seed)
+	if err := os.WriteFile(report, []byte(rep.text()), 0o644); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	fmt.Print(rep.text())
+}
+
+// labelFile labels every command in a file of model output. Nothing is sampled or
+// capped: the partition is whatever the model wrote.
+func labelFile(bw string, seed int64, path, part string, rep *report) []item {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "corpusgen:", err)
+		os.Exit(1)
+	}
+	var cands []candidate
+	for _, ln := range strings.Split(string(raw), "\n") {
+		f := strings.SplitN(ln, "\t", 3)
+		if len(f) != 3 || strings.TrimSpace(f[2]) == "" {
+			continue
+		}
+		cands = append(cands, candidate{src: "model:" + f[0], cmd: strings.TrimSpace(f[2]), partition: part})
+	}
+	res := make([]*item, len(cands))
+	why := make([]string, len(cands))
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, 8)
+	for i := range cands {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(i int) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			res[i], why[i] = label(bw, seed, cands[i])
+		}(i)
+	}
+	wg.Wait()
+	var out []item
+	for i := range res {
+		rep.drawn++
+		if res[i] == nil {
+			rep.excluded[why[i]]++
+			continue
+		}
+		out = append(out, *res[i])
+	}
+	return out
 }
 
 func number(items []item) {
