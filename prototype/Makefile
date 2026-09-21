@@ -4,11 +4,10 @@
 # already on PATH — see ../setup.md.
 GO := $(shell command -v go 2>/dev/null || echo $(HOME)/.local/go/bin/go)
 
-# Default port sidesteps 11434, which on this machine is already held by an
-# unrelated process (a VS Code utility subprocess) that makes the stock
-# systemd ollama service crash-loop. Override with OLLAMA_PORT=11434 if your
-# machine doesn't have that conflict.
-OLLAMA_PORT ?= 11435
+# The system Ollama service listens on the default port. If something else holds 11434
+# (a VS Code utility process once did), run `OLLAMA_PORT=11435 make ollama-serve-bg` and use the same
+# OLLAMA_PORT for the other targets.
+OLLAMA_PORT ?= 11434
 export SYNAPSE_OLLAMA ?= http://127.0.0.1:$(OLLAMA_PORT)
 
 build:
