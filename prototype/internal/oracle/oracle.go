@@ -220,9 +220,9 @@ func Bwrap() string {
 	return p
 }
 
-// sudoShim makes privilege prefixes transparent: the fixture is owned by the
+// SudoShim makes privilege prefixes transparent: the fixture is owned by the
 // current user, so what the command does to it is the same with or without root.
-const sudoShim = `sudo() { while [ $# -gt 0 ]; do case "$1" in -u|-g|-h|-p|-C|-D|-r|-t|-T|-U) shift 2;; -*) shift;; *) break;; esac; done; "$@"; }; doas() { sudo "$@"; }; `
+const SudoShim = `sudo() { while [ $# -gt 0 ]; do case "$1" in -u|-g|-h|-p|-C|-D|-r|-t|-T|-U) shift 2;; -*) shift;; *) break;; esac; done; "$@"; }; doas() { sudo "$@"; }; `
 
 // Execute runs cmd with root as its working directory under bubblewrap: the rest
 // of the filesystem read-only, no network, no other namespaces shared, standard
@@ -238,7 +238,7 @@ func Execute(ctx context.Context, bwrap, root, cmd string, limit time.Duration) 
 	if err := os.MkdirAll(home, 0o755); err != nil {
 		return Outcome{}, err
 	}
-	script := "ulimit -v 4000000 -f 200000 2>/dev/null; " + sudoShim + cmd
+	script := "ulimit -v 4000000 -f 200000 2>/dev/null; " + SudoShim + cmd
 	c := exec.CommandContext(ctx, bwrap,
 		"--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc",
 		"--bind", root, root, "--unshare-all", "--die-with-parent",

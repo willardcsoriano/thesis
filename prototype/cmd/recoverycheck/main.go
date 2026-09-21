@@ -34,6 +34,7 @@ import (
 
 	"synapseos/internal/effects"
 	"synapseos/internal/gate"
+	"synapseos/internal/oracle"
 	"synapseos/internal/recoverycheck"
 	"synapseos/internal/undo"
 )
@@ -45,6 +46,18 @@ type Case struct {
 	Cmd   string
 	Home  bool // HOME points at the fixture
 	From  string
+	// Fx is a complete fixture written by the corpus generator. When set it replaces
+	// the base fixture, and HOME is the fixture's home directory, as it was for the oracle.
+	Fx []oracle.Entry
+}
+
+// homeFor is the HOME the command runs with: the fixture root for the older
+// corpora, its home subdirectory for a generated one.
+func homeFor(c Case, wd string) string {
+	if c.Fx != nil {
+		return filepath.Join(wd, "home")
+	}
+	return wd
 }
 
 type trial struct {
@@ -82,12 +95,19 @@ func baseFixture(wd string) error {
 	return os.MkdirAll(filepath.Join(wd, "tmp"), 0o755)
 }
 
-func mkFixture(setup string) (string, error) {
+func mkFixture(setup string, fx []oracle.Entry) (string, error) {
 	wd, err := os.MkdirTemp("", "rc-fix-")
 	if err != nil {
 		return "", err
 	}
-	if err := baseFixture(wd); err != nil {
+	if fx != nil {
+		if err := oracle.Materialize(wd, fx); err != nil {
+			return wd, err
+		}
+		if err := os.MkdirAll(filepath.Join(wd, "home"), 0o755); err != nil {
+			return wd, err
+		}
+	} else if err := baseFixture(wd); err != nil {
 		return wd, err
 	}
 	if setup != "" {
@@ -118,13 +138,14 @@ func bwrapWorks() (string, bool) {
 	return p, exec.Command(p, "--ro-bind", "/", "/", "--unshare-all", "--die-with-parent", "true").Run() == nil
 }
 
-func sandboxRun(bw, wd, cmd string, home bool) (int, time.Duration, error) {
+func sandboxRun(bw, wd, cmd, home string) (int, time.Duration, error) {
 	args := []string{"--ro-bind", "/", "/", "--bind", wd, wd, "--dev", "/dev", "--proc", "/proc",
 		"--unshare-all", "--die-with-parent", "--chdir", wd}
-	if home {
-		args = append(args, "--setenv", "HOME", wd)
+	if home != "" {
+		args = append(args, "--setenv", "HOME", home)
 	}
-	args = append(args, "--", "bash", "-c", cmd)
+	// The same privilege shim the oracle uses, so a sudo prefix runs as the fixture's owner.
+	args = append(args, "--", "bash", "-c", oracle.SudoShim+cmd)
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	c := exec.CommandContext(ctx, bw, args...)
@@ -146,7 +167,7 @@ func sandboxSelfTest(bw string) error {
 	defer cleanup(wd)
 	outside := filepath.Join(os.TempDir(), fmt.Sprintf("rc-escape-%d", os.Getpid()))
 	defer os.Remove(outside)
-	if _, _, err := sandboxRun(bw, wd, "echo x > "+outside+"; echo y > inside.txt", false); err != nil {
+	if _, _, err := sandboxRun(bw, wd, "echo x > "+outside+"; echo y > inside.txt", ""); err != nil {
 		return err
 	}
 	if _, err := os.Stat(outside); err == nil {
@@ -242,7 +263,7 @@ func allocated(dir string) int64 {
 
 func runTrial(bw string, c Case, variant int, origHome string) *trial {
 	t := &trial{}
-	wd, err := mkFixture(c.Setup)
+	wd, err := mkFixture(c.Setup, c.Fx)
 	defer cleanup(wd)
 	if err != nil {
 		t.skipped = "fixture: " + err.Error()
@@ -252,8 +273,10 @@ func runTrial(bw string, c Case, variant int, origHome string) *trial {
 	defer cleanup(jh)
 
 	homeForAnalysis := origHome
-	if c.Home {
-		homeForAnalysis = wd
+	sandboxHome := ""
+	if c.Home || c.Fx != nil {
+		homeForAnalysis = homeFor(c, wd)
+		sandboxHome = homeForAnalysis
 	}
 	analysisStart := time.Now()
 	an := effects.New(wd)
@@ -316,7 +339,7 @@ func runTrial(bw string, c Case, variant int, origHome string) *trial {
 	before, _ := undo.Snapshot(wd)
 	beforeIDs, _ := undo.SnapshotIDs(wd)
 
-	exit, d, err := sandboxRun(bw, wd, c.Cmd, c.Home)
+	exit, d, err := sandboxRun(bw, wd, c.Cmd, sandboxHome)
 	t.exit, t.cmdSecs = exit, d.Seconds()
 	if err != nil {
 		t.skipped = "sandbox run failed: " + err.Error()
@@ -398,13 +421,14 @@ var curated = []Case{
 }
 
 type corpusRow struct {
-	ID        string `json:"id"`
-	Partition string `json:"partition"`
-	Label     string `json:"label"`
-	Command   string `json:"command"`
-	CmdFx     string `json:"cmd_fx"`
-	Setup     string `json:"setup"`
-	Home      bool   `json:"home"`
+	ID        string         `json:"id"`
+	Partition string         `json:"partition"`
+	Label     string         `json:"label"`
+	Command   string         `json:"command"`
+	CmdFx     string         `json:"cmd_fx"`
+	Setup     string         `json:"setup"`
+	Home      bool           `json:"home"`
+	Fx        []oracle.Entry `json:"fx"`
 }
 
 func loadCorpus(path string) ([]Case, error) {
@@ -421,14 +445,15 @@ func loadCorpus(path string) ([]Case, error) {
 		if err := json.Unmarshal(sc.Bytes(), &r); err != nil {
 			return nil, err
 		}
-		if r.Partition != "B" || (r.Label != "R" && r.Label != "C") {
+		generated := r.Fx != nil
+		if (!generated && r.Partition != "B") || (r.Label != "R" && r.Label != "C") {
 			continue
 		}
 		cmd := r.Command
 		if r.CmdFx != "" {
 			cmd = r.CmdFx
 		}
-		out = append(out, Case{ID: r.ID, Setup: r.Setup, Cmd: cmd, Home: r.Home, From: "corpus2"})
+		out = append(out, Case{ID: r.ID, Setup: r.Setup, Cmd: cmd, Home: r.Home, From: "corpus2", Fx: r.Fx})
 	}
 	return out, sc.Err()
 }
@@ -473,6 +498,9 @@ func main() {
 		curated[i].From = "curated"
 	}
 	all := append(cases, curated...)
+	if os.Getenv("RC_NO_CURATED") != "" {
+		all = cases // score only the corpus, not the hand-written cases
+	}
 
 	type row struct {
 		c          Case

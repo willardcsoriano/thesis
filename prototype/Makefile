@@ -72,7 +72,7 @@ clean:
 
 # Sandboxed execute-and-diff proof that the effects capture plan restores the prior state.
 # Output is kept in pilot/recovery_results.txt.
-.PHONY: recoverycheck
+.PHONY: recoverycheck recovery5
 recoverycheck:
 	$(GO) run ./cmd/recoverycheck pilot/corpus2.jsonl | tee pilot/recovery_results.txt
 
@@ -106,3 +106,8 @@ round4:
 	$(GO) run ./cmd/listpilot pilot/corpus4.jsonl > pilot/classifier_out4.jsonl
 	python3 pilot/analyze.py pilot/corpus4.jsonl pilot/classifier_out4.jsonl > pilot/results_round4.txt
 	@head -60 pilot/results_round4.txt
+
+# The same check on a generated corpus (held-out round 5): only its commands, not the hand-written cases.
+recovery5:
+	RC_NO_CURATED=1 $(GO) run ./cmd/recoverycheck pilot/corpus5.jsonl > pilot/recovery_results5.txt
+	@sed -n "/^SUMMARY/,/^FAILURES/p" pilot/recovery_results5.txt
