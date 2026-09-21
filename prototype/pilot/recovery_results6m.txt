@@ -1,0 +1,196 @@
+sandbox self-test: a write outside the fixture is blocked, a write inside is allowed
+case  class                     plan      V1    V2    V3    captured B  entries  fixture B  plan+capture s  command s  exit
+M001  recoverable                         yes   yes   yes   0           0        53         0.004           0.013      0
+M002  recoverable                         yes   yes   yes   0           0        53         0.000           0.014      0
+M003  recoverable                         yes   yes   yes   0           0        53         0.000           0.014      0
+M004  recoverable                         yes   yes   yes   0           0        53         0.000           0.058      0
+M005  recoverable                         yes   yes   yes   0           0        326        0.000           0.022      0
+M006  recoverable                         yes   yes   yes   0           0        390        0.000           0.009      0
+M007  recoverable-with-capture  trash     yes   yes   yes   0           13       53         0.000           0.007      0
+M008  recoverable                         yes   yes   yes   0           0        53         0.000           0.010      0
+M009  recoverable-with-capture  content   yes   yes   yes   99          2        152        0.007           0.010      0
+M010  unrecoverable                       skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: the command name is computed at run time
+M011  recoverable                         yes   yes   yes   0           0        152        0.000           0.012      0
+M012  recoverable                         yes   yes   yes   0           0        53         0.001           0.016      0
+M013  recoverable                         yes   yes   yes   0           0        53         0.000           0.010      0
+M014  recoverable-with-capture  content   yes   yes   yes   47          1        341        0.007           0.009      0
+M015  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M016  recoverable                         yes   yes   yes   0           0        193        0.000           0.016      0
+M017  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M018  recoverable                         yes   yes   yes   0           0        154        0.000           0.013      0
+M019  recoverable                         yes   yes   yes   0           0        53         0.000           0.020      0
+M020  recoverable                         yes   yes   yes   0           0        99         0.000           0.026      0
+M021  recoverable                         yes   yes   yes   0           0        53         0.000           0.009      0
+M022  recoverable                         yes   yes   yes   0           0        104        0.000           0.007      0
+M023  recoverable                         yes   yes   yes   0           0        53         0.000           0.033      0
+M024  recoverable-with-capture  content   yes   yes   yes   45          1        98         0.006           0.019      0
+M025  recoverable                         yes   yes   yes   0           0        53         0.000           0.023      0
+M026  recoverable-with-capture  content   yes   yes   yes   10          3        282        0.001           0.013      0
+M027  recoverable                         yes   yes   yes   0           0        105        0.000           0.016      0
+M028  recoverable                         yes   yes   yes   0           0        53         0.001           0.014      0
+M029  recoverable                         yes   yes   yes   0           0        53         0.000           0.012      0
+M030  recoverable                         yes   yes   yes   0           0        146        0.000           0.028      0
+M031  recoverable                         yes   yes   yes   0           0        108        0.000           0.026      0
+M032  recoverable-with-capture  trash     yes   yes   yes   0           1        103        0.011           0.030      0
+M033  recoverable                         yes   yes   yes   0           0        100        0.000           0.010      0
+M034  recoverable                         yes   yes   yes   0           0        110        0.000           0.009      0
+M035  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M036  recoverable                         yes   yes   yes   0           0        100        0.000           0.011      0
+M037  recoverable                         yes   yes   yes   0           0        195        0.008           0.011      0
+M038  recoverable                         yes   yes   yes   0           0        114        0.000           0.008      0
+M039  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M040  recoverable                         yes   yes   yes   0           0        53         0.000           0.007      0
+M041  recoverable                         yes   yes   yes   0           0        292        0.010           0.009      0
+M042  recoverable                         yes   yes   yes   0           0        53         0.000           0.012      0
+M043  recoverable                         yes   yes   yes   0           0        53         0.000           0.011      0
+M044  recoverable-with-capture  trash     yes   yes   yes   0           12       53         0.011           0.009      0
+M045  recoverable                         yes   yes   yes   0           0        169        0.000           0.008      0
+M046  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M047  recoverable                         yes   yes   yes   0           0        101        0.000           0.013      0
+M048  recoverable                         yes   yes   yes   0           0        53         0.000           0.007      0
+M049  recoverable                         yes   yes   yes   0           0        120        0.000           0.011      0
+M050  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M051  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M052  recoverable                         yes   yes   yes   0           0        103        0.000           0.010      0
+M053  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M054  recoverable                         yes   yes   yes   0           0        158        0.000           0.008      0
+M055  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M056  recoverable                         yes   yes   yes   0           0        53         0.000           0.014      0
+M057  recoverable-with-capture  metadata  yes   yes   yes   0           19       53         0.001           0.010      0
+M058  recoverable                         yes   yes   yes   0           0        53         0.000           0.010      0
+M059  recoverable                         yes   yes   yes   0           0        53         0.000           0.011      0
+M060  recoverable-with-capture  content   yes   yes   yes   55          1        108        0.000           0.010      0
+M061  recoverable                         yes   yes   yes   0           0        53         0.006           0.007      0
+M062  recoverable                         yes   yes   yes   0           0        53         0.000           0.018      0
+M063  unrecoverable                       skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: arguments could not be determined: substitution is not provably read-only
+M064  recoverable                         yes   yes   yes   0           0        188        0.000           0.010      0
+M065  recoverable                         yes   yes   yes   0           0        273        0.000           0.013      0
+M066  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M067  recoverable                         yes   yes   yes   0           0        53         0.006           0.008      0
+M068  recoverable                         yes   yes   yes   0           0        53         0.000           0.010      0
+M069  recoverable                         yes   yes   yes   0           0        53         0.000           0.009      0
+M070  recoverable                         yes   yes   yes   0           0        98         0.000           0.008      0
+M071  recoverable                         yes   yes   yes   0           0        96         0.011           0.008      0
+M072  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M073  recoverable                         yes   yes   yes   0           0        99         0.000           0.011      0
+M074  recoverable                         yes   yes   yes   0           0        53         0.000           0.009      0
+M075  recoverable                         yes   yes   yes   0           0        53         0.000           0.007      0
+M076  recoverable                         yes   yes   yes   0           0        101        0.000           0.007      0
+M077  recoverable                         yes   yes   yes   0           0        106        0.000           0.010      0
+M078  recoverable                         yes   yes   yes   0           0        143        0.000           0.010      0
+M079  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M080  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M081  recoverable                         yes   yes   yes   0           0        53         0.000           0.022      0
+M082  recoverable                         yes   yes   yes   0           0        53         0.000           0.013      0
+M083  recoverable                         yes   yes   yes   0           0        97         0.000           0.007      0
+M084  recoverable                         yes   yes   yes   0           0        53         0.007           0.011      0
+M085  recoverable                         yes   yes   yes   0           0        251        0.000           0.009      0
+M086  recoverable-with-capture  content   yes   yes   yes   52          1        105        0.000           0.011      0
+M087  recoverable                         yes   yes   yes   0           0        53         0.000           0.011      0
+M088  recoverable                         yes   yes   yes   0           0        53         0.008           0.007      0
+M089  recoverable                         yes   yes   yes   0           0        53         0.000           0.011      0
+M090  unrecoverable             content   skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: the command name is computed at run time
+M091  recoverable                         yes   yes   yes   0           0        103        0.000           0.010      0
+M092  recoverable                         yes   yes   yes   0           0        53         0.000           0.007      0
+M093  recoverable                         yes   yes   yes   0           0        152        0.000           0.011      0
+M094  recoverable                         yes   yes   yes   0           0        107        0.011           0.011      0
+M095  recoverable-with-capture  trash     yes   yes   yes   0           6        296        0.007           0.009      0
+M096  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M097  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M098  recoverable                         yes   yes   yes   0           0        152        0.000           0.010      0
+M099  unrecoverable                       skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unrecoverable: git pull rewrites history or the working tree and is not modelled
+M100  recoverable                         yes   yes   yes   0           0        152        0.000           0.010      0
+M101  unrecoverable                       skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: find arguments could not be determined: DIR: unbound variable
+M102  recoverable                         yes   yes   yes   0           0        102        0.000           0.008      0
+M103  recoverable-with-capture  content   yes   yes   yes   49          1        152        0.000           0.009      0
+M104  recoverable                         yes   yes   yes   0           0        150        0.000           0.008      0
+M105  unrecoverable                       skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: perl runs arbitrary code; its effects are not modelled
+M106  recoverable                         yes   yes   yes   0           0        53         0.000           0.007      0
+M107  unrecoverable             content   skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: runs ./myscript.sh by path, which is not modelled
+M108  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M109  recoverable-with-capture  trash     yes   yes   yes   0           2        53         0.007           0.009      0
+M110  recoverable                         yes   yes   yes   0           0        97         0.000           0.017      0
+M111  recoverable                         yes   yes   yes   0           0        101        0.000           0.007      0
+M112  recoverable                         yes   yes   yes   0           0        140        0.000           0.008      0
+M113  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M114  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M115  unrecoverable                       skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: starts a shell whose input is not visible
+M116  recoverable-with-capture  content   yes   yes   yes   54          1        156        0.000           0.007      0
+M117  recoverable                         yes   yes   yes   0           0        53         0.000           0.009      0
+M118  unrecoverable                       skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: the command name is computed at run time
+M119  recoverable                         yes   yes   yes   0           0        96         0.000           0.064      0
+M120  unrecoverable             content   skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command script
+M121  recoverable                         yes   yes   yes   0           0        53         0.011           0.018      0
+M122  recoverable                         yes   yes   yes   0           0        104        0.000           0.011      0
+M123  recoverable                         yes   yes   yes   0           0        53         0.000           0.007      0
+M124  recoverable                         yes   yes   yes   0           0        53         0.000           0.009      0
+M125  recoverable                         yes   yes   yes   0           0        53         0.000           0.009      0
+M126  recoverable-with-capture  content   yes   yes   yes   56          1        109        0.000           0.011      0
+M127  recoverable                         yes   yes   yes   0           0        53         0.000           0.008      0
+M128  recoverable-with-capture  trash     yes   yes   yes   0           13       53         0.000           0.008      0
+M129  recoverable                         yes   yes   yes   0           0        160        0.007           0.008      0
+M130  recoverable                         yes   yes   yes   0           0        96         0.000           0.007      0
+M131  recoverable                         yes   yes   yes   0           0        53         0.000           0.007      0
+M132  recoverable                         yes   yes   yes   0           0        148        0.000           0.010      0
+M133  recoverable-with-capture  content   yes   yes   yes   58          1        111        0.008           0.012      0
+M134  recoverable                         yes   yes   yes   0           0        53         0.007           0.018      0
+M135  recoverable                         yes   yes   yes   0           0        53         0.000           0.007      0
+M136  recoverable                         yes   yes   yes   0           0        143        0.011           0.010      0
+M137  recoverable                         yes   yes   yes   0           0        53         0.000           0.010      0
+M138  recoverable                         yes   yes   yes   0           0        150        0.000           0.008      0
+M139  recoverable                         yes   yes   yes   0           0        160        0.000           0.020      0
+M140  recoverable                         yes   yes   yes   0           0        53         0.000           0.027      0
+M141  recoverable                         yes   yes   yes   0           0        152        0.000           0.014      0
+M142  recoverable                         yes   yes   yes   0           0        53         0.000           0.017      0
+M143  recoverable                         yes   yes   yes   0           0        97         0.000           0.010      0
+M144  unrecoverable                       skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command phpinfo
+M145  recoverable                         yes   yes   yes   0           0        143        0.000           0.012      0
+M146  recoverable                         yes   yes   yes   0           0        96         0.000           0.019      0
+M147  recoverable                         yes   yes   yes   0           0        53         0.000           0.013      0
+M148  recoverable-with-capture  content   yes   yes   yes   53          1        106        0.000           0.008      0
+M149  recoverable                         yes   yes   yes   0           0        201        0.000           0.009      0
+M150  recoverable-with-capture  metadata  yes   yes   yes   0           2        152        0.009           0.011      0
+M151  recoverable                         yes   yes   yes   0           0        53         0.000           0.010      0
+M152  unrecoverable                       skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: runs ./YourProgramName by path, which is not modelled
+M153  recoverable                         yes   yes   yes   0           0        53         0.096           0.081      0
+M154  unrecoverable                       skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: the command name is computed at run time
+M155  recoverable-with-capture  content   yes   yes   yes   69          1        122        0.016           0.011      0
+M156  recoverable                         yes   yes   yes   0           0        101        0.011           0.011      0
+M157  recoverable                         yes   yes   yes   0           0        307        0.000           0.029      0
+M158  recoverable                         yes   yes   yes   0           0        152        0.000           0.021      0
+M159  recoverable                         yes   yes   yes   0           0        104        0.000           0.015      0
+M160  recoverable                         yes   yes   yes   0           0        53         0.000           0.007      0
+M161  recoverable                         yes   yes   yes   0           0        153        0.000           0.013      0
+M162  unrecoverable                       skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command command-that-asks-for-input
+M163  recoverable                         yes   yes   yes   0           0        152        0.000           0.008      0
+M164  unrecoverable                       skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: the command name is computed at run time
+M165  unrecoverable                       skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: the command name is computed at run time
+
+SUMMARY
+  cases: 165 total, 149 executed, 16 skipped (unrecoverable verdict, or no sandbox)
+  recovered exactly, V1 (production-equivalent undo): 149/149 = 100%
+  recovered exactly, V2 (captures + directory-diff):  149/149 = 100%
+  recovered exactly, V3 (internal/gate entry alone):  149/149 = 100%
+  storage overhead vs a full copy of the fixture, over 20 capture cases: median 23.0099%, max 65.1316% (M009)
+  modification times are not compared; inside .git only HEAD and refs/ are.
+
+FAILURES (V1, V2 or V3 not exact), with the reproduction
+  none
+
+SKIPPED
+  M010: unrecoverable, not executed: opaque: the command name is computed at run time
+  M063: unrecoverable, not executed: unresolved: arguments could not be determined: substitution is not provably read-only
+  M090: unrecoverable, not executed: opaque: the command name is computed at run time
+  M099: unrecoverable, not executed: unrecoverable: git pull rewrites history or the working tree and is not modelled
+  M101: unrecoverable, not executed: unresolved: find arguments could not be determined: DIR: unbound variable
+  M105: unrecoverable, not executed: opaque: perl runs arbitrary code; its effects are not modelled
+  M107: unrecoverable, not executed: opaque: runs ./myscript.sh by path, which is not modelled
+  M115: unrecoverable, not executed: opaque: starts a shell whose input is not visible
+  M118: unrecoverable, not executed: opaque: the command name is computed at run time
+  M120: unrecoverable, not executed: opaque: unknown command script
+  M144: unrecoverable, not executed: opaque: unknown command phpinfo
+  M152: unrecoverable, not executed: opaque: runs ./YourProgramName by path, which is not modelled
+  M154: unrecoverable, not executed: opaque: the command name is computed at run time
+  M162: unrecoverable, not executed: opaque: unknown command command-that-asks-for-input
+  M164: unrecoverable, not executed: opaque: the command name is computed at run time
+  M165: unrecoverable, not executed: opaque: the command name is computed at run time

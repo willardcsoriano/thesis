@@ -1,0 +1,22 @@
+seed 20260924; 350 NL2Bash candidates drawn (templates are not drawn)
+items: 180 total; partitions map[E:15 M:165]; labels map[C:19 R:146 U:15]
+
+partition shape label count
+  E  external  U  15
+  M  compound  C  3
+  M  compound  R  22
+  M  hidden    C  1
+  M  hidden    R  24
+  M  plain     C  5
+  M  plain     R  26
+  M  redirect  C  2
+  M  redirect  R  2
+  M  runtime   C  8
+  M  runtime   R  72
+
+excluded (ran, did not finish cleanly; never labelled):
+  command not installed                              26
+  harness error                                      1
+  non-zero exit                                      102
+  timed out                                          21
+  wrote outside the fixture or needed privilege      20
