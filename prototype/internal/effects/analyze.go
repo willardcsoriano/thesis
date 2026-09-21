@@ -458,7 +458,72 @@ func (st *state) cfg(sc *scope) *expand.Config {
 }
 
 func (st *state) expand(words []*syntax.Word, sc *scope) ([]string, error) {
-	return expand.Fields(st.cfg(sc), words...)
+	return expand.Fields(st.cfg(sc), unescapeGlobs(words)...)
+}
+
+// unescapeGlobs works around the shell library treating a backslash-escaped glob
+// character as a glob: in bash, \*.log is the literal name "*.log", but the library
+// expands it against the directory, so `find -name \*.log` is analysed as
+// `find -name a.log` and finds nothing. Each escaped * ? [ is rewritten as a quoted
+// character, which the library does treat literally.
+func unescapeGlobs(words []*syntax.Word) []*syntax.Word {
+	out := make([]*syntax.Word, len(words))
+	for i, w := range words {
+		out[i] = w
+		var parts []syntax.WordPart
+		changed := false
+		for _, p := range w.Parts {
+			lit, ok := p.(*syntax.Lit)
+			if !ok || !strings.ContainsAny(lit.Value, "\\") {
+				parts = append(parts, p)
+				continue
+			}
+			var buf strings.Builder
+			flush := func() {
+				if buf.Len() > 0 {
+					parts = append(parts, &syntax.Lit{Value: buf.String()})
+					buf.Reset()
+				}
+			}
+			v := lit.Value
+			for k := 0; k < len(v); k++ {
+				if v[k] == '\\' && k+1 < len(v) && strings.IndexByte("*?[", v[k+1]) >= 0 {
+					flush()
+					parts = append(parts, &syntax.SglQuoted{Value: string(v[k+1])})
+					k++
+					changed = true
+					continue
+				}
+				if v[k] == '\\' && k+1 < len(v) {
+					buf.WriteByte(v[k])
+					k++
+				}
+				buf.WriteByte(v[k])
+			}
+			flush()
+		}
+		if changed {
+			out[i] = &syntax.Word{Parts: parts}
+		}
+	}
+	return out
+}
+
+// nondeterministic matches text whose output differs from one run to the next, so
+// resolving it once and running it later would act on different names.
+var nondeterministic = regexp.MustCompile(`/dev/u?random|\$RANDOM|\$\$|\bshuf\b|\bmktemp\b|\buuidgen\b|\bdate\b|\bopenssl\s+rand\b|\$SRANDOM|\bpgrep\b|\bps\b|\bpidof\b`)
+
+// readsWhatTheLineWrites reports whether text mentions a file an earlier part of the
+// same line writes or creates: what it would read now is not what it will read then.
+func (st *state) readsWhatTheLineWrites(text string) bool {
+	for _, e := range st.an.Effects {
+		if e.Kind == Write || e.Kind == Create {
+			if b := filepath.Base(e.Path); b != "" && b != "." && strings.Contains(text, b) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (st *state) literal(w *syntax.Word, sc *scope) (string, error) {
@@ -483,6 +548,9 @@ func (st *state) runSubst(w io.Writer, cs *syntax.CmdSubst, sc *scope) error {
 		return err
 	}
 	if hasPrivilege(body.String()) {
+		return errNotResolved
+	}
+	if nondeterministic.MatchString(body.String()) || st.readsWhatTheLineWrites(body.String()) {
 		return errNotResolved
 	}
 	out, err := st.a.Run(st.ctx, sc.wd, []string{"bash", "-c", varPrefix(sc) + body.String()})
@@ -546,6 +614,12 @@ func (st *state) add(c *call, e Effect) {
 		return
 	}
 	e.Source = c.src
+	if e.Kind == Remove && e.MovedTo == "" && e.Hint == "" && (e.Path == st.a.WD || strings.HasPrefix(st.a.WD, e.Path+"/")) {
+		// The directory the command runs in cannot be moved aside to a holding
+		// directory while the command is running in it.
+		st.issue(IssueUnrecoverable, c.src, "removes the directory it runs in, which cannot be captured beforehand")
+		return
+	}
 	if e.Hint == "" && (e.Kind == Write || e.Kind == Remove) && st.destroyMoved(c, &e) {
 		return
 	}

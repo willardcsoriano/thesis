@@ -253,9 +253,18 @@ func execIn(dir, name string, args ...string) ([]byte, error) {
 
 func TestMissingResolverBinaryFailsClosed(t *testing.T) {
 	wd := fixture(t)
-	a := analyze(t, wd, "find . -name '*.tmp' -exec rename 's/tmp/bak/' {} \\;", true)
-	if a.Verdict().Class != Unrecoverable {
-		t.Fatalf("a resolver that cannot run must not read as 'nothing matched': %s / %+v", a.Verdict().Class, a.Issues)
+	// The resolver for rename is unavailable, whatever this machine has installed.
+	real := DefaultRunner(10 * time.Second)
+	a := New(wd)
+	a.Run = func(ctx context.Context, dir string, argv []string) ([]byte, error) {
+		if argv[0] == "rename" {
+			return nil, exec.ErrNotFound
+		}
+		return real(ctx, dir, argv)
+	}
+	res := a.Analyze(context.Background(), "find . -name '*.tmp' -exec rename 's/tmp/bak/' {} \\;")
+	if res.Verdict().Class != Unrecoverable {
+		t.Fatalf("a resolver that cannot run must not read as 'nothing matched': %s / %+v", res.Verdict().Class, res.Issues)
 	}
 }
 
@@ -366,5 +375,84 @@ func TestResolvedNamesWithSpecialCharactersAreNotReparsed(t *testing.T) {
 			}
 		}
 		os.Remove(filepath.Join(wd, name))
+	}
+}
+
+func TestEscapedGlobIsLiteralNotExpanded(t *testing.T) {
+	wd := fixture(t)
+	if err := os.WriteFile(filepath.Join(wd, `\alpha.xyz`), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, cmd := range []string{`find . -name \*.xyz -exec rm {} \;`, `find . -name \*.xyz -delete`} {
+		a := analyze(t, wd, cmd, true)
+		found := false
+		for _, e := range a.Effects {
+			if e.Kind == Remove && filepath.Base(e.Path) == `\alpha.xyz` {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("%s: the escaped glob was expanded against the directory: %v %+v", cmd, rel(wd, a), a.Issues)
+		}
+	}
+}
+
+func TestResolutionRefusedWhenTheLineChangesWhatItReads(t *testing.T) {
+	wd := fixture(t)
+	for _, cmd := range []string{
+		"cat /dev/urandom | tr -dc a-z | head -c 8 | xargs mkdir",
+		"rm $(echo $RANDOM)",
+		"find . -name a.txt > list && mv $(cat list) logs/",
+		"ls *.txt > list && cat list | xargs rm",
+		"find . -name '*.txt' -exec cp {} ./copy_of_it \\;",
+	} {
+		if v := analyze(t, wd, cmd, true).Verdict(); v.Class != Unrecoverable {
+			t.Errorf("%s: %v %v", cmd, v.Class, v.Reasons)
+		}
+	}
+}
+
+func TestRemovingTheWorkingDirectoryAsks(t *testing.T) {
+	wd := fixture(t)
+	if v := analyze(t, wd, "find . -delete", true).Verdict(); v.Class != Unrecoverable {
+		t.Fatalf("find . -delete: %v", v.Class)
+	}
+	if v := analyze(t, wd, "rm -r logs", true).Verdict(); v.Class != RecoverableWithCapture {
+		t.Fatalf("a subdirectory must still be capturable: %v", v.Class)
+	}
+}
+
+func TestRsyncOntoAFileWritesThatFile(t *testing.T) {
+	wd := fixture(t)
+	os.WriteFile(filepath.Join(wd, "dest"), []byte("old"), 0o644)
+	a := analyze(t, wd, "rsync -a a.txt dest", true)
+	if got := strings.Join(rel(wd, a), ","); got != "write dest" {
+		t.Fatalf("effects = %s issues %+v", got, a.Issues)
+	}
+	b := analyze(t, wd, "rsync -a a.txt fresh", true)
+	if got := strings.Join(rel(wd, b), ","); got != "create fresh" {
+		t.Fatalf("effects = %s", got)
+	}
+}
+
+func TestGitStashAndNewBranchHaveInverses(t *testing.T) {
+	wd := fixture(t)
+	for _, c := range [][]string{{"init", "-q"}, {"add", "-A"}, {"-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "i"}} {
+		if out, err := execIn(wd, "git", c...); err != nil {
+			t.Fatalf("git %v: %v %s", c, err, out)
+		}
+	}
+	os.WriteFile(filepath.Join(wd, "a.txt"), []byte("dirty\n"), 0o644)
+	st := analyze(t, wd, "git stash", true)
+	if got := inverses(st); len(got) != 1 || !strings.HasSuffix(got[0], "stash drop") {
+		t.Fatalf("stash inverse = %v issues %+v", got, st.Issues)
+	}
+	br := analyze(t, wd, "git checkout -b feature", true)
+	got := inverses(br)
+	if len(got) != 2 || !strings.HasSuffix(got[1], "branch -D feature") || !strings.Contains(got[0], "checkout -q ") {
+		t.Fatalf("branch inverse = %v issues %+v", got, br.Issues)
+	}
+	if v := analyze(t, wd, "git checkout -B main", true).Verdict(); v.Class != Unrecoverable {
+		t.Fatalf("forcing a branch: %v", v.Class)
 	}
 }

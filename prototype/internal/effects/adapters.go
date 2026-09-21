@@ -274,6 +274,22 @@ func ruleRsync(st *state, c *call) {
 		return
 	}
 	dest := c.abs(ops[len(ops)-1])
+	// A destination that is a file (or, for a single file source, a name that does not
+	// exist yet) is the file itself, not a directory to copy into.
+	if fi, err := os.Lstat(dest); err == nil && !fi.IsDir() {
+		for _, l := range lines(out) {
+			if itemizeLine.MatchString(l) {
+				st.add(c, Effect{Kind: Write, Path: dest})
+				return
+			}
+		}
+		return
+	} else if err != nil && len(ops) == 2 && !strings.HasSuffix(ops[1], "/") {
+		if sfi, serr := os.Lstat(c.abs(ops[0])); serr == nil && !sfi.IsDir() {
+			st.add(c, Effect{Kind: Create, Path: dest})
+			return
+		}
+	}
 	for _, l := range lines(out) {
 		if strings.HasPrefix(l, "*deleting") {
 			name := strings.TrimSpace(strings.TrimPrefix(l, "*deleting"))
@@ -478,6 +494,10 @@ func ruleGit(st *state, c *call) {
 		if root == "" || o.has("staged") && !o.has("worktree", "W") {
 			return
 		}
+		if (sub == "checkout" && o.has("b", "B")) || (sub == "switch" && o.has("c", "C", "create", "force-create")) {
+			st.gitNewBranch(c, root, firstOperand(rest), o.has("B", "C", "force-create"))
+			return
+		}
 		var paths []string
 		afterDash := false
 		for _, a := range rest {
@@ -515,6 +535,9 @@ func ruleGit(st *state, c *call) {
 				st.unrec(c, "git stash with untracked files removes files git does not track")
 			} else if root != "" {
 				st.gitDirtyWrites(c, wd, []string{"."})
+				// The stash entry is a ref the working-tree capture does not cover.
+				st.an.States = append(st.an.States, StateChange{Subject: "git:stash", Change: "git stash",
+					Inverse: [][]string{{"git", "-C", root, "stash", "drop"}}, Source: c.src})
 			}
 		default:
 			st.unrec(c, "git stash "+f+" rewrites the working tree from the stash")
@@ -577,4 +600,30 @@ func (st *state) gitDirtyWrites(c *call, wd string, paths []string) {
 			}
 		}
 	}
+}
+
+// gitNewBranch records that a command creates a branch and switches to it. The undo
+// switches back and deletes the branch, which is safe because it holds no commits of
+// its own yet. Forcing onto an existing branch moves it, which this does not undo.
+func (st *state) gitNewBranch(c *call, root, name string, force bool) {
+	if name == "" {
+		st.unresolved(c, "the branch name could not be determined")
+		return
+	}
+	if force {
+		st.unrec(c, "git resets an existing branch to a new starting point")
+		return
+	}
+	prev, err := st.readOnly(c, []string{"git", "-C", root, "symbolic-ref", "--short", "-q", "HEAD"})
+	from := strings.TrimSpace(string(prev))
+	if err != nil || from == "" {
+		out, err2 := st.readOnly(c, []string{"git", "-C", root, "rev-parse", "HEAD"})
+		if err2 != nil || strings.TrimSpace(string(out)) == "" {
+			st.unresolved(c, "could not read the current branch")
+			return
+		}
+		from = strings.TrimSpace(string(out))
+	}
+	st.an.States = append(st.an.States, StateChange{Subject: "git:branch:" + name, Change: "git creates branch " + name,
+		Inverse: [][]string{{"git", "-C", root, "checkout", "-q", from}, {"git", "-C", root, "branch", "-D", name}}, Source: c.src})
 }

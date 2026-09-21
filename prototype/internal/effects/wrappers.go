@@ -287,6 +287,7 @@ func (st *state) find(c *call) {
 		}
 		matches[n] = append(matches[n], path)
 	}
+	before := len(st.an.Effects)
 	for n, act := range acts {
 		ms := matches[n]
 		switch act.kind {
@@ -296,6 +297,24 @@ func (st *state) find(c *call) {
 			}
 		default:
 			st.findExec(c, act, ms)
+		}
+	}
+	// An action that creates files inside the tree find is searching feeds itself: find
+	// visits what it has just made, so the matches it resolved beforehand are not the
+	// matches it will act on.
+	roots := paths
+	if len(roots) == 0 {
+		roots = []string{"."}
+	}
+	for _, e := range st.an.Effects[before:] {
+		if e.Kind != Create {
+			continue
+		}
+		for _, r := range roots {
+			if root := c.abs(r); e.Path == root || strings.HasPrefix(e.Path, root+"/") {
+				st.unresolved(c, "creates files inside the tree it is searching, so the set of matches changes while it runs")
+				return
+			}
 		}
 	}
 }
@@ -485,6 +504,10 @@ scan:
 		}
 		if c.sc.wd == unknownWD {
 			st.unresolved(c, errUnknownWD.Error())
+			return
+		}
+		if nondeterministic.MatchString(producer) || st.readsWhatTheLineWrites(producer) {
+			st.unresolved(c, "the command feeding xargs gives different output when the line runs than it does now")
 			return
 		}
 		out, err := st.a.Run(st.ctx, c.sc.wd, []string{"bash", "-c", varPrefix(c.sc) + producer})
