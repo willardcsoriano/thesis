@@ -433,7 +433,7 @@ func Apply(e Entry) []error {
 	}
 
 	for _, cb := range e.ContentBackups {
-		if err := copyFile(cb.BackupPath, cb.Path, cb.Mode); err != nil {
+		if err := restoreContent(cb); err != nil {
 			errs = append(errs, fmt.Errorf("restoring content of %s: %w", cb.Path, err))
 		}
 	}
@@ -460,6 +460,26 @@ func Apply(e Entry) []error {
 // inverseRunner is how Apply runs an inverse; a variable so tests can observe
 // and order-check the calls without executing a package manager.
 var inverseRunner = runInverse
+
+// restoreContent puts a file's bytes and permission bits back. If the command replaced
+// the file with a symlink (ln -sf), writing through it would overwrite the link's
+// target and leave the link in place, so the link is removed first. The mode is set
+// explicitly afterwards, because a command that recreated the file (git checkout,
+// install) gave it a mode of its own and opening an existing file keeps that mode.
+func restoreContent(cb ContentBackup) error {
+	if fi, err := os.Lstat(cb.Path); err == nil && fi.Mode()&os.ModeSymlink != 0 {
+		if err := os.Remove(cb.Path); err != nil {
+			return fmt.Errorf("removing the link that replaced %s: %w", cb.Path, err)
+		}
+	}
+	if err := copyFile(cb.BackupPath, cb.Path, cb.Mode); err != nil {
+		return err
+	}
+	if err := os.Chmod(cb.Path, cb.Mode); err != nil {
+		return fmt.Errorf("restoring mode of %s: %w", cb.Path, err)
+	}
+	return nil
+}
 
 // runInverse runs one inverse command attached to the terminal, so a privilege
 // prompt can be answered. Time-limited so a wedged package manager cannot hang undo.

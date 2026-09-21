@@ -192,3 +192,68 @@ func TestRenamedDirectoryIsUndoneWithoutNestedConflict(t *testing.T) {
 		t.Fatalf("content = %q", got)
 	}
 }
+
+func TestContentRestoreReplacesASymlinkThatTookTheFilesPlace(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "other.txt")
+	file := filepath.Join(dir, "b.txt")
+	if err := os.WriteFile(target, []byte("other"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(file, []byte("original"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	backups, errs := BackupContent([]string{file})
+	if len(errs) > 0 {
+		t.Fatal(errs)
+	}
+	// ln -sf other.txt b.txt
+	if err := os.Remove(file); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, file); err != nil {
+		t.Fatal(err)
+	}
+	if errs := Apply(Entry{Dir: dir, ContentBackups: backups}); len(errs) > 0 {
+		t.Fatal(errs)
+	}
+	fi, err := os.Lstat(file)
+	if err != nil || fi.Mode()&os.ModeSymlink != 0 {
+		t.Fatalf("the link must be gone: %v %v", fi, err)
+	}
+	if b, _ := os.ReadFile(file); string(b) != "original" {
+		t.Fatalf("content = %q", b)
+	}
+	if b, _ := os.ReadFile(target); string(b) != "other" {
+		t.Fatalf("the link's target was overwritten: %q", b)
+	}
+}
+
+func TestContentRestoreRestoresTheModeOfARecreatedFile(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "a.txt")
+	if err := os.WriteFile(file, []byte("v1"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	backups, errs := BackupContent([]string{file})
+	if len(errs) > 0 {
+		t.Fatal(errs)
+	}
+	// A command recreates the file with a different mode, as git checkout does under a umask.
+	if err := os.Remove(file); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(file, []byte("v2"), 0o664); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(file, 0o664); err != nil {
+		t.Fatal(err)
+	}
+	if errs := Apply(Entry{Dir: dir, ContentBackups: backups}); len(errs) > 0 {
+		t.Fatal(errs)
+	}
+	fi, _ := os.Stat(file)
+	if fi.Mode().Perm() != 0o644 {
+		t.Fatalf("mode = %v, want 0644", fi.Mode().Perm())
+	}
+}
