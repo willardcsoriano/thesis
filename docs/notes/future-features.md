@@ -13,6 +13,7 @@ This file holds product and research ideas that surfaced during thesis developme
   - [Llama 3.2-1B — Constrained Hardware Fallback](#llama-32-1b-constrained-hardware-fallback)
   - [Qwen2.5-VL-3B — Unified Vision-Language Model](#qwen25-vl-3b-unified-vision-language-model)
   - [T5-nl2bash — Ultra-Small Option](#t5-nl2bash-ultra-small-option)
+  - [Qwen2.5-Coder-7B — Sensitivity Row for the Recoverability Evaluation](#qwen25-coder-7b-sensitivity-row-for-the-recoverability-evaluation)
   - [Model Hot-Swapping](#model-hot-swapping)
 - [Installation and Hardening](#installation-and-hardening)
   - [Hardening Profiles](#hardening-profiles)
@@ -66,6 +67,10 @@ Handles both intent parsing and vision grounding in a single model. Rejected for
 ### T5-nl2bash — Ultra-Small Option
 
 Flan-T5-base fine-tuned on the NL2Bash corpus (~250M parameters). Extremely limited generalization — only reliable on task types present in the NL2Bash corpus. No multimodal capability. Consider only for highly constrained embedded environments where even 1.8 GB is too large.
+
+### Qwen2.5-Coder-7B — Sensitivity Row for the Recoverability Evaluation
+
+The recoverability algorithm takes a command string and never sees the model, so its corpus results do not depend on which model wrote the commands. A 7B row would test something narrower: whether the analysis holds up on the differently shaped output of a stronger model. Feed the NL2Bash natural-language descriptions to the 3B and 7B models, label the commands each produces with the sandbox oracle (`cmd/corpusgen`, which accepts any command list), and run the analysis on both. Not part of the thesis configuration, which commits to the 3B model on CPU-only hardware with a 4 GB RAM minimum. Needs a 7B pull (about 4.7 GB) or a cloud call. Do it only if a reviewer asks whether the result is specific to the 3B model.
 
 ### Model Hot-Swapping
 
