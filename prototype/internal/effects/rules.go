@@ -1,6 +1,7 @@
 package effects
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -583,6 +584,9 @@ func ruleMv(st *state, c *call) {
 				continue
 			}
 			st.add(c, Effect{Kind: Write, Path: target})
+			if bp, ok := backupPath(c.args, target); ok {
+				st.createOrOverwrite(c, bp)
+			}
 		} else {
 			st.add(c, Effect{Kind: Create, Path: target, Dir: sfi.IsDir()})
 		}
@@ -648,6 +652,24 @@ func ruleCp(st *state, c *call) {
 		if destIsDir || len(srcs) > 1 {
 			target = filepath.Join(dest, filepath.Base(sp))
 		}
+		if hasAny(c.args, "--parents") {
+			// The whole source path is recreated under the destination directory.
+			target = filepath.Join(dest, strings.TrimLeft(filepath.Clean(s), "/"))
+			var missing []string
+			for d := filepath.Dir(target); d != dest && strings.HasPrefix(d, dest+"/"); d = filepath.Dir(d) {
+				if _, exists := st.lstat(d); !exists {
+					missing = append([]string{d}, missing...)
+				}
+			}
+			for _, d := range missing {
+				st.add(c, Effect{Kind: Create, Path: d, Dir: true})
+			}
+		}
+		if bp, ok := backupPath(c.args, target); ok {
+			if _, exists := st.lstat(target); exists {
+				st.createOrOverwrite(c, bp)
+			}
+		}
 		st.copyInto(c, sp, target, o)
 	}
 }
@@ -708,7 +730,10 @@ func ruleLn(st *state, c *call) {
 	for _, l := range links {
 		if _, exists := st.lstat(l); exists {
 			if o.has("f", "force") {
-				st.add(c, Effect{Kind: Write, Path: l})
+				// The link replaces the file with a different inode. Writing the old bytes
+				// back through the new link would corrupt what it points at, so the old
+				// file is captured whole (a hardlink to its inode) and put back by rename.
+				st.add(c, Effect{Kind: Remove, Path: l})
 			}
 			continue
 		}
@@ -838,11 +863,110 @@ func ruleSed(st *state, c *call) {
 	if !in {
 		return
 	}
+	suffix := sedBackupSuffix(c.args)
+	if strings.ContainsAny(suffix, "*/") {
+		st.unresolved(c, "the sed backup suffix names a pattern or another directory")
+		return
+	}
 	for _, f := range files {
 		if p := c.abs(f); st.exists(p) {
 			st.add(c, Effect{Kind: Write, Path: p})
+			if suffix != "" {
+				st.createOrOverwrite(c, p+suffix)
+			}
 		}
 	}
+}
+
+// sedBackupSuffix is the suffix sed -i.SUF or --in-place=SUF appends to make a backup copy,
+// or "" when it makes none.
+func sedBackupSuffix(args []string) string {
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch {
+		case a == "--":
+			return ""
+		case strings.HasPrefix(a, "--in-place="):
+			return strings.TrimPrefix(a, "--in-place=")
+		case strings.HasPrefix(a, "--"):
+		case len(a) > 1 && a[0] == '-':
+			cl := a[1:]
+			for j := 0; j < len(cl); j++ {
+				switch cl[j] {
+				case 'i':
+					return cl[j+1:]
+				case 'e', 'f', 'l':
+					j = len(cl)
+				}
+			}
+		}
+	}
+	return ""
+}
+
+// createOrOverwrite records that a command leaves a file at p: a new one if nothing is there,
+// otherwise an overwrite.
+func (st *state) createOrOverwrite(c *call, p string) {
+	if _, exists := st.lstat(p); exists {
+		st.add(c, Effect{Kind: Write, Path: p})
+	} else {
+		st.add(c, Effect{Kind: Create, Path: p})
+	}
+}
+
+// backupPath is where mv -b, cp -b and their kin put the copy of a destination they are about
+// to replace, and whether they make one. GNU semantics: a simple suffix (~ unless -S), or
+// numbered .~N~ names when asked for or when numbered backups already exist.
+func backupPath(args []string, dest string) (string, bool) {
+	on, control, suffix := false, "", "~"
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch {
+		case a == "--":
+			i = len(args)
+		case a == "--backup":
+			on = true
+		case strings.HasPrefix(a, "--backup="):
+			on, control = true, strings.TrimPrefix(a, "--backup=")
+		case a == "-S" && i+1 < len(args):
+			i++
+			suffix = args[i]
+		case strings.HasPrefix(a, "--suffix="):
+			suffix = strings.TrimPrefix(a, "--suffix=")
+		case len(a) > 1 && a[0] == '-' && a[1] != '-' && strings.Trim(a[1:], "abdfilnprsuvxPRTHLUZ") == "" && strings.Contains(a, "b"):
+			on = true
+		}
+	}
+	if !on {
+		return "", false
+	}
+	numbered := func() string {
+		max := 0
+		entries, _ := os.ReadDir(filepath.Dir(dest))
+		for _, e := range entries {
+			var n int
+			if _, err := fmt.Sscanf(e.Name(), filepath.Base(dest)+".~%d~", &n); err == nil && n > max {
+				max = n
+			}
+		}
+		return fmt.Sprintf("%s.~%d~", dest, max+1)
+	}
+	switch control {
+	case "none", "off":
+		return "", false
+	case "numbered", "t":
+		return numbered(), true
+	case "simple", "never":
+		return dest + suffix, true
+	}
+	// "existing" (the default): numbered if numbered backups are already there.
+	entries, _ := os.ReadDir(filepath.Dir(dest))
+	for _, e := range entries {
+		if strings.HasPrefix(e.Name(), filepath.Base(dest)+".~") {
+			return numbered(), true
+		}
+	}
+	return dest + suffix, true
 }
 
 func ruleAwk(st *state, c *call) {

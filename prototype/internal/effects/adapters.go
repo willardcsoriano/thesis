@@ -315,7 +315,9 @@ func ruleRsync(st *state, c *call) {
 
 // ---- rename ----
 
-var renamedLine = regexp.MustCompile("^[`']?(.+?)[`']? (?:renamed as|->) [`']?(.+?)[`']?$")
+// renamedLine matches the dry-run output of the two tools called rename: util-linux prints
+// "a renamed as b" and Debian's Perl rename prints "rename(a, b)".
+var renamedLine = regexp.MustCompile("^(?:[`']?(.+?)[`']? (?:renamed as|->) [`']?(.+?)[`']?|rename\\((.+), (.+)\\))$")
 
 func ruleRename(st *state, c *call) {
 	if !st.needArgs(c) {
@@ -324,7 +326,9 @@ func ruleRename(st *state, c *call) {
 	if hasAny(c.args, "-n", "--dry-run", "--no-act") {
 		return
 	}
-	out, ok := st.dry(c, append(append([]string{c.name}, c.args...), "-n"))
+	// Perl's rename reports what it would do on standard error, so both streams are read.
+	// -n goes first: after the operands, Perl's rename takes it for a file name and does nothing.
+	out, ok := st.dry(c, append([]string{"bash", "-c", `"$@" 2>&1`, "_", c.name, "-n"}, c.args...))
 	if !ok {
 		return
 	}
@@ -336,7 +340,11 @@ func ruleRename(st *state, c *call) {
 			continue
 		}
 		matched++
-		from, to := c.abs(m[1]), c.abs(m[2])
+		a, b := m[1], m[2]
+		if a == "" {
+			a, b = m[3], m[4]
+		}
+		from, to := c.abs(a), c.abs(b)
 		if st.exists(to) {
 			st.add(c, Effect{Kind: Write, Path: to})
 		} else {
