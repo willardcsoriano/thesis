@@ -430,6 +430,29 @@ Storage: median capture cost is under 0.0001% of a full copy of the fixture, bec
 
 **Limits.** 56 cases, the curated ones written by the harness's author knowing the analysis; two of the four earlier defects were found only because the cases were adversarial, and cases that nobody thought to write are the ones that remain. Directory-diff depth is one level. Cross-filesystem trash, ownership restore (needs root), and metadata restore through symlinks were not exercised. A restore that is exact in tree comparison is not verified for running processes or open file handles.
 
+### Round 7 — final confirmatory run, supersedes round 6 (2026-09-22)
+
+Round 6 (above) was treated as final at the time, but the recovery check it prompted (`internal/gate/roundtrip_test.go`) found five more undo gaps once real commands were run against it: `ln -f` replacing a file (captured as content, but the link itself was never removed, so the restore wrote through it and corrupted what it pointed at), `sed -i.SUF` / `sed --in-place=SUF` backup files, `mv`/`cp -b` backup files (plain and numbered), `cp --parents` creating a directory the same line makes, and Perl `rename`'s dry-run output not being read (its `-n` has to come before the operands, not after, or it silently does nothing). All five are fixed in `internal/effects`, with a real-command round-trip test per case (`internal/gate/roundtrip_test.go`, run for real and undone, not just planned) and unit tests in `internal/effects/analyze_test.go` and `pkgstate_test.go`. So round 6 is now a development corpus like 4 and 5, not the reported result.
+
+**Round 7** (seed 20260925, 777 items: N 450, T 247, E 80; `pilot/corpus7.jsonl`, hash in `corpus7.sha256`; analyser hash in `analyser_frozen7.sha256`). Drawn after the five fixes above and run once.
+
+| | silent loss (405) | capture coverage (325 losses, restored exactly) | asks without capture | friction (372) |
+|---|---|---|---|---|
+| L0 pattern list | 167 (41.2%) | 135 (41.5%, unverified) | 90 | 30 (8%) |
+| L1 fail-closed list | 0 (0.0%) | 0 | 325 | 101 (27%) |
+| ALG strict | 0 (0.0%) | 291 (89.5%, CI 85.7&ndash;92.4) | 34 | 45 (12%) |
+| ALG capture | 0 (0.0%) | 291 | 34 | 32 (9%) |
+
+Holm-adjusted (`pilot/stats.py`, `pilot/stats_round7.txt`): silent loss ALG vs L0 p = 3.2e-50 (risk difference +0.412, 95% Newcombe CI +0.365 to +0.461); ALG vs L1 no difference (0/0 discordant, both zero). Capture coverage ALG vs L0 p = 6.3e-35 (+0.480, OR 12.1); ALG vs L1 p = 2e-87 (+0.895).
+
+Undo (`pilot/recovery_results7.txt`): 630 of 631 executed commands restored exactly (99.8%). The one remaining failure is `rsync -ur dir_a dir_b && rsync -ur dir_b dir_a`: the second rsync copies a directory that the first rsync's own output nested inside, one level deeper than the create-only overlay resolves. Logged as a bug (`open-problems.md`), not fixed; it is one synthetic template command out of 777.
+
+This is the reported result. Round 6 and earlier are development corpora.
+
+### Snapshot-before-every-command, measured (2026-09-22)
+
+Section 3.1(c) names a full pre-emptive copy as the safety upper bound and calls it "unusable in practice" without a number. `pilot/bench_snapshot.sh` measures the cheapest real version of that idea on this machine's filesystem (ext4, no native snapshot): a Timeshift/rsnapshot-style hardlink snapshot via `rsync -a --link-dest=<previous>`, against a working directory built from `distro/hoard/debs` (1165 real files, 580 MB, a stand-in for a populated project or Downloads folder). Result (`pilot/snapshot_bench.txt`): the first snapshot (nothing to link against) took 0.55&ndash;1.4s and wrote the full 580 MB; every snapshot after that, whether nothing had changed or a single file had, took 60&ndash;250ms, because deciding what to hardlink means visiting every entry in the tree regardless of what changed. The capture plan for a single-file command on the same corpus (`pilot/recovery_results6.txt`) took 0&ndash;20ms. The gap is not close, and it grows with the size of the directory a command happens to run in, since the plan's cost is set by what the command touches and the snapshot's is set by the size of the tree around it. On a copy-on-write filesystem this changes: a btrfs or XFS snapshot does not need to visit every file, and the case for the capture plan narrows to package and service state and to lower friction. This machine's ext4 is the platform the numbers above were measured on (`docs/stack.md`).
+
 ### Rounds 4 and 5 — automated ground truth (2026-09-20)
 
 Rounds 1–3 were labelled by hand. From round 4 the labels are observed: `internal/oracle` runs each command in a bubblewrap sandbox on its fixture and diffs the tree (R = nothing that existed was lost; C = something removed, overwritten, replaced, retargeted or re-moded; same-inode moves are not losses; mtimes and `.git` internals are ignored). `cmd/corpusgen` builds the corpus: partition N (NL2Bash, seeded draw excluding rounds 1–3), T (templates for each composition operator), E (external effects, never executed, labelled U by construction, and limited to tools that change state). It shares no code with `internal/effects`. Items that do not run cleanly are excluded and counted (`pilot/oracle_report{4,5}.txt`). Fixtures are inferred from the command text before the analysis is run. Both corpora are 450 N items (150 C by quota), about 245 T items and 80 E.
