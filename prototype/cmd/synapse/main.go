@@ -38,6 +38,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"mvdan.cc/sh/v3/syntax"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -93,6 +94,7 @@ Rules:
 - If the steps already run for the CURRENT task have fully accomplished it, output exactly: DONE
 - Combine steps into one line with pipes or && where you reasonably can, but if a step depends on seeing the result of a previous command first, propose only that next step.
 - Prefer standard, widely available utilities.
+- To find out where you are, run pwd. Never run cd to check: a directory change does not carry over from one command to the next.
 - Commands run in the working directory given below. Words like "here", "this folder", "this directory", or "the current folder" refer to THAT directory: write a relative path or ".", never an absolute path to somewhere else.
 - NEVER output a placeholder path. /path/to/folder, /path/to/file, /your/directory and similar are not real paths and the command will fail. If the task does not name a path, it means the working directory — use a relative path.
 - Do not substitute a well-known system directory for one the task did not mention. "the log files here" means log files in the working directory, not /var/log.
@@ -143,6 +145,70 @@ func generationOptions() map[string]any {
 		"temperature": 0,
 		"num_ctx":     envIntOr("SYNAPSE_NUM_CTX", defaultNumCtx),
 	}
+}
+
+// bareCd reports whether cmd is nothing but a directory change: one simple
+// command, `cd` or its stack cousins, with no pipeline, list, or redirect. A cd
+// that leads into other commands (`cd logs && ls`) is fine: the change lasts for
+// exactly the commands that follow it.
+func bareCd(cmd string) bool {
+	f, err := syntax.NewParser(syntax.Variant(syntax.LangBash)).Parse(strings.NewReader(cmd), "")
+	if err != nil || len(f.Stmts) != 1 {
+		return false
+	}
+	st := f.Stmts[0]
+	call, ok := st.Cmd.(*syntax.CallExpr)
+	if !ok || len(st.Redirs) != 0 || st.Background || st.Negated || len(call.Args) == 0 {
+		return false
+	}
+	switch call.Args[0].Lit() {
+	case "cd", "pushd", "popd":
+		return true
+	}
+	return false
+}
+
+// cdThenPwd reports whether cmd is a chain that starts by changing directory and
+// ends by printing it (`cd / && pwd`). It looks like a way of asking where the
+// session is and is the opposite: pwd only echoes wherever the cd just went, so
+// "are we in the root dir?" comes back "yes" whatever the truth. The model
+// reached for exactly this once it could no longer answer with a bare cd.
+func cdThenPwd(cmd string) bool {
+	f, err := syntax.NewParser(syntax.Variant(syntax.LangBash)).Parse(strings.NewReader(cmd), "")
+	if err != nil {
+		return false
+	}
+	var leaves []string
+	var walk func(st *syntax.Stmt) bool
+	walk = func(st *syntax.Stmt) bool {
+		if st == nil || len(st.Redirs) != 0 || st.Background || st.Negated {
+			return false
+		}
+		switch c := st.Cmd.(type) {
+		case *syntax.CallExpr:
+			if len(c.Args) == 0 {
+				return false
+			}
+			name := c.Args[0].Lit()
+			if name == "" {
+				return false
+			}
+			leaves = append(leaves, name)
+			return true
+		case *syntax.BinaryCmd:
+			if c.Op != syntax.AndStmt && c.Op != syntax.OrStmt {
+				return false
+			}
+			return walk(c.X) && walk(c.Y)
+		}
+		return false
+	}
+	for _, st := range f.Stmts {
+		if !walk(st) {
+			return false
+		}
+	}
+	return len(leaves) >= 2 && leaves[0] == "cd" && leaves[len(leaves)-1] == "pwd"
 }
 
 // envIntOr reads a positive integer from the environment, falling back to
@@ -724,6 +790,21 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		// effort either way; an unresolvable wd just degrades both to their
 		// no-filesystem-check behavior rather than failing the step.
 		wd, _ := os.Getwd()
+
+		// Each step runs in its own shell, so a lone `cd` changes nothing that
+		// outlasts it. Running it anyway and reporting success is how the session
+		// once answered "are we in the root dir?" with "We are now in the root
+		// directory" while sitting exactly where it started. Say so instead, as a
+		// failed step, so the next proposal sees it and reaches for `pwd` or a
+		// path.
+		if bareCd(cmd) || cdThenPwd(cmd) {
+			note := "cd only changes the directory of the shell that runs it, so it cannot move this session, which stays in " +
+				wd + ", and pwd right after a cd just repeats where the cd went. To look somewhere else, name the path in the command (for example ls /some/folder); to see where this session is, run pwd on its own."
+			fmt.Fprintf(out, "not run: %s\n%s\n", cmd, note)
+			cfg.telemetry.CommandResult(cfg.taskID, i, cmd, telemetry.CommandOutcome{ExitCode: 1, RawExitCode: 1})
+			history = append(history, loopStep{command: cmd, result: executor.Result{Stderr: note, ExitCode: 1, RawExitCode: 1}})
+			continue
+		}
 
 		verdict, reason := classifier.ClassifyForDir(cmd, wd)
 		gd := analysisDecision(ctx, cmd, wd)

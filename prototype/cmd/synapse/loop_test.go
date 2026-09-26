@@ -1368,3 +1368,75 @@ func TestFailedCommandsAreNamedInThePrompt(t *testing.T) {
 		t.Error("a command that succeeded was listed as failed")
 	}
 }
+
+// A lone cd changes nothing that outlasts the shell that ran it. Running it and
+// reporting success made the session answer "are we in the root dir?" with "We
+// are now in the root directory" while it sat exactly where it started. It must be
+// refused as a failed step, say why, and let the next proposal (pwd) go through.
+func TestRunLoopBareCdIsRefusedNotReportedAsSuccess(t *testing.T) {
+	before, _ := os.Getwd()
+	server := scriptedOllamaServer(t, []string{"cd /", "pwd", "DONE"})
+	defer server.Close()
+
+	var out, errOut bytes.Buffer
+	code := runLoop(context.Background(), ollama.New(server.URL), "m", "are we in the root dir?", neverConfirm(t), &out, &errOut, "")
+
+	got := out.String()
+	if !strings.Contains(got, "not run: cd /") {
+		t.Errorf("a bare cd should be reported as not run, got:\n%s", got)
+	}
+	if !strings.Contains(got, "cannot move this session") {
+		t.Errorf("the refusal should say why, got:\n%s", got)
+	}
+	if strings.Contains(got, "exit code: 0\n\nstep 2") && !strings.Contains(got, before) {
+		t.Errorf("step 2 (pwd) should have run and printed the real directory %q, got:\n%s", before, got)
+	}
+	if !strings.Contains(got, before) {
+		t.Errorf("the real working directory %q should appear in the output, got:\n%s", before, got)
+	}
+	if code != 0 {
+		t.Errorf("the task should still complete via pwd, exit %d; stderr:\n%s", code, errOut.String())
+	}
+	if now, _ := os.Getwd(); now != before {
+		t.Errorf("the process directory moved from %q to %q", before, now)
+	}
+}
+
+func TestCdThenPwd(t *testing.T) {
+	for cmd, want := range map[string]bool{
+		"cd / && pwd": true, "cd /tmp; pwd": true, "cd /x || pwd": true, "cd / && cd /tmp && pwd": true,
+		"pwd": false, "cd /": false, "cd logs && ls": false, "pwd && cd /": false,
+		"cd / && pwd > out": false, "cd / && pwd | cat": false, "ls && pwd": false, "": false,
+	} {
+		if got := cdThenPwd(cmd); got != want {
+			t.Errorf("cdThenPwd(%q) = %v, want %v", cmd, got, want)
+		}
+	}
+}
+
+func TestRunLoopCdThenPwdIsRefusedToo(t *testing.T) {
+	before, _ := os.Getwd()
+	server := scriptedOllamaServer(t, []string{"cd / && pwd", "pwd", "DONE"})
+	defer server.Close()
+	var out, errOut bytes.Buffer
+	code := runLoop(context.Background(), ollama.New(server.URL), "m", "are we in the root dir?", neverConfirm(t), &out, &errOut, "")
+	got := out.String()
+	if !strings.Contains(got, "not run: cd / && pwd") {
+		t.Errorf("cd-then-pwd should be reported as not run, got:\n%s", got)
+	}
+	if !strings.Contains(got, before) || code != 0 {
+		t.Errorf("the follow-up pwd should report the real directory %q and finish (exit %d), got:\n%s", before, code, got)
+	}
+}
+
+func TestBareCd(t *testing.T) {
+	for cmd, want := range map[string]bool{
+		"cd /": true, "cd": true, "cd ~/x": true, "pushd /tmp": true, "popd": true,
+		"cd logs && ls": false, "ls": false, "cd /tmp; ls": false, "echo cd": false,
+		"cd / > out": false, "cd / | cat": false, "": false, "cd 'unterminated": false,
+	} {
+		if got := bareCd(cmd); got != want {
+			t.Errorf("bareCd(%q) = %v, want %v", cmd, got, want)
+		}
+	}
+}
