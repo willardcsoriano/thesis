@@ -850,3 +850,125 @@ func TestShortTranscriptIsPushedToTheBottom(t *testing.T) {
 		t.Error("last viewport row is blank; content is not pinned to the bottom")
 	}
 }
+
+// --- scrolling with arrow keys (the wheel, in the alternate screen) ------
+
+// In the alternate screen most terminals translate the mouse wheel into Up and
+// Down when the program has not asked for mouse reporting. The transcript must
+// answer to them, or the wheel does nothing and text selection is the only thing
+// that works — which is exactly how the TUI first behaved in live use.
+func TestArrowKeysScrollTheTranscript(t *testing.T) {
+	m := NewModel(noopRunner)
+	m = step(t, m, sizeMsg(80, 10))
+	for i := 0; i < 50; i++ {
+		m = step(t, m, outputMsg(fmt.Sprintf("line %d\n", i)))
+	}
+	if !m.view.AtBottom() {
+		t.Fatal("setup failed: expected to start at the bottom")
+	}
+	m = step(t, m, tea.KeyPressMsg{Code: tea.KeyUp})
+	if m.view.AtBottom() {
+		t.Error("Up did not scroll the transcript")
+	}
+	before := m.view.YOffset()
+	m = step(t, m, tea.KeyPressMsg{Code: tea.KeyDown})
+	if m.view.YOffset() <= before {
+		t.Errorf("Down did not scroll back toward the bottom (offset %d -> %d)", before, m.view.YOffset())
+	}
+}
+
+func TestArrowKeysScrollWhileATaskRunsAndDuringConfirmation(t *testing.T) {
+	m := NewModel(noopRunner)
+	m = step(t, m, sizeMsg(80, 10))
+	for i := 0; i < 50; i++ {
+		m = step(t, m, outputMsg(fmt.Sprintf("line %d\n", i)))
+	}
+	m.running = true
+	m = step(t, m, tea.KeyPressMsg{Code: tea.KeyUp})
+	if m.view.AtBottom() {
+		t.Error("Up did not scroll while a task was running")
+	}
+	m = step(t, m, tea.KeyPressMsg{Code: tea.KeyDown})
+	m = step(t, m, confirmRequestMsg("run it anyway?"))
+	m = step(t, m, tea.KeyPressMsg{Code: tea.KeyUp})
+	if m.view.AtBottom() {
+		t.Error("Up did not scroll while a confirmation was pending")
+	}
+	if m.pendingConfirm == "" {
+		t.Error("scrolling must not answer the confirmation")
+	}
+}
+
+// --- model warm-up ------------------------------------------------------
+
+func TestWarmupShowsAStatusLineUntilItFinishes(t *testing.T) {
+	m := NewModel(noopRunner)
+	m.warm = func(context.Context) error { return nil }
+	m.warming = true
+
+	if v := m.View().Content; !strings.Contains(v, "loading the model") {
+		t.Errorf("view should say the model is loading, got:\n%s", v)
+	} else if !strings.Contains(v, m.input.View()) {
+		// Compared against the input's own rendering: the cursor is drawn over
+		// the placeholder's first letter, so the literal text is split by styling.
+		t.Errorf("the prompt must stay visible while warming, got:\n%s", v)
+	}
+
+	m = step(t, m, warmDoneMsg{})
+	if m.warming {
+		t.Fatal("warmDoneMsg did not clear the warming state")
+	}
+	if v := m.View().Content; strings.Contains(v, "loading the model") {
+		t.Errorf("the loading line should be gone once warm-up finishes, got:\n%s", v)
+	}
+}
+
+func TestInitRunsTheWarmupOnce(t *testing.T) {
+	calls := make(chan struct{}, 4)
+	m := NewModel(noopRunner)
+	m.warm = func(context.Context) error { calls <- struct{}{}; return nil }
+	m.warming = true
+
+	// Run every Cmd Init returns that resolves to warmDoneMsg, the way bubbletea would.
+	done := false
+	var walk func(c tea.Cmd)
+	walk = func(c tea.Cmd) {
+		if c == nil {
+			return
+		}
+		switch msg := c().(type) {
+		case tea.BatchMsg:
+			for _, sub := range msg {
+				// waitForEvent blocks on the events channel; skip anything that would.
+				ch := make(chan tea.Msg, 1)
+				go func(s tea.Cmd) { ch <- s() }(sub)
+				select {
+				case r := <-ch:
+					if _, ok := r.(warmDoneMsg); ok {
+						done = true
+					}
+				case <-time.After(200 * time.Millisecond):
+				}
+			}
+		case warmDoneMsg:
+			done = true
+		}
+	}
+	walk(m.Init())
+
+	select {
+	case <-calls:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Init never ran the warm-up")
+	}
+	if !done {
+		t.Error("the warm-up Cmd did not report warmDoneMsg")
+	}
+}
+
+func TestNoWarmupMeansNoStatusLine(t *testing.T) {
+	m := NewModel(noopRunner)
+	if v := m.View().Content; strings.Contains(v, "loading the model") {
+		t.Errorf("no warm-up configured, yet the view mentions loading, got:\n%s", v)
+	}
+}

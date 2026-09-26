@@ -85,6 +85,8 @@ type (
 	confirmRequestMsg string
 	// taskDoneMsg reports that the task goroutine has returned.
 	taskDoneMsg struct{ code int }
+	// warmDoneMsg reports that the startup warm-up has finished, successfully or not.
+	warmDoneMsg struct{}
 )
 
 // Model is TUI mode's bubbletea state.
@@ -93,6 +95,12 @@ type Model struct {
 	view    viewport.Model
 	spinner spinner.Model
 	run     TaskRunner
+
+	// warm loads the model in the background at startup; warming is true from
+	// Init until it reports back. Nil means there is nothing to warm, and the
+	// status line never appears.
+	warm    func(context.Context) error
+	warming bool
 
 	// mouseOn controls whether the view asks the terminal for mouse
 	// reporting. It defaults to off: turning it on hands the terminal's
@@ -164,7 +172,22 @@ func NewModel(run TaskRunner) Model {
 // flag was already set for real in NewModel, and this call exists only to
 // obtain the blink Cmd.
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(m.input.Focus(), waitForEvent(m.events))
+	cmds := []tea.Cmd{m.input.Focus(), waitForEvent(m.events)}
+	if m.warming {
+		cmds = append(cmds, m.spinner.Tick, warmUp(m.warm))
+	}
+	return tea.Batch(cmds...)
+}
+
+// warmUp runs the startup warm-up off the UI thread and reports when it is done.
+// Its error is deliberately dropped: a model that will not load shows up as a
+// clear error on the first real task, which is a better place to say so than a
+// startup banner the user may never read.
+func warmUp(f func(context.Context) error) tea.Cmd {
+	return func() tea.Msg {
+		_ = f(context.Background())
+		return warmDoneMsg{}
+	}
 }
 
 // waitForEvent blocks on the task-event channel inside a Cmd, which
@@ -212,10 +235,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// a separate "should the spinner run" flag.
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
-		if !m.running {
+		// The chain runs while a task is running or the model is still loading.
+		if !m.running && !m.warming {
 			return m, nil
 		}
 		return m, cmd
+
+	case warmDoneMsg:
+		m.warming = false
+		return m, nil
 
 	case outputMsg:
 		m.transcript, m.lineOpen = appendChunk(m.transcript, m.lineOpen, string(msg))
@@ -346,7 +374,7 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 	if m.pendingConfirm != "" {
 		switch key {
-		case "pgup", "pgdown", "ctrl+u", "ctrl+d", "home", "end":
+		case "pgup", "pgdown", "ctrl+u", "ctrl+d", "home", "end", "up", "down":
 			var cmd tea.Cmd
 			m.view, cmd = m.view.Update(msg)
 			return m, cmd
@@ -366,8 +394,13 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// while a confirmation is pending — being able to scroll back to read
 	// what a command actually proposed is precisely what a user needs
 	// before answering y/N on an irreversible step.
+	//
+	// Up and Down scroll too. The input is a single line, so they have no other
+	// job, and in the alternate screen most terminals turn the mouse wheel into
+	// exactly these two keys when the program has not asked for mouse reporting
+	// — which is how the wheel scrolls here without giving up text selection.
 	switch key {
-	case "pgup", "pgdown", "ctrl+u", "ctrl+d", "home", "end":
+	case "pgup", "pgdown", "ctrl+u", "ctrl+d", "home", "end", "up", "down":
 		var cmd tea.Cmd
 		m.view, cmd = m.view.Update(msg)
 		return m, cmd
@@ -474,7 +507,14 @@ func (m Model) View() tea.View {
 	case m.running:
 		b.WriteString("\n" + m.spinner.View() + workingStyle.Render(" working — ctrl+c cancels this task") + "\n")
 	default:
-		b.WriteString("\n" + m.input.View() + "\n")
+		if m.warming {
+			// Above the prompt, not instead of it: the user can already type, and
+			// a task started now simply waits for the model like any other.
+			b.WriteString("\n" + m.spinner.View() + workingStyle.Render(" loading the model — the first answer waits until it is ready") + "\n")
+		} else {
+			b.WriteString("\n")
+		}
+		b.WriteString(m.input.View() + "\n")
 	}
 
 	v := tea.NewView(b.String())
@@ -537,6 +577,17 @@ func appendChunk(lines []string, open bool, chunk string) ([]string, bool) {
 // Run starts TUI mode against the real terminal, driving the supplied
 // runner. Returns whatever error bubbletea's own Run reports.
 func Run(run TaskRunner) error {
-	_, err := tea.NewProgram(NewModel(run)).Run()
+	return RunWithWarmup(run, nil)
+}
+
+// RunWithWarmup is Run with a background warm-up: warm runs once at startup
+// (typically loading the language model) while the session is already usable,
+// and the UI says so until it returns. A nil warm behaves exactly like Run.
+func RunWithWarmup(run TaskRunner, warm func(context.Context) error) error {
+	m := NewModel(run)
+	if warm != nil {
+		m.warm, m.warming = warm, true
+	}
+	_, err := tea.NewProgram(m).Run()
 	return err
 }

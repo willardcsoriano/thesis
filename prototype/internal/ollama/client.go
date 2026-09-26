@@ -131,6 +131,38 @@ func (c *Client) Generate(ctx context.Context, model, system, prompt string, opt
 	return &out, nil
 }
 
+// Preload asks Ollama to load model into memory without generating anything, so
+// the first real request does not pay the load. A generate request with no prompt
+// is Ollama's documented way to do this. The options must be the same ones real
+// requests send: a different num_ctx makes Ollama treat it as another model
+// configuration and load it again, which would defeat the point.
+func (c *Client) Preload(ctx context.Context, model string, options map[string]any) error {
+	body, err := json.Marshal(struct {
+		Model     string         `json:"model"`
+		Options   map[string]any `json:"options,omitempty"`
+		KeepAlive string         `json:"keep_alive,omitempty"`
+	}{Model: model, Options: options, KeepAlive: keepAlive()})
+	if err != nil {
+		return fmt.Errorf("marshal request: %w", err)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/api/generate", bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return fmt.Errorf("call ollama: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return fmt.Errorf("ollama returned %s: %s", resp.Status, bytes.TrimSpace(snippet))
+	}
+	_, _ = io.Copy(io.Discard, resp.Body)
+	return nil
+}
+
 // GenerateStream is Generate with stream: true — same endpoint, same
 // request shape, same return type — invoking onToken with each fragment
 // as it arrives so a caller can render generation progressively. Pass a

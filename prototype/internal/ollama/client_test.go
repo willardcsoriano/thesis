@@ -505,3 +505,48 @@ func TestGenerateStreamWorksWithNilOnToken(t *testing.T) {
 		t.Errorf("Response = %q, want %q", resp.Response, "ab")
 	}
 }
+
+// Preload must ask Ollama to load the model without generating: no prompt, the
+// same options real requests use (a different num_ctx would make Ollama load the
+// model a second time), and the keep-alive that keeps it resident afterwards.
+func TestPreloadSendsALoadOnlyRequestWithTheSameOptions(t *testing.T) {
+	var got map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/generate" || r.Method != http.MethodPost {
+			t.Errorf("request = %s %s, want POST /api/generate", r.Method, r.URL.Path)
+		}
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		w.Write([]byte(`{"model":"m","done":true,"done_reason":"load"}`))
+	}))
+	defer server.Close()
+
+	opts := map[string]any{"temperature": 0, "num_ctx": 8192}
+	if err := New(server.URL).Preload(context.Background(), "m", opts); err != nil {
+		t.Fatalf("Preload: %v", err)
+	}
+	if got["model"] != "m" {
+		t.Errorf("model = %v, want m", got["model"])
+	}
+	if _, hasPrompt := got["prompt"]; hasPrompt {
+		t.Errorf("a preload must not carry a prompt, or Ollama would generate: %v", got)
+	}
+	o, _ := got["options"].(map[string]any)
+	if o["num_ctx"] != float64(8192) {
+		t.Errorf("num_ctx = %v, want the same 8192 real requests send", o["num_ctx"])
+	}
+	if got["keep_alive"] == "" || got["keep_alive"] == nil {
+		t.Error("a preload must set keep_alive, or the model is evicted on Ollama's shorter default")
+	}
+}
+
+func TestPreloadReportsAServerError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "model not found", http.StatusNotFound)
+	}))
+	defer server.Close()
+	if err := New(server.URL).Preload(context.Background(), "nope", nil); err == nil {
+		t.Fatal("a 404 must be an error")
+	}
+}

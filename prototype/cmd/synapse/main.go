@@ -265,7 +265,11 @@ func main() {
 				return runLoop(taskCtx, client, model, task, confirmFn, out, errOut, journalPath,
 					withTokenStreaming(out), withSessionContext(sc), withTelemetry(tel, tracker.current()))
 			}
-			if err := tui.Run(runner); err != nil {
+			// Load the model while the user is still reading the header, so the first
+			// answer does not pay a cold start (measured at 30-40s on the reference
+			// machine). A failure is not fatal: the first real task will report it.
+			warm := func(ctx context.Context) error { return client.Preload(ctx, model, generationOptions()) }
+			if err := tui.RunWithWarmup(runner, warm); err != nil {
 				fmt.Fprintf(os.Stderr, "error: %v\n", err)
 				os.Exit(1)
 			}
