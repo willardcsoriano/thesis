@@ -29,6 +29,7 @@ import (
 	"io"
 	"strings"
 
+	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textinput"
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
@@ -51,6 +52,10 @@ var (
 			BorderForeground(lipgloss.Color("11")).
 			Padding(0, 1)
 	workingStyle = lipgloss.NewStyle().Faint(true).Italic(true)
+	spinnerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
+	// warnGlyph marks the confirmation prompt as the one thing here that
+	// must never be mistaken for ordinary output or skimmed past.
+	warnGlyph = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("11")).Render("⚠")
 )
 
 // TaskRunner runs one task to completion: proposing, classifying,
@@ -84,9 +89,10 @@ type (
 
 // Model is TUI mode's bubbletea state.
 type Model struct {
-	input textinput.Model
-	view  viewport.Model
-	run   TaskRunner
+	input   textinput.Model
+	view    viewport.Model
+	spinner spinner.Model
+	run     TaskRunner
 
 	// mouseOn controls whether the view asks the terminal for mouse
 	// reporting. It defaults to off: turning it on hands the terminal's
@@ -134,9 +140,12 @@ func NewModel(run TaskRunner) Model {
 	ti.Placeholder = "type a task..."
 	ti.Focus()
 
+	sp := spinner.New(spinner.WithSpinner(spinner.MiniDot), spinner.WithStyle(spinnerStyle))
+
 	return Model{
 		input:   ti,
 		view:    viewport.New(),
+		spinner: sp,
 		run:     run,
 		events:  make(chan tea.Msg, 256),
 		answers: make(chan bool, 1),
@@ -194,6 +203,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// below because that path feeds the text input, which ignores it.
 		var cmd tea.Cmd
 		m.view, cmd = m.view.Update(msg)
+		return m, cmd
+
+	case spinner.TickMsg:
+		// Ticks keep arriving for as long as the spinner keeps re-issuing
+		// its own Tick command below; once a task ends, simply not
+		// re-issuing it is what stops the animation, rather than tracking
+		// a separate "should the spinner run" flag.
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		if !m.running {
+			return m, nil
+		}
 		return m, cmd
 
 	case outputMsg:
@@ -428,7 +449,10 @@ func (m Model) startTask(task string) (tea.Model, tea.Cmd) {
 	// produced visibly out-of-order output in live use (a "model
 	// reported..." line printing before the "step 1:" line above it),
 	// and it compounded: every task started added another receiver.
-	return m, nil
+	//
+	// The spinner's own tick chain is separate from that and starts here:
+	// it is not an events-channel message, so it cannot race with it.
+	return m, m.spinner.Tick
 }
 
 func (m Model) View() tea.View {
@@ -446,9 +470,9 @@ func (m Model) View() tea.View {
 
 	switch {
 	case m.pendingConfirm != "":
-		b.WriteString("\n" + confirmStyle.Render(m.pendingConfirm+"  [y/N]") + "\n")
+		b.WriteString("\n" + confirmStyle.Render(warnGlyph+" "+m.pendingConfirm+"  [y/N]") + "\n")
 	case m.running:
-		b.WriteString("\n" + workingStyle.Render("working... (ctrl+c cancels this task)") + "\n")
+		b.WriteString("\n" + m.spinner.View() + workingStyle.Render(" working — ctrl+c cancels this task") + "\n")
 	default:
 		b.WriteString("\n" + m.input.View() + "\n")
 	}

@@ -687,8 +687,16 @@ func TestStartTaskDoesNotAddASecondEventListener(t *testing.T) {
 		t.Fatal("task never started")
 	}
 
+	// A Cmd is fine here now that the spinner ticks while a task runs
+	// (that Cmd carries a spinner.TickMsg, nothing to do with the events
+	// channel) — what must never happen is a *second* listener on
+	// events, which is specifically outputMsg/confirmRequestMsg/
+	// taskDoneMsg arriving as the executed Cmd's result.
 	if cmd != nil {
-		t.Error("startTask returned a Cmd; it must return nil — the listener started in Init is still outstanding, and issuing another creates two concurrent receivers on one channel, which loses message ordering")
+		switch cmd().(type) {
+		case outputMsg, confirmRequestMsg, taskDoneMsg:
+			t.Error("startTask added a second listener on the events channel: two concurrent receivers on one channel loses message ordering")
+		}
 	}
 }
 
@@ -724,9 +732,14 @@ func TestTaskOutputReachesTheTranscriptInSourceOrder(t *testing.T) {
 
 	next, cmd := m.handleKey(enterKey())
 	m = next.(Model)
+	// As above: a spinner Cmd is expected and fine; an events-channel
+	// listener is not.
 	if cmd != nil {
-		t.Fatal("starting a task must not issue a second event listener: " +
-			"two concurrent receivers on the events channel make delivery order undefined")
+		switch cmd().(type) {
+		case outputMsg, confirmRequestMsg, taskDoneMsg:
+			t.Fatal("starting a task must not issue a second event listener: " +
+				"two concurrent receivers on the events channel make delivery order undefined")
+		}
 	}
 
 	for done := false; !done; {
