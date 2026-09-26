@@ -13,7 +13,9 @@ This is the hands-on manual test suite for **milestone M5 — TUI mode**, create
 
 Neither needed a TTY to catch. What was actually missing was a test of the path output really takes — writer → event channel → renderer — rather than messages hand-constructed in the test. That test now exists (`TestTaskOutputReachesTheTranscriptInSourceOrder`) and both bugs were mutation-verified: reintroducing either one fails it.
 
-What none of that proves: **every one of those tests bypasses the real terminal.** Bubble Tea needs an actual TTY, which the build environment does not have, so the compiled binary has never rendered to a real screen, never redrawn on a resize, and never had a human key pressed at it. Colors, borders, alt-screen behavior, cursor placement, flicker, and whether streaming *feels* responsive are all unverified by construction. That gap is this suite's entire purpose.
+What none of that proves: **every one of those tests bypasses the real terminal.** Bubble Tea needs an actual TTY, which the build environment does not have, so none of them exercise a real screen, a real resize, or a real keypress. Colors, borders, cursor placement, flicker, and whether streaming *feels* responsive are unverified by construction, and remain this suite's reason to exist — that part needs a human.
+
+**Partially closed 2026-09-26:** `drive_tui.py` in this directory opens a real pty (the actual syscall path Bubble Tea needs — `openpty`, a `TIOCSWINSZ` window size, scripted writes to the master side), runs the compiled binary against it exactly as a terminal emulator would, and captures everything written back. This gets the binary rendering to a real screen under automated control — worth running after a change that touches `internal/tui` before this suite's human pass, since it catches a functional regression (wrong output, a stuck prompt, a crash) for free. It does not replace this suite: it cannot judge whether something *feels* responsive, and it found one anomaly it could not itself explain (garbled placeholder text after a task completes, `open-problems.md` row 39) — a case for a human to look at directly, not against.
 
 ## Table of Contents
 
