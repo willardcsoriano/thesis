@@ -9,6 +9,15 @@ process boundary instead of the Go API — not a live, human-interactive session
 Usage: python3 drive_tui.py <cmd...> -- <keystroke>:<wait_seconds> ...
 A keystroke of "CTRLC" sends ETX (0x03). Output is written to stdout at the end,
 both raw (with ANSI escapes) and a stripped plain-text version.
+
+Fidelity note (found 2026-09-26, see retrospective.md): this does not emulate a
+real terminal's cursor-return/overwrite behaviour, so anything that redraws in
+place rather than appending — a blinking cursor, a spinner tick — shows every
+frame it ever drew concatenated, not just the current one. Read those stretches
+as "something redrew here", not as literal screen content. It is reliable for
+what it's for: confirming the program ran, took the input, and produced the
+right final text in the right order. Rendering fidelity is m5-tui-mode.md's
+job, which needs a human at a real terminal.
 """
 import fcntl
 import os

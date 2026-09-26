@@ -5,6 +5,7 @@ This is the project's process log — a chronological account of *how* work got 
 ## Table of Contents
 
 - [Overview](#overview)
+- [2026-09-26 — The TUI got a spinner and a louder confirmation prompt, tested through a real pty for the first time](#2026-09-26-the-tui-got-a-spinner-and-a-louder-confirmation-prompt-tested-through-a-real-pty-for-the-first-time)
 - [2026-09-20 — Automating the ground truth, and what the first automated run found](#2026-09-20-automating-the-ground-truth-and-what-the-first-automated-run-found)
 - [2026-09-20 — The effect analysis, a pilot that pointed the other way, and four bugs in undo](#2026-09-20-the-effect-analysis-a-pilot-that-pointed-the-other-way-and-four-bugs-in-undo)
 - [2026-09-20 — F6 decided](#2026-09-20-f6-decided)
@@ -22,6 +23,14 @@ This is the project's process log — a chronological account of *how* work got 
 - [Sessions 20–21 — .gitignore Privacy Rework, PR Shipping, Ollama Client/Loop Tests](#sessions-2021-gitignore-privacy-rework-pr-shipping-ollama-clientloop-tests)
 - [Sessions 17–19 — M1 Built From Scratch: First Live Validation, Classifier/Executor Wiring, D21's Bounded Loop](#sessions-1719-m1-built-from-scratch-first-live-validation-classifierexecutor-wiring-d21s-bounded-loop)
 - [Blockers & Lessons — Quick Reference](#blockers-lessons-quick-reference)
+
+## 2026-09-26 — The TUI got a spinner and a louder confirmation prompt, tested through a real pty for the first time
+
+`m5-tui-mode.md` had said, since 2026-09-08, that the compiled binary had never rendered to a real screen because Bubble Tea needs an actual TTY and the build environment doesn't have one. `manual-tests/drive_tui.py` closes that: a real pty (`openpty`, `TIOCSWINSZ` for a real window size, scripted writes to the master side), the binary run against it exactly as a terminal would, everything it writes back captured. It found the copy-paste complaint's real cause in minutes: the TUI doesn't capture the mouse by default (native selection already works), but the fullscreen kiosk config built the same week hid the terminal's own scrollbar and menu, throwing that away for nothing. One line fixed it (`distro/synapseos-session`).
+
+It also produced one false alarm worth keeping as a caution. The idle prompt's placeholder rendered as a garbled repeat ("ty" tiled across the line) in some runs and not others. Logged as an open, unconfirmed bug first. Root cause surfaced only after a second, unrelated change: adding a spinner (`charm.land/bubbles/v2/spinner`, already a project dependency) produced the exact same "every frame glued together" pattern, legibly enough this time to read as the MiniDot cycle in order (`⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏`) rather than garbage. The harness flattens raw bytes without emulating cursor-return/overwrite, so anything that redraws in place — a blinking cursor, a spinner tick — shows every frame concatenated instead of just the current one. Not an app bug; the placeholder row was withdrawn from `open-problems.md` rather than left there marked closed, and the harness's own docstring now says as much. **Lesson: an automated capture without real terminal emulation can manufacture "bugs" out of anything that redraws in place; a second, more legible example of the same pattern is what actually settles whether it's the app or the tool watching it.**
+
+The confirmation prompt got a warning glyph and the spinner replaced a static "working..." line — both verified live through the harness (a real `rm` triggered the gate, answering `n` left the file untouched, `y`/`N` unaffected) before being called done, not just unit-tested.
 
 ## 2026-09-20 — Automating the ground truth, and what the first automated run found
 
