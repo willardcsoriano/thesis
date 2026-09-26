@@ -1,22 +1,11 @@
-.PHONY: setup export
+# Forwards every target to prototype/Makefile, so `make tui` works from the repo root.
+# Variables given on the command line pass through, e.g. make task TASK="list the files here".
+.DEFAULT_GOAL := help
 
-VENV := tools/venv
-PYTHON := $(VENV)/bin/python
+help:
+	@echo "Forwarding to prototype/. Common targets: tui, repl, task TASK=\"...\", build, test, ci, ollama-status"
 
-setup:
-	@if [ ! -d tools/vendor/chromium ]; then \
-		echo "tools/vendor/ is missing (Chromium binary, shared libs, poppler, fonts)."; \
-		echo "This can't be rebuilt automatically — see tools/TOOLING.md for what's vendored and why."; \
-		exit 1; \
-	fi
-	python3 -m venv $(VENV)
-	$(VENV)/bin/pip install --quiet --upgrade pip
-	$(VENV)/bin/pip install --quiet -r tools/requirements.txt
-	@echo "Setup complete: $(PYTHON)"
+%:
+	@$(MAKE) --no-print-directory -C prototype $@
 
-export:
-	@if [ -z "$(FILE)" ]; then \
-		echo "Usage: make export FILE=path/to/chapter.html [OUT=path/to/chapter.pdf]"; \
-		exit 1; \
-	fi
-	$(PYTHON) tools/export_pdf.py "$(FILE)" $(OUT)
+.PHONY: help
