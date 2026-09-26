@@ -16,8 +16,8 @@ This is the reference for how SynapseOS's three interface modes — CLI, TUI, an
   - [What TUI Reuses vs. Adds](#what-tui-reuses-vs-adds)
 - [5. GUI Mode (D11, D12, D27, M8 — study prototype)](#5-gui-mode-d11-d12-d27-m8-study-prototype)
   - [Session Mechanism](#session-mechanism)
-    - [Session registration — `/usr/share/xsessions/synapseos.desktop`](#session-registration-usrsharexsessionssynapseosdesktop)
-    - [Startup script — `/usr/bin/synapseos-session`](#startup-script-usrbinsynapseos-session)
+    - [Session registration — `distro/synapseos.desktop`, installed as `/usr/share/xsessions/synapseos.desktop`](#session-registration-distrosynapseosdesktop-installed-as-usrsharexsessionssynapseosdesktop)
+    - [Startup script — `distro/synapseos-session`, installed as `/usr/bin/synapseos-session`](#startup-script-distrosynapseos-session-installed-as-usrbinsynapseos-session)
   - [Packaging](#packaging)
   - [The XFCE Fallback (D20, simplified by D27)](#the-xfce-fallback-d20-simplified-by-d27)
 - [6. Post-Thesis "Overlay Mode" (D13 — deferred, not built)](#6-post-thesis-overlay-mode-d13-deferred-not-built)
@@ -104,13 +104,13 @@ GUI mode is the fullscreen, study-facing interface for Condition A (novice users
 
 **Rescoped 2026-09-12 by D27, and the change is structural rather than cosmetic.** SynapseOS is an agentic layer running *over* an ordinary XFCE desktop, not a replacement for the desktop shell, session manager, and application launcher. GUI mode is therefore **the existing TUI, launched fullscreen, with the XFCE session running beneath it** — not a second rendering layer, not a webview, not a custom session. The two packaging options previously weighed below collapse to the first one, and the "takeover" framing is retired: nothing is taken over.
 
-What follows describes the session plumbing that remains. It is deliberately small, because the interface is already built.
+What follows describes the session plumbing that remains. It is built (`distro/synapseos.desktop`, `distro/synapseos-session`, `distro/install-session.sh`), not yet tried through a real login/logout cycle.
 
 ### Session Mechanism
 
 The display manager starts a session that launches the TUI fullscreen on top of a normal XFCE session, rather than in place of one.
 
-#### Session registration — `/usr/share/xsessions/synapseos.desktop`
+#### Session registration — `distro/synapseos.desktop`, installed as `/usr/share/xsessions/synapseos.desktop`
 
 ```ini
 [Desktop Entry]
@@ -121,7 +121,7 @@ Type=Application
 DesktopNames=SynapseOS
 ```
 
-#### Startup script — `/usr/bin/synapseos-session`
+#### Startup script — `distro/synapseos-session`, installed as `/usr/bin/synapseos-session`
 
 ```bash
 #!/bin/bash
@@ -129,16 +129,20 @@ DesktopNames=SynapseOS
 #    panels come up and stay up — SynapseOS layers on top of a working
 #    desktop rather than substituting for one (D27).
 xfce4-session &
+sleep 2
 
 # 2. Launch the TUI fullscreen on top of it. If it exits, the XFCE session
 #    underneath is still there; the participant lands on a usable desktop
 #    rather than being logged out.
-exec kitty --start-as=fullscreen -- /usr/bin/synapse tui
+exec xfce4-terminal --fullscreen --hide-menubar --hide-toolbar --hide-borders --hide-scrollbar \
+  -x /usr/bin/synapse tui
 ```
+
+`distro/install-session.sh` installs both files plus the built `synapse` binary. Run it, then log out — "SynapseOS" appears as a session choice at the greeter, next to "Xfce Session".
 
 ### Packaging
 
-A fast terminal emulator (`kitty`, `xfce4-terminal`) launched borderless and fullscreen, running the TUI binary. There is no second GUI application to build. The webview/Fyne option previously listed here was dropped with D27: it existed to make a replacement session feel like a desktop application, and there is no longer a replacement session.
+`xfce4-terminal` launched borderless and fullscreen, running the TUI binary — already part of the XFCE desktop this session starts, so no new dependency. There is no second GUI application to build. The webview/Fyne option previously listed here was dropped with D27: it existed to make a replacement session feel like a desktop application, and there is no longer a replacement session. `kitty`, mentioned in earlier drafts of this section, is not installed on the reference machine and is not needed; `xfce4-terminal` is preferred as the tool that already exists.
 
 The practical consequence for the study is that **GUI mode and TUI mode are the same program in a different frame**, which is also why the study-mode readiness checkpoint has a TUI fallback that costs the research nothing — the two conditions differ in presentation, not in the execution path, the safety gate, or the telemetry.
 

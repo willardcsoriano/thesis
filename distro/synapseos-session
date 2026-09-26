@@ -1,0 +1,34 @@
+#!/bin/bash
+# GUI-mode session entry point (docs/interface-modes.md §5, D11/D12/D27/M8).
+#
+# SynapseOS is an agentic layer over an ordinary XFCE desktop, not a replacement
+# for it (D27): this is a display-manager session that starts a normal XFCE
+# session and then launches the conversational TUI fullscreen on top of it.
+# There is no second GUI application — GUI mode and TUI mode are the same
+# program in a different frame (interface-modes.md).
+#
+# Installed by distro/install-session.sh as /usr/bin/synapseos-session,
+# registered as a login-screen session choice by synapseos.desktop.
+set -e
+
+# 1. Start the ordinary XFCE session. The user's desktop, file manager, and
+#    panels come up and stay up underneath — nothing is taken over.
+xfce4-session &
+
+# Give the desktop a moment to come up before laying the fullscreen terminal
+# over it, so the participant never sees a bare X root window.
+sleep 2
+
+# 2. Launch the TUI fullscreen on top of it, borderless and chrome-free.
+#    xfce4-terminal is used because it is already part of the XFCE desktop
+#    this session starts — no new dependency. If it exits (the participant
+#    quits the TUI, or it crashes), the XFCE session underneath is still
+#    running: the participant lands on a usable desktop, never logged out.
+#
+#    The participant's way back to the desktop mid-session without quitting
+#    (D20's fallback) is xfce4-terminal's own fullscreen-toggle shortcut,
+#    confirmed and, if needed, rebound via Edit > Preferences > Shortcuts
+#    before the study; invocation logging for that fallback (D20's telemetry
+#    requirement) is not wired yet and is tracked separately, not by this script.
+exec xfce4-terminal --fullscreen --hide-menubar --hide-toolbar --hide-borders --hide-scrollbar \
+  -x /usr/bin/synapse tui
