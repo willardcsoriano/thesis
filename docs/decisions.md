@@ -39,6 +39,9 @@ This file records architectural and research design decisions that have been mad
   - [D31 — Results are reported in natural language, not dumped as raw output](#d31-results-are-reported-in-natural-language-not-dumped-as-raw-output)
   - [D32 — The algorithm becomes RQ1; the two contributions are independent, not subordinate](#d32-the-algorithm-becomes-rq1-the-two-contributions-are-independent-not-subordinate)
   - [D33 — File manipulation runs on typed operations; the shell handles the remainder](#d33-file-manipulation-runs-on-typed-operations-the-shell-handles-the-remainder)
+  - [D34 — The algorithm is narrowed to composition and target resolution; the verdict alone is not the contribution](#d34-the-algorithm-is-narrowed-to-composition-and-target-resolution-the-verdict-alone-is-not-the-contribution)
+  - [D35 — The gate is default-on and strict; package and service state is modelled; ground truth is automated; dependencies are hoarded](#d35-the-gate-is-default-on-and-strict-package-and-service-state-is-modelled-ground-truth-is-automated-dependencies-are-hoarded)
+  - [D36 — Build priority: the algorithm and the distro are the mandatory deliverable; the comparative user study is secondary](#d36-build-priority-the-algorithm-and-the-distro-are-the-mandatory-deliverable-the-comparative-user-study-is-secondary)
 
 ## Decisions
 
@@ -546,3 +549,19 @@ Single named commands with explicit targets stay with the list, which handled th
 **Dependencies.** The distribution will be a bootable image, so every dependency is named in `distro/manifest.tsv`, checked by `distro/check.sh`, and collected by `distro/hoard.sh` (debs with their closure, Go modules, the Go toolchain, model blobs) into the git-ignored `distro/hoard/`. Existing tools are preferred over new code throughout.
 
 **Process.** Agility over ceremony: `make ci` (format, vet, tests) runs in GitHub Actions; the corpus is generated from a seed and regenerated in seconds of human time. The one piece of rigour kept is validity: a development corpus is used to fix the analysis and a second corpus, from a fresh seed, is run once after the rule table is frozen and is the reported result.
+
+---
+
+### D36 — Build priority: the algorithm and the distro are the mandatory deliverable; the comparative user study is secondary
+
+**Status:** Decided 2026-09-26, in response to the Thesis 1 adviser's scope-management comment on the resubmitted draft ("two studies... I would ask you to manage scope carefully").
+
+The team's real goal for this project is the distro (SynapseOS as a working, bootable conversational session layer) with the recoverability algorithm as its one required piece of evaluated research. Going forward, build time is allocated in that order: (1) the algorithm and its evaluation, both essentially complete (`algorithms.md`, round 7); (2) the distro itself — GUI-mode session launch (M8) and a provisioning path from a stock Debian+XFCE install; (3) the 40-participant comparative user study, time-permitting. If the schedule tightens, the study is what shrinks or is deferred, not the algorithm or the distro.
+
+**Reconciled with D32, not a reversal of it.** D32 (2026-09-14) made the algorithm an independent contribution specifically so that *removing the interface would still leave a contribution* — a test the reviewer applied and the algorithm passes on its own, corpus-based, no participants. D32 did not require the interface work to be built out to full 40-participant scale before the algorithm's own contribution counts; it required that a contribution survive without it. This decision answers a different question — not "does a contribution survive?" but "where does limited build time go?" — and the two answers are compatible: the paper still states all four RQs and does not need to be rewritten to drop RQ2–RQ4, but the team's own priority order now says plainly which of those RQs is guaranteed to be finished and which is upside.
+
+**Why now.** The adviser's comment names the exact risk directly: algorithm development, corpus creation, a user study, and interface development are, together, too much for one BSCS project. Telling him the priority order in writing is the actual answer to "manage scope carefully" — better than quietly doing less on one of them without saying so.
+
+**What changes.** Nothing in the paper's claims. `scope.md`'s Track A/B framing gets an explicit priority note. Candidate algorithmic ideas noticed while building the distro are logged in `candidate-algorithms.md` rather than acted on immediately, since the recoverability algorithm is the one being run with unless a decision here says otherwise.
+
+**Rejected.** Formally dropping RQ2–RQ4 from the proposal — the adviser did not ask for that, and D32's reasoning for keeping the interface work real rather than decorative still holds. This is a resourcing decision, not a claims decision.
