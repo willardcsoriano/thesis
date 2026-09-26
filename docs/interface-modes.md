@@ -133,8 +133,12 @@ sleep 2
 
 # 2. Launch the TUI fullscreen on top of it. If it exits, the XFCE session
 #    underneath is still there; the participant lands on a usable desktop
-#    rather than being logged out.
-exec xfce4-terminal --fullscreen --hide-menubar --hide-toolbar --hide-borders --hide-scrollbar \
+#    rather than being logged out. Only the window border is hidden: the
+#    TUI does not capture the mouse by default (confirmed live 2026-09-26),
+#    so plain click-drag selection and the terminal's own right-click
+#    Copy/Paste already work — hiding the scrollbar or menu would only
+#    throw that away with nothing built to replace it.
+exec xfce4-terminal --fullscreen --hide-borders \
   -x /usr/bin/synapse tui
 ```
 

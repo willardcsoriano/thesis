@@ -30,5 +30,12 @@ sleep 2
 #    confirmed and, if needed, rebound via Edit > Preferences > Shortcuts
 #    before the study; invocation logging for that fallback (D20's telemetry
 #    requirement) is not wired yet and is tracked separately, not by this script.
-exec xfce4-terminal --fullscreen --hide-menubar --hide-toolbar --hide-borders --hide-scrollbar \
+#
+#    The scrollbar and menubar stay on deliberately (found 2026-09-26,
+#    testing live): the TUI does not capture the mouse by default, so plain
+#    click-drag selection and the terminal's own right-click Copy/Paste
+#    already work — hiding the scrollbar and menu here only threw away that,
+#    with nothing built to replace it. Only the window border is hidden,
+#    which is what makes it read as fullscreen rather than a window.
+exec xfce4-terminal --fullscreen --hide-borders \
   -x /usr/bin/synapse tui
