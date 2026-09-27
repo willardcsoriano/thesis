@@ -609,3 +609,23 @@ The task loop used to narrate everything as text on one `io.Writer`. A writer th
 **Also changed.** The TUI asks the model without streaming, since a command typed out token by token into a scrollback is noise; the spinner and the live command line cover the wait. Messages the program writes itself begin with a capital letter.
 
 **Rejected.** Hiding commands entirely (breaks the traceability principle in `vision.md`) and a persistent full-screen transcript overlay (needs the alternate screen, which D38 removed).
+
+---
+
+### D40 — Model-agnostic by construction: constrain the model's output in code, verify every model against the same test set, and put fixes where they can't rot into prompt tuning
+
+**Status:** Decided 2026-09-27, prompted by the question of whether fixes made for the 3B model would carry over to a larger one (e.g. qwen2.5-coder:7b).
+
+**The problem.** Most bugs found live in this project so far were one model's specific habits, patched one at a time: a stray `$ ` copied from an example (row 39's sibling, fixed same day), the DONE/UNSUPPORTED sentinel being restated after streaming, a working-directory prompt addition that dropped the technical tier from 100% to 58.3% (retrospective, 2026-09-08) because it was tuned around this model's reading of the prompt. None of that generalizes: a bigger or different model has different habits, and a prompt worded around one model's mistakes can make another model worse. "Perfect the 3B model" and "the fixes carry over to the 7B model" are not the same claim, and conflating them was the risk this decision heads off.
+
+**What does carry over regardless of model, and is unaffected by this decision:** the reversibility analysis and the confirmation gate (they judge the command, not who wrote it), undo, the typed events, and the TUI. These are model-independent by construction already.
+
+**What this decision changes, in order of leverage:**
+
+1. **Constrain what the model can produce, in code, rather than steer it with prose.** The propose step now asks Ollama for a JSON-schema-constrained reply (`internal/ollama`'s new `format` parameter, `cmd/synapse`'s `stepFormat`) instead of free text parsed by a growing pile of string rules. Verified against the Ollama 0.34 API docs (format applies to `/api/generate`, not just `/api/chat`) and live against `qwen2.5-coder:3b`: a real request now comes back `{"action":"run","command":"ls /tmp"}`. This is what removes the whole *class* the `$`-prefix and fence bugs belonged to, rather than adding one more rule per instance as it turns up. A reply that is not valid JSON in this shape (an older model, a server that ignores `format`) falls back to the previous free-text parse — the same compatibility path that let every existing scripted test keep passing unmodified.
+2. **Verify the output in code**, not just its shape: whether the command parses, and — not yet built — whether an answer only states what the executed commands actually showed (open-problems row 39, the "5.9Gi of RAM" figure reported as disk space). A stronger model should get caught by this less often; a weaker one, more often; the check itself does not change.
+3. **Measure, don't assume.** Any model change gets run through the same tiered live-model suite (`layer7_test.go`) before its result is trusted. This already existed; what changes is treating it as mandatory before a "bigger model, better result" claim, rather than optional.
+
+**What was rejected.** Hand-tuning the prompt further for each new model-specific failure as it appears — the pattern this decision replaces — and pursuing a "confirmation-gate policy that learns from the user" or similar per-model tuning, both logged as candidates in `candidate-algorithms.md` and left there deliberately: they add per-model state instead of removing the need for it.
+
+**What is still open.** Answer text itself is still free-form generation, unconstrained and unverified against what actually ran (row 39). Extending schema-constrained output to the answer step, or to the effect-grounded-answering candidate, is not done.
