@@ -51,6 +51,22 @@ type generateRequest struct {
 	Stream    bool           `json:"stream"`
 	Options   map[string]any `json:"options,omitempty"`
 	KeepAlive string         `json:"keep_alive,omitempty"`
+	// Format constrains the response to the literal "json" or a JSON schema
+	// object; see withFormat. Omitted (nil) leaves the response free text,
+	// which is every caller before this field existed.
+	Format any `json:"format,omitempty"`
+}
+
+// firstOrNil returns the first element of a variadic slice, or nil. Format is
+// variadic on Generate and GenerateStream so every existing call site — there
+// were seventeen across this package and cmd/synapse before this was added —
+// keeps compiling unchanged; only a caller that wants a constrained response
+// passes one.
+func firstOrNil(format []any) any {
+	if len(format) == 0 {
+		return nil
+	}
+	return format[0]
 }
 
 // defaultKeepAlive overrides Ollama's own default (5m) so the model stays
@@ -93,8 +109,11 @@ func (r *GenerateResponse) Latency() time.Duration {
 
 // Generate sends a single non-streaming completion request. system may be
 // empty. options passes model parameters (e.g. {"temperature": 0}); pass nil
-// for defaults.
-func (c *Client) Generate(ctx context.Context, model, system, prompt string, options map[string]any) (*GenerateResponse, error) {
+// for defaults. format, if given, is Ollama's structured-output constraint:
+// the literal "json", or a JSON schema object the response must match —
+// verified against the Ollama 0.34 API docs, which state format applies to
+// /api/generate exactly as it does to /api/chat.
+func (c *Client) Generate(ctx context.Context, model, system, prompt string, options map[string]any, format ...any) (*GenerateResponse, error) {
 	body, err := json.Marshal(generateRequest{
 		Model:     model,
 		Prompt:    prompt,
@@ -102,6 +121,7 @@ func (c *Client) Generate(ctx context.Context, model, system, prompt string, opt
 		Stream:    false,
 		Options:   options,
 		KeepAlive: keepAlive(),
+		Format:    firstOrNil(format),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
@@ -185,7 +205,7 @@ func (c *Client) Preload(ctx context.Context, model string, options map[string]a
 // catastrophically different command. Refusing to return partial text
 // means a truncated generation can never reach the classifier or the
 // executor at all.
-func (c *Client) GenerateStream(ctx context.Context, model, system, prompt string, options map[string]any, onToken func(string)) (*GenerateResponse, error) {
+func (c *Client) GenerateStream(ctx context.Context, model, system, prompt string, options map[string]any, onToken func(string), format ...any) (*GenerateResponse, error) {
 	body, err := json.Marshal(generateRequest{
 		Model:     model,
 		Prompt:    prompt,
@@ -193,6 +213,7 @@ func (c *Client) GenerateStream(ctx context.Context, model, system, prompt strin
 		Stream:    true,
 		Options:   options,
 		KeepAlive: keepAlive(),
+		Format:    firstOrNil(format),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)

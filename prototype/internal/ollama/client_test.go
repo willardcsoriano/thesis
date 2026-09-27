@@ -550,3 +550,60 @@ func TestPreloadReportsAServerError(t *testing.T) {
 		t.Fatal("a 404 must be an error")
 	}
 }
+
+// Format is opt-in: an existing caller (or test) that never passes one keeps
+// sending the exact request it always did.
+func TestGenerateOmitsFormatWhenNotGiven(t *testing.T) {
+	var raw map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&raw)
+		json.NewEncoder(w).Encode(GenerateResponse{Response: "ok", Done: true})
+	}))
+	defer server.Close()
+
+	if _, err := New(server.URL).Generate(context.Background(), "m", "", "p", nil); err != nil {
+		t.Fatalf("Generate returned error: %v", err)
+	}
+	if _, ok := raw["format"]; ok {
+		t.Errorf("request carried a format field with none given: %v", raw)
+	}
+}
+
+// A caller that wants a constrained reply passes a JSON schema, and it goes
+// out on the wire exactly as given.
+func TestGenerateSendsTheGivenFormat(t *testing.T) {
+	var raw map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&raw)
+		json.NewEncoder(w).Encode(GenerateResponse{Response: `{"ok":true}`, Done: true})
+	}))
+	defer server.Close()
+
+	schema := map[string]any{"type": "object", "properties": map[string]any{"ok": map[string]any{"type": "boolean"}}}
+	if _, err := New(server.URL).Generate(context.Background(), "m", "", "p", nil, schema); err != nil {
+		t.Fatalf("Generate returned error: %v", err)
+	}
+	got, ok := raw["format"].(map[string]any)
+	if !ok {
+		t.Fatalf("request format = %v, want the schema", raw["format"])
+	}
+	if got["type"] != "object" {
+		t.Errorf("format.type = %v, want object", got["type"])
+	}
+}
+
+func TestGenerateStreamSendsTheGivenFormat(t *testing.T) {
+	var raw map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&raw)
+		json.NewEncoder(w).Encode(GenerateResponse{Response: `{"ok":true}`, Done: true})
+	}))
+	defer server.Close()
+
+	if _, err := New(server.URL).GenerateStream(context.Background(), "m", "", "p", nil, nil, "json"); err != nil {
+		t.Fatalf("GenerateStream returned error: %v", err)
+	}
+	if raw["format"] != "json" {
+		t.Errorf("request format = %v, want the literal \"json\"", raw["format"])
+	}
+}
