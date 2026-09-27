@@ -11,8 +11,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
+	"synapseos/internal/loopevent"
 	"sync/atomic"
 	"testing"
 
@@ -1441,45 +1443,108 @@ func TestBareCd(t *testing.T) {
 	}
 }
 
-// Friendly output is what a person at the TUI sees: the command as "$ command",
-// its output indented beneath, no bookkeeping, the answer set apart.
-func TestRunLoopFriendlyOutputIsCleanAndUnchangedInBehaviour(t *testing.T) {
+// With an event consumer the loop reports what happened as typed events and
+// writes none of it as text; what ran is the same.
+func collectEvents() (*[]loopevent.Event, loopOption) {
+	var evs []loopevent.Event
+	return &evs, withEvents(func(e loopevent.Event) { evs = append(evs, e) })
+}
+
+func kinds(evs []loopevent.Event) []loopevent.Kind {
+	out := make([]loopevent.Kind, len(evs))
+	for i, e := range evs {
+		out[i] = e.Kind
+	}
+	return out
+}
+
+func TestRunLoopEventsReplaceTheNarration(t *testing.T) {
 	server := scriptedOllamaServer(t, []string{"echo hi", "DONE"})
 	defer server.Close()
 
+	evs, opt := collectEvents()
 	var out, errOut bytes.Buffer
-	code := runLoop(context.Background(), ollama.New(server.URL), "m", "say hi", neverConfirm(t), &out, &errOut, "", withFriendlyOutput())
+	code := runLoop(context.Background(), ollama.New(server.URL), "m", "say hi", neverConfirm(t), &out, &errOut, "", opt)
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
 	}
-	got := out.String()
-	if !strings.Contains(got, "\n$ echo hi\n  hi\n") {
-		t.Errorf("want the command with its output indented beneath it, got:\n%q", got)
+	if out.Len() != 0 || errOut.Len() != 0 {
+		t.Errorf("the loop still wrote text alongside its events:\nout: %q\nerr: %q", out.String(), errOut.String())
 	}
-	for _, noise := range []string{"step ", "stats:", "exit code", "Task complete", "DONE"} {
-		if strings.Contains(got, noise) {
-			t.Errorf("friendly output kept bookkeeping %q:\n%s", noise, got)
-		}
+	want := []loopevent.Kind{loopevent.Command, loopevent.Result, loopevent.Answer}
+	if got := kinds(*evs); !reflect.DeepEqual(got, want) {
+		t.Fatalf("event kinds = %v, want %v", got, want)
+	}
+	cmd, res := (*evs)[0], (*evs)[1]
+	if cmd.Command != "echo hi" || cmd.Step != 1 || cmd.Tokens != 1 {
+		t.Errorf("command event = %+v", cmd)
+	}
+	if res.Stdout != "hi\n" || res.ExitCode != 0 {
+		t.Errorf("result event = %+v", res)
 	}
 }
 
-func TestRunLoopFriendlyOutputReportsAFailureAndAnEmptyResult(t *testing.T) {
-	server := scriptedOllamaServer(t, []string{"true", "false", "DONE"})
+func TestRunLoopEventsReportAFailureAndRefusalsAsData(t *testing.T) {
+	server := scriptedOllamaServer(t, []string{"false", "UNSUPPORTED"})
 	defer server.Close()
 
+	evs, opt := collectEvents()
 	var out, errOut bytes.Buffer
-	runLoop(context.Background(), ollama.New(server.URL), "m", "do two things", neverConfirm(t), &out, &errOut, "", withFriendlyOutput())
-	got := out.String()
-	if !strings.Contains(got, "$ true\n  (no output)\n") {
-		t.Errorf("a silent success should say so, got:\n%s", got)
+	runLoop(context.Background(), ollama.New(server.URL), "m", "do it", neverConfirm(t), &out, &errOut, "", opt)
+	want := []loopevent.Kind{loopevent.Command, loopevent.Result, loopevent.Notice}
+	if got := kinds(*evs); !reflect.DeepEqual(got, want) {
+		t.Fatalf("event kinds = %v, want %v", got, want)
 	}
-	if !strings.Contains(got, "$ false\n  (exit code 1)\n") {
-		t.Errorf("a failure should show its exit code, got:\n%s", got)
+	if (*evs)[1].ExitCode != 1 {
+		t.Errorf("result exit code = %d, want 1", (*evs)[1].ExitCode)
+	}
+	if !strings.Contains((*evs)[2].Text, "couldn't work out a command") {
+		t.Errorf("notice = %q", (*evs)[2].Text)
 	}
 }
 
-func TestIndented(t *testing.T) {
-	if got := indented("a\n\nb\n"); got != "  a\n\n  b\n" {
-		t.Errorf("indented = %q", got)
+func TestRunLoopEventsAnnounceAnApprovalBeforeAsking(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "keep.txt")
+	os.WriteFile(target, []byte("x"), 0o644)
+	server := scriptedOllamaServer(t, []string{fmt.Sprintf("rm %q", target)})
+	defer server.Close()
+
+	evs, opt := collectEvents()
+	var out, errOut bytes.Buffer
+	asked := false
+	confirm := func(string) bool {
+		asked = true
+		if n := len(*evs); n < 2 || (*evs)[n-1].Kind != loopevent.Approval {
+			t.Errorf("the approval was not announced before asking: %v", kinds(*evs))
+		}
+		return false
+	}
+	runLoop(context.Background(), ollama.New(server.URL), "m", "remove it", confirm, &out, &errOut, "", opt)
+	if !asked {
+		t.Fatal("the gate never asked")
+	}
+	ap := (*evs)[1]
+	if ap.Command == "" || !strings.Contains(ap.Text, "can't be undone") {
+		t.Errorf("approval event = %+v", ap)
+	}
+	if last := (*evs)[len(*evs)-1]; last.Kind != loopevent.Notice || last.Text != "Cancelled." {
+		t.Errorf("last event = %+v, want the cancellation", last)
+	}
+	if _, err := os.Stat(target); err != nil {
+		t.Error("the file was removed although the person declined")
 	}
 }
+
+func TestEventsFromOnlyAttachesToAnEmitter(t *testing.T) {
+	if got := eventsFrom(&bytes.Buffer{}); got != nil {
+		t.Error("a plain writer must keep the text output")
+	}
+	if got := eventsFrom(&fakeEmitter{}); len(got) != 1 {
+		t.Error("a writer that accepts events must get them")
+	}
+}
+
+type fakeEmitter struct{ bytes.Buffer }
+
+func (*fakeEmitter) Emit(loopevent.Event) {}

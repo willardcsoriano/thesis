@@ -44,6 +44,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"synapseos/internal/loopevent"
 	"sync"
 	"time"
 
@@ -323,13 +324,13 @@ func main() {
 				if handleSessionCommand(task, sc, tracker, out) {
 					return 0
 				}
-				// withFriendlyOutput is the one behavioral difference from
-				// CLI/REPL mode, and it is presentation-only: the command and
-				// its output are laid out for a person, without step numbers,
-				// token counts, or exit-code lines. The command is still parsed
-				// from the whole response and classified exactly as before.
+				// The writer the TUI hands in also accepts typed events, so the
+				// loop reports commands, results, and answers as events and the
+				// TUI decides how to show them. That is presentation only: the
+				// command is still parsed from the whole response and classified
+				// exactly as before.
 				return runLoop(taskCtx, client, model, task, confirmFn, out, errOut, journalPath,
-					withFriendlyOutput(), withSessionContext(sc), withTelemetry(tel, tracker.current()))
+					append(eventsFrom(out), withSessionContext(sc), withTelemetry(tel, tracker.current()))...)
 			}
 			// Load the model while the user is still reading the header, so the first
 			// answer does not pay a cold start (measured at 30-40s on the reference
@@ -622,14 +623,14 @@ type loopConfig struct {
 	// responses set this.
 	answerDisabled bool
 
-	// friendly selects the presentation for a person at the TUI: no step
-	// numbers, token counts, or exit-code lines on success; each command shown
-	// as "$ command" with its output indented beneath it; and the answer set
-	// apart. It changes only what is printed. What runs, what is gated, what is
-	// journaled, and what telemetry records are identical, and the model is
-	// asked in a non-streaming call because a command printed piece by piece
-	// into a scrollback reads as noise.
-	friendly bool
+	// events, when non-nil, receives what the loop would otherwise narrate as
+	// text: the command chosen, what it did, the answer, notices and problems.
+	// The loop then writes none of that to out or errOut. What runs, what is
+	// gated, what is journaled, and what telemetry records are identical; only
+	// the presentation moves to the interface. The model is also asked in a
+	// non-streaming call, because a command printed piece by piece into a
+	// scrollback reads as noise. Used only by TUI mode.
+	events func(loopevent.Event)
 }
 
 // withTokenStreaming makes the loop stream generation into w as it
@@ -639,36 +640,56 @@ func withTokenStreaming(w io.Writer) loopOption {
 	return func(c *loopConfig) { c.tokenSink = w }
 }
 
-// withFriendlyOutput switches the loop to the presentation described on
-// loopConfig.friendly. Used only by TUI mode.
-func withFriendlyOutput() loopOption {
-	return func(c *loopConfig) { c.friendly = true }
+// withEvents hands the loop's narration to fn as typed events instead of text.
+// See loopConfig.events.
+func withEvents(fn func(loopevent.Event)) loopOption {
+	return func(c *loopConfig) { c.events = fn }
 }
 
-// gap writes a blank line in friendly mode, to set a block of output apart
-// from the one before it.
-func (c loopConfig) gap(out io.Writer) {
-	if c.friendly {
-		fmt.Fprintln(out)
+// eventsFrom returns withEvents for a writer that wants events, or nothing for
+// one that does not, so every other caller keeps the text output unchanged.
+func eventsFrom(w io.Writer) []loopOption {
+	if em, ok := w.(loopevent.Emitter); ok {
+		return []loopOption{withEvents(em.Emit)}
 	}
+	return nil
 }
 
-// indented prefixes every line of text with two spaces and makes sure it ends
-// in a newline, so command output reads as belonging to the command above it.
-func indented(text string) string {
-	lines := strings.Split(strings.TrimRight(text, "\n"), "\n")
-	for i, l := range lines {
-		if l != "" {
-			lines[i] = "  " + l
-		}
+// notice shows text to the person now: as an event, or as the given text line.
+func (c loopConfig) notice(out io.Writer, text string) {
+	if c.events != nil {
+		c.events(loopevent.Event{Kind: loopevent.Notice, Text: text})
+		return
 	}
-	return strings.Join(lines, "\n") + "\n"
+	fmt.Fprintln(out, text)
 }
 
-// printAnswer writes the model's reply. In friendly mode it sits apart from the
-// command output above it.
+// note records bookkeeping that is only worth showing on request. Without an
+// event consumer it is written as the given legacy text.
+func (c loopConfig) note(out io.Writer, text, legacy string) {
+	if c.events != nil {
+		c.events(loopevent.Event{Kind: loopevent.Note, Text: text})
+		return
+	}
+	fmt.Fprint(out, legacy)
+}
+
+// problem reports something that went wrong: plain words and the technical
+// cause as an event, or the legacy line otherwise.
+func (c loopConfig) problem(errOut io.Writer, plain, detail, legacy string) {
+	if c.events != nil {
+		c.events(loopevent.Event{Kind: loopevent.Problem, Text: plain, Detail: detail})
+		return
+	}
+	fmt.Fprint(errOut, legacy)
+}
+
+// printAnswer writes the model's reply.
 func (c loopConfig) printAnswer(out io.Writer, answer string) {
-	c.gap(out)
+	if c.events != nil {
+		c.events(loopevent.Event{Kind: loopevent.Answer, Text: answer})
+		return
+	}
 	fmt.Fprintln(out, answer)
 }
 
@@ -726,7 +747,8 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			}
 			cfg.session.Append(task, steps)
 			if n := cfg.session.TakeDropped(); n > 0 {
-				fmt.Fprintf(out, "note: dropped %d older turn(s) from memory to stay within the context budget.\n", n)
+				text := fmt.Sprintf("Dropped %d older turn(s) from memory to stay within the context budget.", n)
+				cfg.note(out, text, fmt.Sprintf("note: dropped %d older turn(s) from memory to stay within the context budget.\n", n))
 			}
 		}()
 	}
@@ -744,7 +766,7 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			if cfg.tokenSink != nil {
 				fmt.Fprintln(out)
 			}
-			fmt.Fprintf(errOut, "error: %v\n", err)
+			cfg.problem(errOut, "I couldn't get an answer from the language model.", err.Error(), fmt.Sprintf("error: %v\n", err))
 			taskOutcome = "propose_error"
 			return 1
 		}
@@ -755,7 +777,12 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		// truthful reason instead of five identical error blocks.
 		for _, prior := range failedCommands(history) {
 			if prior == cmd {
-				fmt.Fprintf(out, "This command already failed here, so running it again will not help: %s\n", cmd)
+				if cfg.events != nil {
+					cfg.notice(out, "I already tried that and it did not work, so I'm stopping instead of repeating it.")
+					cfg.note(out, "Not run again, because it already failed here: "+cmd, "")
+				} else {
+					fmt.Fprintf(out, "This command already failed here, so running it again will not help: %s\n", cmd)
+				}
 				taskOutcome = "repeated_failure"
 				if answer, aerr := maybeAnswer(ctx, client, model, task, history, cfg); aerr == nil && answer != "" {
 					cfg.printAnswer(out, answer)
@@ -766,8 +793,8 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		}
 		cfg.telemetry.CommandIssued(cfg.taskID, i, cmd)
 
-		if cfg.friendly {
-			// Shown below, once it is known to be a command.
+		if cfg.events != nil {
+			// Announced below, once it is known to be a command.
 		} else if cfg.tokenSink != nil {
 			fmt.Fprintln(out)
 			// The streamed text is the model's raw output; what actually
@@ -785,7 +812,6 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		}
 
 		if cmd == "" || cmd == "UNSUPPORTED" {
-			cfg.gap(out)
 			// Phrased for the person, not the system. This is the response a
 			// participant meets whenever they ask for something outside the
 			// shell — including the boundary tasks the study administers
@@ -801,6 +827,16 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			// tasks like editing images") and asserted it every time, which
 			// made a failed `du` read as a request to edit an image
 			// (open-problems.md row 4, hit in live testing 2026-09-15).
+			if cfg.events != nil {
+				cfg.notice(out, strings.Join([]string{
+					"I couldn't work out a command for that.",
+					"I work by running shell commands on this machine, so I can reach files and folders, disk usage, processes, packages, text in files, and network settings — but not things with no command-line equivalent, like clicking buttons in a graphical application or editing an image.",
+					"I also don't answer general questions about the world — I only report what I can find on this machine, so that anything I tell you can be traced to a command that actually ran.",
+					"If it is something the command line can do, try naming the file or folder — for example \"how much space is this folder using\" or \"find the ten largest files here\".",
+				}, "\n"))
+				taskOutcome = "unsupported"
+				return 1
+			}
 			fmt.Fprintln(out, "I couldn't work out a command for that.")
 			fmt.Fprintln(out, "I work by running shell commands on this machine, so I can reach files and folders, disk usage, processes, packages, text in files, and network settings — but not things with no command-line equivalent, like clicking buttons in a graphical application or editing an image.")
 			fmt.Fprintln(out, "I also don't answer general questions about the world — I only report what I can find on this machine, so that anything I tell you can be traced to a command that actually ran.")
@@ -810,8 +846,7 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		}
 		if strings.EqualFold(cmd, doneSentinel) {
 			if len(history) == 0 {
-				cfg.gap(out)
-				fmt.Fprintln(out, "Nothing needs to be done.")
+				cfg.notice(out, "Nothing needs to be done.")
 				taskOutcome = "nothing_to_do"
 				return 0
 			}
@@ -823,18 +858,17 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			} else if aerr != nil {
 				// Reported, not fatal. The task succeeded; only the summary
 				// did not, and the raw output above already stands on its own.
-				fmt.Fprintf(errOut, "note: could not summarise the result: %v\n", aerr)
+				cfg.problem(errOut, "I couldn't put the result into words this time.", aerr.Error(), fmt.Sprintf("note: could not summarise the result: %v\n", aerr))
 			}
-			if !cfg.friendly {
+			if cfg.events == nil {
 				fmt.Fprintf(out, "Task complete in %d step(s).\n", len(history))
 			}
 			taskOutcome = "complete"
 			return 0
 		}
 
-		if cfg.friendly {
-			cfg.gap(out)
-			fmt.Fprintf(out, "$ %s\n", cmd)
+		if cfg.events != nil {
+			cfg.events(loopevent.Event{Kind: loopevent.Command, Step: i, Command: cmd, Tokens: resp.EvalCount, Latency: resp.Latency()})
 		}
 
 		// Resolved once per step and used both for the filesystem-aware
@@ -853,7 +887,11 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		if bareCd(cmd) || cdThenPwd(cmd) {
 			note := "cd only changes the directory of the shell that runs it, so it cannot move this session, which stays in " +
 				wd + ", and pwd right after a cd just repeats where the cd went. To look somewhere else, name the path in the command (for example ls /some/folder); to see where this session is, run pwd on its own."
-			fmt.Fprintf(out, "not run: %s\n%s\n", cmd, note)
+			if cfg.events != nil {
+				cfg.events(loopevent.Event{Kind: loopevent.Result, Step: i, Command: cmd, Stderr: note, ExitCode: 1, NotRun: true})
+			} else {
+				fmt.Fprintf(out, "not run: %s\n%s\n", cmd, note)
+			}
 			cfg.telemetry.CommandResult(cfg.taskID, i, cmd, telemetry.CommandOutcome{ExitCode: 1, RawExitCode: 1})
 			history = append(history, loopStep{command: cmd, result: executor.Result{Stderr: note, ExitCode: 1, RawExitCode: 1}})
 			continue
@@ -862,17 +900,16 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		verdict, reason := classifier.ClassifyForDir(cmd, wd)
 		gd := analysisDecision(ctx, cmd, wd)
 		if verdict == classifier.Irreversible || (gd != nil && gd.Confirm) {
+			var approvalText string
 			if verdict == classifier.Irreversible {
-				if cfg.friendly {
-					fmt.Fprintf(out, "This can't be undone — %s\n", reason)
-				} else {
+				approvalText = "This can't be undone — " + reason
+				if cfg.events == nil {
 					fmt.Fprintf(out, "blocked: %s is irreversible — %s\n", cmd, reason)
 				}
 			} else {
 				reason = firstReason(gd)
-				if cfg.friendly {
-					fmt.Fprintf(out, "Needs your approval — %s\n", reason)
-				} else {
+				approvalText = "Needs your approval — " + reason
+				if cfg.events == nil {
 					fmt.Fprintf(out, "blocked: %s needs confirmation — %s\n", cmd, reason)
 				}
 			}
@@ -890,9 +927,19 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 				unprotected = !gd.Confident || gd.Verdict.Class == effects.Unrecoverable
 			}
 			if unprotected {
-				fmt.Fprintln(out, "  WARNING: This command decides what to delete while it runs, so I cannot")
-				fmt.Fprintln(out, "  copy anything first. Undo will NOT be able to bring it back.")
-				fmt.Fprintln(out, "  If you want the safety net, name the files or folders directly instead.")
+				warning := []string{
+					"  WARNING: This command decides what to delete while it runs, so I cannot",
+					"  copy anything first. Undo will NOT be able to bring it back.",
+					"  If you want the safety net, name the files or folders directly instead.",
+				}
+				if cfg.events != nil {
+					approvalText += "\n" + strings.Join(warning, "\n")
+				} else {
+					fmt.Fprintln(out, strings.Join(warning, "\n"))
+				}
+			}
+			if cfg.events != nil {
+				cfg.events(loopevent.Event{Kind: loopevent.Approval, Step: i, Command: cmd, Text: approvalText})
 			}
 			approved := confirmFn("run it anyway?")
 			// Logged for both answers. A declined gate is evidence about
@@ -900,7 +947,7 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			// asks; recording only approvals would leave that unmeasurable.
 			cfg.telemetry.ConfirmationTriggered(cfg.taskID, i, cmd, reason, approved)
 			if !approved {
-				fmt.Fprintln(out, "Cancelled.")
+				cfg.notice(out, "Cancelled.")
 				taskOutcome = "declined"
 				return 0
 			}
@@ -928,7 +975,7 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			// complete and its plan replaces the legacy backups for this step.
 			e, errs := gd.Capture(wd, cmd)
 			for _, err := range errs {
-				fmt.Fprintf(errOut, "warning: could not capture before running: %v\n", err)
+				cfg.problem(errOut, "I couldn't save a copy of what this changes first, so undo may not work for this step.", err.Error(), fmt.Sprintf("warning: could not capture before running: %v\n", err))
 			}
 			gateEntry = &e
 		} else if journalPath != "" && wd != "" {
@@ -962,7 +1009,7 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		execLatency := time.Since(execStart)
 		execCancel()
 		if result.Err != nil {
-			fmt.Fprintf(errOut, "error: command did not run: %v\n", result.Err)
+			cfg.problem(errOut, "I couldn't run that command.", result.Err.Error(), fmt.Sprintf("error: command did not run: %v\n", result.Err))
 			taskOutcome = "execution_error"
 			if answer, aerr := maybeAnswer(ctx, client, model, task, history, cfg); aerr == nil && answer != "" {
 				cfg.printAnswer(out, answer)
@@ -976,24 +1023,10 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			SIGPIPE:     result.SIGPIPE,
 			Latency:     execLatency,
 		})
-		switch {
-		case cfg.friendly:
-			if result.Stdout != "" {
-				fmt.Fprint(out, indented(result.Stdout))
-			}
-			if result.Stderr != "" {
-				fmt.Fprint(errOut, indented(result.Stderr))
-			}
-			if result.Stdout == "" && result.Stderr == "" && result.ExitCode == 0 && !result.TimedOut {
-				fmt.Fprintln(out, "  (no output)")
-			}
-			if result.TimedOut {
-				fmt.Fprintf(out, "  Command exceeded %s and was terminated.\n", stepExecutionTimeout)
-			}
-			if result.ExitCode != 0 {
-				fmt.Fprintf(out, "  (exit code %d)\n", result.ExitCode)
-			}
-		default:
+		if cfg.events != nil {
+			cfg.events(loopevent.Event{Kind: loopevent.Result, Step: i, Command: cmd,
+				Stdout: result.Stdout, Stderr: result.Stderr, ExitCode: result.ExitCode, TimedOut: result.TimedOut})
+		} else {
 			if result.Stdout != "" {
 				fmt.Fprint(out, result.Stdout)
 			}
@@ -1011,7 +1044,7 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			// command ran, so they can restore even a command that failed partway.
 			if !gateEntry.IsNoop() {
 				if err := undo.AppendJournal(journalPath, *gateEntry); err != nil {
-					fmt.Fprintf(errOut, "warning: could not record undo entry: %v\n", err)
+					cfg.problem(errOut, "I couldn't record this step for undo.", err.Error(), fmt.Sprintf("warning: could not record undo entry: %v\n", err))
 				}
 			}
 		} else if wd != "" && undoBefore != nil && result.ExitCode == 0 {
@@ -1019,7 +1052,7 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 				afterIDs, _ := undo.SnapshotIDs(wd)
 				if entry := undo.BuildEntryIDs(wd, cmd, undoBefore, after, undoBeforeIDs, afterIDs); !entry.IsNoop() {
 					if err := undo.AppendJournal(journalPath, entry); err != nil {
-						fmt.Fprintf(errOut, "warning: could not record undo entry: %v\n", err)
+						cfg.problem(errOut, "I couldn't record this step for undo.", err.Error(), fmt.Sprintf("warning: could not record undo entry: %v\n", err))
 					}
 				}
 			}
@@ -1039,7 +1072,7 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 				MetadataBackups: metadataBackups,
 			}
 			if err := undo.AppendJournal(journalPath, entry); err != nil {
-				fmt.Fprintf(errOut, "warning: could not record undo entry: %v\n", err)
+				cfg.problem(errOut, "I couldn't record this step for undo.", err.Error(), fmt.Sprintf("warning: could not record undo entry: %v\n", err))
 			}
 		}
 
@@ -1054,7 +1087,9 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		cfg.printAnswer(out, answer)
 		cfg.telemetry.TaskAnswered(cfg.taskID, answer)
 	}
-	fmt.Fprintf(errOut, "error: step limit reached (%d steps) without the task being reported complete — stopping.\n", maxLoopSteps)
+	cfg.problem(errOut, "I ran out of steps before finishing this task.",
+		fmt.Sprintf("step limit reached (%d steps) without the task being reported complete", maxLoopSteps),
+		fmt.Sprintf("error: step limit reached (%d steps) without the task being reported complete — stopping.\n", maxLoopSteps))
 	return 1
 }
 
