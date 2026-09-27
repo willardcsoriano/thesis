@@ -1188,7 +1188,7 @@ func handleSessionCommand(task string, sc *session.Context, tr *taskTracker, out
 // greeting attached, and swallowing the latter would be far worse than
 // failing to recognise it.
 func answerConversational(task string, out io.Writer) bool {
-	norm := strings.Trim(strings.ToLower(strings.TrimSpace(task)), ".!?,")
+	norm := normaliseChatter(task)
 	switch norm {
 	case "hello", "hi", "hey", "yo", "hello there", "good morning", "good afternoon", "good evening":
 		fmt.Fprintln(out, "hello. tell me what you want done to this machine, in ordinary words — for example \"how much space is this folder using\" or \"put the log files in their own folder\".")
@@ -1210,11 +1210,45 @@ func answerConversational(task string, out io.Writer) bool {
 		fmt.Fprintln(out, "anything that cannot be undone stops and asks you first, and undo reverses the last thing I ran.")
 		fmt.Fprintln(out, "session commands: context (what I remember), clear (forget it), exit.")
 		return true
-	case "thanks", "thank you", "ty":
+	case "thanks", "thank you", "ty", "thx", "cheers", "thanks a lot", "thank you very much", "thanks so much", "much appreciated":
 		fmt.Fprintln(out, "you're welcome.")
+		return true
+	case "how are you", "how are you doing", "how are you today", "how are you doing today", "how is it going",
+		"how's it going", "hows it going", "how do you do", "what's up", "whats up", "sup", "how have you been":
+		// Asked out of politeness, and a 3B coder model asked to turn it into a
+		// shell command spent 26 seconds concluding it could not. The honest answer
+		// is short and points back at the one thing this can do.
+		fmt.Fprintln(out, "I'm running fine — I'm a program on this machine, so there's not much to report.")
+		fmt.Fprintln(out, "tell me what you want done, in ordinary words, or type help to see what I can reach.")
+		return true
+	case "really", "seriously", "are you sure", "are you serious", "what", "huh", "why", "why not", "what do you mean",
+		"how so", "oh really", "is that so", "is that right", "come again", "pardon", "sorry", "sorry?", "wait", "hold on":
+		// A reaction to what was just said, not a request. Nothing here can be
+		// checked on the machine, so say what this can and cannot stand behind
+		// rather than guessing at which earlier line the user is reacting to.
+		fmt.Fprintln(out, "yes — I can only act by running commands on this machine, and I only report what they return.")
+		fmt.Fprintln(out, "say what you want checked or done, in ordinary words, or type help.")
+		return true
+	case "ok", "okay", "k", "kk", "cool", "nice", "great", "good", "alright", "all right", "got it", "i see", "sure",
+		"yes", "yeah", "yep", "yup", "no", "nope", "nah", "nothing", "never mind", "nevermind", "lol", "haha", "hehe",
+		"wow", "hmm", "hm", "hmmm", "oh", "ah", "ooh", "interesting", "fine", "perfect", "awesome", "understood", "right":
+		fmt.Fprintln(out, "ok. tell me what you want done when you're ready — help lists what I can reach.")
+		return true
+	case "bye", "goodbye", "good bye", "see you", "see ya", "cya", "good night", "goodnight", "later":
+		fmt.Fprintln(out, "goodbye. type exit to leave, or keep going.")
 		return true
 	}
 	return false
+}
+
+// normaliseChatter reduces a line to the form the exact-match table above is
+// keyed on: lower case, one space between words, and no trailing punctuation or
+// repeated question marks ("really??", "hello!!"). It changes only how a line is
+// written, never which words it contains, so a task with a greeting in front of
+// it still does not match.
+func normaliseChatter(task string) string {
+	s := strings.ToLower(strings.Join(strings.Fields(task), " "))
+	return strings.TrimRight(strings.TrimLeft(s, " ."), " .!?,;:…")
 }
 
 func handleMemoryCommand(task string, sc *session.Context, out io.Writer) bool {

@@ -378,6 +378,39 @@ func TestAnswerConversational(t *testing.T) {
 		}
 	})
 
+	t.Run("reactions and small talk are answered locally, whatever the punctuation", func(t *testing.T) {
+		// Found live 2026-09-27: "really?" went to the model, which took 26 seconds
+		// to return UNSUPPORTED and was followed by a four-line explanation.
+		for _, in := range []string{
+			"really?", "Really??", "  really  ", "REALLY!", "are you sure?", "what?", "huh", "why?",
+			"how are you?", "How are you doing?", "how's it going", "what's up?",
+			"ok", "OK.", "cool!", "nice", "yes", "no", "nope", "lol", "hmm...", "wow!!",
+			"thx", "thanks a lot!", "bye", "goodbye!",
+		} {
+			var b strings.Builder
+			if !answerConversational(in, &b) {
+				t.Errorf("%q should be answered locally without the model", in)
+				continue
+			}
+			if strings.TrimSpace(b.String()) == "" {
+				t.Errorf("%q was consumed but printed nothing", in)
+			}
+		}
+	})
+
+	t.Run("a task that merely starts with chatter, or contains it, is still a task", func(t *testing.T) {
+		for _, in := range []string{
+			"ok, delete the logs", "really delete everything in tmp", "no more log files please",
+			"yes list the files", "why is the disk full", "what is using the disk", "how are the logs doing",
+			"wait for the download then unzip it", "sorry, put the notes in a folder",
+		} {
+			var b strings.Builder
+			if answerConversational(in, &b) {
+				t.Errorf("%q was swallowed as conversation; it is a task", in)
+			}
+		}
+	})
+
 	t.Run("a task with a greeting attached is still a task", func(t *testing.T) {
 		// The dangerous direction: swallowing real work because it opened
 		// politely. Exact matching on the normalised input is what prevents it.
