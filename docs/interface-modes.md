@@ -52,7 +52,7 @@ A mode's job is only ever: collect input, drive the core, render output. Every m
 |---|---|---|---|
 | Process lifecycle | One-shot per invocation: a bounded, gated multi-step loop (propose → classify → (confirm) → execute → feed result back → repeat until done or step cap, D21) — not a single command | Persistent: runs until the user quits | Persistent: launched at login, fills the session |
 | State across turns | None — each invocation is independent | In-memory rolling history within the session (M6) | Same as TUI (wraps it) |
-| Model output rendering | Printed once generation finishes (blocking call) | Streamed token-by-token into a scrollable viewport | Same streaming, inside fullscreen chrome |
+| Model output rendering | Printed once generation finishes (blocking call) | Streamed token-by-token into the terminal's own scrollback | Same streaming, in a fullscreen terminal window |
 | Confirmation gate UX | Print the command + reason, block on stdin `y`/`N` | Render inline in the chat view, wait for a keypress | Same inline pattern, fullscreen |
 | Audience / use case | Scripting, automation, one-off remote commands over SSH | Interactive terminal session, local or remote | Study Condition A — novice users, no terminal exposure |
 | Built by | **M1 — done** | M4 (interim loop) + M5 (rendering) — **both done** | M8 |
@@ -78,16 +78,16 @@ TUI mode turns the one-shot CLI into a persistent, interactive session — the d
 
 - **Framework:** [bubbletea](https://github.com/charmbracelet/bubbletea), implementing the Elm Architecture (Model-Update-View loop) in Go.
 - **Styling & layout:** [lipgloss](https://github.com/charmbracelet/lipgloss) for borders, grids, and typography.
-- **Viewport:** `bubbles/v2/viewport` for scrollable output (a separate module from bubbletea itself).
+- **Scrolling:** none of our own. Finished lines are printed into the terminal's scrollback with `tea.Println`, so the terminal's scrollbar, wheel, and text selection cover the whole conversation. A `bubbles/v2/viewport` in the alternate screen was tried first and replaced (2026-09-27, D38): the alternate screen has no scrollback, so only what fit on screen could be highlighted or copied.
 - **Module paths:** all three live under `charm.land/…/v2`, not `github.com/charmbracelet/…` — the path moved with the v2 line. Requires Go ≥ 1.25.
 
 ### Loop Cycle
 
 **As built (Session 28), which differs from this section's original sketch in one important way.** The sketch had `Update` calling the model directly. It does not — TUI mode never reimplements any part of the propose/classify/confirm/execute loop. The *same* `runLoop` that CLI and REPL mode use is injected as a `tui.TaskRunner` and driven on its own goroutine, so every reversibility verdict, confirmation gate, and undo-journal write is literally the same code in every mode and cannot drift between them.
 
-1. **Model:** transcript, viewport scroll state, current input, whether a task is running, and any outstanding confirmation prompt.
+1. **Model:** the unfinished output line, current input, whether a task is running, and any outstanding confirmation prompt.
 2. **Update:** on `Enter`, launches the injected runner on a goroutine and returns immediately — `Update` must never block. Two channels bridge the synchronous loop into the event loop: the runner's `io.Writer` output arrives as messages (streamed token-by-token, since TUI passes `withTokenStreaming`), and when the loop hits an irreversible step its `confirmFn` publishes a confirmation request and *blocks* until `Update` — having rendered the prompt and taken a keypress — sends the verdict back. Ctrl+C mid-task cancels that task's context only; the session survives.
-3. **View:** renders the transcript through a `viewport`, plus either the input box, a working indicator, or the confirmation prompt — the last being the only bordered, colored element in the interface, so an irreversible-command gate can never be mistaken for ordinary output.
+3. **View:** draws only the live region — the unfinished line, plus either the input box, a working indicator, or the confirmation prompt — the last being the only bordered, colored element in the interface, so an irreversible-command gate can never be mistaken for ordinary output.
 
 ### What TUI Reuses vs. Adds
 
@@ -134,10 +134,10 @@ sleep 2
 # 2. Launch the TUI fullscreen on top of it. If it exits, the XFCE session
 #    underneath is still there; the participant lands on a usable desktop
 #    rather than being logged out. Only the window border is hidden: the
-#    TUI does not capture the mouse by default (confirmed live 2026-09-26),
-#    so plain click-drag selection and the terminal's own right-click
-#    Copy/Paste already work — hiding the scrollbar or menu would only
-#    throw that away with nothing built to replace it.
+#    TUI prints into the terminal's own scrollback and never captures the
+#    mouse (D38), so the scrollbar, wheel, click-drag selection, and the
+#    terminal's right-click Copy/Paste cover the whole conversation —
+#    hiding the scrollbar or menu would only throw that away.
 #    The agent is homed where it starts (that is what "here" means to it), so
 #    start in the person's home folder rather than wherever login left us.
 cd "$HOME"

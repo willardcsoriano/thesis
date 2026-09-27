@@ -579,3 +579,17 @@ Two questions that are easy to run together, answered separately. **Home** is th
 **Rejected.** A directory boundary (launch directory or home folder), as Claude Code and similar tools use. Those are installed tools scoped to a project; this is not. **Kept as an option:** a boundary keyed to the *kind* of change (always ask before anything privileged or system-wide), which the effect analysis has the data for and could measure with the existing corpus. Not needed now.
 
 **Found while testing:** `make tui` used to start in `prototype/` whatever directory it was run from, because the Makefile changed directory first; it now starts where `make` was run (`RUNDIR`).
+
+---
+
+### D38 — The TUI is inline: finished lines go to the terminal's scrollback, not an alternate-screen viewport
+
+**Status:** Decided 2026-09-27, after the first live use of the full-screen version.
+
+The TUI first ran in the alternate screen with a `bubbles/v2/viewport` for scrolling. The alternate screen has no scrollback, so only what fit on screen could be highlighted and copied, and a conversation cannot be shown to anyone (or pasted into a bug report) without maximising the window and copying it in pieces. The interface now prints each finished line with `tea.Println` into the terminal's normal scrollback and redraws only a small live region: the unfinished line, the status or confirmation, and the prompt. The terminal's own scrollbar, wheel, Shift+PgUp, and click-drag selection then cover the whole conversation, which is how Claude Code's CLI works too.
+
+**What it costs.** No scroll keys of our own and no `mouse` toggle (the command now says there is nothing to toggle). The window is no longer a cleared full screen: the header prints under the shell history. GUI mode is unaffected in practice, because the session launches the TUI in a fullscreen `xfce4-terminal` whose scrollbar now works over the whole conversation.
+
+**What had to stay true.** Output order: every printed line, including the echoed task and the y/n verdict, travels through the one ordered events channel and each print is sequenced before the next event is read, so the scrollback matches what happened. The confirmation gate is unchanged and still fails closed. Covered by tests that drive the real program and check a 60-line output appears once, in order, with no alternate-screen or mouse-reporting sequences.
+
+**Rejected.** Keeping the viewport and adding a copy-transcript command or a clipboard write: it treats the symptom and leaves the whole conversation unreachable by every normal terminal gesture.

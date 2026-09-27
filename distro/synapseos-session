@@ -31,12 +31,12 @@ sleep 2
 #    before the study; invocation logging for that fallback (D20's telemetry
 #    requirement) is not wired yet and is tracked separately, not by this script.
 #
-#    The scrollbar and menubar stay on deliberately (found 2026-09-26,
-#    testing live): the TUI does not capture the mouse by default, so plain
-#    click-drag selection and the terminal's own right-click Copy/Paste
-#    already work — hiding the scrollbar and menu here only threw away that,
-#    with nothing built to replace it. Only the window border is hidden,
-#    which is what makes it read as fullscreen rather than a window.
+#    The scrollbar and menubar stay on deliberately: the TUI prints into the
+#    terminal's own scrollback and never captures the mouse (D38), so the
+#    scrollbar, wheel, click-drag selection, and right-click Copy/Paste cover
+#    the whole conversation — hiding the scrollbar and menu here would throw
+#    that away. Only the window border is hidden, which is what makes it read
+#    as fullscreen rather than a window.
 #
 #    The agent is homed in the directory it starts in: that is what "here" and
 #    "this folder" mean to it. Started from the login session it should be the

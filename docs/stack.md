@@ -33,7 +33,7 @@ The session manager, TUI, and execution engine. Ships as a single binary.
 |---|---|
 | TUI framework | [bubbletea](https://github.com/charmbracelet/bubbletea) — v2 line, module path `charm.land/bubbletea/v2` (moved off `github.com/charmbracelet/...`, confirmed via `go get`), requires Go ≥ 1.25 (`prototype/go.mod` bumped for M5 — done) |
 | TUI styling | [lipgloss](https://github.com/charmbracelet/lipgloss) — v2 line, module path `charm.land/lipgloss/v2`, same Go ≥ 1.25 requirement |
-| TUI scrollback | [bubbles](https://github.com/charmbracelet/bubbles)/`viewport` — v2 line, module path `charm.land/bubbles/v2` |
+| TUI scrollback | The terminal's own: finished lines are printed with `tea.Println` (bubbletea v2), no viewport component (D38) |
 | Ollama client | HTTP to `localhost:11434/api/generate`, non-streaming today (`Stream: false`, `internal/ollama.Client.Generate`) — streaming (`stream: true`, newline-delimited JSON per token, `done: true` on the final line) is M5's step 4, not yet built; verified current wire format via Ollama's own API docs before planning that step, not assumed |
 | Bash execution | `os/exec` — subprocess with stdout/stderr streaming |
 | Confirmation gate | Custom: classifies command reversibility before dispatch |

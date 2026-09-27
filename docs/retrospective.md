@@ -36,6 +36,8 @@ Slowness on the reference machine is memory, not the model: at one point 3.7 GB 
 
 The confirmation prompt got a warning glyph and the spinner replaced a static "working..." line — both verified live through the harness (a real `rm` triggered the gate, answering `n` left the file untouched, `y`/`N` unaffected) before being called done, not just unit-tested.
 
+**The alternate screen was the wrong frame (found 2026-09-27, D38).** The full-screen viewport looked like the natural TUI shape and carried three rounds of patches: wheel scrolling, arrow-key scrolling, a `mouse` toggle to trade selection for the wheel. The user's report ("I can only highlight whatever is on the screen") was the real signal: with no scrollback, no patch could fix copying. The fix was to stop drawing the conversation at all and hand finished lines to the terminal. Lesson: when the third patch on a feature is a workaround for the same constraint, question the frame, not the feature. The cost was small because the loop is injected and the UI is thin.
+
 ## 2026-09-20 — Automating the ground truth, and what the first automated run found
 
 This stretch turned the effect analysis from an opt-in library into the default gate, modelled package and service state, and replaced the hand-labelled evaluation corpus with one labelled by sandboxed execution. Three things are worth keeping.
