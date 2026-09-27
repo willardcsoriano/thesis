@@ -17,8 +17,16 @@ test:
 	$(GO) test ./...
 
 # Built-in sample suite (8 tasks, propose-only — no filesystem changes).
+# The agent is homed in the directory it is launched from: it tells the model that
+# is the working directory and runs every command there. RUNDIR is where the
+# session starts. It defaults to wherever make was invoked, and the root Makefile
+# passes its own directory through, so `make tui` from the repo root starts in the
+# repo root rather than in prototype/. Override with RUNDIR=/some/folder.
+RUNDIR ?= $(CURDIR)
+SYNAPSE = "$(CURDIR)/bin/synapse"
+
 run: build
-	./bin/synapse
+	cd "$(RUNDIR)" && $(SYNAPSE)
 
 # One ad-hoc task, e.g. make task TASK="find the 10 largest files under /var/log"
 task: build
@@ -26,13 +34,13 @@ task: build
 		echo "Usage: make task TASK=\"<what you want done>\""; \
 		exit 1; \
 	fi
-	./bin/synapse "$(TASK)"
+	cd "$(RUNDIR)" && $(SYNAPSE) "$(TASK)"
 
 repl: build
-	./bin/synapse repl
+	cd "$(RUNDIR)" && $(SYNAPSE) repl
 
 tui: build
-	./bin/synapse tui
+	cd "$(RUNDIR)" && $(SYNAPSE) tui
 
 undo: build
 	./bin/synapse undo

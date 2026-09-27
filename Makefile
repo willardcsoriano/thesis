@@ -6,6 +6,6 @@ help:
 	@echo "Forwarding to prototype/. Common targets: tui, repl, task TASK=\"...\", build, test, ci, ollama-status"
 
 %:
-	@$(MAKE) --no-print-directory -C prototype $@
+	@$(MAKE) --no-print-directory -C prototype RUNDIR="$(CURDIR)" $@
 
 .PHONY: help
