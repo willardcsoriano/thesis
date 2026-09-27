@@ -14,7 +14,7 @@ This folder holds one manual test suite per milestone — created as that milest
 |---|---|---|
 | `m1-cli-mode-and-undo-safety-net.md` | M1, Foundational Hardening (F1–F5) | Propose/classify/execute, the confirmation gate, and all five undo mechanisms (directory-diff, content-backup, trash, metadata backup, git-reset) |
 | `m4-persistent-loop.md` | M4 | `synapse repl` — a persistent multi-task session, specifically the risk that a confirmation answer and the next typed task never get confused with each other |
-| `m5-tui-mode.md` | M5 | `synapse tui` — full-screen rendering, token streaming, scrollback, and the confirmation gate as UI. Carries more weight than the others: a TUI cannot be driven by piped input, so nothing here has ever been run end-to-end by anyone |
+| `m5-tui-mode.md` | M5 | `synapse tui` — inline rendering, token streaming, terminal-native scrollback, and the confirmation gate as UI. Carries more weight than the others: a TUI cannot be driven by piped input, so nothing here has ever been run end-to-end by anyone |
 | `m6-session-context.md` | M6 | Memory between tasks — whether a follow-up like "move it to Downloads" actually resolves its reference against the real model, plus `context`/`clear` and eviction being announced rather than silent |
 
 ## Convention for new suites

@@ -19,6 +19,19 @@ func noopRunner(context.Context, string, func(string) bool, io.Writer, io.Writer
 	return 0
 }
 
+// newCaptured builds a Model whose printed lines are recorded instead of sent
+// to a terminal. print runs when Update creates the command, so the record is
+// in exactly the order lines would reach the scrollback.
+func newCaptured() (Model, *[]string) {
+	printed := &[]string{}
+	m := NewModel(noopRunner)
+	m.print = func(s string) tea.Cmd {
+		*printed = append(*printed, s)
+		return nil
+	}
+	return m, printed
+}
+
 // --- deterministic state-machine helpers -----------------------------
 //
 // The tests below that matter most — the confirmation bridge — drive
@@ -231,9 +244,6 @@ func TestTaskDoneRestoresIdlePrompt(t *testing.T) {
 	}
 }
 
-// TestEnterRunsTaskThroughInjectedRunner verifies the wiring that makes
-// M5 step 3 meaningful: the typed task reaches the injected runner
-// verbatim, and whatever that runner writes lands in the transcript.
 func TestEnterRunsTaskThroughInjectedRunner(t *testing.T) {
 	var (
 		mu      sync.Mutex
@@ -249,7 +259,8 @@ func TestEnterRunsTaskThroughInjectedRunner(t *testing.T) {
 		return 0
 	}
 
-	m := NewModel(run)
+	m, printed := newCaptured()
+	m.run = run
 	m.input.SetValue("list files")
 	m = step(t, m, enterKey())
 
@@ -267,14 +278,16 @@ func TestEnterRunsTaskThroughInjectedRunner(t *testing.T) {
 	if m.input.Value() != "" {
 		t.Errorf("input = %q, want cleared after submitting", m.input.Value())
 	}
-	if !strings.Contains(strings.Join(m.transcript, "\n"), "> list files") {
-		t.Errorf("submitted task missing from transcript:\n%s", strings.Join(m.transcript, "\n"))
-	}
 
-	// Drain the runner's output through Update and confirm it renders.
+	// The echo and the runner's output both travel through the events channel.
 	m = step(t, m, <-m.events)
-	if !strings.Contains(strings.Join(m.transcript, "\n"), "ran: list files") {
-		t.Errorf("runner output missing from transcript:\n%s", strings.Join(m.transcript, "\n"))
+	m = step(t, m, <-m.events)
+	all := strings.Join(*printed, "\n")
+	if !strings.Contains(all, "> list files") {
+		t.Errorf("submitted task missing from the scrollback:\n%s", all)
+	}
+	if !strings.Contains(all, "ran: list files") {
+		t.Errorf("runner output missing from the scrollback:\n%s", all)
 	}
 }
 
@@ -307,8 +320,8 @@ func TestEmptyEnterDoesNotStartATask(t *testing.T) {
 
 func TestViewShowsPromptWhenIdle(t *testing.T) {
 	view := NewModel(noopRunner).View()
-	if !strings.Contains(view.Content, "SynapseOS") {
-		t.Errorf("view missing header, got:\n%s", view.Content)
+	if strings.Contains(view.Content, "SynapseOS") {
+		t.Errorf("the header is printed once into the scrollback, not redrawn with the prompt, got:\n%s", view.Content)
 	}
 	if !strings.Contains(view.Content, ">") {
 		t.Errorf("view missing input prompt, got:\n%s", view.Content)
@@ -358,30 +371,6 @@ func TestMsgWriterCopiesItsBuffer(t *testing.T) {
 
 	if got := <-events; got != outputMsg("first") {
 		t.Errorf("message was corrupted by buffer reuse: got %q, want %q", got, "first")
-	}
-}
-
-// TestAppendChunkBoundsRetainedLines checks the transcript cap.
-//
-// Note the trailing newlines: an earlier version of this test appended
-// bare "line N" strings with no newline and expected each to become its
-// own line, which quietly encoded the very bug that later showed up on
-// screen as "UNS" / "UPPORTED" on separate lines. A chunk without a
-// newline is a *fragment*, not a line, and the test now says so.
-func TestAppendChunkBoundsRetainedLines(t *testing.T) {
-	var lines []string
-	open := false
-	for i := 0; i < transcriptLimit*2; i++ {
-		lines, open = appendChunk(lines, open, fmt.Sprintf("line %d\n", i))
-	}
-	if len(lines) > transcriptLimit {
-		t.Errorf("transcript grew to %d lines, want at most %d", len(lines), transcriptLimit)
-	}
-	if last := lines[len(lines)-1]; last != fmt.Sprintf("line %d", transcriptLimit*2-1) {
-		t.Errorf("newest line was trimmed; last = %q", last)
-	}
-	if open {
-		t.Error("line should be closed: every chunk ended with a newline")
 	}
 }
 
@@ -476,123 +465,50 @@ func sizeMsg(w, h int) tea.WindowSizeMsg {
 	return tea.WindowSizeMsg{Width: w, Height: h}
 }
 
-// TestViewportSizesToTerminalLeavingRoomForInput verifies the transcript
-// pane never claims the whole terminal — if it did, the input box would
-// be pushed off-screen and the session would be unusable.
-func TestViewportSizesToTerminalLeavingRoomForInput(t *testing.T) {
-	m := NewModel(noopRunner)
-	m = step(t, m, sizeMsg(80, 24))
-
-	if !m.ready {
-		t.Fatal("model should be ready after a window size message")
+// TestViewIsInline pins the reason this UI is not full-screen: the alternate
+// screen has no scrollback, so only what fits on screen could be selected or
+// scrolled. Finished lines go to the terminal's own scrollback instead.
+func TestViewIsInline(t *testing.T) {
+	v := NewModel(noopRunner).View()
+	if v.AltScreen {
+		t.Error("the view must not use the alternate screen: it has no scrollback, so the conversation could not be scrolled or copied")
 	}
-	if got := m.view.Height(); got >= 24 {
-		t.Errorf("viewport height = %d, want less than the terminal's 24 to leave room for the input", got)
-	}
-	if got := m.view.Height(); got < 1 {
-		t.Errorf("viewport height = %d, want at least 1", got)
+	if v.MouseMode != tea.MouseModeNone {
+		t.Error("the view must not request mouse reporting: it takes native text selection and the wheel with it")
 	}
 }
 
-// TestViewportHeightStaysPositiveOnTinyTerminal guards the arithmetic:
-// subtracting fixed chrome from a very short terminal must not produce a
-// zero or negative height.
-func TestViewportHeightStaysPositiveOnTinyTerminal(t *testing.T) {
-	m := NewModel(noopRunner)
-	m = step(t, m, sizeMsg(20, 2))
-
-	if got := m.view.Height(); got < 1 {
-		t.Errorf("viewport height = %d on a 2-row terminal, want at least 1", got)
-	}
-}
-
-// TestNewOutputAutoScrollsWhenAtBottom verifies the common case: a user
-// watching live output keeps seeing the newest lines without touching
-// anything.
-func TestNewOutputAutoScrollsWhenAtBottom(t *testing.T) {
-	m := NewModel(noopRunner)
-	m = step(t, m, sizeMsg(80, 10))
-
-	for i := 0; i < 50; i++ {
-		m = step(t, m, outputMsg(fmt.Sprintf("line %d\n", i)))
-	}
-
-	if !m.view.AtBottom() {
-		t.Error("viewport drifted away from the bottom while new output arrived and the user had not scrolled")
-	}
-}
-
-// TestScrollingUpIsNotYankedBackByNewOutput is the real correctness
-// property behind scrollback, not a cosmetic one: if a user scrolls up to
-// read what a command actually proposed, incoming output must not snatch
-// the view back to the bottom mid-read. That matters most precisely when
-// they are deciding how to answer an irreversible confirmation.
-func TestScrollingUpIsNotYankedBackByNewOutput(t *testing.T) {
-	m := NewModel(noopRunner)
-	m = step(t, m, sizeMsg(80, 10))
-	for i := 0; i < 50; i++ {
-		m = step(t, m, outputMsg(fmt.Sprintf("line %d\n", i)))
-	}
-
-	// Scroll up, away from the bottom.
-	m = step(t, m, tea.KeyPressMsg{Code: tea.KeyPgUp})
-	if m.view.AtBottom() {
-		t.Fatal("setup failed: pgup did not move the viewport off the bottom")
-	}
-
-	m = step(t, m, outputMsg("newly arrived line\n"))
-
-	if m.view.AtBottom() {
-		t.Error("new output yanked the viewport back to the bottom while the user was scrolled up reading")
-	}
-}
-
-// TestScrollWorksDuringPendingConfirmation verifies scroll keys stay live
-// while a confirmation is outstanding — being able to scroll back and
-// read the proposed command is exactly what a user needs before deciding
-// y or N, so this must not be blocked by the confirmation gate.
-func TestScrollWorksDuringPendingConfirmation(t *testing.T) {
-	m := NewModel(noopRunner)
-	m = step(t, m, sizeMsg(80, 10))
-	for i := 0; i < 50; i++ {
-		m = step(t, m, outputMsg(fmt.Sprintf("line %d\n", i)))
-	}
-	m = step(t, m, confirmRequestMsg("rm -rf data is irreversible — run it anyway?"))
-
-	m = step(t, m, tea.KeyPressMsg{Code: tea.KeyPgUp})
-
-	if m.view.AtBottom() {
-		t.Error("pgup did not scroll while a confirmation was pending")
-	}
-	// Scrolling must not have been mistaken for an answer.
-	if m.pendingConfirm == "" {
-		t.Error("scrolling cleared the pending confirmation — it must not count as an answer")
-	}
-	select {
-	case v := <-m.answers:
-		t.Fatalf("a scroll key delivered a confirmation verdict (%v)", v)
-	default:
-	}
-}
-
-// TestViewUsesAltScreen pins the full-screen behavior build-order.md
-// promises for TUI mode.
-func TestViewUsesAltScreen(t *testing.T) {
-	if !NewModel(noopRunner).View().AltScreen {
-		t.Error("TUI mode should render in the alternate screen buffer")
-	}
-}
-
-// TestViewRendersBeforeFirstWindowSize guards the startup window: the
-// model must produce a sane view before any WindowSizeMsg arrives, rather
-// than rendering through a viewport sized from a guess.
+// TestViewRendersBeforeFirstWindowSize guards the startup window: the model
+// must produce a sane live region before any WindowSizeMsg arrives.
 func TestViewRendersBeforeFirstWindowSize(t *testing.T) {
 	m := NewModel(noopRunner)
-	if m.ready {
-		t.Fatal("model should not be marked ready before a window size message")
+	if content := m.View().Content; !strings.Contains(content, ">") {
+		t.Errorf("pre-size view missing the prompt, got:\n%s", content)
 	}
-	if content := m.View().Content; !strings.Contains(content, "SynapseOS") {
-		t.Errorf("pre-size view missing header, got:\n%s", content)
+}
+
+// TestViewShowsOnlyTheLiveRegion: finished output belongs to the scrollback,
+// so the redrawn region must not grow with the conversation.
+func TestViewShowsOnlyTheLiveRegion(t *testing.T) {
+	m, printed := newCaptured()
+	for i := 0; i < 100; i++ {
+		m = step(t, m, outputMsg(fmt.Sprintf("line %d\n", i)))
+	}
+	view := m.View().Content
+	if strings.Contains(view, "line 5") || strings.Count(view, "\n") > 4 {
+		t.Errorf("the live region carries finished output, got:\n%s", view)
+	}
+	if got := strings.Count(strings.Join(*printed, "\n"), "line "); got != 100 {
+		t.Errorf("printed %d lines, want 100", got)
+	}
+}
+
+// TestInitPrintsTheHeaderOnce: the header is scrollback like everything else.
+func TestInitPrintsTheHeaderOnce(t *testing.T) {
+	m, printed := newCaptured()
+	m.Init()
+	if len(*printed) != 1 || !strings.Contains((*printed)[0], "SynapseOS") {
+		t.Fatalf("Init printed %q, want the header once", *printed)
 	}
 }
 
@@ -600,59 +516,64 @@ func TestViewRendersBeforeFirstWindowSize(t *testing.T) {
 
 // TestStreamedFragmentsFormOneLine is the bug a real terminal exposed and
 // every earlier test missed: streaming delivers mid-line fragments
-// ("UNS", then "UPPORTED"), and appendChunk was treating each chunk as a
-// complete line. The screen showed
+// ("UNS", then "UPPORTED"), and each chunk was treated as a complete line. The
+// screen showed
 //
 //	UNS
 //	UPPORTED
 //
-// instead of "UNSUPPORTED". Nothing here needs a TTY — the earlier tests
-// simply only ever appended whole lines, so the whole-vs-partial
-// distinction was never exercised.
+// instead of "UNSUPPORTED". The unfinished tail must stay live, unprinted,
+// until its newline arrives.
 func TestStreamedFragmentsFormOneLine(t *testing.T) {
-	var lines []string
-	open := false
+	m, printed := newCaptured()
 	for _, frag := range []string{"UNS", "UPPORTED"} {
-		lines, open = appendChunk(lines, open, frag)
+		m = step(t, m, outputMsg(frag))
 	}
-	if len(lines) != 1 {
-		t.Fatalf("got %d lines %q, want 1 — streamed fragments must continue the same line", len(lines), lines)
+	if len(*printed) != 0 {
+		t.Fatalf("printed %q before the line was finished", *printed)
 	}
-	if lines[0] != "UNSUPPORTED" {
-		t.Errorf("line = %q, want %q", lines[0], "UNSUPPORTED")
+	if m.partial != "UNSUPPORTED" {
+		t.Errorf("live line = %q, want %q", m.partial, "UNSUPPORTED")
 	}
-	if !open {
-		t.Error("line should still be open: no newline has arrived yet")
+	if !strings.Contains(m.View().Content, "UNSUPPORTED") {
+		t.Error("the unfinished line should be visible in the live region")
+	}
+	m = step(t, m, outputMsg("\n"))
+	if got := *printed; len(got) != 1 || got[0] != "UNSUPPORTED" {
+		t.Errorf("printed %q, want [UNSUPPORTED]", got)
+	}
+	if m.partial != "" {
+		t.Errorf("live line = %q after the newline, want empty", m.partial)
 	}
 }
-
-func TestAppendChunkLineBoundaries(t *testing.T) {
+func TestAppendOutputLineBoundaries(t *testing.T) {
 	cases := []struct {
-		name   string
-		chunks []string
-		want   []string
+		name    string
+		chunks  []string
+		printed string // every printed line, joined by "|"
+		partial string
 	}{
-		{"newline closes a line", []string{"abc\n", "def"}, []string{"abc", "def"}},
-		{"fragments then newline", []string{"ab", "cd\n"}, []string{"abcd"}},
-		{"embedded newline splits", []string{"a\nb"}, []string{"a", "b"}},
-		{"multiple lines at once", []string{"one\ntwo\nthree\n"}, []string{"one", "two", "three"}},
-		{"empty chunk is a no-op", []string{"abc", ""}, []string{"abc"}},
-		{"continuation across a closed line", []string{"x\n", "y", "z"}, []string{"x", "yz"}},
+		{"newline closes a line", []string{"abc\n", "def"}, "abc", "def"},
+		{"fragments then newline", []string{"ab", "cd\n"}, "abcd", ""},
+		{"embedded newline splits", []string{"a\nb"}, "a", "b"},
+		{"multiple lines at once", []string{"one\ntwo\nthree\n"}, "one|two|three", ""},
+		{"empty chunk is a no-op", []string{"abc", ""}, "", "abc"},
+		{"continuation across a closed line", []string{"x\n", "y", "z"}, "x", "yz"},
+		{"a bare newline is a blank line", []string{"a\n", "\n"}, "a| ", ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			var lines []string
-			open := false
+			m, printed := newCaptured()
 			for _, c := range tc.chunks {
-				lines, open = appendChunk(lines, open, c)
+				m = step(t, m, outputMsg(c))
 			}
-			if len(lines) != len(tc.want) {
-				t.Fatalf("got %q, want %q", lines, tc.want)
+			// A multi-line chunk is one Println; count its lines, not its calls.
+			got := strings.Join(strings.Split(strings.Join(*printed, "\n"), "\n"), "|")
+			if got != tc.printed {
+				t.Errorf("printed %q, want %q", got, tc.printed)
 			}
-			for i := range tc.want {
-				if lines[i] != tc.want[i] {
-					t.Errorf("line %d = %q, want %q (full: %q)", i, lines[i], tc.want[i], lines)
-				}
+			if m.partial != tc.partial {
+				t.Errorf("live line = %q, want %q", m.partial, tc.partial)
 			}
 		})
 	}
@@ -702,19 +623,7 @@ func TestStartTaskDoesNotAddASecondEventListener(t *testing.T) {
 
 // --- end-to-end output path (the live-found regression) --------------
 
-// TestTaskOutputReachesTheTranscriptInSourceOrder is the test whose
-// absence let both live-found M5 bugs ship. Every other test in this
-// file hands Update a message it constructed itself; none of them
-// exercised the path a real task's output actually takes — Fprint into
-// the injected io.Writer, through msgWriter, across the events channel,
-// into Update, onto the transcript.
-//
-// It drives that whole path under the same protocol bubbletea's runtime
-// uses: exactly one listener outstanding, each event fed to Update
-// before the next is pulled. Both symptoms seen in a real terminal are
-// asserted directly — a streamed word split across lines ("UNS" /
-// "UPPORTED"), and output arriving out of source order.
-func TestTaskOutputReachesTheTranscriptInSourceOrder(t *testing.T) {
+func TestTaskOutputReachesTheScrollbackInSourceOrder(t *testing.T) {
 	run := func(_ context.Context, _ string, _ func(string) bool, out, errOut io.Writer) int {
 		fmt.Fprint(out, "step 1: asking the model for a command\n")
 		// Streamed tokens arrive as bare fragments with no newline
@@ -727,7 +636,8 @@ func TestTaskOutputReachesTheTranscriptInSourceOrder(t *testing.T) {
 		return 1
 	}
 
-	m := NewModel(run)
+	m, printed := newCaptured()
+	m.run = run
 	m.input.SetValue("do the impossible")
 
 	next, cmd := m.handleKey(enterKey())
@@ -754,29 +664,30 @@ func TestTaskOutputReachesTheTranscriptInSourceOrder(t *testing.T) {
 		}
 	}
 
+	lines := strings.Split(strings.Join(*printed, "\n"), "\n")
 	indexOf := func(want string) int {
-		for i, line := range m.transcript {
+		for i, line := range lines {
 			if strings.Contains(line, want) {
 				return i
 			}
 		}
-		t.Fatalf("transcript has no line containing %q, got:\n%s", want, strings.Join(m.transcript, "\n"))
+		t.Fatalf("nothing printed contains %q, got:\n%s", want, strings.Join(lines, "\n"))
 		return -1
 	}
 
 	for _, split := range []string{"UNS", "UPP", "ORTED"} {
-		for _, line := range m.transcript {
+		for _, line := range lines {
 			if strings.TrimSpace(line) == split {
-				t.Errorf("streamed fragment %q rendered as its own transcript line; "+
-					"fragments must continue the open line, got:\n%s", split, strings.Join(m.transcript, "\n"))
+				t.Errorf("streamed fragment %q printed as its own line; "+
+					"fragments must continue the open line, got:\n%s", split, strings.Join(lines, "\n"))
 			}
 		}
 	}
 
-	step1, unsupported, reported := indexOf("step 1:"), indexOf("UNSUPPORTED"), indexOf("model reported")
-	if !(step1 < unsupported && unsupported < reported) {
-		t.Errorf("output out of source order: step 1 at %d, UNSUPPORTED at %d, model-reported at %d\n%s",
-			step1, unsupported, reported, strings.Join(m.transcript, "\n"))
+	echo, step1, unsupported, reported := indexOf("> do the impossible"), indexOf("step 1:"), indexOf("UNSUPPORTED"), indexOf("model reported")
+	if !(echo < step1 && step1 < unsupported && unsupported < reported) {
+		t.Errorf("output out of source order: echo at %d, step 1 at %d, UNSUPPORTED at %d, model-reported at %d\n%s",
+			echo, step1, unsupported, reported, strings.Join(lines, "\n"))
 	}
 }
 
@@ -828,76 +739,7 @@ func TestWrapLineLeavesShortLinesAlone(t *testing.T) {
 	}
 }
 
-// Short transcripts must sit against the input line. Without top padding the
-// viewport renders content at the top and blank rows beneath it, which is
-// what the gap above the prompt actually was.
-func TestShortTranscriptIsPushedToTheBottom(t *testing.T) {
-	m := NewModel(func(context.Context, string, func(string) bool, io.Writer, io.Writer) int { return 0 })
-	next, _ := m.Update(tea.WindowSizeMsg{Width: 40, Height: 20})
-	m = next.(Model)
-
-	content := m.view.View()
-	lines := strings.Split(content, "\n")
-	if len(lines) < 2 {
-		t.Fatalf("viewport rendered %d lines", len(lines))
-	}
-	if strings.TrimSpace(lines[0]) != "" {
-		t.Errorf("first viewport row is content, so the transcript is top-aligned and leaves a gap above the prompt: %q", lines[0])
-	}
-	joined := strings.TrimRight(content, " \n")
-	tail := joined[strings.LastIndex(joined, "\n")+1:]
-	if strings.TrimSpace(tail) == "" {
-		t.Error("last viewport row is blank; content is not pinned to the bottom")
-	}
-}
-
 // --- scrolling with arrow keys (the wheel, in the alternate screen) ------
-
-// In the alternate screen most terminals translate the mouse wheel into Up and
-// Down when the program has not asked for mouse reporting. The transcript must
-// answer to them, or the wheel does nothing and text selection is the only thing
-// that works — which is exactly how the TUI first behaved in live use.
-func TestArrowKeysScrollTheTranscript(t *testing.T) {
-	m := NewModel(noopRunner)
-	m = step(t, m, sizeMsg(80, 10))
-	for i := 0; i < 50; i++ {
-		m = step(t, m, outputMsg(fmt.Sprintf("line %d\n", i)))
-	}
-	if !m.view.AtBottom() {
-		t.Fatal("setup failed: expected to start at the bottom")
-	}
-	m = step(t, m, tea.KeyPressMsg{Code: tea.KeyUp})
-	if m.view.AtBottom() {
-		t.Error("Up did not scroll the transcript")
-	}
-	before := m.view.YOffset()
-	m = step(t, m, tea.KeyPressMsg{Code: tea.KeyDown})
-	if m.view.YOffset() <= before {
-		t.Errorf("Down did not scroll back toward the bottom (offset %d -> %d)", before, m.view.YOffset())
-	}
-}
-
-func TestArrowKeysScrollWhileATaskRunsAndDuringConfirmation(t *testing.T) {
-	m := NewModel(noopRunner)
-	m = step(t, m, sizeMsg(80, 10))
-	for i := 0; i < 50; i++ {
-		m = step(t, m, outputMsg(fmt.Sprintf("line %d\n", i)))
-	}
-	m.running = true
-	m = step(t, m, tea.KeyPressMsg{Code: tea.KeyUp})
-	if m.view.AtBottom() {
-		t.Error("Up did not scroll while a task was running")
-	}
-	m = step(t, m, tea.KeyPressMsg{Code: tea.KeyDown})
-	m = step(t, m, confirmRequestMsg("run it anyway?"))
-	m = step(t, m, tea.KeyPressMsg{Code: tea.KeyUp})
-	if m.view.AtBottom() {
-		t.Error("Up did not scroll while a confirmation was pending")
-	}
-	if m.pendingConfirm == "" {
-		t.Error("scrolling must not answer the confirmation")
-	}
-}
 
 // --- model warm-up ------------------------------------------------------
 
@@ -970,5 +812,62 @@ func TestNoWarmupMeansNoStatusLine(t *testing.T) {
 	m := NewModel(noopRunner)
 	if v := m.View().Content; strings.Contains(v, "loading the model") {
 		t.Errorf("no warm-up configured, yet the view mentions loading, got:\n%s", v)
+	}
+}
+
+// --- printing into the scrollback ---------------------------------------
+
+// The echo, the verdict, and the task's own lines must reach the scrollback in
+// the order they happened, so all of them are queued through the events channel.
+func TestVerdictIsQueuedBeforeTheTaskCanContinue(t *testing.T) {
+	m, _ := newCaptured()
+	m = step(t, m, confirmRequestMsg("run it anyway?"))
+	m = step(t, m, typeKey('y'))
+
+	select {
+	case msg := <-m.events:
+		if msg != outputMsg("y\n") {
+			t.Errorf("queued %#v, want the verdict line", msg)
+		}
+	default:
+		t.Error("the verdict was not queued for printing")
+	}
+	if ok := <-m.answers; !ok {
+		t.Error("answer should be yes")
+	}
+}
+
+func TestTaskDoneClosesAnOpenLineAndLeavesABlankSeparator(t *testing.T) {
+	m, printed := newCaptured()
+	m.running = true
+	m = step(t, m, outputMsg("half a line"))
+	m = step(t, m, taskDoneMsg{code: 0})
+	got := strings.Split(strings.Join(*printed, "\n"), "\n")
+	if len(got) != 2 || got[0] != "half a line" || strings.TrimSpace(got[1]) != "" {
+		t.Errorf("printed %q, want the open line then a blank separator", got)
+	}
+	if m.partial != "" {
+		t.Errorf("live line = %q after the task ended", m.partial)
+	}
+}
+
+func TestQuittingClearsTheLiveRegion(t *testing.T) {
+	m := NewModel(noopRunner)
+	m = step(t, m, ctrlC())
+	if got := m.View().Content; got != "" {
+		t.Errorf("view after quit = %q, want empty so no stale prompt is left behind", got)
+	}
+}
+
+func TestMouseCommandExplainsThereIsNothingToToggle(t *testing.T) {
+	m := NewModel(noopRunner)
+	m.input.SetValue("mouse")
+	m = step(t, m, enterKey())
+	if m.running {
+		t.Fatal("the mouse command must not be sent to the model as a task")
+	}
+	msg := <-m.events
+	if !strings.Contains(string(msg.(outputMsg)), "nothing to toggle") {
+		t.Errorf("got %#v", msg)
 	}
 }

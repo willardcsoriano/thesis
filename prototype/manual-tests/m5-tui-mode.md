@@ -1,10 +1,10 @@
 ## Overview
 
-This is the hands-on manual test suite for **milestone M5 — TUI mode**, created as that milestone's final step per the `manual-tests/` convention. It covers only what M5 added: the full-screen terminal interface, token-by-token streaming, scrollback, and the confirmation gate rendered as UI instead of a stdin prompt. The propose/classify/execute mechanics underneath are unchanged and already covered by `m1-cli-mode-and-undo-safety-net.md`. Six steps, roughly fifteen minutes, everything destructive confined to a disposable scratch directory. **This suite matters more than the previous two**: unlike CLI and REPL mode, a full-screen TUI cannot be driven by piping input, so it went into a real terminal almost entirely unexercised. Its first real run, on 2026-09-08, immediately found two rendering defects that every automated test had missed (see below) — which is the clearest possible evidence that running this by hand is not a formality.
+This is the hands-on manual test suite for **milestone M5 — TUI mode**, created as that milestone's final step per the `manual-tests/` convention. It covers only what M5 added: the inline terminal interface, token-by-token streaming, terminal-native scrollback, and the confirmation gate rendered as UI instead of a stdin prompt. The propose/classify/execute mechanics underneath are unchanged and already covered by `m1-cli-mode-and-undo-safety-net.md`. Six steps, roughly fifteen minutes, everything destructive confined to a disposable scratch directory. **This suite matters more than the previous two**: unlike CLI and REPL mode, a TUI cannot be driven by piping input, so it went into a real terminal almost entirely unexercised. Its first real run, on 2026-09-08, immediately found two rendering defects that every automated test had missed (see below) — which is the clearest possible evidence that running this by hand is not a formality.
 
 ## Automated coverage — what's already been machine-verified
 
-`internal/tui` sits at 95.7% coverage across 29 tests, clean under `-race` over 20 repeats: the confirmation bridge (y/Y approves, n/N/esc/enter fail closed, unrelated keys ignored), task lifecycle, ctrl+c cancelling a task without ending the session, viewport sizing, and scroll-preservation. `internal/ollama`'s streaming path adds 8 more, including a safety test that a truncated stream is rejected outright rather than handed on as a shorter command. Several are mutation-verified — the code was deliberately broken to confirm the test fails.
+`internal/tui` sits at 95.7% coverage across 29 tests, clean under `-race` over 20 repeats: the confirmation bridge (y/Y approves, n/N/esc/enter fail closed, unrelated keys ignored), task lifecycle, ctrl+c cancelling a task without ending the session, ordered printing into the scrollback (each finished line exactly once, in source order), and that the program never asks for the alternate screen or mouse reporting. `internal/ollama`'s streaming path adds 8 more, including a safety test that a truncated stream is rejected outright rather than handed on as a shorter command. Several are mutation-verified — the code was deliberately broken to confirm the test fails.
 
 **Two of those tests exist because this suite's first real run found bugs they should have caught.** Both were fixed on 2026-09-08 and are worth knowing about while you re-run this:
 
@@ -55,7 +55,7 @@ mkdir -p /tmp/synapse-tui-test && cd /tmp/synapse-tui-test   # disposable scratc
 
 ## 1. First look — does it render at all
 
-The screen should clear and be replaced by a full-screen interface (alt-screen), showing a bold header, dimmer hint lines, and a `>` input prompt.
+The header and hint lines print below your shell history (the screen is not cleared: this is an inline interface, no alternate screen), with a bold header, dimmer hint lines, and a `>` input prompt at the bottom.
 
 Check, and note anything off:
 
@@ -101,19 +101,19 @@ Generate enough output to overflow the screen:
 > show me detailed information about every file in /etc
 ```
 
-While it runs and after it finishes, press **PgUp** and **PgDn**.
+The output prints into the terminal's own scrollback, so use the terminal, not the program:
 
-- Scrolling up should move back through the transcript.
-- **While scrolled up, new output must not yank you back to the bottom.** This is the property that matters: if it jumps while you are reading, that is a real bug, not a nitpick.
-- When you are already at the bottom, new output *should* follow automatically.
+- Scroll up with the **mouse wheel**, the terminal's **scrollbar**, or **Shift+PgUp**. The whole conversation since you started, header included, should be reachable.
+- **Click-drag while scrolling** (or drag past the edge) to highlight text that is off-screen, then copy it. This is the property the alternate-screen version could not offer: there, only what fit on screen could be selected.
+- Nothing printed should appear twice or out of order, and new output should not fight your scroll position beyond what your terminal normally does.
 
-Now the case this was built for — start a task that triggers a confirmation, and **while the y/N prompt is showing, press PgUp**:
+Now the case that matters for safety — start a task that triggers a confirmation, and **while the y/N prompt is showing, scroll up**:
 
 ```
 > delete every .txt file in this folder
 ```
 
-You should be able to scroll back to read what was actually proposed *before* answering, and scrolling must not count as an answer. Being able to check before approving a destructive command is the whole reason scroll stays live here.
+You should be able to scroll back to read what was actually proposed *before* answering, and scrolling must not count as an answer. Being able to check before approving a destructive command is the whole reason this matters.
 
 ## 5. Cancel a task without losing the session
 
@@ -134,10 +134,10 @@ While it is running, press **Ctrl+C once**.
 
 While the TUI is open, **resize the terminal window** — drag it narrower and shorter, then wider.
 
-- The transcript should reflow and the input box stay visible and correctly sized.
+- The input box should stay visible and correctly sized. Already-printed lines reflow the way any terminal reflows scrollback.
 - Nothing should be cut off, doubled, or left as leftover artifacts.
 
-Then press **Ctrl+C at the idle prompt**. The program should exit cleanly and your original shell contents should reappear (that's alt-screen restoring). Verify the scratch files:
+Then press **Ctrl+C at the idle prompt**. The program should exit cleanly and leave no stale prompt behind, with the conversation still in your scrollback. Verify the scratch files:
 
 ```sh
 ls /tmp/synapse-tui-test
