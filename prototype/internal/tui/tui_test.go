@@ -11,6 +11,8 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+
+	"synapseos/internal/loopevent"
 )
 
 // noopRunner is a TaskRunner that does nothing, for tests that only
@@ -869,5 +871,179 @@ func TestMouseCommandExplainsThereIsNothingToToggle(t *testing.T) {
 	msg := <-m.events
 	if !strings.Contains(string(msg.(outputMsg)), "nothing to toggle") {
 		t.Errorf("got %#v", msg)
+	}
+}
+
+// --- presenting the loop's events (compact view, details on Ctrl+O) --------
+
+func ev(kind loopevent.Kind, mut func(*loopevent.Event)) eventMsg {
+	e := loopevent.Event{Kind: kind}
+	if mut != nil {
+		mut(&e)
+	}
+	return eventMsg(e)
+}
+
+func command(step int, cmd string) eventMsg {
+	return ev(loopevent.Command, func(e *loopevent.Event) { e.Step, e.Command, e.Tokens = step, cmd, 12 })
+}
+
+func result(stdout string, exit int) eventMsg {
+	return ev(loopevent.Result, func(e *loopevent.Event) { e.Stdout, e.ExitCode = stdout, exit })
+}
+
+func answer(text string) eventMsg {
+	return ev(loopevent.Answer, func(e *loopevent.Event) { e.Text = text })
+}
+
+func joined(printed *[]string) string { return strings.Join(*printed, "\n") }
+
+// A task that ends in an answer shows the answer and a note of what ran. The
+// command and its raw output stay out of the way until asked for.
+func TestCompactViewShowsTheAnswerNotTheCommandOrItsOutput(t *testing.T) {
+	m, printed := newCaptured()
+	m.running = true
+	for _, msg := range []tea.Msg{command(1, "free -h | grep Mem"), result("Mem: 7.7Gi 5.0Gi\n", 0), answer("About 5 GB of memory is in use."), taskDoneMsg{}} {
+		m = step(t, m, msg)
+	}
+	got := joined(printed)
+	if !strings.Contains(got, "About 5 GB of memory is in use.") {
+		t.Errorf("the answer was not printed:\n%s", got)
+	}
+	for _, hidden := range []string{"free -h", "Mem: 7.7Gi", "tokens"} {
+		if strings.Contains(got, hidden) {
+			t.Errorf("%q leaked into the compact view:\n%s", hidden, got)
+		}
+	}
+	if !strings.Contains(got, "Ran 1 command") || !strings.Contains(got, "Ctrl+O") {
+		t.Errorf("no pointer to the details:\n%s", got)
+	}
+}
+
+// With no answer the raw output is the only result, so it must show.
+func TestCompactViewFallsBackToRawOutputWhenThereIsNoAnswer(t *testing.T) {
+	m, printed := newCaptured()
+	m.running = true
+	for _, msg := range []tea.Msg{command(1, "ls /tmp"), result("a\nb\n", 0), taskDoneMsg{}} {
+		m = step(t, m, msg)
+	}
+	got := joined(printed)
+	if !strings.Contains(got, "$ ls /tmp") || !strings.Contains(got, "  a\n  b") {
+		t.Errorf("the output was hidden although nothing else answered:\n%s", got)
+	}
+	if strings.Contains(got, "Ran 1 command") {
+		t.Error("the details pointer is pointless once the details are already shown")
+	}
+}
+
+func TestProblemAfterASuccessfulStepShowsTheOutputFirst(t *testing.T) {
+	m, printed := newCaptured()
+	m.running = true
+	m = step(t, m, command(1, "ls"))
+	m = step(t, m, result("x\n", 0))
+	m = step(t, m, ev(loopevent.Problem, func(e *loopevent.Event) {
+		e.Text = "I couldn't put the result into words this time."
+		e.Detail = "deadline exceeded"
+	}))
+	got := joined(printed)
+	if strings.Index(got, "  x") < 0 || strings.Index(got, "  x") > strings.Index(got, "couldn't put") {
+		t.Errorf("the raw output should precede the problem:\n%s", got)
+	}
+	if !strings.Contains(got, "deadline exceeded") {
+		t.Errorf("the cause is missing:\n%s", got)
+	}
+}
+
+// An approval must always name the command, even in the compact view.
+func TestApprovalAlwaysShowsTheCommand(t *testing.T) {
+	m, printed := newCaptured()
+	m.running = true
+	m = step(t, m, command(1, "rm keep.txt"))
+	m = step(t, m, ev(loopevent.Approval, func(e *loopevent.Event) {
+		e.Command, e.Text = "rm keep.txt", "This can't be undone — rm deletes files."
+	}))
+	got := joined(printed)
+	if !strings.Contains(got, "$ rm keep.txt") || !strings.Contains(got, "can't be undone") {
+		t.Errorf("the approval did not show what is being approved:\n%s", got)
+	}
+}
+
+func TestLiveLineShowsTheCommandWhileItRuns(t *testing.T) {
+	m, _ := newCaptured()
+	m.running = true
+	m = step(t, m, command(1, "du -sh ."))
+	if v := m.View().Content; !strings.Contains(v, "du -sh .") {
+		t.Errorf("the live region does not show what is running:\n%s", v)
+	}
+	m = step(t, m, result("4K\n", 0))
+	if v := m.View().Content; strings.Contains(v, "du -sh .") {
+		t.Errorf("the finished command is still shown as running:\n%s", v)
+	}
+}
+
+// Ctrl+O after an answer prints what was behind it, including model cost.
+func TestCtrlOShowsTheLastTasksDetailsAndTogglesBack(t *testing.T) {
+	m, printed := newCaptured()
+	m.running = true
+	for _, msg := range []tea.Msg{command(1, "ls /tmp"), result("a\n", 0), answer("One file."), taskDoneMsg{}} {
+		m = step(t, m, msg)
+	}
+	before := len(*printed)
+
+	m = step(t, m, tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtrl})
+	m = step(t, m, <-m.events) // the toggle travels through the events channel
+	if !m.verbose {
+		t.Fatal("ctrl+o did not turn details on")
+	}
+	got := strings.Join((*printed)[before:], "\n")
+	for _, want := range []string{"Details on", "$ ls /tmp", "  a", "12 tokens"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("details missing %q:\n%s", want, got)
+		}
+	}
+
+	m = step(t, m, tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtrl})
+	m = step(t, m, <-m.events)
+	if m.verbose {
+		t.Error("a second ctrl+o did not turn details off")
+	}
+}
+
+// With details on, later tasks print each command and its output as they happen.
+func TestVerboseModePrintsStepsAsTheyHappen(t *testing.T) {
+	m, printed := newCaptured()
+	m.verbose = true
+	m.running = true
+	for _, msg := range []tea.Msg{command(1, "ls /tmp"), result("a\n", 0), answer("One file."), taskDoneMsg{}} {
+		m = step(t, m, msg)
+	}
+	got := joined(printed)
+	if !strings.Contains(got, "$ ls /tmp") || !strings.Contains(got, "  a") || !strings.Contains(got, "One file.") {
+		t.Errorf("verbose output incomplete:\n%s", got)
+	}
+	if strings.Contains(got, "Ran 1 command") {
+		t.Error("the pointer to details is redundant when they are on")
+	}
+	if strings.Count(got, "$ ls /tmp") != 1 {
+		t.Errorf("the command was printed more than once:\n%s", got)
+	}
+}
+
+func TestBlocksAreSeparatedByABlankLineButNotFromTheEcho(t *testing.T) {
+	m, printed := newCaptured()
+	m.running = true
+	m = step(t, m, ev(loopevent.Notice, func(e *loopevent.Event) { e.Text = "first" }))
+	m = step(t, m, ev(loopevent.Notice, func(e *loopevent.Event) { e.Text = "second" }))
+	got := *printed
+	if len(got) != 2 || got[0] != "first" || got[1] != "\nsecond" {
+		t.Errorf("printed %q, want the first block bare and the second set apart", got)
+	}
+}
+
+func TestMsgWriterEmitsEvents(t *testing.T) {
+	events := make(chan tea.Msg, 1)
+	msgWriter{events: events}.Emit(loopevent.Event{Kind: loopevent.Answer, Text: "hi"})
+	if got, ok := (<-events).(eventMsg); !ok || got.Text != "hi" {
+		t.Errorf("got %#v", got)
 	}
 }

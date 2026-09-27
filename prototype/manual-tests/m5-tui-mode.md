@@ -115,6 +115,17 @@ Now the case that matters for safety — start a task that triggers a confirmati
 
 You should be able to scroll back to read what was actually proposed *before* answering, and scrolling must not count as an answer. Being able to check before approving a destructive command is the whole reason this matters.
 
+## 4b. Answer first, details on Ctrl+O
+
+```
+> how many files are in this folder?
+```
+
+- You should see the answer, then one dim line such as "Ran 1 command · Ctrl+O shows what it was". While it works, the live line under the spinner shows the command running.
+- Press **Ctrl+O**. "Details on" appears, followed by the command, what the model spent choosing it, and its raw output. Run another task: its command and output now print as they happen.
+- Press **Ctrl+O** again: "Details off", and answers only again.
+- Trigger a confirmation (section 3). The command must be shown in full before the y/N box, with details off.
+
 ## 5. Cancel a task without losing the session
 
 ```

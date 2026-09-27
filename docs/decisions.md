@@ -593,3 +593,19 @@ The TUI first ran in the alternate screen with a `bubbles/v2/viewport` for scrol
 **What had to stay true.** Output order: every printed line, including the echoed task and the y/n verdict, travels through the one ordered events channel and each print is sequenced before the next event is read, so the scrollback matches what happened. The confirmation gate is unchanged and still fails closed. Covered by tests that drive the real program and check a 60-line output appears once, in order, with no alternate-screen or mouse-reporting sequences.
 
 **Rejected.** Keeping the viewport and adding a copy-transcript command or a clipboard write: it treats the symptom and leaves the whole conversation unreachable by every normal terminal gesture.
+
+---
+
+### D39 — The loop reports typed events; the TUI shows the answer first and keeps the commands behind Ctrl+O
+
+**Status:** Decided 2026-09-27, after the first inline TUI showed commands, raw output, token counts, and exit codes interleaved with the answer, which a non-technical person cannot read.
+
+The task loop used to narrate everything as text on one `io.Writer`. A writer that also implements `loopevent.Emitter` (the TUI's does) now receives the same information as events (command chosen, result, answer, notice, problem, note, approval) and the loop writes none of it as text. Every other caller gets the unchanged text, so CLI and REPL output is identical, and what runs, what is gated, journaled, and logged is untouched.
+
+**What the person sees.** By default a task prints its answer and one dim line, "Ran N commands · Ctrl+O shows what it was". The command running right now shows on the live line under the spinner. A task that ends with no answer (the summary failed, the model said UNSUPPORTED after a successful step) prints the raw output instead, because then it is the only result. Ctrl+O switches the details view on: it prints the last task's commands, raw output, and what the model spent, and every later task prints its steps as they happen; pressing it again switches back. Scrollback cannot be rewritten, so this adds to it rather than expanding lines already printed, the one difference from Claude Code's Ctrl+O.
+
+**What stays visible regardless.** An approval always prints the command it is asking about (D30: showing the command is what makes approval consent), and problems always print their cause.
+
+**Also changed.** The TUI asks the model without streaming, since a command typed out token by token into a scrollback is noise; the spinner and the live command line cover the wait. Messages the program writes itself begin with a capital letter.
+
+**Rejected.** Hiding commands entirely (breaks the traceability principle in `vision.md`) and a persistent full-screen transcript overlay (needs the alternate screen, which D38 removed).

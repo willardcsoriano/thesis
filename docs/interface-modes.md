@@ -52,7 +52,7 @@ A mode's job is only ever: collect input, drive the core, render output. Every m
 |---|---|---|---|
 | Process lifecycle | One-shot per invocation: a bounded, gated multi-step loop (propose → classify → (confirm) → execute → feed result back → repeat until done or step cap, D21) — not a single command | Persistent: runs until the user quits | Persistent: launched at login, fills the session |
 | State across turns | None — each invocation is independent | In-memory rolling history within the session (M6) | Same as TUI (wraps it) |
-| Model output rendering | Printed once generation finishes (blocking call) | Streamed token-by-token into the terminal's own scrollback | Same streaming, in a fullscreen terminal window |
+| Model output rendering | Printed once generation finishes (blocking call) | The answer first, with the commands behind Ctrl+O (D39), printed into the terminal's own scrollback | Same, in a fullscreen terminal window |
 | Confirmation gate UX | Print the command + reason, block on stdin `y`/`N` | Render inline in the chat view, wait for a keypress | Same inline pattern, fullscreen |
 | Audience / use case | Scripting, automation, one-off remote commands over SSH | Interactive terminal session, local or remote | Study Condition A — novice users, no terminal exposure |
 | Built by | **M1 — done** | M4 (interim loop) + M5 (rendering) — **both done** | M8 |

@@ -165,7 +165,7 @@ func TestRenderedHeaderIsPrintedInFull(t *testing.T) {
 	if !strings.Contains(flat, "SynapseOS") {
 		t.Fatalf("header never rendered:\n%s", flat)
 	}
-	if !strings.Contains(flat, "the whole conversation stays in its scrollback") {
+	if !strings.Contains(flat, "with the terminal as usual") {
 		t.Errorf("the tail of the hint line was lost:\n%s", flat)
 	}
 }

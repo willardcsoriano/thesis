@@ -38,13 +38,17 @@ package tui
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+
+	"synapseos/internal/loopevent"
 )
 
 // Styles are defined once at package level. lipgloss v2 Styles are plain
@@ -99,6 +103,12 @@ type (
 	confirmRequestMsg string
 	// taskDoneMsg reports that the task goroutine has returned.
 	taskDoneMsg struct{ code int }
+	// eventMsg is something the loop reports as data rather than text: a command,
+	// its result, the answer, a notice. See internal/loopevent.
+	eventMsg loopevent.Event
+	// toggleDetailsMsg flips the details view. It travels through the events
+	// channel so it takes effect in order with the events around it.
+	toggleDetailsMsg struct{}
 	// warmDoneMsg reports that the startup warm-up has finished, successfully or not.
 	warmDoneMsg struct{}
 )
@@ -132,6 +142,19 @@ type Model struct {
 	width    int
 	quitting bool
 
+	// verbose is the details view: every command and its raw output are printed
+	// as they happen. Off, a task prints its answer and a one-line note of what
+	// ran, and the rest waits for Ctrl+O.
+	verbose bool
+	// cur is the task in progress; last is the most recent task that ran a
+	// command, kept so Ctrl+O can show what was behind an answer already printed.
+	cur, last taskRecord
+	// status is the command running right now, for the live line.
+	status string
+	// blockOpen is true once something has been printed for the current task,
+	// so the next block is set apart by a blank line.
+	blockOpen bool
+
 	// events carries messages from the running task's goroutine into the
 	// bubbletea event loop. Buffered: the task writes output faster than
 	// Update consumes it, and a full buffer should apply backpressure to
@@ -146,6 +169,32 @@ type Model struct {
 	pendingConfirm string
 	running        bool
 	cancelTask     context.CancelFunc
+}
+
+// stepRecord is everything known about one command the loop ran.
+type stepRecord struct {
+	step    int
+	command string
+	tokens  int
+	latency time.Duration
+
+	ran      bool
+	stdout   string
+	stderr   string
+	exit     int
+	timedOut bool
+	notRun   bool
+
+	// announced: the "$ command" line is already in the scrollback. printed: its
+	// result is too.
+	announced, printed bool
+}
+
+// taskRecord is what the loop reported for one task.
+type taskRecord struct {
+	steps    []stepRecord
+	notes    []string
+	answered bool
 }
 
 // NewModel builds the initial state. The input is focused here rather
@@ -173,7 +222,7 @@ func NewModel(run TaskRunner) Model {
 		header: strings.Join([]string{
 			headerStyle.Render("SynapseOS — TUI mode"),
 			hintStyle.Render("Type a task and press enter. Ctrl+C cancels a running task; at an idle prompt it quits."),
-			hintStyle.Render("Scroll and select text with the terminal as usual — the whole conversation stays in its scrollback."),
+			hintStyle.Render("Ctrl+O shows or hides the commands behind each answer. Scroll and select text with the terminal as usual."),
 			hintStyle.Render("Follow-ups can refer back (\"move it to Downloads\"). Type context to see what's remembered, clear to forget it."),
 		}, "\n"),
 	}
@@ -323,6 +372,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		out := m.appendOutput(string(msg))
 		return m, sequence(out, waitForEvent(m.events))
 
+	case eventMsg:
+		out := m.onEvent(loopevent.Event(msg))
+		return m, sequence(out, waitForEvent(m.events))
+
+	case toggleDetailsMsg:
+		out := m.toggleDetails()
+		return m, sequence(out, waitForEvent(m.events))
+
 	case confirmRequestMsg:
 		m.pendingConfirm = string(msg)
 		return m, waitForEvent(m.events)
@@ -337,8 +394,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.partial != "" {
 			closing = "\n\n"
 		}
-		out := m.appendOutput(closing)
-		return m, sequence(out, waitForEvent(m.events))
+		var tail []tea.Cmd
+		if !m.verbose {
+			if !m.cur.answered {
+				tail = append(tail, m.showHidden())
+			} else if n := len(m.cur.steps); n > 0 {
+				tail = append(tail, m.emit(hintStyle.Render(fmt.Sprintf("Ran %d %s · Ctrl+O shows what it was", n, plural(n, "command", "commands")))))
+			}
+		}
+		if len(m.cur.steps) > 0 {
+			m.last = m.cur
+		}
+		m.cur, m.status, m.blockOpen = taskRecord{}, "", false
+		tail = append(tail, m.appendOutput(closing), waitForEvent(m.events))
+		return m, sequence(tail...)
 	}
 
 	var cmd tea.Cmd
@@ -416,6 +485,15 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 
+	if key == "ctrl+o" {
+		select {
+		case m.events <- toggleDetailsMsg{}:
+			return m, nil
+		default:
+			return m, m.toggleDetails()
+		}
+	}
+
 	if m.pendingConfirm != "" {
 		switch key {
 		case "y", "Y":
@@ -480,7 +558,8 @@ func (m Model) startTask(task string) (tea.Model, tea.Cmd) {
 
 	// The echo is queued before the goroutine exists, so it precedes every
 	// line the task writes.
-	echo := m.say("> " + task + "\n")
+	echo := m.say("> " + task + "\n\n")
+	m.blockOpen = false
 
 	events, answers, run := m.events, m.answers, m.run
 	w := msgWriter{events: events}
@@ -530,6 +609,9 @@ func (m Model) View() tea.View {
 		b.WriteString("\n" + confirmStyle.Render(warnGlyph+" "+m.pendingConfirm+"  [y/N]") + "\n")
 	case m.running:
 		b.WriteString("\n" + m.spinner.View() + workingStyle.Render(" working — ctrl+c cancels this task") + "\n")
+		if m.status != "" {
+			b.WriteString(hintStyle.Render("  $ "+truncateRunes(m.status, max(10, m.width-6))) + "\n")
+		}
 	default:
 		if m.warming {
 			// Above the prompt, not instead of it: the user can already type, and
@@ -554,6 +636,10 @@ func (w msgWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// Emit makes msgWriter a loopevent.Emitter: a loop handed this writer reports
+// commands, results, and answers as events instead of writing them as text.
+func (w msgWriter) Emit(e loopevent.Event) { w.events <- eventMsg(e) }
+
 // Run starts TUI mode against the real terminal, driving the supplied
 // runner. Returns whatever error bubbletea's own Run reports.
 func Run(run TaskRunner) error {
@@ -570,4 +656,230 @@ func RunWithWarmup(run TaskRunner, warm func(context.Context) error) error {
 	}
 	_, err := tea.NewProgram(m).Run()
 	return err
+}
+
+// --- presenting the loop's events ----------------------------------------
+
+func plural(n int, one, many string) string {
+	if n == 1 {
+		return one
+	}
+	return many
+}
+
+func truncateRunes(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n-1]) + "…"
+}
+
+// closePartial prints a half-written line so a block starts on its own line.
+func (m *Model) closePartial() tea.Cmd {
+	if m.partial == "" {
+		return nil
+	}
+	return m.appendOutput("\n")
+}
+
+// block prints text as its own paragraph, set apart from the previous one by a
+// blank line once something has already been printed for this task.
+func (m *Model) block(text string) tea.Cmd {
+	pre := m.closePartial()
+	if m.blockOpen {
+		text = "\n" + text
+	}
+	m.blockOpen = true
+	return sequence(pre, m.emit(styleLines(text)))
+}
+
+// raw prints text directly under whatever was printed last, with no gap.
+func (m *Model) raw(text string) tea.Cmd {
+	return sequence(m.closePartial(), m.emit(styleLines(text)))
+}
+
+func styleLines(text string) string {
+	lines := strings.Split(text, "\n")
+	for i, l := range lines {
+		lines[i] = styleLine(l)
+	}
+	return strings.Join(lines, "\n")
+}
+
+func indentLines(text string) string {
+	lines := strings.Split(strings.TrimRight(text, "\n"), "\n")
+	for i, l := range lines {
+		if l != "" {
+			lines[i] = "  " + l
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+// renderCommand is the "$ command" header of a step, with what the model spent
+// on it, which only the details view shows.
+func renderCommand(r stepRecord) string {
+	out := "$ " + r.command
+	if r.tokens > 0 || r.latency > 0 {
+		out += "\n" + hintStyle.Render(fmt.Sprintf("  the model took %s (%d tokens) to choose this", r.latency.Round(100*time.Millisecond), r.tokens))
+	}
+	return out
+}
+
+// renderResult is what a command produced, indented beneath its header.
+func renderResult(r stepRecord) string {
+	var parts []string
+	if r.notRun {
+		parts = append(parts, "  (not run)")
+	}
+	if r.stdout != "" {
+		parts = append(parts, indentLines(r.stdout))
+	}
+	if r.stderr != "" {
+		parts = append(parts, indentLines(r.stderr))
+	}
+	if r.stdout == "" && r.stderr == "" && r.exit == 0 && !r.timedOut && !r.notRun {
+		parts = append(parts, "  (no output)")
+	}
+	if r.timedOut {
+		parts = append(parts, "  (stopped: it ran too long)")
+	}
+	if r.exit != 0 && !r.notRun {
+		parts = append(parts, fmt.Sprintf("  (exit code %d)", r.exit))
+	}
+	return strings.Join(parts, "\n")
+}
+
+// renderStep is a whole step; the header is left out when it is already on screen.
+func renderStep(r stepRecord) string {
+	var parts []string
+	if !r.announced {
+		parts = append(parts, renderCommand(r))
+	}
+	if r.ran {
+		parts = append(parts, renderResult(r))
+	}
+	return strings.Join(parts, "\n")
+}
+
+// showHidden prints the steps of this task that the compact view held back, for
+// a task that ended without an answer: the raw output is then the only result.
+func (m *Model) showHidden() tea.Cmd {
+	var cmds []tea.Cmd
+	for i := range m.cur.steps {
+		r := &m.cur.steps[i]
+		if r.printed || !r.ran {
+			continue
+		}
+		cmds = append(cmds, m.block(renderStep(*r)))
+		r.announced, r.printed = true, true
+	}
+	return sequence(cmds...)
+}
+
+func (m *Model) lastStep() *stepRecord {
+	if len(m.cur.steps) == 0 {
+		return nil
+	}
+	return &m.cur.steps[len(m.cur.steps)-1]
+}
+
+// onEvent decides how the loop's report is shown.
+func (m *Model) onEvent(ev loopevent.Event) tea.Cmd {
+	switch ev.Kind {
+	case loopevent.Command:
+		m.cur.steps = append(m.cur.steps, stepRecord{step: ev.Step, command: ev.Command, tokens: ev.Tokens, latency: ev.Latency})
+		m.status = ev.Command
+		if m.verbose {
+			r := m.lastStep()
+			r.announced = true
+			return m.block(renderCommand(*r))
+		}
+
+	case loopevent.Result:
+		r := m.lastStep()
+		if r == nil {
+			return nil
+		}
+		r.ran, r.stdout, r.stderr, r.exit, r.timedOut, r.notRun = true, ev.Stdout, ev.Stderr, ev.ExitCode, ev.TimedOut, ev.NotRun
+		m.status = ""
+		if m.verbose {
+			r.printed = true
+			return m.raw(renderResult(*r))
+		}
+
+	case loopevent.Answer:
+		m.cur.answered = true
+		return m.block(ev.Text)
+
+	case loopevent.Notice:
+		return sequence(m.hiddenBefore(), m.block(ev.Text))
+
+	case loopevent.Problem:
+		text := ev.Text
+		if ev.Detail != "" {
+			text += "\n" + hintStyle.Render("  "+ev.Detail)
+		}
+		return sequence(m.hiddenBefore(), m.block(text))
+
+	case loopevent.Note:
+		m.cur.notes = append(m.cur.notes, ev.Text)
+		if m.verbose {
+			return m.raw(hintStyle.Render("  " + ev.Text))
+		}
+
+	case loopevent.Approval:
+		// The command is always shown before asking: an approval that hides
+		// what is being approved is not consent.
+		if m.verbose {
+			return m.raw(ev.Text)
+		}
+		if r := m.lastStep(); r != nil {
+			r.announced = true
+		}
+		return m.block("$ " + ev.Command + "\n" + ev.Text)
+	}
+	return nil
+}
+
+// hiddenBefore shows held-back output ahead of a notice or problem that ends a
+// task with no answer, so the message is not the only thing on screen.
+func (m *Model) hiddenBefore() tea.Cmd {
+	if m.verbose || m.cur.answered {
+		return nil
+	}
+	return m.showHidden()
+}
+
+// toggleDetails flips the details view. Turning it on prints what is known
+// about the task in progress, or else the last one, so pressing the key after an
+// answer shows what was behind it. Lines already printed cannot be changed
+// afterwards, which is why this adds to the scrollback instead of expanding it.
+func (m *Model) toggleDetails() tea.Cmd {
+	m.verbose = !m.verbose
+	if !m.verbose {
+		return m.block(hintStyle.Render("Details off — answers only. Ctrl+O shows them again."))
+	}
+	title := m.block(hintStyle.Render("Details on — every command and its raw output will show. Ctrl+O hides them."))
+	rec := &m.cur
+	if len(rec.steps) == 0 {
+		rec = &m.last
+	}
+	if len(rec.steps) == 0 {
+		return title
+	}
+	cmds := []tea.Cmd{title}
+	for i := range rec.steps {
+		r := &rec.steps[i]
+		cmds = append(cmds, m.block(renderCommand(*r)))
+		if r.ran {
+			cmds = append(cmds, m.raw(renderResult(*r)))
+		}
+		r.announced, r.printed = true, r.ran
+	}
+	for _, n := range rec.notes {
+		cmds = append(cmds, m.raw(hintStyle.Render("  "+n)))
+	}
+	return sequence(cmds...)
 }

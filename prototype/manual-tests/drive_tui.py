@@ -7,7 +7,7 @@ automated CLI testing, the same principle as the project's own tui_test.go
 process boundary instead of the Go API — not a live, human-interactive session.
 
 Usage: python3 drive_tui.py <cmd...> -- <keystroke>:<wait_seconds> ...
-A keystroke of "CTRLC" sends ETX (0x03). Output is written to stdout at the end,
+A keystroke of "CTRLC" sends ETX (0x03); "CTRLO" sends 0x0f. Output is written to stdout at the end,
 both raw (with ANSI escapes) and a stripped plain-text version.
 
 Fidelity note (found 2026-09-26, see retrospective.md): this does not emulate a
@@ -76,7 +76,7 @@ def main():
         wait = float(wait) if wait else 1.0
         # Raw terminal mode: Enter arrives as CR (\r), not LF. A literal "\n" in a
         # step means "press Enter".
-        data = b"\x03" if key == "CTRLC" else (key.encode().replace(b"\\n", b"\r").replace(b"\\r", b"\r"))
+        data = {"CTRLC": b"\x03", "CTRLO": b"\x0f"}.get(key) or (key.encode().replace(b"\\n", b"\r").replace(b"\\r", b"\r"))
         try:
             os.write(master, data)
         except OSError:

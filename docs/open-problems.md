@@ -23,7 +23,7 @@ This is the live register of everything currently broken, blocked, or undecided.
 
 | # | Type | Problem | Owner | Where it lives |
 |---|---|---|---|---|
-| 2 | decision | The core hands interfaces a flat `io.Writer`, so the TUI cannot tell a command from its output from the answer — progressive disclosure is unimplementable until the seam carries structure. **Now also blocks measurement**: Layer 7 has to scrape the transcript by line prefix to score what the user was told, and scoring the raw stream is what made three verifiers vacuous | you | `prior-art.md` (disclosure entry), `said()` in `layer7_test.go` |
+| 2 | decision | **Partly resolved 2026-09-27 (D39).** The loop now reports commands, results, answers, and problems as typed events (`internal/loopevent`) to any writer that accepts them, and the TUI uses them for its compact view and Ctrl+O details. **Still open:** CLI and REPL still write text, so Layer 7 still scrapes the transcript by line prefix in `said()`; moving the Layer 7 harness onto events would remove that and the vacuous-verifier risk it carries | you | `decisions.md` D39, `said()` in `layer7_test.go` |
 | 3 | decision | RQ1 ("how can a conversational interface layer be designed…") is answered by "we built it" — the weakest of the four questions now that there are four | you | Chapter 1 |
 | 5 | gap | No classifier rule for `apt`/`dpkg`/`systemctl` — `sudo apt purge nginx` classifies Reversible and auto-runs. Package management is one of the four study task categories | us | `safety-model.md` (known gaps) |
 | 6 | gap | Open-source coding-agent architecture survey not done — the run failed on a rate limit. Needed for the failure-recovery fix and to confirm nobody does recoverability | us | `prior-art.md` |
