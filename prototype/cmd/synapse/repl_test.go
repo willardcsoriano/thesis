@@ -333,7 +333,7 @@ func TestRunREPLInterruptCancelsTaskButKeepsSessionAlive(t *testing.T) {
 		t.Fatal("runREPL did not return — the interrupt failed to cancel the sleeping task")
 	}
 
-	if !strings.Contains(out.String(), "cancelling this task") {
+	if !strings.Contains(out.String(), "Cancelling this task") {
 		t.Errorf("expected the cancellation notice in output, got:\n%s", out.String())
 	}
 	if _, err := os.Stat(after); err != nil {
@@ -404,7 +404,7 @@ func TestRunREPLClearCommandForgets(t *testing.T) {
 	runREPL(context.Background(), ollama.New(server.URL), "m", "", in, &out, &errOut)
 
 	got := out.String()
-	if !strings.Contains(got, "forgot 1 remembered task(s)") {
+	if !strings.Contains(got, "Forgot 1 remembered task(s)") {
 		t.Errorf("clear did not report what it forgot:\n%s", got)
 	}
 	if !strings.Contains(got, "no conversation history yet") {

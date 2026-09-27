@@ -62,6 +62,10 @@ var (
 			BorderStyle(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("11")).
 			Padding(0, 1)
+	// The two lines a reader scans for: what was asked, and the command that
+	// answered it. Everything else stays in the terminal's own colors.
+	echoStyle    = lipgloss.NewStyle().Bold(true)
+	commandStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("14"))
 	workingStyle = lipgloss.NewStyle().Faint(true).Italic(true)
 	spinnerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
 	// warnGlyph marks the confirmation prompt as the one thing here that
@@ -255,7 +259,23 @@ func (m *Model) appendOutput(chunk string) tea.Cmd {
 	if len(done) == 0 {
 		return nil
 	}
+	for i, line := range done {
+		done[i] = styleLine(line)
+	}
 	return m.emit(strings.Join(done, "\n"))
+}
+
+// styleLine emphasises the echoed task ("> ") and the command shown for a step
+// ("$ "). It is cosmetic: it goes by the line's first characters, styling
+// changes no text, and copying from the terminal yields the plain words.
+func styleLine(line string) string {
+	switch {
+	case strings.HasPrefix(line, "> "):
+		return echoStyle.Render(line)
+	case strings.HasPrefix(line, "$ "):
+		return commandStyle.Render(line)
+	}
+	return line
 }
 
 // say queues UI-authored text (the echoed task, the verdict, a note) through
@@ -390,7 +410,7 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// it quits, which is what a user expects there.
 		if m.running && m.cancelTask != nil {
 			m.cancelTask()
-			return m, m.say("\ncancelling this task — the session stays open.\n")
+			return m, m.say("\nCancelling this task — the session stays open.\n")
 		}
 		m.quitting = true
 		return m, tea.Quit

@@ -323,13 +323,13 @@ func main() {
 				if handleSessionCommand(task, sc, tracker, out) {
 					return 0
 				}
-				// withTokenStreaming is the one behavioral difference from
-				// CLI/REPL mode, and it is presentation-only: tokens render
-				// as they arrive instead of after generation finishes. The
-				// command still gets parsed from the fully assembled
-				// response and classified exactly as before.
+				// withFriendlyOutput is the one behavioral difference from
+				// CLI/REPL mode, and it is presentation-only: the command and
+				// its output are laid out for a person, without step numbers,
+				// token counts, or exit-code lines. The command is still parsed
+				// from the whole response and classified exactly as before.
 				return runLoop(taskCtx, client, model, task, confirmFn, out, errOut, journalPath,
-					withTokenStreaming(out), withSessionContext(sc), withTelemetry(tel, tracker.current()))
+					withFriendlyOutput(), withSessionContext(sc), withTelemetry(tel, tracker.current()))
 			}
 			// Load the model while the user is still reading the header, so the first
 			// answer does not pay a cold start (measured at 30-40s on the reference
@@ -405,7 +405,7 @@ func runAdHoc(ctx context.Context, client *ollama.Client, model, task string) {
 	}
 	reader := bufio.NewReader(os.Stdin)
 	confirmFn := func(prompt string) bool { return confirm(reader, os.Stdout, prompt) }
-	fmt.Fprintf(os.Stdout, "each step may run for up to %s before it's automatically stopped.\n\n", stepExecutionTimeout)
+	fmt.Fprintf(os.Stdout, "Each step may run for up to %s before it's automatically stopped.\n\n", stepExecutionTimeout)
 	// Also answered on the one-shot path, not only in the session loops:
 	// `synapse hello` is as likely a first contact as typing it at the prompt.
 	if answerConversational(task, os.Stdout) {
@@ -441,12 +441,12 @@ func runAdHoc(ctx context.Context, client *ollama.Client, model, task string) {
 // intentionally ignored here; the whole point of a persistent loop is that
 // one bad task doesn't force a restart to try another.
 func runREPL(ctx context.Context, client *ollama.Client, model, journalPath string, in io.Reader, out, errOut io.Writer) int {
-	fmt.Fprintln(out, "persistent session — type a task and press enter; type exit or quit (or Ctrl+D) to leave.")
-	fmt.Fprintln(out, "while a task is running, Ctrl+C cancels just that task and returns you here.")
-	fmt.Fprintf(out, "each step may run for up to %s before it's automatically stopped.\n", stepExecutionTimeout)
-	fmt.Fprintln(out, "follow-ups can refer back (\"move it to Downloads\"); type context to see what's remembered, clear to forget it.")
+	fmt.Fprintln(out, "Persistent session — type a task and press enter; type exit or quit (or Ctrl+D) to leave.")
+	fmt.Fprintln(out, "While a task is running, Ctrl+C cancels just that task and returns you here.")
+	fmt.Fprintf(out, "Each step may run for up to %s before it's automatically stopped.\n", stepExecutionTimeout)
+	fmt.Fprintln(out, "Follow-ups can refer back (\"move it to Downloads\"); type context to see what's remembered, clear to forget it.")
 	if tel := os.Getenv("SYNAPSE_SESSION_LOG"); tel != "" {
-		fmt.Fprintln(out, "study telemetry is recording; type task <id> to mark which task the following events belong to.")
+		fmt.Fprintln(out, "Study telemetry is recording; type task <id> to mark which task the following events belong to.")
 	}
 
 	reader := bufio.NewReader(in)
@@ -553,7 +553,7 @@ func runTaskInterruptibly(ctx context.Context, client *ollama.Client, model, tas
 	go func() {
 		select {
 		case <-sigCh:
-			fmt.Fprintln(syncOut, "\ncancelling this task — the session stays open.")
+			fmt.Fprintln(syncOut, "\nCancelling this task — the session stays open.")
 			cancel()
 		case <-watchDone:
 		}
@@ -621,6 +621,15 @@ type loopConfig struct {
 	// recording nothing. Only tests that script a fixed number of model
 	// responses set this.
 	answerDisabled bool
+
+	// friendly selects the presentation for a person at the TUI: no step
+	// numbers, token counts, or exit-code lines on success; each command shown
+	// as "$ command" with its output indented beneath it; and the answer set
+	// apart. It changes only what is printed. What runs, what is gated, what is
+	// journaled, and what telemetry records are identical, and the model is
+	// asked in a non-streaming call because a command printed piece by piece
+	// into a scrollback reads as noise.
+	friendly bool
 }
 
 // withTokenStreaming makes the loop stream generation into w as it
@@ -628,6 +637,39 @@ type loopConfig struct {
 // CLI mode deliberately renders once generation finishes instead.
 func withTokenStreaming(w io.Writer) loopOption {
 	return func(c *loopConfig) { c.tokenSink = w }
+}
+
+// withFriendlyOutput switches the loop to the presentation described on
+// loopConfig.friendly. Used only by TUI mode.
+func withFriendlyOutput() loopOption {
+	return func(c *loopConfig) { c.friendly = true }
+}
+
+// gap writes a blank line in friendly mode, to set a block of output apart
+// from the one before it.
+func (c loopConfig) gap(out io.Writer) {
+	if c.friendly {
+		fmt.Fprintln(out)
+	}
+}
+
+// indented prefixes every line of text with two spaces and makes sure it ends
+// in a newline, so command output reads as belonging to the command above it.
+func indented(text string) string {
+	lines := strings.Split(strings.TrimRight(text, "\n"), "\n")
+	for i, l := range lines {
+		if l != "" {
+			lines[i] = "  " + l
+		}
+	}
+	return strings.Join(lines, "\n") + "\n"
+}
+
+// printAnswer writes the model's reply. In friendly mode it sits apart from the
+// command output above it.
+func (c loopConfig) printAnswer(out io.Writer, answer string) {
+	c.gap(out)
+	fmt.Fprintln(out, answer)
 }
 
 // withSessionContext gives the loop memory of earlier tasks in the same
@@ -713,10 +755,10 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		// truthful reason instead of five identical error blocks.
 		for _, prior := range failedCommands(history) {
 			if prior == cmd {
-				fmt.Fprintf(out, "this command already failed here, so running it again will not help: %s\n", cmd)
+				fmt.Fprintf(out, "This command already failed here, so running it again will not help: %s\n", cmd)
 				taskOutcome = "repeated_failure"
 				if answer, aerr := maybeAnswer(ctx, client, model, task, history, cfg); aerr == nil && answer != "" {
-					fmt.Fprintln(out, answer)
+					cfg.printAnswer(out, answer)
 					cfg.telemetry.TaskAnswered(cfg.taskID, answer)
 				}
 				return 1
@@ -724,7 +766,9 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		}
 		cfg.telemetry.CommandIssued(cfg.taskID, i, cmd)
 
-		if cfg.tokenSink != nil {
+		if cfg.friendly {
+			// Shown below, once it is known to be a command.
+		} else if cfg.tokenSink != nil {
 			fmt.Fprintln(out)
 			// The streamed text is the model's raw output; what actually
 			// runs has been through cleanCommand. Show the canonical form
@@ -741,6 +785,7 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		}
 
 		if cmd == "" || cmd == "UNSUPPORTED" {
+			cfg.gap(out)
 			// Phrased for the person, not the system. This is the response a
 			// participant meets whenever they ask for something outside the
 			// shell — including the boundary tasks the study administers
@@ -759,29 +804,37 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			fmt.Fprintln(out, "I couldn't work out a command for that.")
 			fmt.Fprintln(out, "I work by running shell commands on this machine, so I can reach files and folders, disk usage, processes, packages, text in files, and network settings — but not things with no command-line equivalent, like clicking buttons in a graphical application or editing an image.")
 			fmt.Fprintln(out, "I also don't answer general questions about the world — I only report what I can find on this machine, so that anything I tell you can be traced to a command that actually ran.")
-			fmt.Fprintln(out, "if it is something the command line can do, try naming the file or folder — for example \"how much space is this folder using\" or \"find the ten largest files here\".")
+			fmt.Fprintln(out, "If it is something the command line can do, try naming the file or folder — for example \"how much space is this folder using\" or \"find the ten largest files here\".")
 			taskOutcome = "unsupported"
 			return 1
 		}
 		if strings.EqualFold(cmd, doneSentinel) {
 			if len(history) == 0 {
-				fmt.Fprintln(out, "model reported nothing needs to be done.")
+				cfg.gap(out)
+				fmt.Fprintln(out, "Nothing needs to be done.")
 				taskOutcome = "nothing_to_do"
 				return 0
 			}
 			// The answer comes before the mechanical completion line: it is
 			// what the user asked for, and the step count is bookkeeping.
 			if answer, aerr := maybeAnswer(ctx, client, model, task, history, cfg); aerr == nil && answer != "" {
-				fmt.Fprintln(out, answer)
+				cfg.printAnswer(out, answer)
 				cfg.telemetry.TaskAnswered(cfg.taskID, answer)
 			} else if aerr != nil {
 				// Reported, not fatal. The task succeeded; only the summary
 				// did not, and the raw output above already stands on its own.
 				fmt.Fprintf(errOut, "note: could not summarise the result: %v\n", aerr)
 			}
-			fmt.Fprintf(out, "task complete in %d step(s).\n", len(history))
+			if !cfg.friendly {
+				fmt.Fprintf(out, "Task complete in %d step(s).\n", len(history))
+			}
 			taskOutcome = "complete"
 			return 0
+		}
+
+		if cfg.friendly {
+			cfg.gap(out)
+			fmt.Fprintf(out, "$ %s\n", cmd)
 		}
 
 		// Resolved once per step and used both for the filesystem-aware
@@ -810,10 +863,18 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		gd := analysisDecision(ctx, cmd, wd)
 		if verdict == classifier.Irreversible || (gd != nil && gd.Confirm) {
 			if verdict == classifier.Irreversible {
-				fmt.Fprintf(out, "blocked: %s is irreversible — %s\n", cmd, reason)
+				if cfg.friendly {
+					fmt.Fprintf(out, "This can't be undone — %s\n", reason)
+				} else {
+					fmt.Fprintf(out, "blocked: %s is irreversible — %s\n", cmd, reason)
+				}
 			} else {
 				reason = firstReason(gd)
-				fmt.Fprintf(out, "blocked: %s needs confirmation — %s\n", cmd, reason)
+				if cfg.friendly {
+					fmt.Fprintf(out, "Needs your approval — %s\n", reason)
+				} else {
+					fmt.Fprintf(out, "blocked: %s needs confirmation — %s\n", cmd, reason)
+				}
 			}
 			// Consent has to cover recoverability, not just danger. D30
 			// argues that showing the command is what makes approval
@@ -829,9 +890,9 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 				unprotected = !gd.Confident || gd.Verdict.Class == effects.Unrecoverable
 			}
 			if unprotected {
-				fmt.Fprintln(out, "  WARNING: this command decides what to delete while it runs, so I cannot")
-				fmt.Fprintln(out, "  copy anything first. undo will NOT be able to bring it back.")
-				fmt.Fprintln(out, "  if you want the safety net, name the files or folders directly instead.")
+				fmt.Fprintln(out, "  WARNING: This command decides what to delete while it runs, so I cannot")
+				fmt.Fprintln(out, "  copy anything first. Undo will NOT be able to bring it back.")
+				fmt.Fprintln(out, "  If you want the safety net, name the files or folders directly instead.")
 			}
 			approved := confirmFn("run it anyway?")
 			// Logged for both answers. A declined gate is evidence about
@@ -839,7 +900,7 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			// asks; recording only approvals would leave that unmeasurable.
 			cfg.telemetry.ConfirmationTriggered(cfg.taskID, i, cmd, reason, approved)
 			if !approved {
-				fmt.Fprintln(out, "cancelled.")
+				fmt.Fprintln(out, "Cancelled.")
 				taskOutcome = "declined"
 				return 0
 			}
@@ -904,7 +965,7 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			fmt.Fprintf(errOut, "error: command did not run: %v\n", result.Err)
 			taskOutcome = "execution_error"
 			if answer, aerr := maybeAnswer(ctx, client, model, task, history, cfg); aerr == nil && answer != "" {
-				fmt.Fprintln(out, answer)
+				cfg.printAnswer(out, answer)
 				cfg.telemetry.TaskAnswered(cfg.taskID, answer)
 			}
 			return 1
@@ -915,16 +976,35 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			SIGPIPE:     result.SIGPIPE,
 			Latency:     execLatency,
 		})
-		if result.Stdout != "" {
-			fmt.Fprint(out, result.Stdout)
+		switch {
+		case cfg.friendly:
+			if result.Stdout != "" {
+				fmt.Fprint(out, indented(result.Stdout))
+			}
+			if result.Stderr != "" {
+				fmt.Fprint(errOut, indented(result.Stderr))
+			}
+			if result.Stdout == "" && result.Stderr == "" && result.ExitCode == 0 && !result.TimedOut {
+				fmt.Fprintln(out, "  (no output)")
+			}
+			if result.TimedOut {
+				fmt.Fprintf(out, "  Command exceeded %s and was terminated.\n", stepExecutionTimeout)
+			}
+			if result.ExitCode != 0 {
+				fmt.Fprintf(out, "  (exit code %d)\n", result.ExitCode)
+			}
+		default:
+			if result.Stdout != "" {
+				fmt.Fprint(out, result.Stdout)
+			}
+			if result.Stderr != "" {
+				fmt.Fprint(errOut, result.Stderr)
+			}
+			if result.TimedOut {
+				fmt.Fprintf(out, "command exceeded %s and was terminated.\n", stepExecutionTimeout)
+			}
+			fmt.Fprintf(out, "exit code: %d\n\n", result.ExitCode)
 		}
-		if result.Stderr != "" {
-			fmt.Fprint(errOut, result.Stderr)
-		}
-		if result.TimedOut {
-			fmt.Fprintf(out, "command exceeded %s and was terminated.\n", stepExecutionTimeout)
-		}
-		fmt.Fprintf(out, "exit code: %d\n\n", result.ExitCode)
 
 		if gateEntry != nil {
 			// Journaled whatever the exit code: the captures were taken before the
@@ -971,7 +1051,7 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 	// of steps leaves the user with a wall of failed commands and no statement
 	// of what went wrong; the raw output is evidence, not an explanation.
 	if answer, aerr := maybeAnswer(ctx, client, model, task, history, cfg); aerr == nil && answer != "" {
-		fmt.Fprintln(out, answer)
+		cfg.printAnswer(out, answer)
 		cfg.telemetry.TaskAnswered(cfg.taskID, answer)
 	}
 	fmt.Fprintf(errOut, "error: step limit reached (%d steps) without the task being reported complete — stopping.\n", maxLoopSteps)
@@ -1158,12 +1238,12 @@ func handleSessionCommand(task string, sc *session.Context, tr *taskTracker, out
 	if len(trimmed) > 5 && strings.EqualFold(trimmed[:5], "task ") {
 		if id := strings.TrimSpace(trimmed[5:]); id != "" && tr != nil {
 			tr.id = id
-			fmt.Fprintf(out, "now recording events under task %s.\n", id)
+			fmt.Fprintf(out, "Now recording events under task %s.\n", id)
 			return true
 		}
 	}
 	if strings.EqualFold(trimmed, "task") && tr != nil {
-		fmt.Fprintf(out, "current task: %s\n", tr.current())
+		fmt.Fprintf(out, "Current task: %s\n", tr.current())
 		return true
 	}
 	if answerConversational(task, out) {
@@ -1191,8 +1271,8 @@ func answerConversational(task string, out io.Writer) bool {
 	norm := normaliseChatter(task)
 	switch norm {
 	case "hello", "hi", "hey", "yo", "hello there", "good morning", "good afternoon", "good evening":
-		fmt.Fprintln(out, "hello. tell me what you want done to this machine, in ordinary words — for example \"how much space is this folder using\" or \"put the log files in their own folder\".")
-		fmt.Fprintln(out, "type help to see what I can reach, or exit to leave.")
+		fmt.Fprintln(out, "Hello. Tell me what you want done to this machine, in ordinary words — for example \"how much space is this folder using\" or \"put the log files in their own folder\".")
+		fmt.Fprintln(out, "Type help to see what I can reach, or exit to leave.")
 		return true
 	case "what ai model are you", "what model are you", "which model are you", "what llm are you",
 		"are you human", "are you a human", "are you an ai", "are you a robot", "are you chatgpt",
@@ -1201,17 +1281,17 @@ func answerConversational(task string, out io.Writer) bool {
 		// them — and answers them locally, because the one thing worse than
 		// refusing is letting a 3B coder model improvise its own identity.
 		fmt.Fprintf(out, "I'm SynapseOS — a program on this machine, not a person. I use a local language model (%s) running on your own hardware through Ollama; nothing you type leaves this computer.\n", envOr("SYNAPSE_MODEL", defaultModel))
-		fmt.Fprintln(out, "what I actually do is turn what you say into shell commands and run them here. type help for what I can reach.")
+		fmt.Fprintln(out, "What I actually do is turn what you say into shell commands and run them here. Type help for what I can reach.")
 		return true
 	case "help", "what can you do", "what can you do?", "who are you", "what are you", "what is this":
 		fmt.Fprintln(out, "I turn what you say into shell commands and run them on this machine, showing you each command before it runs.")
 		fmt.Fprintln(out, "I can reach anything the command line can: files and folders, disk usage, processes, packages, text in files, and network settings.")
 		fmt.Fprintln(out, "I cannot click buttons in graphical applications, edit images, or browse web pages.")
-		fmt.Fprintln(out, "anything that cannot be undone stops and asks you first, and undo reverses the last thing I ran.")
-		fmt.Fprintln(out, "session commands: context (what I remember), clear (forget it), exit.")
+		fmt.Fprintln(out, "Anything that cannot be undone stops and asks you first, and undo reverses the last thing I ran.")
+		fmt.Fprintln(out, "Session commands: context (what I remember), clear (forget it), exit.")
 		return true
 	case "thanks", "thank you", "ty", "thx", "cheers", "thanks a lot", "thank you very much", "thanks so much", "much appreciated":
-		fmt.Fprintln(out, "you're welcome.")
+		fmt.Fprintln(out, "You're welcome.")
 		return true
 	case "how are you", "how are you doing", "how are you today", "how are you doing today", "how is it going",
 		"how's it going", "hows it going", "how do you do", "what's up", "whats up", "sup", "how have you been":
@@ -1219,23 +1299,23 @@ func answerConversational(task string, out io.Writer) bool {
 		// shell command spent 26 seconds concluding it could not. The honest answer
 		// is short and points back at the one thing this can do.
 		fmt.Fprintln(out, "I'm running fine — I'm a program on this machine, so there's not much to report.")
-		fmt.Fprintln(out, "tell me what you want done, in ordinary words, or type help to see what I can reach.")
+		fmt.Fprintln(out, "Tell me what you want done, in ordinary words, or type help to see what I can reach.")
 		return true
 	case "really", "seriously", "are you sure", "are you serious", "what", "huh", "why", "why not", "what do you mean",
 		"how so", "oh really", "is that so", "is that right", "come again", "pardon", "sorry", "sorry?", "wait", "hold on":
 		// A reaction to what was just said, not a request. Nothing here can be
 		// checked on the machine, so say what this can and cannot stand behind
 		// rather than guessing at which earlier line the user is reacting to.
-		fmt.Fprintln(out, "yes — I can only act by running commands on this machine, and I only report what they return.")
-		fmt.Fprintln(out, "say what you want checked or done, in ordinary words, or type help.")
+		fmt.Fprintln(out, "Yes — I can only act by running commands on this machine, and I only report what they return.")
+		fmt.Fprintln(out, "Say what you want checked or done, in ordinary words, or type help.")
 		return true
 	case "ok", "okay", "k", "kk", "cool", "nice", "great", "good", "alright", "all right", "got it", "i see", "sure",
 		"yes", "yeah", "yep", "yup", "no", "nope", "nah", "nothing", "never mind", "nevermind", "lol", "haha", "hehe",
 		"wow", "hmm", "hm", "hmmm", "oh", "ah", "ooh", "interesting", "fine", "perfect", "awesome", "understood", "right":
-		fmt.Fprintln(out, "ok. tell me what you want done when you're ready — help lists what I can reach.")
+		fmt.Fprintln(out, "OK. Tell me what you want done when you're ready — help lists what I can reach.")
 		return true
 	case "bye", "goodbye", "good bye", "see you", "see ya", "cya", "good night", "goodnight", "later":
-		fmt.Fprintln(out, "goodbye. type exit to leave, or keep going.")
+		fmt.Fprintln(out, "Goodbye. Type exit to leave, or keep going.")
 		return true
 	}
 	return false
@@ -1259,7 +1339,7 @@ func handleMemoryCommand(task string, sc *session.Context, out io.Writer) bool {
 	case "clear":
 		n := sc.Len()
 		sc.Clear()
-		fmt.Fprintf(out, "forgot %d remembered task(s); the next task starts fresh.\n", n)
+		fmt.Fprintf(out, "Forgot %d remembered task(s); the next task starts fresh.\n", n)
 		return true
 	}
 	return false
@@ -1540,11 +1620,11 @@ func runUndo(confirmFn func(string) bool, out, errOut io.Writer, journalPath str
 		return 1
 	}
 	if !ok {
-		fmt.Fprintln(out, "nothing to undo.")
+		fmt.Fprintln(out, "Nothing to undo.")
 		return 0
 	}
 
-	fmt.Fprintf(out, "undoing: %s\n  (ran in %s at %s)\n", entry.Command, entry.Dir, entry.Timestamp.Format(time.RFC3339))
+	fmt.Fprintf(out, "Undoing: %s\n  (ran in %s at %s)\n", entry.Command, entry.Dir, entry.Timestamp.Format(time.RFC3339))
 	for _, m := range entry.Moves {
 		fmt.Fprintf(out, "  move back: %s -> %s\n", m.NewPath, m.OldPath)
 	}
@@ -1568,7 +1648,7 @@ func runUndo(confirmFn func(string) bool, out, errOut io.Writer, journalPath str
 	}
 
 	if !confirmFn("apply this undo?") {
-		fmt.Fprintln(out, "cancelled.")
+		fmt.Fprintln(out, "Cancelled.")
 		// A declined undo is a finding, not a non-event: it says the
 		// participant reached for recovery and then chose not to take it.
 		tel.UndoInvoked(taskID, entry.Command, telemetry.UndoDeclined, "")
@@ -1590,7 +1670,7 @@ func runUndo(confirmFn func(string) bool, out, errOut io.Writer, journalPath str
 		tel.UndoInvoked(taskID, entry.Command, telemetry.UndoFailed, errs[0].Error())
 		return 1
 	}
-	fmt.Fprintln(out, "undo complete.")
+	fmt.Fprintln(out, "Undo complete.")
 	tel.UndoInvoked(taskID, entry.Command, telemetry.UndoApplied, "")
 	return 0
 }

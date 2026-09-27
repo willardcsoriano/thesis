@@ -95,7 +95,7 @@ func TestRunLoopMultiStepReversibleNeverPromptsAndAppliesRealEffects(t *testing.
 	if _, err := os.Stat(target); err != nil {
 		t.Errorf("expected %s to have been created by the executed step: %v", target, err)
 	}
-	if !strings.Contains(out.String(), "task complete in 1 step(s).") {
+	if !strings.Contains(out.String(), "Task complete in 1 step(s).") {
 		t.Errorf("stdout missing completion message, got:\n%s", out.String())
 	}
 }
@@ -120,7 +120,7 @@ func TestSessionAnnouncesTheExecutionTimeoutOnceNotPerTask(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
 	}
-	want := fmt.Sprintf("each step may run for up to %s", stepExecutionTimeout)
+	want := fmt.Sprintf("Each step may run for up to %s", stepExecutionTimeout)
 	if n := strings.Count(out.String(), want); n != 1 {
 		t.Errorf("timeout notice appeared %d times across two tasks, want exactly 1:\n%s", n, out.String())
 	}
@@ -134,7 +134,7 @@ func TestRunLoopItselfEmitsNoSessionPreamble(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	runLoop(context.Background(), ollama.New(server.URL), "m", "do nothing", neverConfirm(t), &out, &errOut, "")
-	if strings.Contains(out.String(), "each step may run for up to") {
+	if strings.Contains(out.String(), "Each step may run for up to") {
 		t.Errorf("runLoop printed the session preamble:\n%s", out.String())
 	}
 }
@@ -169,7 +169,7 @@ func TestRunLoopIrreversibleCancelledNeverExecutes(t *testing.T) {
 	if _, err := os.Stat(target); err != nil {
 		t.Errorf("file should have survived the declined confirmation, but stat failed: %v", err)
 	}
-	if !strings.Contains(out.String(), "blocked:") || !strings.Contains(out.String(), "cancelled.") {
+	if !strings.Contains(out.String(), "blocked:") || !strings.Contains(out.String(), "Cancelled.") {
 		t.Errorf("stdout missing blocked/cancelled messaging, got:\n%s", out.String())
 	}
 }
@@ -320,7 +320,7 @@ func TestRunLoopDoneOnFirstStepWithNoHistory(t *testing.T) {
 	if code != 0 {
 		t.Errorf("exit code = %d, want 0", code)
 	}
-	if !strings.Contains(out.String(), "nothing needs to be done") {
+	if !strings.Contains(out.String(), "Nothing needs to be done") {
 		t.Errorf("stdout missing the no-history DONE message, got:\n%s", out.String())
 	}
 }
@@ -1438,5 +1438,48 @@ func TestBareCd(t *testing.T) {
 		if got := bareCd(cmd); got != want {
 			t.Errorf("bareCd(%q) = %v, want %v", cmd, got, want)
 		}
+	}
+}
+
+// Friendly output is what a person at the TUI sees: the command as "$ command",
+// its output indented beneath, no bookkeeping, the answer set apart.
+func TestRunLoopFriendlyOutputIsCleanAndUnchangedInBehaviour(t *testing.T) {
+	server := scriptedOllamaServer(t, []string{"echo hi", "DONE"})
+	defer server.Close()
+
+	var out, errOut bytes.Buffer
+	code := runLoop(context.Background(), ollama.New(server.URL), "m", "say hi", neverConfirm(t), &out, &errOut, "", withFriendlyOutput())
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
+	}
+	got := out.String()
+	if !strings.Contains(got, "\n$ echo hi\n  hi\n") {
+		t.Errorf("want the command with its output indented beneath it, got:\n%q", got)
+	}
+	for _, noise := range []string{"step ", "stats:", "exit code", "Task complete", "DONE"} {
+		if strings.Contains(got, noise) {
+			t.Errorf("friendly output kept bookkeeping %q:\n%s", noise, got)
+		}
+	}
+}
+
+func TestRunLoopFriendlyOutputReportsAFailureAndAnEmptyResult(t *testing.T) {
+	server := scriptedOllamaServer(t, []string{"true", "false", "DONE"})
+	defer server.Close()
+
+	var out, errOut bytes.Buffer
+	runLoop(context.Background(), ollama.New(server.URL), "m", "do two things", neverConfirm(t), &out, &errOut, "", withFriendlyOutput())
+	got := out.String()
+	if !strings.Contains(got, "$ true\n  (no output)\n") {
+		t.Errorf("a silent success should say so, got:\n%s", got)
+	}
+	if !strings.Contains(got, "$ false\n  (exit code 1)\n") {
+		t.Errorf("a failure should show its exit code, got:\n%s", got)
+	}
+}
+
+func TestIndented(t *testing.T) {
+	if got := indented("a\n\nb\n"); got != "  a\n\n  b\n" {
+		t.Errorf("indented = %q", got)
 	}
 }

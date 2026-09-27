@@ -120,7 +120,7 @@ func tail(s string, n int) string {
 // evidence for that row: the seam should carry structure, and until it does,
 // this is the honest measurement and it is fragile by construction.
 func said(transcript string) string {
-	noise := []string{"step ", "  command: ", "  stats: ", "exit code: ", "task complete in ", "note: "}
+	noise := []string{"step ", "  command: ", "  stats: ", "exit code: ", "Task complete in ", "note: "}
 	var keep []string
 	for _, line := range strings.Split(transcript, "\n") {
 		drop := false
@@ -531,11 +531,11 @@ func TestLayer7UtteranceTiers(t *testing.T) {
 // file produces, so they are tested directly. Each case below is one that was
 // actually mis-scored before they existed.
 func TestLayer7ScoringHelpers(t *testing.T) {
-	const twoStepTranscript = "step 1: grep -c WARN app.log\n  stats: 143 tokens in 4.2s\n2\nexit code: 0\n\nstep 2: DONE\ntask complete in 1 step(s).\n"
+	const twoStepTranscript = "step 1: grep -c WARN app.log\n  stats: 143 tokens in 4.2s\n2\nexit code: 0\n\nstep 2: DONE\nTask complete in 1 step(s).\n"
 
 	t.Run("bookkeeping is not scored", func(t *testing.T) {
 		got := said(twoStepTranscript)
-		for _, banned := range []string{"stats:", "exit code:", "task complete", "step 2"} {
+		for _, banned := range []string{"stats:", "exit code:", "Task complete", "step 2"} {
 			if strings.Contains(got, banned) {
 				t.Errorf("said() kept bookkeeping %q:\n%s", banned, got)
 			}
@@ -547,7 +547,7 @@ func TestLayer7ScoringHelpers(t *testing.T) {
 
 	t.Run("a step number does not satisfy a count", func(t *testing.T) {
 		// The original defect: "step 2:" made every U10 run pass.
-		noOutput := "step 1: grep -c WARN app.log\n  stats: 9 tokens in 2.0s\nexit code: 1\n\nstep 2: DONE\ntask complete in 1 step(s).\n"
+		noOutput := "step 1: grep -c WARN app.log\n  stats: 9 tokens in 2.0s\nexit code: 1\n\nstep 2: DONE\nTask complete in 1 step(s).\n"
 		if reports(noOutput, "2") {
 			t.Error("reports() accepted a step number as the answer")
 		}
