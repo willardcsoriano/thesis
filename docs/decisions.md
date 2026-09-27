@@ -565,3 +565,17 @@ The team's real goal for this project is the distro (SynapseOS as a working, boo
 **What changes.** Nothing in the paper's claims. `scope.md`'s Track A/B framing gets an explicit priority note. Candidate algorithmic ideas noticed while building the distro are logged in `candidate-algorithms.md` rather than acted on immediately, since the recoverability algorithm is the one being run with unless a decision here says otherwise.
 
 **Rejected.** Formally dropping RQ2–RQ4 from the proposal — the adviser did not ask for that, and D32's reasoning for keeping the interface work real rather than decorative still holds. This is a resourcing decision, not a claims decision.
+
+---
+
+### D37 — The agent is homed where it starts; the login session starts in `~`; there is no directory boundary
+
+**Status:** Decided 2026-09-27.
+
+Two questions that are easy to run together, answered separately. **Home** is the directory the agent starts in; it is what "here" and "this folder" resolve to, and every command runs there. Started from a terminal (`synapse`, `make tui`) it keeps the directory it was launched from, as any command-line tool does. Started as the login session (D27, `distro/synapseos-session`) it starts in the person's home folder, as a fresh login shell or a file manager would, set explicitly rather than left to whatever the login happened to leave behind. **Boundary** is what the agent may touch or must ask about, and there is no directory boundary: SynapseOS is a feature of the operating system, not a tool pointed at a project, so a rule keyed to a folder would make ordinary requests ("move this to Downloads") ask for confirmation and buy little over what is already there.
+
+**What already bounds it.** Reversibility (D34, D35): anything that cannot be undone asks first. Unix permissions: the agent runs as the person, so it cannot write system files or another user's files, and the model cannot supply a password to `sudo`. Package and service state is modelled separately (D35, C6).
+
+**Rejected.** A directory boundary (launch directory or home folder), as Claude Code and similar tools use. Those are installed tools scoped to a project; this is not. **Kept as an option:** a boundary keyed to the *kind* of change (always ask before anything privileged or system-wide), which the effect analysis has the data for and could measure with the existing corpus. Not needed now.
+
+**Found while testing:** `make tui` used to start in `prototype/` whatever directory it was run from, because the Makefile changed directory first; it now starts where `make` was run (`RUNDIR`).

@@ -37,5 +37,12 @@ sleep 2
 #    already work — hiding the scrollbar and menu here only threw away that,
 #    with nothing built to replace it. Only the window border is hidden,
 #    which is what makes it read as fullscreen rather than a window.
+#
+#    The agent is homed in the directory it starts in: that is what "here" and
+#    "this folder" mean to it. Started from the login session it should be the
+#    person's home folder, as a fresh login shell or a file manager would be,
+#    so say so instead of relying on whatever directory the login left behind.
+#    Started from a terminal it keeps the directory it was launched from.
+cd "$HOME"
 exec xfce4-terminal --fullscreen --hide-borders \
   -x /usr/bin/synapse tui

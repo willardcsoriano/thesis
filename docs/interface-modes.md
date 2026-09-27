@@ -138,6 +138,9 @@ sleep 2
 #    so plain click-drag selection and the terminal's own right-click
 #    Copy/Paste already work — hiding the scrollbar or menu would only
 #    throw that away with nothing built to replace it.
+#    The agent is homed where it starts (that is what "here" means to it), so
+#    start in the person's home folder rather than wherever login left us.
+cd "$HOME"
 exec xfce4-terminal --fullscreen --hide-borders \
   -x /usr/bin/synapse tui
 ```
