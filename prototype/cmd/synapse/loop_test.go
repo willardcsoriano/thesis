@@ -1548,3 +1548,126 @@ func TestEventsFromOnlyAttachesToAnEmitter(t *testing.T) {
 type fakeEmitter struct{ bytes.Buffer }
 
 func (*fakeEmitter) Emit(loopevent.Event) {}
+
+// --- structured step decisions (schema-constrained model replies) ---------
+
+func TestDecodeStepDecisionParsesEachAction(t *testing.T) {
+	cases := []struct {
+		raw     string
+		wantCmd string
+	}{
+		{`{"action":"run","command":"ls -la"}`, "ls -la"},
+		{`{"action":"done","command":""}`, doneSentinel},
+		{`{"action":"unsupported","command":""}`, "UNSUPPORTED"},
+		// cleanCommand still runs on the extracted command, so a model that
+		// wraps it in backticks inside the JSON string is still handled.
+		{"{\"action\":\"run\",\"command\":\"`ls -la`\"}", "ls -la"},
+	}
+	for _, tc := range cases {
+		got, ok := decodeStepDecision(tc.raw)
+		if !ok {
+			t.Errorf("decodeStepDecision(%q) ok = false, want true", tc.raw)
+			continue
+		}
+		if got != tc.wantCmd {
+			t.Errorf("decodeStepDecision(%q) = %q, want %q", tc.raw, got, tc.wantCmd)
+		}
+	}
+}
+
+// Anything that is not this exact shape — free text, an unknown action, a
+// malformed object — is reported as not decoded, so the caller falls back to
+// treating the reply as a plain command. This is the compatibility path that
+// keeps every pre-existing scripted test (a bare "DONE" or a bare command
+// string) working without being rewritten for this change.
+func TestDecodeStepDecisionFallsBackOnAnythingElse(t *testing.T) {
+	for _, raw := range []string{
+		"DONE",
+		"UNSUPPORTED",
+		`touch "a.txt"`,
+		`{"action":"maybe","command":"ls"}`,
+		`not json at all`,
+		``,
+	} {
+		if _, ok := decodeStepDecision(raw); ok {
+			t.Errorf("decodeStepDecision(%q) ok = true, want false (fall back to free text)", raw)
+		}
+	}
+}
+
+// scriptedStructuredServer scripts the model's replies as stepFormat JSON
+// instead of bare command strings, so runLoop is exercised against exactly
+// what a real, schema-constrained server sends.
+func scriptedStructuredServer(t *testing.T, decisions ...stepDecision) *httptest.Server {
+	t.Helper()
+	raw := make([]string, len(decisions))
+	for i, d := range decisions {
+		b, err := json.Marshal(d)
+		if err != nil {
+			t.Fatalf("marshal scripted decision: %v", err)
+		}
+		raw[i] = string(b)
+	}
+	return scriptedOllamaServer(t, raw)
+}
+
+func TestRunLoopHandlesAStructuredReplyEndToEnd(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "a.txt")
+
+	server := scriptedStructuredServer(t,
+		stepDecision{Action: "run", Command: fmt.Sprintf("touch %q", target)},
+		stepDecision{Action: "done"},
+	)
+	defer server.Close()
+
+	var out, errOut bytes.Buffer
+	code := runLoop(context.Background(), ollama.New(server.URL), "m", "create a.txt", neverConfirm(t), &out, &errOut, "")
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
+	}
+	if _, err := os.Stat(target); err != nil {
+		t.Errorf("expected %s to have been created: %v", target, err)
+	}
+}
+
+func TestRunLoopHandlesAStructuredUnsupportedReply(t *testing.T) {
+	server := scriptedStructuredServer(t, stepDecision{Action: "unsupported"})
+	defer server.Close()
+
+	var out, errOut bytes.Buffer
+	code := runLoop(context.Background(), ollama.New(server.URL), "m", "edit this image", neverConfirm(t), &out, &errOut, "")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if !strings.Contains(out.String(), "couldn't work out a command") {
+		t.Errorf("stdout missing the unsupported message, got:\n%s", out.String())
+	}
+}
+
+// proposeStep must ask for the structured format on both the non-streaming
+// and the streaming path, so a real server actually constrains the reply.
+func TestProposeStepRequestsTheStepFormat(t *testing.T) {
+	var raw map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&raw)
+		json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: `{"action":"done","command":""}`, Done: true, EvalCount: 1})
+	}))
+	defer server.Close()
+
+	client := ollama.New(server.URL)
+	if _, _, err := proposeStep(context.Background(), client, "m", "task", nil, nil, nil); err != nil {
+		t.Fatalf("proposeStep: %v", err)
+	}
+	if raw["format"] == nil {
+		t.Error("non-streaming propose call did not request the step format")
+	}
+
+	var out bytes.Buffer
+	if _, _, err := proposeStep(context.Background(), client, "m", "task", nil, &out, nil); err != nil {
+		t.Fatalf("proposeStep (streaming): %v", err)
+	}
+	if raw["format"] == nil {
+		t.Error("streaming propose call did not request the step format")
+	}
+}

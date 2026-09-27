@@ -36,6 +36,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"mvdan.cc/sh/v3/syntax"
@@ -83,23 +84,70 @@ Rules:
 // deciding to skip the classifier/confirmation gate for a later step; that
 // gate is enforced by runAdHoc, not by anything the model is trusted to do.
 const loopSystemPrompt = `You are the command translator for a Linux system running Debian 13 (Trixie).
-Output the single next bash command needed to make progress on the task.
+Decide the single next step needed to make progress on the task. Reply with an "action" of "run", "done", or "unsupported":
+- "run": there is a bash command that makes progress. Put it, and only it, in "command" — no explanation, no commentary, no markdown code fences.
+- "done": the steps already run for the CURRENT task have fully accomplished it. Leave "command" empty.
+- "unsupported": the task cannot be done with a shell command at all. Leave "command" empty.
 
 The prompt may contain two clearly separate sections. Do not confuse them:
 - "Earlier in this session" is background from PREVIOUS, ALREADY-FINISHED tasks. Use it only to understand what words like "it", "that", or "the file" refer to. It is NEVER progress on the current task.
 - "Steps already run" is progress on the CURRENT task, and only those steps count toward finishing it.
 
 Rules:
-- Output ONLY the command. No explanation, no commentary, no markdown code fences.
-- If the CURRENT task has no steps run yet, always output a command — never DONE, no matter what earlier tasks did.
-- If the steps already run for the CURRENT task have fully accomplished it, output exactly: DONE
+- If the CURRENT task has no steps run yet, always choose "run" — never "done", no matter what earlier tasks did.
 - Combine steps into one line with pipes or && where you reasonably can, but if a step depends on seeing the result of a previous command first, propose only that next step.
 - Prefer standard, widely available utilities.
 - To find out where you are, run pwd. Never run cd to check: a directory change does not carry over from one command to the next.
 - Commands run in the working directory given below. Words like "here", "this folder", "this directory", or "the current folder" refer to THAT directory: write a relative path or ".", never an absolute path to somewhere else.
 - NEVER output a placeholder path. /path/to/folder, /path/to/file, /your/directory and similar are not real paths and the command will fail. If the task does not name a path, it means the working directory — use a relative path.
-- Do not substitute a well-known system directory for one the task did not mention. "the log files here" means log files in the working directory, not /var/log.
-- If the task cannot be done with a shell command at all, output exactly: UNSUPPORTED`
+- Do not substitute a well-known system directory for one the task did not mention. "the log files here" means log files in the working directory, not /var/log.`
+
+// stepFormat constrains the model's reply for proposeStep to this exact
+// shape, verified against Ollama 0.34's documented structured-output support
+// (a JSON schema in the "format" field of /api/generate). This is what
+// removes a whole class of model-specific parsing bugs found by hand — a
+// stray "$ " copied from an example, markdown fences, restating the command
+// after the DONE sentinel — rather than adding another prompt sentence or
+// text-cleanup rule for each one as it turns up. Any model or server that
+// does not honor it still gets a fair shot: decodeStepDecision falls back to
+// the legacy free-text parse (cleanCommand) when the reply is not valid JSON
+// in this shape, which is also what keeps every scripted test response that
+// predates this unchanged.
+var stepFormat = map[string]any{
+	"type": "object",
+	"properties": map[string]any{
+		"action":  map[string]any{"type": "string", "enum": []string{"run", "done", "unsupported"}},
+		"command": map[string]any{"type": "string"},
+	},
+	"required": []string{"action", "command"},
+}
+
+// stepDecision is stepFormat's Go shape.
+type stepDecision struct {
+	Action  string `json:"action"`
+	Command string `json:"command"`
+}
+
+// decodeStepDecision reads a stepFormat-shaped reply. ok is false when raw is
+// not valid JSON in this shape at all — an older or non-conforming model, or
+// any of the many existing tests that script a bare command string — and the
+// caller falls back to treating raw as free text.
+func decodeStepDecision(raw string) (cmd string, ok bool) {
+	var d stepDecision
+	if err := json.Unmarshal([]byte(strings.TrimSpace(raw)), &d); err != nil {
+		return "", false
+	}
+	switch d.Action {
+	case "run":
+		return cleanCommand(d.Command), true
+	case "done":
+		return doneSentinel, true
+	case "unsupported":
+		return "UNSUPPORTED", true
+	default:
+		return "", false
+	}
+}
 
 // maxLoopSteps hard-caps the ad-hoc path's bounded loop (D21). Reaching the
 // cap is reported as an explicit failure, never silently treated as if the
@@ -1206,19 +1254,23 @@ func proposeStep(ctx context.Context, client *ollama.Client, model, task string,
 	// (docs/interface-modes.md: CLI renders "once generation finishes").
 	// Only a caller that supplies a sink — TUI mode — pays for streaming.
 	if tokenSink == nil {
-		resp, err := client.Generate(reqCtx, model, loopSystemPrompt, prompt, opts)
+		resp, err := client.Generate(reqCtx, model, loopSystemPrompt, prompt, opts, stepFormat)
 		if err != nil {
 			return nil, "", err
 		}
 		calibrate(sc, prompt, resp)
-		return resp, cleanCommand(resp.Response), nil
+		cmd, ok := decodeStepDecision(resp.Response)
+		if !ok {
+			cmd = cleanCommand(resp.Response)
+		}
+		return resp, cmd, nil
 	}
 
 	resp, err := client.GenerateStream(reqCtx, model, loopSystemPrompt, prompt, opts, func(tok string) {
 		// Best effort: a failed write to the UI must never abort a
 		// generation that is otherwise fine.
 		fmt.Fprint(tokenSink, tok)
-	})
+	}, stepFormat)
 	if err != nil {
 		return nil, "", err
 	}
@@ -1228,7 +1280,11 @@ func proposeStep(ctx context.Context, client *ollama.Client, model, task string,
 	// appears on screen, never what gets classified or executed. Combined
 	// with GenerateStream refusing to return a truncated stream at all,
 	// a partial generation can never reach the classifier.
-	return resp, cleanCommand(resp.Response), nil
+	cmd, ok := decodeStepDecision(resp.Response)
+	if !ok {
+		cmd = cleanCommand(resp.Response)
+	}
+	return resp, cmd, nil
 }
 
 // handleMemoryCommand intercepts the two session-memory commands and
