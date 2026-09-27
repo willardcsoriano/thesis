@@ -12,6 +12,8 @@ This file tracks algorithmic ideas noticed while building SynapseOS that are not
   - [2026-09-26 — Confirmation-gate policy as a decision problem](#2026-09-26-confirmation-gate-policy-as-a-decision-problem)
   - [2026-09-26 — Minimal-cost capture plan as a general set-cover instance](#2026-09-26-minimal-cost-capture-plan-as-a-general-set-cover-instance)
   - [2026-09-26 — Provisioning as a dependency-resolution problem](#2026-09-26-provisioning-as-a-dependency-resolution-problem)
+  - [2026-09-27 — Request triage (chatter vs. task vs. unsupported vs. session command)](#2026-09-27-request-triage-chatter-vs-task-vs-unsupported-vs-session-command)
+  - [2026-09-27 — Effect-grounded answering](#2026-09-27-effect-grounded-answering)
 
 ## How to use this
 
@@ -38,3 +40,11 @@ The gate currently asks whenever `class != Recoverable` (strict) or `class == Un
 ### 2026-09-26 — Provisioning as a dependency-resolution problem
 
 `distro/hoard.sh` and the eventual provisioning script are currently a fixed, hand-written manifest (`distro/manifest.tsv`). A real dependency-closure computation (what `apt-get` already does) is the underlying algorithm; we consume it rather than reimplementing it, per the project's "prefer what exists" principle. Not a candidate for a thesis contribution — noted only so it isn't mistaken for one later.
+
+### 2026-09-27 — Request triage (chatter vs. task vs. unsupported vs. session command)
+
+Not pursued, and not a good candidate on its own. Today it is an exact-match table (`answerConversational` in `cmd/synapse/main.go`): a hand-written list, the thing this thesis argues against, and the right cheap answer for a problem this small. A learned router would need data we do not have and would compete with mature intent-classification work. The one property worth keeping is the error asymmetry: swallowing a real task as chatter is dangerous, sending chatter to the model only costs latency (26 s measured on the reference machine under memory pressure), so the router fails toward the model. That mirrors the one-sided soundness rule in the recoverability analysis, but as a design note, not a contribution. Additive at most.
+
+### 2026-09-27 — Effect-grounded answering
+
+The stronger of the two ideas found while testing the TUI, and the one tied to the existing algorithm. Found when "are we in the root dir?" was answered "We are now in the root directory" after `cd /`, which changed nothing: the model narrated a state change that never happened, and nothing checked the claim against reality. The effect analysis already knows what a command actually does (`cd` in a per-step shell persists nothing; a `mv` moves a path; a removal removes one). An answer composed from, or checked against, that effect set instead of the model's free text would make `vision.md`'s principle ("anything I tell you can be traced to a command that actually ran") a property the system verifies rather than one it hopes for. It would share the corpus and oracle machinery (`internal/oracle` already observes real effects) and could be measured the same way: claims of change in an answer versus the observed diff. Additive alongside recoverability, not a replacement, and the one candidate here with a natural evaluation already built. Not started; interim mitigation is the deterministic refusal of a lone `cd` and of `cd … && pwd` (`bareCd`, `cdThenPwd`).
