@@ -438,3 +438,28 @@ func TestMain(m *testing.M) {
 	}
 	os.Exit(m.Run())
 }
+
+// A model that copies a shell prompt from an example produced "$ df -h", which
+// parses as a command named "$" and made the gate ask about nothing real.
+func TestCleanCommandDropsACopiedShellPrompt(t *testing.T) {
+	for in, want := range map[string]string{
+		"$ df -h | grep /home":  "df -h | grep /home",
+		"$ $ ls":                "ls",
+		"```sh\n$ ls -l\n```":   "ls -l",
+		"echo $HOME":            "echo $HOME",
+		"$HOME/bin/tool --flag": "$HOME/bin/tool --flag",
+	} {
+		if got := cleanCommand(in); got != want {
+			t.Errorf("cleanCommand(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestApprovalMessageSaysWhatIsKnown(t *testing.T) {
+	if got := approvalMessage(false, "opaque: unknown command foo"); !strings.Contains(got, "can't tell for certain") || strings.Contains(got, "delete") {
+		t.Errorf("an unanalysed command was described as a deletion:\n%s", got)
+	}
+	if got := approvalMessage(true, "rm can permanently delete files"); !strings.Contains(got, "can't be undone") || !strings.Contains(got, "rm can permanently") {
+		t.Errorf("a known deletion lost its warning or its reason:\n%s", got)
+	}
+}

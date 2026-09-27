@@ -902,13 +902,13 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		if verdict == classifier.Irreversible || (gd != nil && gd.Confirm) {
 			var approvalText string
 			if verdict == classifier.Irreversible {
-				approvalText = "This can't be undone — " + reason
+				approvalText = approvalMessage(true, reason)
 				if cfg.events == nil {
 					fmt.Fprintf(out, "blocked: %s is irreversible — %s\n", cmd, reason)
 				}
 			} else {
 				reason = firstReason(gd)
-				approvalText = "Needs your approval — " + reason
+				approvalText = approvalMessage(gd != nil && gd.Confident, reason)
 				if cfg.events == nil {
 					fmt.Fprintf(out, "blocked: %s needs confirmation — %s\n", cmd, reason)
 				}
@@ -933,7 +933,7 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 					"  If you want the safety net, name the files or folders directly instead.",
 				}
 				if cfg.events != nil {
-					approvalText += "\n" + strings.Join(warning, "\n")
+					approvalText += "\nIf it goes wrong, I may not be able to undo it."
 				} else {
 					fmt.Fprintln(out, strings.Join(warning, "\n"))
 				}
@@ -941,7 +941,11 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			if cfg.events != nil {
 				cfg.events(loopevent.Event{Kind: loopevent.Approval, Step: i, Command: cmd, Text: approvalText})
 			}
-			approved := confirmFn("run it anyway?")
+			prompt := "run it anyway?"
+			if cfg.events != nil {
+				prompt = "Should I go ahead?"
+			}
+			approved := confirmFn(prompt)
 			// Logged for both answers. A declined gate is evidence about
 			// whether the warning is understood, which is exactly what RQ2
 			// asks; recording only approvals would leave that unmeasurable.
@@ -1763,7 +1767,25 @@ func cleanCommand(s string) string {
 		s = strings.TrimSuffix(strings.TrimPrefix(s, "`"), "`")
 		s = strings.TrimSpace(s)
 	}
+	// A shell prompt copied from an example ("$ df -h") is not part of the
+	// command; left in, it parses as a command named "$" and the gate asks
+	// about something that is not there.
+	for strings.HasPrefix(s, "$ ") {
+		s = strings.TrimSpace(strings.TrimPrefix(s, "$ "))
+	}
 	return s
+}
+
+// approvalMessage says in plain words why a command is being held for approval.
+// The technical reason follows in brackets for anyone who wants it. When the
+// analysis could not tell what the command does, that is what is said, rather
+// than an alarm about deleting.
+func approvalMessage(understood bool, reason string) string {
+	head := "This could change or delete something, and it can't be undone."
+	if !understood || strings.HasPrefix(reason, "opaque:") {
+		head = "I can't tell for certain what this would change, so I'm checking with you first."
+	}
+	return head + "\n  (" + reason + ")"
 }
 
 func envOr(key, fallback string) string {
