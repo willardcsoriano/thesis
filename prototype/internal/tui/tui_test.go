@@ -1047,3 +1047,75 @@ func TestMsgWriterEmitsEvents(t *testing.T) {
 		t.Errorf("got %#v", got)
 	}
 }
+
+// --- cancellation honesty (found live 2026-09-28) ---------------------
+//
+// A command that had already run — and possibly changed something — must
+// never be reported as if Ctrl+C stopped it before it happened. Live, a
+// folder-creation task was cancelled while its trailing summary call was
+// still in flight; the folder had already been created, but the transcript
+// led with "Cancelling this task" before the command was even shown,
+// reading as if nothing had run.
+
+// Ctrl+C must not print anything into the scrollback immediately: the
+// in-flight step may finish, or already have, and the real picture is only
+// known once the goroutine actually stops.
+func TestCtrlCPrintsNothingImmediately(t *testing.T) {
+	m, printed := newCaptured()
+	m.running, m.cancelTask = true, func() {}
+	m = step(t, m, ctrlC())
+	if !m.cancelled {
+		t.Error("cancelled flag was not set")
+	}
+	if len(*printed) != 0 {
+		t.Errorf("ctrl+c printed %q before the task actually stopped", *printed)
+	}
+	if v := m.View().Content; !strings.Contains(v, "stopping") {
+		t.Errorf("the live line should say a step is being finished, got:\n%s", v)
+	}
+}
+
+func TestCancelledBeforeAnythingRanSaysSo(t *testing.T) {
+	m, printed := newCaptured()
+	m.running, m.cancelled = true, true
+	m = step(t, m, taskDoneMsg{})
+	got := joined(printed)
+	if !strings.Contains(got, "Cancelled before anything ran") {
+		t.Errorf("got %q", got)
+	}
+}
+
+// The case that matters: a step already completed — and may have changed
+// something — before Ctrl+C landed. That must be shown, not hidden behind a
+// flat "cancelled" line.
+func TestCancelledAfterAStepRanShowsItRatherThanHidingIt(t *testing.T) {
+	m, printed := newCaptured()
+	m.running = true
+	m = step(t, m, command(1, "mkdir hello_world"))
+	m = step(t, m, result("", 0))
+	m.cancelled = true
+	m = step(t, m, taskDoneMsg{})
+	got := joined(printed)
+	if !strings.Contains(got, "$ mkdir hello_world") {
+		t.Errorf("the step that already ran was not shown:\n%s", got)
+	}
+	if !strings.Contains(got, "1 step had already run") {
+		t.Errorf("the cancellation message should say a step already ran:\n%s", got)
+	}
+	// The command must appear before the cancellation notice, not after —
+	// the live-found bug was exactly this ordering.
+	if strings.Index(got, "$ mkdir") > strings.Index(got, "Cancelled") {
+		t.Errorf("cancellation notice printed before the step it refers to:\n%s", got)
+	}
+}
+
+func TestCancelledFlagResetsOnTheNextTask(t *testing.T) {
+	m, _ := newCaptured()
+	m.cancelled = true
+	m.run = noopRunner
+	m.input.SetValue("do a thing")
+	m = step(t, m, enterKey())
+	if m.cancelled {
+		t.Error("a stale cancelled flag from a previous task leaked into the next one")
+	}
+}

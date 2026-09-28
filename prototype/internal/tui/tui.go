@@ -154,6 +154,13 @@ type Model struct {
 	// blockOpen is true once something has been printed for the current task,
 	// so the next block is set apart by a blank line.
 	blockOpen bool
+	// cancelled is set the moment Ctrl+C interrupts a running task, and read
+	// once at taskDoneMsg to decide what to tell the user. It cannot be
+	// decided at the keypress itself: the step already in flight may finish
+	// and even mutate the filesystem before the context cancellation is
+	// noticed, so saying "cancelling" there and nothing more would leave a
+	// completed step looking like it never happened.
+	cancelled bool
 
 	// events carries messages from the running task's goroutine into the
 	// bubbletea event loop. Buffered: the task writes output faster than
@@ -395,7 +402,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			closing = "\n\n"
 		}
 		var tail []tea.Cmd
-		if !m.verbose {
+		if m.cancelled {
+			tail = append(tail, m.cancelNotice())
+		} else if !m.verbose {
 			if !m.cur.answered {
 				tail = append(tail, m.showHidden())
 			} else if n := len(m.cur.steps); n > 0 {
@@ -405,7 +414,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(m.cur.steps) > 0 {
 			m.last = m.cur
 		}
-		m.cur, m.status, m.blockOpen = taskRecord{}, "", false
+		m.cur, m.status, m.blockOpen, m.cancelled = taskRecord{}, "", false, false
 		tail = append(tail, m.appendOutput(closing), waitForEvent(m.events))
 		return m, sequence(tail...)
 	}
@@ -479,7 +488,11 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// it quits, which is what a user expects there.
 		if m.running && m.cancelTask != nil {
 			m.cancelTask()
-			return m, m.say("\nCancelling this task — the session stays open.\n")
+			m.cancelled = true
+			// No scrollback line here on purpose: the in-flight step may
+			// still finish, or already have, and a flat "cancelling" printed
+			// now would misreport that. taskDoneMsg has the real picture.
+			return m, nil
 		}
 		m.quitting = true
 		return m, tea.Quit
@@ -555,6 +568,7 @@ func (m Model) startTask(task string) (tea.Model, tea.Cmd) {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.running = true
 	m.cancelTask = cancel
+	m.cancelled = false // defensive: taskDoneMsg already clears this, but a new task must never start reading a stale flag
 
 	// The echo is queued before the goroutine exists, so it precedes every
 	// line the task writes.
@@ -608,7 +622,11 @@ func (m Model) View() tea.View {
 	case m.pendingConfirm != "":
 		b.WriteString("\n" + confirmStyle.Render(warnGlyph+" "+m.pendingConfirm+"  [y/N]") + "\n")
 	case m.running:
-		b.WriteString("\n" + m.spinner.View() + workingStyle.Render(" working — ctrl+c cancels this task") + "\n")
+		working := " working — ctrl+c cancels this task"
+		if m.cancelled {
+			working = " stopping — finishing the step already in progress"
+		}
+		b.WriteString("\n" + m.spinner.View() + workingStyle.Render(working) + "\n")
 		if m.status != "" {
 			b.WriteString(hintStyle.Render("  $ "+truncateRunes(m.status, max(10, m.width-6))) + "\n")
 		}
@@ -761,6 +779,32 @@ func renderStep(r stepRecord) string {
 		parts = append(parts, renderResult(r))
 	}
 	return strings.Join(parts, "\n")
+}
+
+// cancelNotice reports what Ctrl+C actually interrupted, decided from what is
+// known once the task goroutine has actually stopped rather than guessed at
+// the keypress. A step that had already run — and possibly changed something
+// — is shown before saying so, the same as any other task that ends without
+// an answer (hiddenBefore), so cancelling never reads as "nothing happened"
+// when something did.
+func (m *Model) cancelNotice() tea.Cmd {
+	ran := 0
+	for _, r := range m.cur.steps {
+		if r.ran {
+			ran++
+		}
+	}
+	var text string
+	switch {
+	case m.cur.answered:
+		text = "Cancelled after the answer above — the session stays open."
+	case ran == 0:
+		text = "Cancelled before anything ran — the session stays open."
+	default:
+		text = fmt.Sprintf("Cancelled — %d %s already run and shown above before this was stopped. The session stays open.",
+			ran, plural(ran, "step had", "steps had"))
+	}
+	return sequence(m.hiddenBefore(), m.block(text))
 }
 
 // showHidden prints the steps of this task that the compact view held back, for
