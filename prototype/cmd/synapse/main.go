@@ -218,6 +218,69 @@ func bareCd(cmd string) bool {
 	return false
 }
 
+// interactiveTUIPrograms names programs that take over the whole screen and
+// block waiting for keyboard input — they need a real controlling terminal,
+// which executor.Run does not give them (its stdout/stderr are buffers, not a
+// pty). Running one here fails immediately (`top: failed tty get`) or, worse,
+// hangs until the step timeout. Found live 2026-09-28: asked for CPU usage,
+// the model reached for `top`, watched it fail, then reached for `htop`,
+// which either failed the same way or hung — either way the task burned
+// every step in maxLoopSteps guessing at interactive alternatives instead of
+// the one-shot commands these programs are all built on top of and that work
+// fine headless. The map's value is what to suggest instead, named for the
+// specific program so the model reaches for something that actually answers
+// the same question rather than merely another interactive tool.
+//
+// Deliberately narrow: only programs that are always full-screen with no
+// headless mode in ordinary use. `less` and `man` are left off on purpose —
+// both already detect a non-terminal stdout and behave non-interactively in
+// that case, so blocking them would refuse commands that work.
+var interactiveTUIPrograms = map[string]string{
+	"top":    "top -bn1 (one batch snapshot instead of the live display)",
+	"htop":   "ps aux --sort=-%cpu | head (or top -bn1) — htop has no headless mode",
+	"vi":     "cat, or a non-interactive editor invocation such as sed -i, for reading or changing a file without opening an editor",
+	"vim":    "cat, or a non-interactive editor invocation such as sed -i, for reading or changing a file without opening an editor",
+	"nvim":   "cat, or a non-interactive editor invocation such as sed -i, for reading or changing a file without opening an editor",
+	"nano":   "cat, or a non-interactive editor invocation such as sed -i, for reading or changing a file without opening an editor",
+	"emacs":  "cat, or a non-interactive editor invocation such as sed -i, for reading or changing a file without opening an editor",
+	"pico":   "cat, or a non-interactive editor invocation such as sed -i, for reading or changing a file without opening an editor",
+	"joe":    "cat, or a non-interactive editor invocation such as sed -i, for reading or changing a file without opening an editor",
+	"watch":  "the command being watched, run once, since watch's own display needs a terminal",
+	"tmux":   "the command intended to run inside it, run directly — a new session cannot be attached to here",
+	"screen": "the command intended to run inside it, run directly — a new session cannot be attached to here",
+	"mc":     "ls, find, cp, or mv directly — mc is a full-screen file manager",
+	"ranger": "ls or find directly — ranger is a full-screen file manager",
+}
+
+// interactiveProgram reports whether cmd invokes a program from
+// interactiveTUIPrograms anywhere in its structure — as the whole command, one
+// side of a pipeline, or one statement in a list — and returns that program's
+// name and suggested alternative. syntax.Walk visits every node, so this
+// catches `ps aux | less` -style composition without hand-rolling a second
+// traversal alongside cdThenPwd's.
+func interactiveProgram(cmd string) (name, alternative string, found bool) {
+	f, err := syntax.NewParser(syntax.Variant(syntax.LangBash)).Parse(strings.NewReader(cmd), "")
+	if err != nil {
+		return "", "", false
+	}
+	syntax.Walk(f, func(n syntax.Node) bool {
+		if found {
+			return false
+		}
+		call, ok := n.(*syntax.CallExpr)
+		if !ok || len(call.Args) == 0 {
+			return true
+		}
+		word := call.Args[0].Lit()
+		if alt, ok := interactiveTUIPrograms[word]; ok {
+			name, alternative, found = word, alt, true
+			return false
+		}
+		return true
+	})
+	return name, alternative, found
+}
+
 // cdThenPwd reports whether cmd is a chain that starts by changing directory and
 // ends by printing it (`cd / && pwd`). It looks like a way of asking where the
 // session is and is the opposite: pwd only echoes wherever the cd just went, so
@@ -936,6 +999,22 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		if bareCd(cmd) || cdThenPwd(cmd) {
 			note := "cd only changes the directory of the shell that runs it, so it cannot move this session, which stays in " +
 				wd + ", and pwd right after a cd just repeats where the cd went. To look somewhere else, name the path in the command (for example ls /some/folder); to see where this session is, run pwd on its own."
+			if cfg.events != nil {
+				cfg.events(loopevent.Event{Kind: loopevent.Result, Step: i, Command: cmd, Stderr: note, ExitCode: 1, NotRun: true})
+			} else {
+				fmt.Fprintf(out, "not run: %s\n%s\n", cmd, note)
+			}
+			cfg.telemetry.CommandResult(cfg.taskID, i, cmd, telemetry.CommandOutcome{ExitCode: 1, RawExitCode: 1})
+			history = append(history, loopStep{command: cmd, result: executor.Result{Stderr: note, ExitCode: 1, RawExitCode: 1}})
+			continue
+		}
+
+		// A full-screen program has nothing to run against here — see
+		// interactiveTUIPrograms. Refused the same way a bare cd is: reported
+		// as a failed step with a working alternative, so the next proposal
+		// has something to act on instead of repeating the same dead end.
+		if prog, alt, ok := interactiveProgram(cmd); ok {
+			note := prog + " needs an interactive terminal, which is not available here, so it cannot run. Use " + alt + "."
 			if cfg.events != nil {
 				cfg.events(loopevent.Event{Kind: loopevent.Result, Step: i, Command: cmd, Stderr: note, ExitCode: 1, NotRun: true})
 			} else {

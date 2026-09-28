@@ -1671,3 +1671,78 @@ func TestProposeStepRequestsTheStepFormat(t *testing.T) {
 		t.Error("streaming propose call did not request the step format")
 	}
 }
+
+// --- interactive/full-screen programs (found live 2026-09-28) ------------
+//
+// executor.Run gives a command buffers for stdout/stderr, not a controlling
+// terminal. A full-screen program fails immediately or hangs to the step
+// timeout either way. Live, asked for CPU usage, the model reached for top
+// (failed with "top: failed tty get"), then htop, and burned every step in
+// maxLoopSteps guessing at interactive alternatives with nothing to show
+// for it.
+
+func TestInteractiveProgramDetectsKnownTUIPrograms(t *testing.T) {
+	cases := []struct {
+		cmd      string
+		wantProg string
+		wantOK   bool
+	}{
+		{"top", "top", true},
+		{"htop", "htop", true},
+		{"ps aux | less", "", false}, // less is deliberately not on the list
+		{"ps aux | htop", "htop", true},
+		{"top -bn1", "top", true}, // still refused; the flag alone doesn't make it headless
+		{"vim notes.txt", "vim", true},
+		{"echo top", "", false}, // "top" as an argument, not the program
+		{"ls -la", "", false},
+	}
+	for _, tc := range cases {
+		prog, alt, ok := interactiveProgram(tc.cmd)
+		if ok != tc.wantOK || (ok && prog != tc.wantProg) {
+			t.Errorf("interactiveProgram(%q) = (%q, ok=%v), want (%q, ok=%v)", tc.cmd, prog, ok, tc.wantProg, tc.wantOK)
+		}
+		if ok && alt == "" {
+			t.Errorf("interactiveProgram(%q) returned no suggested alternative", tc.cmd)
+		}
+	}
+}
+
+func TestRunLoopRefusesAnInteractiveProgramAndSuggestsAnAlternative(t *testing.T) {
+	server := scriptedOllamaServer(t, []string{"top", "DONE"})
+	defer server.Close()
+
+	var out, errOut bytes.Buffer
+	code := runLoop(context.Background(), ollama.New(server.URL), "m", "what is my cpu usage?", neverConfirm(t), &out, &errOut, "")
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
+	}
+	got := out.String()
+	if !strings.Contains(got, "not run: top") {
+		t.Errorf("top should have been refused rather than executed, got:\n%s", got)
+	}
+	if !strings.Contains(got, "top -bn1") {
+		t.Errorf("the refusal should suggest the non-interactive alternative, got:\n%s", got)
+	}
+}
+
+func TestRunLoopRefusalAsEventsCarriesTheAlternative(t *testing.T) {
+	server := scriptedOllamaServer(t, []string{"htop", "DONE"})
+	defer server.Close()
+
+	evs, opt := collectEvents()
+	var out, errOut bytes.Buffer
+	runLoop(context.Background(), ollama.New(server.URL), "m", "cpu usage", neverConfirm(t), &out, &errOut, "", opt)
+	// The command that was chosen is still announced (Command), the same as any
+	// other step; what differs is that its Result says it was never run.
+	want := []loopevent.Kind{loopevent.Command, loopevent.Result, loopevent.Answer}
+	if got := kinds(*evs); !reflect.DeepEqual(got, want) {
+		t.Fatalf("event kinds = %v, want %v", got, want)
+	}
+	res := (*evs)[1]
+	if !res.NotRun {
+		t.Errorf("result event NotRun = false, want true: %+v", res)
+	}
+	if !strings.Contains(res.Stderr, "ps aux") {
+		t.Errorf("result event stderr = %q, want the suggested alternative", res.Stderr)
+	}
+}
