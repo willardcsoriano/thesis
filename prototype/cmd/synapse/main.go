@@ -100,7 +100,8 @@ Rules:
 - To find out where you are, run pwd. Never run cd to check: a directory change does not carry over from one command to the next.
 - Commands run in the working directory given below. Words like "here", "this folder", "this directory", or "the current folder" refer to THAT directory: write a relative path or ".", never an absolute path to somewhere else.
 - NEVER output a placeholder path. /path/to/folder, /path/to/file, /your/directory and similar are not real paths and the command will fail. If the task does not name a path, it means the working directory — use a relative path.
-- Do not substitute a well-known system directory for one the task did not mention. "the log files here" means log files in the working directory, not /var/log.`
+- Do not substitute a well-known system directory for one the task did not mention. "the log files here" means log files in the working directory, not /var/log.
+- If the request asks about more than one distinct thing, only choose "done" once a step already run has checked each of them — a step that answers one part of the request does not make the others done.`
 
 // stepFormat constrains the model's reply for proposeStep to this exact
 // shape, verified against Ollama 0.34's documented structured-output support
@@ -1493,6 +1494,8 @@ Rules:
 - If the commands produced no output and succeeded, say what was done.
 - If the task did not succeed, say plainly what went wrong.
 - Do not describe which commands ran, and do not mention the shell.
+- A command's output describes only what that command actually queried. Do not attribute a value in it to something else the request asked about, even if the request mentioned several things and the output happens to have several values — check what the command itself did before deciding what a value means.
+- If the request asked about more than one thing and the commands above only cover some of them, say what you can from the output and say plainly that the rest was not checked, instead of guessing.
 - No markdown, no code blocks, no preamble, no sign-off.
 
 Examples:
@@ -1511,7 +1514,12 @@ Reply: This folder contains one file, renamed.txt.
 
 Request: list the contents of a folder called archives
 Output: ls: cannot access 'archives': No such file or directory
-Reply: There is no folder called archives here.`
+Reply: There is no folder called archives here.
+
+Request: how much ram is in use and how much disk space is left
+Commands: free -h | grep Mem | awk '{print $3, $4}'
+Output: 5.9Gi 528Mi
+Reply: 5.9GiB of RAM is currently in use (528MiB free), but disk space was not checked, so I can't answer that part.`
 
 // answerFromHistory turns what actually happened into a sentence the user can
 // read, which is the difference between a system that executes and one that

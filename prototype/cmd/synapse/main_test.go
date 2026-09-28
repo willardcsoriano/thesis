@@ -463,3 +463,29 @@ func TestApprovalMessageSaysWhatIsKnown(t *testing.T) {
 		t.Errorf("a known deletion lost its warning or its reason:\n%s", got)
 	}
 }
+
+// TestLoopSystemPromptRequiresFullCoverageBeforeDone guards the rule found
+// live 2026-09-27: asked for RAM usage and remaining disk space, the loop
+// ran only a memory command, decided "done", and the answer stated a disk
+// figure that was never checked (open-problems.md row 39).
+func TestLoopSystemPromptRequiresFullCoverageBeforeDone(t *testing.T) {
+	if !strings.Contains(loopSystemPrompt, "more than one distinct thing") {
+		t.Error("loopSystemPrompt no longer requires covering every part of a multi-part request before done")
+	}
+}
+
+// TestAnswerSystemPromptForbidsMisattributingValues guards the other half of
+// the same live-found bug: the answer step relabelled a memory command's
+// second column as free disk space. The rule and its worked example must
+// both survive.
+func TestAnswerSystemPromptForbidsMisattributingValues(t *testing.T) {
+	for _, want := range []string{
+		"describes only what that command actually queried",
+		"say plainly that the rest was not checked",
+		"disk space was not checked",
+	} {
+		if !strings.Contains(answerSystemPrompt, want) {
+			t.Errorf("answerSystemPrompt no longer mentions %q; the grounding rule has been weakened", want)
+		}
+	}
+}
