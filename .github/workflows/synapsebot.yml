@@ -33,9 +33,6 @@ jobs:
           cache-dependency-path: synapsebot/package-lock.json
       - run: npm ci
       # Builds the corpus (with its private-data check), typechecks, runs the
-      # unit tests and the free retrieval eval. No API key, no model calls.
+      # unit tests and the free retrieval eval, and loads the Vercel entry as
+      # plain Node ESM. No API key, no model calls.
       - run: npm run ci
-      - name: Worker bundles
-        run: npx wrangler deploy --dry-run --outdir "$RUNNER_TEMP/bundle"
-        env:
-          WRANGLER_SEND_METRICS: "false"
