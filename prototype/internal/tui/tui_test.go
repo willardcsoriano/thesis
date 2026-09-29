@@ -1119,3 +1119,110 @@ func TestCancelledFlagResetsOnTheNextTask(t *testing.T) {
 		t.Error("a stale cancelled flag from a previous task leaked into the next one")
 	}
 }
+
+// --- neat mode (purely a rendering choice; memory is unaffected) ---------
+
+// While neat is on, nothing reaches the scrollback: everything the task
+// writes is drawn in the live region instead.
+func TestNeatModeKeepsOutputOffTheScrollback(t *testing.T) {
+	m, printed := newCaptured()
+	m.neat = true
+	m.running = true
+	for _, msg := range []tea.Msg{command(1, "ls /tmp"), result("a\n", 0), answer("One file."), taskDoneMsg{}} {
+		m = step(t, m, msg)
+	}
+	if len(*printed) != 0 {
+		t.Errorf("neat mode printed to the scrollback: %q", *printed)
+	}
+	if v := m.View().Content; !strings.Contains(v, "One file.") {
+		t.Errorf("the live region should show the answer, got:\n%s", v)
+	}
+}
+
+// The whole point: starting a new task drops the previous turn from the live
+// region rather than appending to it.
+func TestNeatModeReplacesThePreviousTurnOnANewTask(t *testing.T) {
+	m, _ := newCaptured()
+	m.neat = true
+	m.run = noopRunner
+	m.running = true
+	for _, msg := range []tea.Msg{command(1, "ls /tmp"), result("a\n", 0), answer("One file."), taskDoneMsg{}} {
+		m = step(t, m, msg)
+	}
+	if !strings.Contains(m.View().Content, "One file.") {
+		t.Fatal("setup failed: the first turn's answer should still be showing")
+	}
+
+	m.input.SetValue("second task")
+	m = step(t, m, enterKey())
+	m = step(t, m, <-m.events) // drain the echo
+	if strings.Contains(m.View().Content, "One file.") {
+		t.Errorf("the previous turn is still showing after a new task started:\n%s", m.View().Content)
+	}
+	if !strings.Contains(m.View().Content, "> second task") {
+		t.Errorf("the new task's echo should be showing, got:\n%s", m.View().Content)
+	}
+}
+
+// Toggling neat mode itself always reaches the scrollback — it is a note
+// about the UI, not part of the conversation neat mode trims — and it works
+// in both directions.
+func TestNeatCommandTogglesAndAlwaysPrintsToScrollback(t *testing.T) {
+	m, printed := newCaptured()
+	m.input.SetValue("neat")
+	m = step(t, m, enterKey())
+	if !m.neat {
+		t.Fatal("neat command did not turn the mode on")
+	}
+	if len(*printed) != 1 || !strings.Contains((*printed)[0], "Neat mode on") {
+		t.Errorf("printed = %q", *printed)
+	}
+
+	m.input.SetValue("neat")
+	m = step(t, m, enterKey())
+	if m.neat {
+		t.Fatal("a second neat command did not turn the mode off")
+	}
+	if len(*printed) != 2 || !strings.Contains((*printed)[1], "Neat mode off") {
+		t.Errorf("printed = %q", *printed)
+	}
+}
+
+// Turning neat mode off mid-session must not retroactively dump the trimmed
+// history into the scrollback — the trade was made per turn, on purpose.
+func TestTurningNeatOffDoesNotBackfillScrollback(t *testing.T) {
+	m, printed := newCaptured()
+	m.neat = true
+	m.running = true
+	for _, msg := range []tea.Msg{command(1, "ls /tmp"), result("a\n", 0), answer("One file."), taskDoneMsg{}} {
+		m = step(t, m, msg)
+	}
+	m.input.SetValue("neat")
+	m = step(t, m, enterKey())
+	all := joined(printed)
+	if strings.Contains(all, "One file.") {
+		t.Errorf("turning neat off backfilled trimmed history into the scrollback:\n%s", all)
+	}
+}
+
+// Ctrl+O is unaffected by neat mode: it still expands the current turn's
+// detail, just in the live region instead of the scrollback.
+func TestCtrlOStillWorksInNeatMode(t *testing.T) {
+	m, printed := newCaptured()
+	m.neat = true
+	m.running = true
+	for _, msg := range []tea.Msg{command(1, "ls /tmp"), result("a\n", 0), answer("One file."), taskDoneMsg{}} {
+		m = step(t, m, msg)
+	}
+	m = step(t, m, tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtrl})
+	m = step(t, m, <-m.events)
+	if !m.verbose {
+		t.Fatal("ctrl+o did not turn details on in neat mode")
+	}
+	if len(*printed) != 0 {
+		t.Errorf("details leaked into the scrollback while neat mode was on: %q", *printed)
+	}
+	if v := m.View().Content; !strings.Contains(v, "$ ls /tmp") {
+		t.Errorf("details should show in the live region, got:\n%s", v)
+	}
+}

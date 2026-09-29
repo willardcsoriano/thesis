@@ -629,3 +629,17 @@ The task loop used to narrate everything as text on one `io.Writer`. A writer th
 **What was rejected.** Hand-tuning the prompt further for each new model-specific failure as it appears — the pattern this decision replaces — and pursuing a "confirmation-gate policy that learns from the user" or similar per-model tuning, both logged as candidates in `candidate-algorithms.md` and left there deliberately: they add per-model state instead of removing the need for it.
 
 **What is still open.** Answer text itself is still free-form generation, unconstrained and unverified against what actually ran (row 39). Extending schema-constrained output to the answer step, or to the effect-grounded-answering candidate, is not done.
+
+---
+
+### D41 — Neat mode: an opt-in toggle that shows only the latest exchange, purely a rendering choice
+
+**Status:** Decided 2026-09-29, following a user request to keep the screen from "lengthening" as a session goes on.
+
+Typing `neat` toggles a mode where a new task discards the previous turn from view instead of adding to it — the live region shows only the current exchange plus the prompt, closer to how a single-card chat UI looks. Off by default.
+
+**Why this doesn't reopen D38.** D38 moved finished output into the terminal's own scrollback specifically so the whole conversation could be scrolled and copied natively, after an alternate-screen viewport made only on-screen text selectable. Neat mode does not touch that default, and it does not resurrect the alternate screen either: it keeps content inside the same live-redrawn region the partial line and status line already use, just retaining the current turn's rendered lines instead of committing them to scrollback via `tea.Println`. Turning it on trades away scrollback-and-copy for the current turn, in exchange for a screen that never grows — the same trade D38 removed as the default, offered back only as an explicit, reversible choice. Mode-switch confirmations ("Neat mode on/off") always print to scrollback regardless, since they're notes about the UI, not part of the conversation being trimmed.
+
+**What it does not touch.** Session memory (`internal/session`, D10) — what the model remembers between tasks — is unaffected either way; this is a display change only, confirmed by an explicit user question distinguishing "render only the latest turn" from "the model should forget everything," which was rejected (see below). Ctrl+O (D39) works identically inside neat mode: it expands the current turn's command detail in place rather than printing it below.
+
+**Rejected.** Making the session itself stateless ("like a calculator," no memory between tasks) to achieve a similar clean look. That is what CLI mode already does (D19), by design, for scriptability — but a TUI/REPL session losing pronoun resolution ("move it to Downloads") is a materially bigger trade than a display toggle, and no reason to want it was given beyond wanting a tidy screen, which neat mode already answers without the cost.

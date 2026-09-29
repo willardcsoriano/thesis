@@ -162,6 +162,20 @@ type Model struct {
 	// completed step looking like it never happened.
 	cancelled bool
 
+	// neat, when on, keeps only the latest exchange on screen: emit draws into
+	// neatLines instead of committing to the terminal's scrollback, and a new
+	// task discards the previous turn's lines instead of appending to them.
+	// Off by default — D38 moved finished output into scrollback specifically
+	// so the whole conversation could be scrolled and copied natively, and
+	// neat mode deliberately gives that up for a clean, unchanging window
+	// instead. Purely a rendering choice: session memory (what the model
+	// remembers) is unaffected either way, and Ctrl+O still works, showing
+	// the current turn's detail in place rather than printing it below.
+	neat bool
+	// neatLines holds the current turn's rendered blocks while neat is on, in
+	// the order emit received them.
+	neatLines []string
+
 	// events carries messages from the running task's goroutine into the
 	// bubbletea event loop. Buffered: the task writes output faster than
 	// Update consumes it, and a full buffer should apply backpressure to
@@ -231,6 +245,7 @@ func NewModel(run TaskRunner) Model {
 			hintStyle.Render("Type a task and press enter. Ctrl+C cancels a running task; at an idle prompt it quits."),
 			hintStyle.Render("Ctrl+O shows or hides the commands behind each answer. Scroll and select text with the terminal as usual."),
 			hintStyle.Render("Follow-ups can refer back (\"move it to Downloads\"). Type context to see what's remembered, clear to forget it."),
+			hintStyle.Render("Type neat for a mode that shows only the latest exchange instead of the full scrollback."),
 		}, "\n"),
 	}
 }
@@ -267,14 +282,40 @@ func waitForEvent(ch <-chan tea.Msg) tea.Cmd {
 	return func() tea.Msg { return <-ch }
 }
 
-// emit returns a command that prints text into the scrollback. An empty text
-// prints a blank line, which needs a placeholder because Println of nothing
-// prints nothing.
-func (m Model) emit(text string) tea.Cmd {
+// emit prints text into the scrollback, or — in neat mode — adds it to the
+// current turn's live content instead, returning no command since nothing
+// needs to reach the terminal until the next redraw. An empty text becomes a
+// placeholder space, which Println needs to still emit a blank line.
+func (m *Model) emit(text string) tea.Cmd {
 	if text == "" {
 		text = " "
 	}
+	if m.neat {
+		m.neatLines = append(m.neatLines, text)
+		return nil
+	}
 	return m.print(text)
+}
+
+// renderNeat renders the current turn's accumulated blocks for the live
+// region, wrapped the same way the partial line is: this content is now
+// inside the redrawn area, not the terminal's own scrollback, so bubbletea
+// has to know its true row count. Lines already carry lipgloss styling by the
+// time they arrive here, and wrapping counts those escape codes as width —
+// the visible line can end up wrapped a little earlier than strictly
+// necessary, never garbled, which is an acceptable trade for not building a
+// second, ANSI-aware wrapper for a secondary display mode.
+func (m Model) renderNeat() string {
+	if len(m.neatLines) == 0 {
+		return ""
+	}
+	var out []string
+	for _, block := range m.neatLines {
+		for _, line := range strings.Split(block, "\n") {
+			out = append(out, wrapLine(line, m.width)...)
+		}
+	}
+	return strings.Join(out, "\n") + "\n"
 }
 
 // sequence runs the non-nil commands one after another. tea.Batch would run
@@ -539,6 +580,17 @@ func (m Model) handleKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if strings.EqualFold(task, "mouse") {
 			return m, m.say("mouse: nothing to toggle — the terminal's own scrolling and selection are always on.\n")
 		}
+		// Toggled here, not through say/emit: this is a note about the UI
+		// itself, not part of the conversation neat mode is trimming, so it
+		// always reaches the scrollback and is never lost when neat turns on.
+		if strings.EqualFold(task, "neat") {
+			m.neat = !m.neat
+			m.neatLines = nil
+			if m.neat {
+				return m, m.print("Neat mode on — only the latest exchange stays on screen. Type neat again to turn it off.")
+			}
+			return m, m.print("Neat mode off — the terminal's own scrollback shows everything again.")
+		}
 		return m.startTask(task)
 	}
 
@@ -569,6 +621,12 @@ func (m Model) startTask(task string) (tea.Model, tea.Cmd) {
 	m.running = true
 	m.cancelTask = cancel
 	m.cancelled = false // defensive: taskDoneMsg already clears this, but a new task must never start reading a stale flag
+	if m.neat {
+		// The previous turn stays visible until this moment on purpose — a
+		// user reading the last answer should not see it vanish before they
+		// have even asked the next question.
+		m.neatLines = nil
+	}
 
 	// The echo is queued before the goroutine exists, so it precedes every
 	// line the task writes.
@@ -613,6 +671,10 @@ func (m Model) View() tea.View {
 	}
 
 	var b strings.Builder
+
+	if m.neat {
+		b.WriteString(m.renderNeat())
+	}
 
 	if m.partial != "" {
 		b.WriteString(strings.Join(wrapLine(m.partial, m.width), "\n") + "\n")
