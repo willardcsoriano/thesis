@@ -2,6 +2,7 @@ package session
 
 import (
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -218,4 +219,140 @@ func TestTruncate(t *testing.T) {
 	if !strings.Contains(got, "truncated") {
 		t.Errorf("truncate should mark that it cut, got %q", got)
 	}
+}
+
+// --- summarization seam (Snapshot/Compact/ApproachingLimit) --------------
+//
+// This package has no model, so it cannot summarize itself — these three
+// methods are the seam a caller with a model uses instead. The tests below
+// exercise the seam with a fake summarizer (plain string concatenation),
+// never a real one; cmd/synapse's own tests cover the real prompt/call.
+
+func TestApproachingLimitIsFalseWithFewerThanTwoTurns(t *testing.T) {
+	c := NewWithBudget(50, 200)
+	if c.ApproachingLimit() {
+		t.Error("an empty history should never approach the limit")
+	}
+	c.Append("one task", steps("ls", "a\nb\nc\nd\ne\nf\ng\nh\ni\nj"))
+	if c.ApproachingLimit() {
+		t.Error("a single turn is never summarized away, so it should never report approaching the limit")
+	}
+}
+
+func TestApproachingLimitTurnsTrueBeforeTrimWouldDropAnything(t *testing.T) {
+	c := NewWithBudget(500, 200)
+	for i := 0; i < 100; i++ {
+		c.Append("task", steps("ls", "some reasonably sized output right here, long enough to add up"))
+		if c.Len() < 2 {
+			continue
+		}
+		if c.ApproachingLimit() {
+			// Found the crossover; the budget must not have been exceeded yet,
+			// or trim would already have dropped a turn instead.
+			if n := c.TakeDropped(); n != 0 {
+				t.Errorf("trim already dropped %d turn(s) before ApproachingLimit ever reported true — the proactive threshold fired too late to matter", n)
+			}
+			return
+		}
+	}
+	t.Fatal("ApproachingLimit never became true across a growing history")
+}
+
+func TestSnapshotExcludesTheKeptTurnsAndCompactFoldsExactlyThem(t *testing.T) {
+	c := New()
+	c.Append("first task", steps("ls", "a"))
+	c.Append("second task", steps("ls", "b"))
+	c.Append("third task", steps("ls", "c"))
+
+	text, gen, ok := c.Snapshot(1)
+	if !ok {
+		t.Fatal("Snapshot reported nothing to summarize with 3 turns and keep=1")
+	}
+	if strings.Contains(text, "third task") {
+		t.Errorf("snapshot included the kept newest turn:\n%s", text)
+	}
+	if !strings.Contains(text, "first task") || !strings.Contains(text, "second task") {
+		t.Errorf("snapshot missing an older turn:\n%s", text)
+	}
+
+	if !c.Compact(gen, 1, "condensed: did two earlier things") {
+		t.Fatal("Compact did not apply against a fresh, unchanged snapshot")
+	}
+	got := c.Render()
+	if !strings.Contains(got, "condensed: did two earlier things") {
+		t.Errorf("render missing the summary:\n%s", got)
+	}
+	if strings.Contains(got, "first task") || strings.Contains(got, "second task") {
+		t.Errorf("compacted turns still appear verbatim:\n%s", got)
+	}
+	if !strings.Contains(got, "third task") {
+		t.Errorf("the kept newest turn is missing after compaction:\n%s", got)
+	}
+	if n := c.TakeCompacted(); n != 2 {
+		t.Errorf("TakeCompacted = %d, want 2", n)
+	}
+}
+
+// The case Compact exists to guard: history changed while a background
+// summary was being produced. The summary must not silently overwrite turns
+// it no longer describes.
+func TestCompactIsANoOpAgainstAStaleGeneration(t *testing.T) {
+	c := New()
+	c.Append("first task", steps("ls", "a"))
+	c.Append("second task", steps("ls", "b"))
+	_, staleGen, ok := c.Snapshot(1)
+	if !ok {
+		t.Fatal("setup: expected something to snapshot")
+	}
+
+	// History moves on before the summary comes back — a new turn arrives.
+	c.Append("third task", steps("ls", "c"))
+
+	if c.Compact(staleGen, 1, "a stale summary") {
+		t.Fatal("Compact applied against a generation that was no longer current")
+	}
+	got := c.Render()
+	if strings.Contains(got, "stale summary") {
+		t.Errorf("a stale summary was applied anyway:\n%s", got)
+	}
+	if !strings.Contains(got, "first task") {
+		t.Errorf("history was corrupted by the rejected stale compact:\n%s", got)
+	}
+}
+
+func TestCompactRejectsAnEmptySummary(t *testing.T) {
+	c := New()
+	c.Append("first task", steps("ls", "a"))
+	c.Append("second task", steps("ls", "b"))
+	_, gen, _ := c.Snapshot(1)
+	if c.Compact(gen, 1, "   ") {
+		t.Error("an empty (whitespace-only) summary must not replace real history")
+	}
+}
+
+// The concrete failure mode this package exists to prevent: a background
+// summarizer and a foreground Append racing on the same history must never
+// corrupt it, whichever wins.
+func TestAppendAndCompactAreSafeForConcurrentUse(t *testing.T) {
+	c := New()
+	c.Append("seed task", steps("ls", "seed"))
+
+	var wg sync.WaitGroup
+	for i := 0; i < 20; i++ {
+		wg.Add(2)
+		go func(n int) {
+			defer wg.Done()
+			c.Append("concurrent task", steps("ls", "output"))
+		}(i)
+		go func() {
+			defer wg.Done()
+			if text, gen, ok := c.Snapshot(1); ok {
+				c.Compact(gen, 1, "summary of: "+text[:min(10, len(text))])
+			}
+		}()
+	}
+	wg.Wait()
+	// Survives under -race and returns something coherent; the exact final
+	// shape depends on scheduling and is not itself asserted.
+	_ = c.Render()
 }

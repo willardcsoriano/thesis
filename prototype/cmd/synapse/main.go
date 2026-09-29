@@ -362,6 +362,64 @@ const answerOutputChars = 2000
 // never to a slow task.
 const answerTimeout = 30 * time.Second
 
+// compactSystemPrompt drives the background call that condenses older
+// session history (D42). It is deliberately not the same prompt as
+// answerSystemPrompt: that one writes for the person; this one writes for a
+// later call to this same model, so the audience, and therefore what is
+// worth keeping, differs — a follow-up needs the referent, not a pleasant
+// sentence.
+const compactSystemPrompt = `You are condensing the older part of a conversation with a command-line assistant, so a later request can still resolve references like "it", "that file", or "the folder" without the original turns.
+
+Write a short paragraph naming what was done and any file, folder, package, or other resource a later request might refer back to. Do not narrate the commands themselves or their exit codes — only what changed and what it is called.
+
+No markdown, no preamble, no sign-off.`
+
+// compactKeepTurns is how many of the newest turns are always kept verbatim
+// and never handed to the summarizer — session.Context.trim already assumes
+// a follow-up overwhelmingly refers to the turn immediately before it, and
+// summarizing that one away would defeat the reason it is kept at all.
+const compactKeepTurns = 1
+
+// compactionTimeout bounds the background summarization call. Generous
+// relative to a normal step, deliberately: nothing in the foreground is
+// waiting on it, so failing slow only costs a missed compaction this time —
+// trim's ordinary drop-oldest behavior still protects the budget — never a
+// delayed answer to the task the person actually asked for.
+const compactionTimeout = 90 * time.Second
+
+// maybeCompact starts summarizing older session history in the background
+// once it is close to its budget, so a later turn does not have to be
+// dropped outright with nothing kept of it. It never blocks the caller: the
+// entire point is that summarizing costs a model call, and paying that cost
+// synchronously would bother the user with exactly the slowness this exists
+// to avoid. Best effort throughout — sc.Compact silently discards a summary
+// that arrives after history has moved on (see its own doc comment), and a
+// failed or slow call here simply means trim's free, immediate fallback
+// keeps doing the job alone, same as before this existed.
+func maybeCompact(client *ollama.Client, model string, sc *session.Context) {
+	if sc == nil || !sc.ApproachingLimit() {
+		return
+	}
+	text, gen, ok := sc.Snapshot(compactKeepTurns)
+	if !ok {
+		return
+	}
+	go func() {
+		// context.Background, not the task's own ctx: the task's context is
+		// cancelled the moment the task's goroutine returns (startTask's
+		// deferred cancel), which is at most a few lines of code after this
+		// goroutine is spawned — using it here would race the summarization
+		// call against its own cancellation almost every time.
+		ctx, cancel := context.WithTimeout(context.Background(), compactionTimeout)
+		defer cancel()
+		resp, err := client.Generate(ctx, model, compactSystemPrompt, text, generationOptions())
+		if err != nil {
+			return
+		}
+		sc.Compact(gen, compactKeepTurns, resp.Response)
+	}()
+}
+
 // sampleSuite is a first pass across the four task categories the study covers
 // (scope.md → Custom cross-platform task suite). It is a smoke test for
 // eyeballing quality, not the real study suite.
@@ -858,10 +916,19 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 				})
 			}
 			cfg.session.Append(task, steps)
+			// Compacted is drained first: a background Compact from an
+			// earlier turn can land in the gap between this Append and this
+			// report, and a compaction that happened must not be reported as
+			// a silent drop just because it was noticed a turn late.
+			if n := cfg.session.TakeCompacted(); n > 0 {
+				text := fmt.Sprintf("Condensed %d older turn(s) into a short summary to stay within the context budget.", n)
+				cfg.note(out, text, fmt.Sprintf("note: condensed %d older turn(s) into a summary to stay within the context budget.\n", n))
+			}
 			if n := cfg.session.TakeDropped(); n > 0 {
 				text := fmt.Sprintf("Dropped %d older turn(s) from memory to stay within the context budget.", n)
 				cfg.note(out, text, fmt.Sprintf("note: dropped %d older turn(s) from memory to stay within the context budget.\n", n))
 			}
+			maybeCompact(client, model, cfg.session)
 		}()
 	}
 

@@ -17,6 +17,7 @@ import (
 	"synapseos/internal/loopevent"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"synapseos/internal/executor"
 	"synapseos/internal/ollama"
@@ -1744,5 +1745,135 @@ func TestRunLoopRefusalAsEventsCarriesTheAlternative(t *testing.T) {
 	}
 	if !strings.Contains(res.Stderr, "ps aux") {
 		t.Errorf("result event stderr = %q, want the suggested alternative", res.Stderr)
+	}
+}
+
+// --- background session compaction (D42) ----------------------------------
+
+// compactionAwareServer answers all three call shapes a session-carrying task
+// can produce — the propose step, the plain-language answer, and (new) the
+// background compaction call — routed by which system prompt the request
+// carries, since that is the one thing that reliably distinguishes them.
+// compactCalls counts how many times the compaction prompt specifically was
+// received, so a test can assert whether the background call happened at all
+// without racing on it.
+func compactionAwareServer(t *testing.T, proposeResponses []string, compactCalls *int32) *httptest.Server {
+	t.Helper()
+	var call int32
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body struct{ System string }
+		b, _ := io.ReadAll(r.Body)
+		json.Unmarshal(b, &body)
+		switch {
+		case strings.Contains(body.System, "You are reporting the outcome of a task"):
+			json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: testAnswerText, EvalCount: 1})
+		case strings.Contains(body.System, "condensing the older part of a conversation"):
+			atomic.AddInt32(compactCalls, 1)
+			json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: "condensed: earlier turns summarized", EvalCount: 1})
+		default:
+			i := int(atomic.AddInt32(&call, 1)) - 1
+			if i >= len(proposeResponses) {
+				t.Fatalf("ollama called %d times, only %d scripted propose responses", i+1, len(proposeResponses))
+			}
+			json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: proposeResponses[i], EvalCount: 1})
+		}
+	}))
+}
+
+func TestMaybeCompactDoesNothingWhenHistoryIsNotApproachingTheLimit(t *testing.T) {
+	var compactCalls int32
+	server := compactionAwareServer(t, nil, &compactCalls)
+	defer server.Close()
+
+	sc := session.New() // large default budget; one small turn is nowhere near it
+	sc.Append("a small task", []session.Step{{Command: "ls", Result: "ok"}})
+
+	maybeCompact(ollama.New(server.URL), "m", sc)
+	time.Sleep(50 * time.Millisecond) // give a wrongly-started goroutine a chance to show up
+	if n := atomic.LoadInt32(&compactCalls); n != 0 {
+		t.Errorf("compaction call made with history nowhere near the budget: %d calls", n)
+	}
+}
+
+func TestMaybeCompactRunsInTheBackgroundAndDoesNotBlock(t *testing.T) {
+	release := make(chan struct{})
+	var compactCalls int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&compactCalls, 1)
+		<-release // held open until the test explicitly releases it
+		json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: "a summary", EvalCount: 1})
+	}))
+	defer server.Close()
+	defer close(release)
+
+	sc := session.NewWithBudget(50, 200)
+	for i := 0; i < 10; i++ {
+		sc.Append("task", []session.Step{{Command: "ls", Result: "some reasonably long output text here"}})
+	}
+	if !sc.ApproachingLimit() {
+		t.Fatal("setup: expected this history to already be approaching the limit")
+	}
+
+	start := time.Now()
+	maybeCompact(ollama.New(server.URL), "m", sc)
+	if elapsed := time.Since(start); elapsed > 200*time.Millisecond {
+		t.Errorf("maybeCompact blocked the caller for %s; the whole point is that it must not", elapsed)
+	}
+	select {
+	case <-time.After(2 * time.Second):
+		t.Fatal("the background call to the (held-open) server never started")
+	default:
+	}
+	// Confirm the call did eventually reach the server, without racing on it:
+	// poll rather than assert immediately, since "started" and "blocked the
+	// caller" are different claims and only the second was just checked above.
+	deadline := time.Now().Add(2 * time.Second)
+	for atomic.LoadInt32(&compactCalls) == 0 && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if atomic.LoadInt32(&compactCalls) == 0 {
+		t.Fatal("the background compaction call never reached the server")
+	}
+}
+
+// End to end: a session's history that is close to its budget gets condensed
+// across two tasks, and the person is told about it on the turn after it
+// happens — not the turn it started on, since it runs in the background.
+func TestRunLoopReportsCompactionOnTheFollowingTurn(t *testing.T) {
+	var compactCalls int32
+	server := compactionAwareServer(t, []string{"DONE", "DONE"}, &compactCalls)
+	defer server.Close()
+	client := ollama.New(server.URL)
+
+	sc := session.NewWithBudget(120, 200)
+	for i := 0; i < 6; i++ {
+		sc.Append("earlier task", []session.Step{{Command: "ls", Result: "some reasonably long output text here"}})
+	}
+	if !sc.ApproachingLimit() {
+		t.Fatal("setup: expected this history to already be approaching the limit")
+	}
+
+	var out1, errOut1 bytes.Buffer
+	runLoop(context.Background(), client, "m", "first task", neverConfirm(t), &out1, &errOut1, "", withSessionContext(sc))
+	if strings.Contains(out1.String(), "Condensed") {
+		t.Errorf("compaction was reported on the same turn it started, before it could have finished:\n%s", out1.String())
+	}
+
+	deadline := time.Now().Add(3 * time.Second)
+	for atomic.LoadInt32(&compactCalls) == 0 && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if atomic.LoadInt32(&compactCalls) == 0 {
+		t.Fatal("background compaction never reached the server")
+	}
+	time.Sleep(20 * time.Millisecond) // let sc.Compact apply after the response is sent
+
+	var out2, errOut2 bytes.Buffer
+	runLoop(context.Background(), client, "m", "second task", neverConfirm(t), &out2, &errOut2, "", withSessionContext(sc))
+	if !strings.Contains(out2.String(), "condensed 5 older turn(s)") {
+		t.Errorf("the next turn should report the compaction that finished in between, got:\n%s", out2.String())
+	}
+	if !strings.Contains(sc.Render(), "condensed: earlier turns summarized") {
+		t.Errorf("session history should carry the summary, got:\n%s", sc.Render())
 	}
 }
