@@ -1,0 +1,26 @@
+{
+  "name": "synapsebot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "index": "tsx ingest/build-index.ts",
+    "dev": "npm run index && wrangler dev",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "ci": "npm run index && npm run typecheck && npm test",
+    "eval": "tsx eval/run.ts",
+    "deploy": "npm run ci && wrangler deploy"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260929.1",
+    "@types/node": "^26.6.3",
+    "node-html-parser": "^9.0.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2",
+    "wrangler": "^4.143.0"
+  }
+}

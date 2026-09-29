@@ -1,0 +1,7 @@
+node_modules/
+.wrangler/
+# Secrets for `wrangler dev`: ANTHROPIC_API_KEY and ACCESS_CODE. Never commit.
+.dev.vars
+# Rebuilt from sources.txt by `npm run index`.
+src/generated/
+eval/results/

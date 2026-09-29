@@ -1,0 +1,18 @@
+# The files SynapseBot may read and quote, one glob per line, relative to the
+# repository root. Anything not matched here is invisible to the bot. A line
+# starting with "!" removes files an earlier line matched.
+#
+# Kept out on purpose: prototype/pilot/nl2bash_all.* (GPL-3.0, git-ignored),
+# research-methods/*/references (other authors' papers), docs/notes (private
+# brainstorming), docs/retrospective.md (session process log), .claude/, and
+# anything holding study-participant data.
+
+README.md
+docs/*.md
+!docs/retrospective.md
+prototype/README.md
+prototype/build-order.md
+prototype/setup.md
+prototype/testing-plan.md
+distro/README.md
+research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html
