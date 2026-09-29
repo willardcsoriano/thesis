@@ -1,9 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it, vi } from "vitest";
-import type { AnswerEvent, AnswerStream, OpenStream, StreamParams } from "../src/answer";
-import { NOTHING_FOUND } from "../src/answer";
-import type { Corpus } from "../src/corpus";
-import { createApp, type Env, type RateLimiter } from "../src/worker";
+import type { AnswerEvent, AnswerStream, OpenStream, StreamParams } from "../src/answer.js";
+import { NOTHING_FOUND } from "../src/answer.js";
+import type { Corpus } from "../src/corpus.js";
+import { clientIp, createApp, type Env } from "../src/app.js";
+import { MemoryRateLimiter } from "../src/rate-limit.js";
 
 const corpus: Corpus = {
   commit: "abcdef1234567890",
@@ -43,15 +44,15 @@ const stop: Event = { type: "content_block_stop", index: 0 };
 
 const env: Env = { ANTHROPIC_API_KEY: "test-key", ACCESS_CODE: "open sesame" };
 
-function setup(open: OpenStream) {
+function setup(open: OpenStream, rateLimiter?: MemoryRateLimiter) {
   const spy = vi.fn(open);
-  return { app: createApp({ corpus, openStream: () => spy }), spy };
+  return { app: createApp({ corpus, openStream: () => spy, rateLimiter }), spy };
 }
 
 function ask(body: unknown, code = "open sesame"): Request {
   return new Request("https://bot.test/api/ask", {
     method: "POST",
-    headers: { "content-type": "application/json", "x-access-code": code, "cf-connecting-ip": "203.0.113.9" },
+    headers: { "content-type": "application/json", "x-access-code": code, "x-vercel-forwarded-for": "203.0.113.9" },
     body: JSON.stringify(body),
   });
 }
@@ -128,11 +129,9 @@ describe("POST /api/ask", () => {
   });
 
   it("rate-limits per visitor", async () => {
-    const limiter: RateLimiter = { limit: vi.fn(async () => ({ success: false })) };
-    const { app } = setup(() => fakeStream([]));
-    const res = await app.fetch(ask({ question: "undo" }), { ...env, RATE_LIMITER: limiter });
-    expect(res.status).toBe(429);
-    expect(limiter.limit).toHaveBeenCalledWith({ key: "203.0.113.9" });
+    const { app } = setup(() => fakeStream([]), new MemoryRateLimiter(1, 60_000));
+    expect((await app.fetch(ask({ question: "hello" }), env)).status).toBe(200);
+    expect((await app.fetch(ask({ question: "hello" }), env)).status).toBe(429);
   });
 
   it("rejects malformed bodies", async () => {
@@ -154,5 +153,13 @@ describe("other routes", () => {
     expect(await meta.json()).toMatchObject({ commit: corpus.commit, model: "claude-sonnet-5-5" });
     expect((await app.fetch(new Request("https://bot.test/api/nope"), env)).status).toBe(404);
     expect((await app.fetch(new Request("https://bot.test/api/ask"), env)).status).toBe(405);
+  });
+});
+
+describe("clientIp", () => {
+  it("prefers Vercel's header, then the first forwarded address", () => {
+    expect(clientIp(new Headers({ "x-vercel-forwarded-for": "1.1.1.1", "x-forwarded-for": "2.2.2.2" }))).toBe("1.1.1.1");
+    expect(clientIp(new Headers({ "x-forwarded-for": "2.2.2.2, 10.0.0.1" }))).toBe("2.2.2.2");
+    expect(clientIp(new Headers())).toBe("unknown");
   });
 });

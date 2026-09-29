@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_HISTORY_TURNS, MAX_QUESTION_CHARS, parseAskRequest } from "../src/request";
+import { MAX_HISTORY_TURNS, MAX_QUESTION_CHARS, parseAskRequest } from "../src/request.js";
 
 describe("parseAskRequest", () => {
   it("accepts a question with alternating history", () => {

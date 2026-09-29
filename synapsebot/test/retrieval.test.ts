@@ -4,11 +4,11 @@
 // the right section unreachable.
 
 import { describe, expect, it } from "vitest";
-import questions from "../eval/questions.json";
-import { retrieve } from "../src/answer";
-import type { Corpus } from "../src/corpus";
-import corpusJson from "../src/generated/corpus.json";
-import { SearchIndex } from "../src/search";
+import questions from "../eval/questions.json" with { type: "json" };
+import { retrieve } from "../src/answer.js";
+import type { Corpus } from "../src/corpus.js";
+import corpusJson from "../src/generated/corpus.json" with { type: "json" };
+import { SearchIndex } from "../src/search.js";
 
 const corpus = corpusJson as Corpus;
 const index = new SearchIndex(corpus.chunks);

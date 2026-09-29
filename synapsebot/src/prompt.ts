@@ -3,8 +3,8 @@
 // blocks so Claude's citations point back at repository files.
 
 import type Anthropic from "@anthropic-ai/sdk";
-import type { Chunk, Corpus } from "./corpus";
-import type { AskRequest } from "./request";
+import type { Chunk, Corpus } from "./corpus.js";
+import type { AskRequest } from "./request.js";
 
 export const MODEL = "claude-sonnet-5-5";
 /** Covers adaptive thinking plus a long answer; also a hard ceiling on output cost. */

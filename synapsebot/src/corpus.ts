@@ -1,4 +1,4 @@
-// Shape of the corpus that `npm run index` writes and the Worker bundles.
+// Shape of the corpus that `npm run index` writes and the API function ships with.
 
 export interface Chunk {
   /** Stable id: `<path>#<anchor>` plus a part suffix when a section was split. */

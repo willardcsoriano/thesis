@@ -9,8 +9,8 @@ import { execFileSync } from "node:child_process";
 import { globSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Chunk, Corpus } from "../src/corpus";
-import { chunkHtml, chunkMarkdown } from "./chunk";
+import type { Chunk, Corpus } from "../src/corpus.js";
+import { chunkHtml, chunkMarkdown } from "./chunk.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const botDir = join(here, "..");

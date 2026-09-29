@@ -1,11 +1,11 @@
 // BM25 keyword search over the corpus chunks.
 //
 // The corpus is a few hundred chunks, so an in-memory index built once per
-// Worker isolate is fast enough and needs no database or embedding service.
+// function instance is fast enough and needs no database or embedding service.
 // A chunk's title is indexed twice so a question naming a section
 // ("the safety model") favours that section.
 
-import type { Chunk } from "./corpus";
+import type { Chunk } from "./corpus.js";
 
 const K1 = 1.2;
 const B = 0.75;

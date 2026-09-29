@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chunkHtml, chunkMarkdown, MAX_CHUNK_CHARS, slugify, splitLongParagraph } from "../ingest/chunk";
+import { chunkHtml, chunkMarkdown, MAX_CHUNK_CHARS, slugify, splitLongParagraph } from "../ingest/chunk.js";
 
 describe("chunkMarkdown", () => {
   it("makes one chunk per section, titled by document and heading", () => {

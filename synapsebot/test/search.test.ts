@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Chunk } from "../src/corpus";
-import { SearchIndex, tokenize } from "../src/search";
+import type { Chunk } from "../src/corpus.js";
+import { SearchIndex, tokenize } from "../src/search.js";
 
 const chunk = (id: string, title: string, text: string): Chunk => ({
   id, path: id, title, anchor: "", paragraphs: [text],

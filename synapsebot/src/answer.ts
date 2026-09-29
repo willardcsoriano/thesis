@@ -2,10 +2,10 @@
 // page renders. Kept free of HTTP so tests and the eval can drive it directly.
 
 import Anthropic from "@anthropic-ai/sdk";
-import { chunkUrl, type Chunk, type Corpus } from "./corpus";
-import { buildMessages, MAX_TOKENS, MODEL, SYSTEM_PROMPT } from "./prompt";
-import type { AskRequest } from "./request";
-import type { SearchIndex } from "./search";
+import { chunkUrl, type Chunk, type Corpus } from "./corpus.js";
+import { buildMessages, MAX_TOKENS, MODEL, SYSTEM_PROMPT } from "./prompt.js";
+import type { AskRequest } from "./request.js";
+import type { SearchIndex } from "./search.js";
 
 /** Most sections sent per question, and the character budget they share. */
 export const MAX_RESULTS = 8;

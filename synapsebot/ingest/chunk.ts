@@ -7,7 +7,7 @@
 // of the retrieval budget.
 
 import { parse, type HTMLElement } from "node-html-parser";
-import type { Chunk } from "../src/corpus";
+import type { Chunk } from "../src/corpus.js";
 
 export const MAX_CHUNK_CHARS = 3500;
 

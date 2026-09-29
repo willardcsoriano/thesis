@@ -13,11 +13,11 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { answer, type AnswerLog } from "../src/answer";
-import type { Corpus } from "../src/corpus";
-import corpusJson from "../src/generated/corpus.json";
-import { SearchIndex } from "../src/search";
-import questions from "./questions.json";
+import { answer, type AnswerLog } from "../src/answer.js";
+import type { Corpus } from "../src/corpus.js";
+import corpusJson from "../src/generated/corpus.json" with { type: "json" };
+import { SearchIndex } from "../src/search.js";
+import questions from "./questions.json" with { type: "json" };
 
 const { values } = parseArgs({ options: { yes: { type: "boolean" }, only: { type: "string" } } });
 if (!values.yes) {
