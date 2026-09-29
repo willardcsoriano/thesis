@@ -1,4 +1,4 @@
-.PHONY: build test run task repl tui undo ollama-serve ollama-serve-bg ollama-pull ollama-status pilot pilot3 clean ci fmt-check vet corpus4 round4 deps-check deps-hoard
+.PHONY: build test run task cli repl tui undo ollama-serve ollama-serve-bg ollama-pull ollama-status pilot pilot3 clean ci fmt-check vet corpus4 round4 deps-check deps-hoard
 
 # Falls back to the user-local toolchain (no sudo required) if `go` isn't
 # already on PATH — see ../setup.md.
@@ -25,16 +25,24 @@ test:
 RUNDIR ?= $(CURDIR)
 SYNAPSE = "$(CURDIR)/bin/synapse"
 
+# Not a fourth interface mode — the built-in 8-task sample suite, propose-only
+# (no filesystem changes, no classification, no execution). A quality smoke
+# test, not something a user runs to get work done; see cli/repl/tui for that.
 run: build
 	cd "$(RUNDIR)" && $(SYNAPSE)
 
 # One ad-hoc task, e.g. make task TASK="find the 10 largest files under /var/log"
+# — this is CLI mode (D19); `cli` is the same target under that mode's own name,
+# since a target named only `task` doesn't read as "the CLI mode" to someone
+# going by the mode names in interface-modes.md.
 task: build
 	@if [ -z "$(TASK)" ]; then \
-		echo "Usage: make task TASK=\"<what you want done>\""; \
+		echo "Usage: make task TASK=\"<what you want done>\" (or: make cli TASK=\"...\")"; \
 		exit 1; \
 	fi
 	cd "$(RUNDIR)" && $(SYNAPSE) "$(TASK)"
+
+cli: task
 
 repl: build
 	cd "$(RUNDIR)" && $(SYNAPSE) repl
