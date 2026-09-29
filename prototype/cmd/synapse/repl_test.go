@@ -411,3 +411,125 @@ func TestRunREPLClearCommandForgets(t *testing.T) {
 		t.Errorf("context after clear should report an empty session:\n%s", got)
 	}
 }
+
+// --- scratch mode (D43): REPL's loop, no memory ---------------------------
+
+// The defining property: multiple tasks still run in one process (like
+// REPL), but nothing about one task's outcome reaches the next one's prompt.
+func TestRunScratchCarriesNoHistoryBetweenTasks(t *testing.T) {
+	var prompts []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body struct{ Prompt string }
+		json.NewDecoder(r.Body).Decode(&body)
+		prompts = append(prompts, body.Prompt)
+		json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: "DONE", EvalCount: 1})
+	}))
+	defer server.Close()
+
+	client := ollama.New(server.URL)
+	var out, errOut bytes.Buffer
+	in := strings.NewReader("create report.pdf\nmove it to Downloads\n")
+
+	code := runScratch(context.Background(), client, "m", "", in, &out, &errOut)
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
+	}
+	if len(prompts) < 2 {
+		t.Fatalf("expected at least 2 prompts (one per task), got %d", len(prompts))
+	}
+	for i, p := range prompts {
+		if strings.Contains(p, "Earlier in this session") {
+			t.Errorf("prompt %d carried session history, which scratch mode must never do:\n%s", i, p)
+		}
+	}
+	if !strings.Contains(prompts[1], "move it to Downloads") {
+		t.Errorf("the second task's own text should still reach the model:\n%s", prompts[1])
+	}
+}
+
+// Still one process, several tasks — the one property scratch mode keeps
+// from REPL despite having none of its memory.
+func TestRunScratchProcessesMultipleTasksInOneProcess(t *testing.T) {
+	dir := t.TempDir()
+	a := filepath.Join(dir, "a.txt")
+	b := filepath.Join(dir, "b.txt")
+
+	server := scriptedOllamaServer(t, []string{
+		fmt.Sprintf("touch %q", a),
+		"DONE",
+		fmt.Sprintf("touch %q", b),
+		"DONE",
+	})
+	defer server.Close()
+
+	client := ollama.New(server.URL)
+	var out, errOut bytes.Buffer
+	in := strings.NewReader("create a.txt\ncreate b.txt\n")
+
+	code := runScratch(context.Background(), client, "m", "", in, &out, &errOut)
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
+	}
+	if _, err := os.Stat(a); err != nil {
+		t.Errorf("expected first task's effect (%s) to exist: %v", a, err)
+	}
+	if _, err := os.Stat(b); err != nil {
+		t.Errorf("expected second task's effect (%s) to exist: %v", b, err)
+	}
+}
+
+// "context" and "clear" still answer truthfully in scratch mode — there is
+// just nothing for either of them to report or discard.
+func TestRunScratchContextAndClearAnswerTruthfullyWithNoMemory(t *testing.T) {
+	client := ollama.New("http://unused.invalid") // must never be called
+	var out, errOut bytes.Buffer
+	in := strings.NewReader("context\nclear\n")
+
+	code := runScratch(context.Background(), client, "m", "", in, &out, &errOut)
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
+	}
+	got := out.String()
+	if !strings.Contains(got, "no memory is kept in this mode") {
+		t.Errorf("context should say plainly that scratch mode keeps nothing, got:\n%s", got)
+	}
+	if !strings.Contains(got, "nothing to forget") {
+		t.Errorf("clear should say there is nothing to forget, got:\n%s", got)
+	}
+}
+
+// The header must say what mode this is — a user typing "scratch" and
+// getting REPL's own "follow-ups can refer back" hint would be told
+// something false about the session they are in.
+func TestRunScratchHeaderSaysNothingCarriesOver(t *testing.T) {
+	client := ollama.New("http://unused.invalid")
+	var out, errOut bytes.Buffer
+	in := strings.NewReader("")
+
+	runScratch(context.Background(), client, "m", "", in, &out, &errOut)
+	got := out.String()
+	if !strings.Contains(got, "Scratch mode") {
+		t.Errorf("header should name the mode, got:\n%s", got)
+	}
+	if strings.Contains(got, "Follow-ups can refer back") {
+		t.Errorf("scratch mode's header claimed follow-up resolution it does not have:\n%s", got)
+	}
+}
+
+// REPL's own header and behavior must be completely unaffected by scratch
+// mode's addition — this is the regression the shared-loop refactor (D43)
+// must not introduce.
+func TestRunREPLHeaderIsUnchangedByScratchModesExistence(t *testing.T) {
+	client := ollama.New("http://unused.invalid")
+	var out, errOut bytes.Buffer
+	in := strings.NewReader("")
+
+	runREPL(context.Background(), client, "m", "", in, &out, &errOut)
+	got := out.String()
+	if !strings.Contains(got, "Follow-ups can refer back") {
+		t.Errorf("REPL's memory hint is missing, got:\n%s", got)
+	}
+	if strings.Contains(got, "Scratch mode") {
+		t.Errorf("REPL's header should never mention scratch mode, got:\n%s", got)
+	}
+}

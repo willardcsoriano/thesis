@@ -532,6 +532,14 @@ func main() {
 			}
 			os.Exit(runREPL(ctx, client, model, journalPath, os.Stdin, os.Stdout, os.Stderr))
 		}
+		if len(args) == 1 && args[0] == "scratch" {
+			journalPath, err := undo.DefaultJournalPath()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "warning: undo journal unavailable, this session won't be undoable: %v\n", err)
+				journalPath = ""
+			}
+			os.Exit(runScratch(ctx, client, model, journalPath, os.Stdin, os.Stdout, os.Stderr))
+		}
 		runAdHoc(ctx, client, model, strings.Join(args, " "))
 		return
 	}
@@ -612,17 +620,55 @@ func runAdHoc(ctx context.Context, client *ollama.Client, model, task string) {
 // intentionally ignored here; the whole point of a persistent loop is that
 // one bad task doesn't force a restart to try another.
 func runREPL(ctx context.Context, client *ollama.Client, model, journalPath string, in io.Reader, out, errOut io.Writer) int {
+	return runInteractiveSession(ctx, client, model, journalPath, in, out, errOut, false)
+}
+
+// runScratch is scratch mode (D43): the same persistent, plain-text
+// back-and-forth loop as REPL, minus memory. Every task starts fresh —
+// "whatever the last command is is its scope" — which is what makes it
+// lighter than REPL: no rolling window, no budget to approach, nothing to
+// compact in the background (D42), nothing a stray "clear" needs to undo.
+// The trade is exactly what REPL exists to avoid: a follow-up like "move it
+// to Downloads" cannot resolve, because there is no earlier turn to resolve
+// it against. For a quick, disposable, one-thing-after-another session where
+// that trade is fine, this is the lighter mode to reach for.
+func runScratch(ctx context.Context, client *ollama.Client, model, journalPath string, in io.Reader, out, errOut io.Writer) int {
+	return runInteractiveSession(ctx, client, model, journalPath, in, out, errOut, true)
+}
+
+// runInteractiveSession is REPL's and scratch's shared loop (D43): read a
+// line, run it through the identical propose/classify/confirm/execute path
+// every mode uses, print the result, repeat until exit/quit/EOF. stateless
+// selects the one real difference — whether session memory is threaded
+// through runLoop at all — everything else (the shared bufio.Reader wiring
+// confirmation prompts to task-line reads, Ctrl+C-per-task, telemetry) is
+// identical between the two, which is deliberately kept in one place so
+// they cannot drift apart from each other by accident.
+func runInteractiveSession(ctx context.Context, client *ollama.Client, model, journalPath string, in io.Reader, out, errOut io.Writer, stateless bool) int {
 	fmt.Fprintln(out, "Persistent session — type a task and press enter; type exit or quit (or Ctrl+D) to leave.")
 	fmt.Fprintln(out, "While a task is running, Ctrl+C cancels just that task and returns you here.")
 	fmt.Fprintf(out, "Each step may run for up to %s before it's automatically stopped.\n", stepExecutionTimeout)
-	fmt.Fprintln(out, "Follow-ups can refer back (\"move it to Downloads\"); type context to see what's remembered, clear to forget it.")
+	if stateless {
+		fmt.Fprintln(out, "Scratch mode: nothing carries over between tasks. Each one starts fresh, with no memory of the one before it.")
+	} else {
+		fmt.Fprintln(out, "Follow-ups can refer back (\"move it to Downloads\"); type context to see what's remembered, clear to forget it.")
+	}
 	if tel := os.Getenv("SYNAPSE_SESSION_LOG"); tel != "" {
 		fmt.Fprintln(out, "Study telemetry is recording; type task <id> to mark which task the following events belong to.")
 	}
 
 	reader := bufio.NewReader(in)
 	confirmFn := func(prompt string) bool { return confirm(reader, out, prompt) }
-	sc := session.New()
+	// A nil *session.Context is scratch mode's whole implementation: every
+	// consumer downstream (handleMemoryCommand's "context"/"clear", and
+	// runLoop's own withSessionContext) already treats nil as "no memory" —
+	// that convention already existed for every other caller that omits
+	// session context (CLI mode, D19), so scratch mode needs no new branch
+	// anywhere except right here.
+	var sc *session.Context
+	if !stateless {
+		sc = session.New()
+	}
 	tracker := newTaskTracker()
 	tel, closeTel := studyLogger(errOut)
 	defer closeTel()
@@ -645,8 +691,11 @@ func runREPL(ctx context.Context, client *ollama.Client, model, journalPath stri
 				}
 				continue
 			}
-			runTaskInterruptibly(ctx, client, model, task, confirmFn, out, errOut, journalPath,
-				withSessionContext(sc), withTelemetry(tel, tracker.current()))
+			opts := []loopOption{withTelemetry(tel, tracker.current())}
+			if sc != nil {
+				opts = append(opts, withSessionContext(sc))
+			}
+			runTaskInterruptibly(ctx, client, model, task, confirmFn, out, errOut, journalPath, opts...)
 			fmt.Fprintln(out)
 		}
 
@@ -1573,12 +1622,24 @@ func normaliseChatter(task string) string {
 	return strings.TrimRight(strings.TrimLeft(s, " ."), " .!?,;:…")
 }
 
+// handleMemoryCommand answers "context" and "clear". sc is nil in scratch
+// mode (D43), which has nothing to summarize or forget — both commands still
+// answer truthfully rather than falling through to the model, same reasoning
+// as every other case here.
 func handleMemoryCommand(task string, sc *session.Context, out io.Writer) bool {
 	switch strings.ToLower(strings.TrimSpace(task)) {
 	case "context":
+		if sc == nil {
+			fmt.Fprintln(out, "no memory is kept in this mode — every task starts fresh.")
+			return true
+		}
 		fmt.Fprintln(out, sc.Summary())
 		return true
 	case "clear":
+		if sc == nil {
+			fmt.Fprintln(out, "nothing to forget — this mode already keeps no memory between tasks.")
+			return true
+		}
 		n := sc.Len()
 		sc.Clear()
 		fmt.Fprintf(out, "Forgot %d remembered task(s); the next task starts fresh.\n", n)

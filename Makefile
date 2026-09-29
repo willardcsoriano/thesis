@@ -5,7 +5,8 @@
 help:
 	@echo "Forwarding to prototype/. Every synapse mode has its own target — none are hidden behind a curated subset:"
 	@echo "  cli TASK=\"...\"   one-shot CLI mode (alias: task TASK=\"...\")"
-	@echo "  repl              persistent, plain-text back-and-forth session"
+	@echo "  repl              persistent, plain-text back-and-forth session, with memory between tasks"
+	@echo "  scratch           the same, but disposable — no memory between tasks"
 	@echo "  tui               the bubbletea interface"
 	@echo "  undo              undo the last recorded command"
 	@echo "  run               propose-only demo suite (no filesystem changes)"

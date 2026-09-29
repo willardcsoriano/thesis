@@ -661,3 +661,19 @@ Typing `neat` toggles a mode where a new task discards the previous turn from vi
 **What stays true either way.** `trim`'s drop-oldest behavior is the unconditional fallback: a failed, slow, or not-yet-finished compaction leaves the budget protected by the same free mechanism that already existed. Nothing about undo, the confirmation gate, or telemetry changes.
 
 **Rejected.** Compacting synchronously (inside `Append`, before the turn is reported done) — correct, but pays a model call's latency on the critical path, which is precisely the "bothers the user" outcome this was asked to avoid. Compacting at a lower threshold than proactive-vs-reactive requires (e.g. only once already over budget) — leaves no time for the background call to finish before `trim` would drop the same turns anyway, so summarization would rarely win the race; the proactive threshold (60% of budget) is deliberately ahead of `trim`'s trigger (100%) for this reason.
+
+---
+
+### D43 — Scratch mode: REPL's persistent loop with no memory between tasks
+
+**Status:** Decided 2026-09-29, following a request for "a one-to-one interface and backend engine... a much lighter version where the session has no memory, just whatever the last command is is its scope" — described as disposable.
+
+`synapse scratch` is a fourth interface mode: the same persistent, plain-text, back-and-forth loop as REPL (D19) — one process, several tasks, `exit`/`quit`/EOF to leave — with session memory never threaded through. Every task starts fresh; nothing before it is visible to it. Named `scratch` for the same reason a scratch buffer or scratchpad is named that: temporary, disposable, nothing kept.
+
+**Why a real mode, not a flag on REPL.** The two are close enough in shape that a flag was the first, and cheaper, idea (`synapse repl --stateless`). Asked directly, the answer was a fourth mode — reachable and discoverable the same way CLI, REPL, and TUI already are, with its own `make scratch` target and its own line in `make help`, rather than something you had to already know to look for behind a REPL flag.
+
+**Implementation stays a single shared loop.** REPL and scratch mode are `runREPL`/`runScratch`, two thin wrappers over one `runInteractiveSession(..., stateless bool)` — the confirmation-prompt/task-line reader-sharing, Ctrl+C-per-task handling, and telemetry wiring live in exactly one place, so the two modes cannot drift out of sync with each other by accident the way two independently maintained copies eventually would. The one behavioral difference is `stateless`: it selects the header text, and whether a `*session.Context` is constructed and passed to `runLoop` via `withSessionContext` at all. A nil session context was already the established "no memory" signal — it's what CLI mode's one-shot invocations already do (D19) — so scratch mode needed no new sentinel value, only a nil in a new place. `handleMemoryCommand`'s "context" and "clear" both check for nil and answer truthfully ("no memory is kept in this mode" / "nothing to forget") instead of touching a session that doesn't exist, rather than either command silently doing nothing or crashing.
+
+**The trade, stated plainly.** Follow-ups ("move it to Downloads") cannot resolve — there is no earlier turn to resolve them against. In exchange: no rolling window, no budget to approach, and nothing for D42's background compaction to ever do, since there is never enough history in scope for `ApproachingLimit` to be anything but false. For a quick sequence of unrelated one-off tasks, that is a fair trade; for a back-and-forth conversation, it is REPL's job, not this mode's.
+
+**Rejected.** A flag on REPL (see above — the "own mode, own name" ask was explicit). Reusing the name "cli" for this — that name already belongs to the true one-shot mode (D19), and reusing it here would make `make cli`/`make task` ambiguous with the new `make scratch`.

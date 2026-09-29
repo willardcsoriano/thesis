@@ -1,4 +1,4 @@
-.PHONY: build test run task cli repl tui undo ollama-serve ollama-serve-bg ollama-pull ollama-status pilot pilot3 clean ci fmt-check vet corpus4 round4 deps-check deps-hoard
+.PHONY: build test run task cli repl scratch tui undo ollama-serve ollama-serve-bg ollama-pull ollama-status pilot pilot3 clean ci fmt-check vet corpus4 round4 deps-check deps-hoard
 
 # Falls back to the user-local toolchain (no sudo required) if `go` isn't
 # already on PATH — see ../setup.md.
@@ -46,6 +46,12 @@ cli: task
 
 repl: build
 	cd "$(RUNDIR)" && $(SYNAPSE) repl
+
+# Scratch mode (D43): REPL's persistent, plain-text loop with no memory
+# between tasks — each one starts fresh, disposable, nothing to compact or
+# forget.
+scratch: build
+	cd "$(RUNDIR)" && $(SYNAPSE) scratch
 
 tui: build
 	cd "$(RUNDIR)" && $(SYNAPSE) tui
