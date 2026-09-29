@@ -434,6 +434,65 @@ var sampleSuite = []struct{ category, task string }{
 	{"text & data processing", "replace every tab with a comma in data.txt and save it as data.csv"},
 }
 
+// runTUI launches TUI mode; stateless selects scratch mode's header and its
+// nil session context (D43, D44), otherwise identical: same TaskRunner
+// injection, same warm-up, same everything else. TUI mode launches without a
+// connectivity precheck on purpose (M5 step 3) — a full-screen app that opens
+// and reports the problem inside the session beats one that exits to a bare
+// shell over a transient backend blip; an unreachable Ollama surfaces as an
+// ordinary error line in the transcript on the first proposal attempt, and
+// the session stays usable once the backend comes back.
+func runTUI(ctx context.Context, client *ollama.Client, model string, stateless bool) {
+	journalPath, err := undo.DefaultJournalPath()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "warning: undo journal unavailable, this session won't be undoable: %v\n", err)
+		journalPath = ""
+	}
+	// The injected runner is runLoop itself, with only the client, model, and
+	// journal bound in. TUI mode therefore executes the exact same
+	// propose/classify/confirm/execute path as CLI and REPL mode — no
+	// reimplementation, so safety gating cannot drift between interface
+	// modes. A nil sc is the same "no memory" signal scratch mode already
+	// uses everywhere else (D43): handleSessionCommand's "context"/"clear"
+	// and runLoop's own withSessionContext both already treat it that way.
+	var sc *session.Context
+	if !stateless {
+		sc = session.New()
+	}
+	tracker := newTaskTracker()
+	tel, closeTel := studyLogger(os.Stderr)
+	defer closeTel()
+	runner := func(taskCtx context.Context, task string, confirmFn func(string) bool, out, errOut io.Writer) int {
+		// Session commands are answered locally, never generated — see
+		// handleSessionCommand.
+		if handleSessionCommand(task, sc, tracker, out) {
+			return 0
+		}
+		opts := append(eventsFrom(out), withTelemetry(tel, tracker.current()))
+		if sc != nil {
+			opts = append(opts, withSessionContext(sc))
+		}
+		// The writer the TUI hands in also accepts typed events, so the loop
+		// reports commands, results, and answers as events and the TUI
+		// decides how to show them. That is presentation only: the command
+		// is still parsed from the whole response and classified exactly as
+		// before.
+		return runLoop(taskCtx, client, model, task, confirmFn, out, errOut, journalPath, opts...)
+	}
+	// Load the model while the user is still reading the header, so the first
+	// answer does not pay a cold start (measured at 30-40s on the reference
+	// machine). A failure is not fatal: the first real task will report it.
+	warm := func(ctx context.Context) error { return client.Preload(ctx, model, generationOptions()) }
+	newModel := tui.NewModel
+	if stateless {
+		newModel = tui.NewScratchModel
+	}
+	if err := tui.RunModelWithWarmup(newModel(runner), warm); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
 func main() {
 	model := envOr("SYNAPSE_MODEL", defaultModel)
 	client := ollama.New(os.Getenv("SYNAPSE_OLLAMA"))
@@ -453,6 +512,10 @@ func main() {
 	// the exact moment it is most likely to be needed. Fixed Session 28 (this
 	// was a real, verified defect dating to M1/F2, found by review, not a
 	// deliberate design choice — nothing in decisions.md justified it).
+	if len(args) == 2 && args[0] == "tui" && args[1] == "scratch" {
+		runTUI(ctx, client, model, true)
+		return
+	}
 	if len(args) == 1 {
 		switch args[0] {
 		case "undo":
@@ -467,49 +530,7 @@ func main() {
 			closeTel()
 			os.Exit(code)
 		case "tui":
-			// M5 step 3: the real execution loop is wired in, but TUI mode
-			// still launches without a connectivity precheck on purpose. A
-			// full-screen app that opens and reports the problem inside the
-			// session beats one that exits to a bare shell over a transient
-			// backend blip — an unreachable Ollama surfaces as an ordinary
-			// error line in the transcript on the first proposal attempt, and
-			// the session stays usable once the backend comes back.
-			journalPath, err := undo.DefaultJournalPath()
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "warning: undo journal unavailable, this session won't be undoable: %v\n", err)
-				journalPath = ""
-			}
-			// The injected runner is runLoop itself, with only the client,
-			// model, and journal bound in. TUI mode therefore executes the
-			// exact same propose/classify/confirm/execute path as CLI and
-			// REPL mode — no reimplementation, so safety gating cannot drift
-			// between interface modes.
-			sc := session.New()
-			tracker := newTaskTracker()
-			tel, closeTel := studyLogger(os.Stderr)
-			defer closeTel()
-			runner := func(taskCtx context.Context, task string, confirmFn func(string) bool, out, errOut io.Writer) int {
-				// Session commands are answered locally, never generated —
-				// see handleSessionCommand.
-				if handleSessionCommand(task, sc, tracker, out) {
-					return 0
-				}
-				// The writer the TUI hands in also accepts typed events, so the
-				// loop reports commands, results, and answers as events and the
-				// TUI decides how to show them. That is presentation only: the
-				// command is still parsed from the whole response and classified
-				// exactly as before.
-				return runLoop(taskCtx, client, model, task, confirmFn, out, errOut, journalPath,
-					append(eventsFrom(out), withSessionContext(sc), withTelemetry(tel, tracker.current()))...)
-			}
-			// Load the model while the user is still reading the header, so the first
-			// answer does not pay a cold start (measured at 30-40s on the reference
-			// machine). A failure is not fatal: the first real task will report it.
-			warm := func(ctx context.Context) error { return client.Preload(ctx, model, generationOptions()) }
-			if err := tui.RunWithWarmup(runner, warm); err != nil {
-				fmt.Fprintf(os.Stderr, "error: %v\n", err)
-				os.Exit(1)
-			}
+			runTUI(ctx, client, model, false)
 			return
 		}
 	}

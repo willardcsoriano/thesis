@@ -225,12 +225,40 @@ type taskRecord struct {
 // test earlier in this milestone, and what the upstream docs' example
 // would have led to).
 func NewModel(run TaskRunner) Model {
+	return newModel(run, false)
+}
+
+// NewScratchModel is NewModel for scratch mode (D44, mirroring cmd/synapse's
+// D43): the header says plainly that nothing carries between tasks instead
+// of advertising follow-up resolution this mode does not have. Everything
+// else — rendering, Ctrl+O, neat mode, the confirmation gate — is identical;
+// only what the header tells the person to expect differs. Whether memory
+// actually exists is decided entirely by the TaskRunner passed in (main.go
+// passes a nil session in scratch mode, per D43) — this constructor changes
+// no behavior of its own, only honesty about it.
+func NewScratchModel(run TaskRunner) Model {
+	return newModel(run, true)
+}
+
+func newModel(run TaskRunner, stateless bool) Model {
 	ti := textinput.New()
 	ti.Prompt = "> "
 	ti.Placeholder = "type a task..."
 	ti.Focus()
 
 	sp := spinner.New(spinner.WithSpinner(spinner.MiniDot), spinner.WithStyle(spinnerStyle))
+
+	hints := []string{
+		headerStyle.Render("SynapseOS — TUI mode"),
+		hintStyle.Render("Type a task and press enter. Ctrl+C cancels a running task; at an idle prompt it quits."),
+		hintStyle.Render("Ctrl+O shows or hides the commands behind each answer. Scroll and select text with the terminal as usual."),
+	}
+	if stateless {
+		hints = append(hints, hintStyle.Render("Scratch mode: nothing carries over between tasks — each one starts fresh, with no memory of the one before it."))
+	} else {
+		hints = append(hints, hintStyle.Render("Follow-ups can refer back (\"move it to Downloads\"). Type context to see what's remembered, clear to forget it."))
+	}
+	hints = append(hints, hintStyle.Render("Type neat for a mode that shows only the latest exchange instead of the full scrollback."))
 
 	return Model{
 		input:   ti,
@@ -240,13 +268,7 @@ func NewModel(run TaskRunner) Model {
 		events:  make(chan tea.Msg, 256),
 		answers: make(chan bool, 1),
 		print:   func(s string) tea.Cmd { return tea.Println(s) },
-		header: strings.Join([]string{
-			headerStyle.Render("SynapseOS — TUI mode"),
-			hintStyle.Render("Type a task and press enter. Ctrl+C cancels a running task; at an idle prompt it quits."),
-			hintStyle.Render("Ctrl+O shows or hides the commands behind each answer. Scroll and select text with the terminal as usual."),
-			hintStyle.Render("Follow-ups can refer back (\"move it to Downloads\"). Type context to see what's remembered, clear to forget it."),
-			hintStyle.Render("Type neat for a mode that shows only the latest exchange instead of the full scrollback."),
-		}, "\n"),
+		header:  strings.Join(hints, "\n"),
 	}
 }
 
@@ -730,7 +752,14 @@ func Run(run TaskRunner) error {
 // (typically loading the language model) while the session is already usable,
 // and the UI says so until it returns. A nil warm behaves exactly like Run.
 func RunWithWarmup(run TaskRunner, warm func(context.Context) error) error {
-	m := NewModel(run)
+	return RunModelWithWarmup(NewModel(run), warm)
+}
+
+// RunModelWithWarmup is RunWithWarmup for a caller that built its own Model —
+// NewScratchModel, for instance — rather than the default NewModel. Kept
+// separate rather than adding a constructor parameter to RunWithWarmup: that
+// would change a signature every existing caller and test already uses.
+func RunModelWithWarmup(m Model, warm func(context.Context) error) error {
 	if warm != nil {
 		m.warm, m.warming = warm, true
 	}

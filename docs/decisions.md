@@ -677,3 +677,17 @@ Typing `neat` toggles a mode where a new task discards the previous turn from vi
 **The trade, stated plainly.** Follow-ups ("move it to Downloads") cannot resolve — there is no earlier turn to resolve them against. In exchange: no rolling window, no budget to approach, and nothing for D42's background compaction to ever do, since there is never enough history in scope for `ApproachingLimit` to be anything but false. For a quick sequence of unrelated one-off tasks, that is a fair trade; for a back-and-forth conversation, it is REPL's job, not this mode's.
 
 **Rejected.** A flag on REPL (see above — the "own mode, own name" ask was explicit). Reusing the name "cli" for this — that name already belongs to the true one-shot mode (D19), and reusing it here would make `make cli`/`make task` ambiguous with the new `make scratch`.
+
+---
+
+### D44 — TUI mode gains a scratch variant: `synapse tui scratch`
+
+**Status:** Decided 2026-09-29, extending D43 to the TUI after a request for "maximum uiux" — scratch mode should not be CLI-only.
+
+`synapse tui scratch` (`make tui-scratch`) is TUI mode with no session memory, the same relationship D43 gave REPL and scratch mode at the CLI. Every piece of the polished TUI presentation carries over unchanged and was verified live: the compact answer view and Ctrl+O detail toggle, the confirmation gate (including declining one), and neat mode. The only difference from ordinary TUI mode is the header, which says plainly that nothing carries between tasks instead of advertising follow-up resolution this mode does not have — and, underneath that, a nil `*session.Context` instead of a real one, the same "no memory" signal used everywhere else since D43.
+
+**How little of the TUI package had to change.** `internal/tui` gained one new constructor, `NewScratchModel`, alongside the existing `NewModel` — both now call a shared unexported `newModel(run, stateless bool)` that differs only in which header text it builds. Everything else — `Update`, `View`, the confirmation gate, Ctrl+O, neat mode, event handling — is the exact same code path for both, because none of it was ever about memory: memory lives entirely in the injected `TaskRunner`, which `cmd/synapse` builds with or without a session context. This is the same seam D26 established (TUI drives the shared loop, never reimplements it) doing its job again for a case it was not built with in mind.
+
+**A real bug found and fixed while building this.** The first attempt at dispatching `synapse tui scratch` placed the two-argument check inside the existing `if len(args) == 1 { ... }` guard, where `len(args) == 2` can never be true — so it silently fell through to one-shot CLI mode, running "tui scratch" as a literal task string. Caught immediately by driving the built binary through the pty harness before calling this done, not by code review; moved the check outside that guard, verified again, confirmed working.
+
+**What stays untested by an automated suite, same as ordinary TUI mode.** `runTUI`'s dispatch starts a real bubbletea program and cannot be driven by piping input (`manual-tests/m5-tui-mode.md`'s standing caveat) — its correctness is established by `internal/tui`'s own model-level tests (which do cover `NewScratchModel`'s header and behavior) plus this decision's live pty-harness verification, not by a unit test that calls `runTUI` itself.

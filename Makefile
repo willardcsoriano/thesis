@@ -8,6 +8,7 @@ help:
 	@echo "  repl              persistent, plain-text back-and-forth session, with memory between tasks"
 	@echo "  scratch           the same, but disposable — no memory between tasks"
 	@echo "  tui               the bubbletea interface"
+	@echo "  tui-scratch       the bubbletea interface, in scratch mode — no memory between tasks"
 	@echo "  undo              undo the last recorded command"
 	@echo "  run               propose-only demo suite (no filesystem changes)"
 	@echo "Plus: build, test, ci, ollama-serve-bg, ollama-pull, ollama-status. See prototype/Makefile for the rest (pilot rounds, corpus generation, dependency hoarding)."

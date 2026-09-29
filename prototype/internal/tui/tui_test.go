@@ -1226,3 +1226,49 @@ func TestCtrlOStillWorksInNeatMode(t *testing.T) {
 		t.Errorf("details should show in the live region, got:\n%s", v)
 	}
 }
+
+// --- scratch mode's header (D44) ------------------------------------------
+
+func TestNewScratchModelHeaderSaysNothingCarriesOverAndOmitsTheMemoryHint(t *testing.T) {
+	m := NewScratchModel(noopRunner)
+	if !strings.Contains(m.header, "Scratch mode") {
+		t.Errorf("header should name the mode, got:\n%s", m.header)
+	}
+	if strings.Contains(m.header, "Follow-ups can refer back") {
+		t.Errorf("scratch mode's header claimed follow-up resolution it does not have:\n%s", m.header)
+	}
+}
+
+// Everything else about scratch mode's header — the neat-mode hint, the
+// general instructions — must be unchanged from the ordinary header.
+func TestNewScratchModelKeepsTheNeatModeHint(t *testing.T) {
+	m := NewScratchModel(noopRunner)
+	if !strings.Contains(m.header, "Type neat for a mode") {
+		t.Errorf("scratch mode's header dropped the neat-mode hint, got:\n%s", m.header)
+	}
+}
+
+func TestNewModelHeaderIsUnchangedByScratchModesExistence(t *testing.T) {
+	m := NewModel(noopRunner)
+	if !strings.Contains(m.header, "Follow-ups can refer back") {
+		t.Errorf("the ordinary header's memory hint is missing, got:\n%s", m.header)
+	}
+	if strings.Contains(m.header, "Scratch mode") {
+		t.Errorf("the ordinary header should never mention scratch mode, got:\n%s", m.header)
+	}
+}
+
+// The two constructors must otherwise build an identical, working Model —
+// scratch mode is a difference in what the header says, not in any
+// rendering, gating, or event-handling behavior.
+func TestScratchModelBehavesLikeAnOrdinaryModelOtherwiseIdentically(t *testing.T) {
+	m, printed := newCaptured()
+	m.header = NewScratchModel(noopRunner).header // isolate the one intended difference
+	m.running = true
+	for _, msg := range []tea.Msg{command(1, "ls /tmp"), result("a\n", 0), answer("One file."), taskDoneMsg{}} {
+		m = step(t, m, msg)
+	}
+	if !strings.Contains(joined(printed), "One file.") {
+		t.Errorf("scratch-mode model did not render an answer normally, got:\n%s", joined(printed))
+	}
+}

@@ -1,4 +1,4 @@
-.PHONY: build test run task cli repl scratch tui undo ollama-serve ollama-serve-bg ollama-pull ollama-status pilot pilot3 clean ci fmt-check vet corpus4 round4 deps-check deps-hoard
+.PHONY: build test run task cli repl scratch tui tui-scratch undo ollama-serve ollama-serve-bg ollama-pull ollama-status pilot pilot3 clean ci fmt-check vet corpus4 round4 deps-check deps-hoard
 
 # Falls back to the user-local toolchain (no sudo required) if `go` isn't
 # already on PATH — see ../setup.md.
@@ -55,6 +55,11 @@ scratch: build
 
 tui: build
 	cd "$(RUNDIR)" && $(SYNAPSE) tui
+
+# The TUI, in scratch mode (D44): same interface, same confirmation gate,
+# Ctrl+O, and neat mode — no memory between tasks.
+tui-scratch: build
+	cd "$(RUNDIR)" && $(SYNAPSE) tui scratch
 
 undo: build
 	./bin/synapse undo
