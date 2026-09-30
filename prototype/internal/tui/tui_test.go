@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -1271,4 +1272,75 @@ func TestScratchModelBehavesLikeAnOrdinaryModelOtherwiseIdentically(t *testing.T
 	if !strings.Contains(joined(printed), "One file.") {
 		t.Errorf("scratch-mode model did not render an answer normally, got:\n%s", joined(printed))
 	}
+}
+
+// --- neat mode's forced repaint (found live 2026-09-30) -------------------
+//
+// m.neatLines was already proven to reset correctly on every new task (it
+// is a plain Go slice, trivially correct). What was not correct is what the
+// terminal actually showed: ultraviolet's inline renderer only clears
+// trailing rows left over from a taller previous frame on an actual
+// terminal *resize* — a same-size window whose live-region content just
+// got shorter does not trigger it, so a short answer following a long
+// confirmation left the confirmation's text on screen, fused with the new
+// turn. Verified against a real VT100 emulation (not this package's own
+// tests, which cannot see terminal-level redraw bugs at all — see the
+// decision record). The fix is forcing a full repaint on every new task in
+// neat mode; this test locks that in at the Cmd level so it cannot regress
+// silently the way the bug itself was silent to every test that existed
+// before this one.
+
+// isClearScreenCmd reports whether running cmd yields the same message
+// tea.ClearScreen's own Cmd yields. clearScreenMsg is unexported, so type
+// identity is compared instead of the message itself.
+func isClearScreenCmd(cmd tea.Cmd) bool {
+	if cmd == nil {
+		return false
+	}
+	return reflect.TypeOf(cmd()) == reflect.TypeOf(tea.ClearScreen())
+}
+
+// walkCmds flattens a tea.Batch/Sequence tree of Cmds (as returned by
+// startTask) so each leaf Cmd can be inspected individually — running a
+// tea.BatchMsg or sequenceMsg itself would execute every leaf as a side
+// effect (starting the spinner ticking, sending the echo), which is not
+// what a test inspecting *which* commands were returned wants.
+func walkCmds(cmd tea.Cmd, found func(tea.Cmd)) {
+	if cmd == nil {
+		return
+	}
+	msg := cmd()
+	switch m := msg.(type) {
+	case tea.BatchMsg:
+		for _, c := range m {
+			walkCmds(c, found)
+		}
+	default:
+		found(func() tea.Msg { return msg })
+	}
+}
+
+func TestStartTaskForcesARepaintInNeatModeButNotOtherwise(t *testing.T) {
+	m := NewModel(noopRunner)
+	m.neat = true
+	next, cmd := m.startTask("do a thing")
+	m = next.(Model)
+	sawClear := false
+	walkCmds(cmd, func(c tea.Cmd) {
+		if isClearScreenCmd(c) {
+			sawClear = true
+		}
+	})
+	if !sawClear {
+		t.Error("starting a task in neat mode did not force a full repaint — the previous turn's leftover text will not be cleared on some terminals")
+	}
+
+	m2 := NewModel(noopRunner) // neat is off
+	next2, cmd2 := m2.startTask("do a thing")
+	_ = next2
+	walkCmds(cmd2, func(c tea.Cmd) {
+		if isClearScreenCmd(c) {
+			t.Error("an ordinary (non-neat) task forced a full repaint — unnecessary outside neat mode")
+		}
+	})
 }

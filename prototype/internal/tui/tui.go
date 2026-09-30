@@ -643,11 +643,26 @@ func (m Model) startTask(task string) (tea.Model, tea.Cmd) {
 	m.running = true
 	m.cancelTask = cancel
 	m.cancelled = false // defensive: taskDoneMsg already clears this, but a new task must never start reading a stale flag
+	var forceRepaint tea.Cmd
 	if m.neat {
 		// The previous turn stays visible until this moment on purpose — a
 		// user reading the last answer should not see it vanish before they
 		// have even asked the next question.
 		m.neatLines = nil
+		// tea.ClearScreen forces a full repaint of the live region rather
+		// than bubbletea's normal line-diffing redraw. Necessary here and
+		// nowhere else in this file: ultraviolet's inline (non-altscreen)
+		// renderer only clears trailing rows left over from a previous,
+		// taller frame on an actual terminal *resize* — a same-size window
+		// whose content just got shorter does not trigger it. Every other
+		// live-region update in this program (the partial line, the status
+		// line) only ever grows by a line or two at a time and self-corrects
+		// on the next keystroke, so the gap was never visible until neat
+		// mode made the live region itself carry a whole turn that can
+		// shrink by a lot in one step (found live 2026-09-30: a short
+		// answer following a long confirmation left the confirmation's text
+		// on screen, stitched together with the new turn's).
+		forceRepaint = tea.ClearScreen
 	}
 
 	// The echo is queued before the goroutine exists, so it precedes every
@@ -681,7 +696,7 @@ func (m Model) startTask(task string) (tea.Model, tea.Cmd) {
 	//
 	// The spinner's own tick chain is separate from that and starts here:
 	// it is not an events-channel message, so it cannot race with it.
-	return m, tea.Batch(echo, m.spinner.Tick)
+	return m, tea.Batch(echo, m.spinner.Tick, forceRepaint)
 }
 
 // View draws only the live region: the unfinished line, the status or
