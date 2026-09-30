@@ -1,0 +1,350 @@
+5943	qwen2.5-coder:3b	echo {001..100}
+11119	qwen2.5-coder:3b	find . -name "*.mkv" | xargs ./your_script.sh
+11579	qwen2.5-coder:3b	find . -type f -mtime -1
+5038	qwen2.5-coder:3b	ls -l --time-style="+%Y-%m-%d" | awk '{print $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $1}' > /tmp/files.txt
+5324	qwen2.5-coder:3b	find . -user my_user -perm 777
+1157	qwen2.5-coder:3b	touch "file\r"
+2416	qwen2.5-coder:3b	find . -type f -name "*.jpg" | xargs gimp
+8166	qwen2.5-coder:3b	ls -ld --time-style=+%Y-%m-%d /home/user/project/* | grep -E '^\d{4}-\d{2}-\d{2}' | awk '{print $9}' | sed 's/^\.\//' > deploy.txt
+1954	qwen2.5-coder:3b	ls -R /etc/ | grep '\.conf$' | tail -n 5
+2086	qwen2.5-coder:3b	ls asia/emea/*.gz | xargs -I {} wc -l > file_count.txt
+8724	qwen2.5-coder:3b	find . -maxdepth 1 -type f \( ! -name "*.svn*" ! -name "*.cvsignore*" \) -name "messages.*"
+5257	qwen2.5-coder:3b	`ssh -R 1234:localhost:22 root@123.123.123.123`
+9788	qwen2.5-coder:3b	`find . -type f -name "*.txt" -exec chown root:root {} +`
+1384	qwen2.5-coder:3b	rm * !('b')
+7405	qwen2.5-coder:3b	rm -rf *
+7321	qwen2.5-coder:3b	sudo mount --bind /outside /inside
+4012	qwen2.5-coder:3b	find . -type f -mmin -6 -mmin +9
+7762	qwen2.5-coder:3b	find . -type f -name "*.xml" -exec sed -i 's/firstWord/newFirstWord/g; s/secondWord/newSecondWord/g; s/thirdWord/newThirdWord/g' {} +
+8458	qwen2.5-coder:3b	`find . -type d -name 'foo'`
+8716	qwen2.5-coder:3b	find . -name "*.sql"
+3127	qwen2.5-coder:3b	ls -l | grep '^-' | awk '{print $3}' | sort | uniq
+463	qwen2.5-coder:3b	chown "$JBOSS_USER" "$JBOSS_CONSOLE_LOG"
+11244	qwen2.5-coder:3b	find / -type f -mtime -120
+5544	qwen2.5-coder:3b	sudo mount -o bind /absolute/path/to/some/where/else /home/user/project/project1/link1
+4346	qwen2.5-coder:3b	ls -lh | sort -k5,5nr | head -n 10
+7803	qwen2.5-coder:3b	find . -type f -name "foo_fn" -exec sed -i 's/foo_fn/bar_fn/g' {} +
+2167	qwen2.5-coder:3b	find /home/jul/here -type f \( -iname "*.php" -o -iname "*.js" \) -not -path "/home/jul/here/exclude/*"
+11396	qwen2.5-coder:3b	find . -type l -exec test ! -e {} \; -print
+4298	qwen2.5-coder:3b	ls -A | grep 'some text'
+5524	qwen2.5-coder:3b	sort -t, -k1,1! in1 | sort -t, -k1,1! in2 | join -t, -1 1 -2 1 -o 1.1,2.2,2.3 | uniq
+9912	qwen2.5-coder:3b	`find . -name "*.java" -exec wc -l {} +`
+9772	qwen2.5-coder:3b	chown -R andrew:andrew .
+3548	qwen2.5-coder:3b	ls *.css
+10913	qwen2.5-coder:3b	find . -name "*.foo" | xargs somecommand
+788	qwen2.5-coder:3b	rsync -avz --progress user@remote_host:/path/to/source /home/user/project
+9685	qwen2.5-coder:3b	echo "hey hey, we're the monkees" | gzip --stdout > my_log.gz
+10731	qwen2.5-coder:3b	find . -type f -name "*.flac"
+8064	qwen2.5-coder:3b	ls -R | grep -v '^$' > foo
+7652	qwen2.5-coder:3b	ls -t | tail -n +6 | xargs rm -f
+5322	qwen2.5-coder:3b	find /home/user -type f -atime +30
+6007	qwen2.5-coder:3b	cat /var/log/auth.log | grep 'login' | awk '{print "The user " $1 " is on " $2}'
+5181	qwen2.5-coder:3b	ls -l | head -n 20
+3710	qwen2.5-coder:3b	ls /var/log | grep syslog
+484	qwen2.5-coder:3b	chown -R myuser:a-common-group-name .
+1079	qwen2.5-coder:3b	ln myfile.txt my-hard-link
+4631	qwen2.5-coder:3b	ls -l | grep <userid>
+8163	qwen2.5-coder:3b	find . -type f -mtime -10 -exec ls -l {} \; > March.files
+5763	qwen2.5-coder:3b	yes | more | head -n 3 >> file
+9479	qwen2.5-coder:3b	find . -maxdepth 1 -exec rm -rf {} +
+7654	qwen2.5-coder:3b	ls -t | tail -n +4 | xargs rm -f
+3873	qwen2.5-coder:3b	echo "List of files & Directory" && ls
+11980	qwen2.5-coder:3b	sed -i 's/apple/orange/g' *.txt
+7058	qwen2.5-coder:3b	chown -R $(whoami):$(whoami) ~/.npm
+9992	qwen2.5-coder:3b	mkdir aaa/bbb
+12162	qwen2.5-coder:3b	find . -name "version.php" -exec grep -oP '(?<=version\s*=\s*")\d+\.\d+\.\d+(?=")' {} + | sort -t. -k1,1n -k2,2n -k3,3n | tail -n 1
+191	qwen2.5-coder:3b	tar -czvf - | ssh user@targethost "mkdir -p /path && tar -xzvf - -C /path"
+1931	qwen2.5-coder:3b	find /mnt/zip -type f -name "*prefs copy" -exec rm {} +
+7880	qwen2.5-coder:3b	df -h | sort -hr | head -n 5
+534	qwen2.5-coder:3b	ssh remote_host "test -f /path/to/file"
+3936	qwen2.5-coder:3b	find . -type f -atime -1 -mmin -60
+8856	qwen2.5-coder:3b	find . -type f -name ".*"
+11278	qwen2.5-coder:3b	find /home -type f -size 10M
+931	qwen2.5-coder:3b	ls /usr/ports/pkg-plist* | grep 'unexec.rmdir%D' | wc -l
+7388	qwen2.5-coder:3b	find . -name "Thumbs.db" -exec rm -f {} +
+1390	qwen2.5-coder:3b	find . -inum $inum -exec rm -rf {} +
+2540	qwen2.5-coder:3b	find . -type d -name 'octave'
+12300	qwen2.5-coder:3b	find / -type d -name "ora10*"
+6742	qwen2.5-coder:3b	echo "$month $year" | awk -v day="$day" -f cal.awk
+8318	qwen2.5-coder:3b	find . -type f -exec grep -l "example" {} +
+8413	qwen2.5-coder:3b	find . -type f \( -name "*.png" -not -name "*.gif" -not -name "*.svn" \) -exec grep -l 'foo=' {} +
+2456	qwen2.5-coder:3b	find / -type f -perm -4000 -exec ls -l {} \;
+12046	qwen2.5-coder:3b	find /usr -type c -name 'backup'
+851	qwen2.5-coder:3b	cp -r --exclude='exclude' dir1/* dir2/
+513	qwen2.5-coder:3b	cd "$TAG"
+8992	qwen2.5-coder:3b	find . -name 'myfile' 2>/dev/null
+634	qwen2.5-coder:3b	find "$PATH_TO_LOGS" -type f ! -name "*.gz" -mtime +$SOME_NUMBER_OF_DAYS | xargs gzip
+3781	qwen2.5-coder:3b	ls tecmint.txt
+10842	qwen2.5-coder:3b	find . -size -1c
+6400	qwen2.5-coder:3b	`awk '{print $3}' file1 file2 | sort | uniq`
+4342	qwen2.5-coder:3b	ls -1 | head -n 1
+3802	qwen2.5-coder:3b	find /home/user/project -type f \( -name "*.tgz" -o -name "*.gz" \) -exec ls -lt {} + | head -n 1 | awk '{print $9}' | xargs -I {} rm /home/backups/{}
+4465	qwen2.5-coder:3b	`find . -type f -name "*.php" -exec wc -l {} +`
+6630	qwen2.5-coder:3b	lsblk -f | grep 'type: mount' | awk '{print $1}'
+948	qwen2.5-coder:3b	`find . -name "*.txt" -exec wc -l {} +`
+2780	qwen2.5-coder:3b	`find . -maxdepth 2`
+6569	qwen2.5-coder:3b	ls -R /tmp/a1
+9623	qwen2.5-coder:3b	time command > output.txt
+11874	qwen2.5-coder:3b	`grep -i 'p' -e 'e'`
+11410	qwen2.5-coder:3b	find . -type f -not -path "/some/dir/*" -exec rm -f {} +
+3286	qwen2.5-coder:3b	find . -type f -name '*$VERSION*' -o -type d -name '*$VERSION*'
+3576	qwen2.5-coder:3b	find . -type f ! -perm -o+rx
+12039	qwen2.5-coder:3b	find /path -type f -name 'pattern' | xargs somecommand
+4651	qwen2.5-coder:3b	ps -eo pid,vsz | sort -k2,2nr | head -n 1
+8239	qwen2.5-coder:3b	echo 1 > /dev/null
+8584	qwen2.5-coder:3b	grep -r 'pattern_to_search' /directory/containing/files | awk '{print $0, FILENAME}'
+5647	qwen2.5-coder:3b	`mv "$2" "$(dirname "$1")"`
+4119	qwen2.5-coder:3b	find /etc -name "*.conf"
+7883	qwen2.5-coder:3b	echo "${FOO_NO_LEAD_SPACE}" | wc -c
+4152	qwen2.5-coder:3b	find /u /b /s /o -type d -name 'sar'
+8890	qwen2.5-coder:3b	find . -type l -exec test -L {} \; -exec ls -ld {} \;
+6545	qwen2.5-coder:3b	awk '{print $1, $0}' table.txt | sort | uniq -f1
+3479	qwen2.5-coder:3b	`find /tmp/ -maxdepth 1 -type f -o -type d | while read -r file; do newname=$(echo "$file" | tr ' ' '_'); mv "$file" "$newname"; done`
+6726	qwen2.5-coder:3b	ps -u username -H -e -o pid,ppid,cmd
+11930	qwen2.5-coder:3b	find . -type f -newermt "2023-10-01"
+167	qwen2.5-coder:3b	tar -czvf destination.tar.gz source/ && chmod 777 destination.tar.gz && ssh user@remote_host "mkdir -p destination && chmod 777 destination && tar -xzvf destination.tar.gz -C destination"
+3580	qwen2.5-coder:3b	find . -type f -name 'btree*.c'
+5159	qwen2.5-coder:3b	ls
+11801	qwen2.5-coder:3b	find . -type f -newer /bin/sh
+12223	qwen2.5-coder:3b	find . -name "*.php" -exec php -l {} +
+5408	qwen2.5-coder:3b	mkdir 3/{foo,bar,baz}
+342	qwen2.5-coder:3b	crontab -e | sed -i 's/5 * * * * anm.sh/10 * * * * anm.sh/'
+4466	qwen2.5-coder:3b	`find . -type f \( -name "*.h" -o -name "*.cpp" \) -exec wc -l {} +`
+9845	qwen2.5-coder:3b	chmod -R 755 .
+1030	qwen2.5-coder:3b	`find . -type f -name "*.php" | wc -l`
+11641	qwen2.5-coder:3b	find . -type f -name "*.mbox" | parallel --dry-run mv {} {.%}
+7519	qwen2.5-coder:3b	rm -rf .
+6226	qwen2.5-coder:3b	lsblk | grep sd*
+11817	qwen2.5-coder:3b	ls *.c *.sh
+5450	qwen2.5-coder:3b	mkdir /tmp/new
+149	qwen2.5-coder:3b	rsync -avh --delete /path/to/sfolder/ name@remote.server:/path/to/remote/dfolder
+3506	qwen2.5-coder:3b	find / -name "httpd.conf" 2>/dev/null
+5027	qwen2.5-coder:3b	ls -a > /tmp/files.txt
+9740	qwen2.5-coder:3b	ls > /tmp/ls.txt 2>&1
+10197	qwen2.5-coder:3b	ls -A
+11795	qwen2.5-coder:3b	ls -d */
+655	qwen2.5-coder:3b	tar -czvf archive.tar.gz *
+3676	qwen2.5-coder:3b	find . -type f -perm 755 -exec chmod 644 {} +
+11283	qwen2.5-coder:3b	find /usr/bin -mtime -10
+159	qwen2.5-coder:3b	rsync -av --hard-links --partial --sparse remote:directory .
+7007	qwen2.5-coder:3b	read -r -d '' f2
+5658	qwen2.5-coder:3b	sort -nr "bb"
+9304	qwen2.5-coder:3b	read -n 1 -r SELECT
+5389	qwen2.5-coder:3b	mkdir $(echo $RANDOM | md5sum | head -c 32)
+4402	qwen2.5-coder:3b	ip addr show | grep inet | awk '{print $2}'
+3752	qwen2.5-coder:3b	find / -type f -mtime -1
+3055	qwen2.5-coder:3b	find . -type f -regex '^.*/[a-z][^/]*$'
+374	qwen2.5-coder:3b	chmod -R 664 /var/www/html/
+3207	qwen2.5-coder:3b	find /root -name 'FindCommandExamples.txt'
+5151	qwen2.5-coder:3b	ls -R
+7440	qwen2.5-coder:3b	find . -type f -mtime +1 -exec rm {} +
+10163	qwen2.5-coder:3b	ls -l | grep '^d' | awk '{print $9}'
+12498	qwen2.5-coder:3b	ls *.flac
+3643	qwen2.5-coder:3b	sed -i 's/subdomainA\.example\.com/subdomainB\.example\.com/g' /home/www/*
+4880	qwen2.5-coder:3b	ls /etc/*.txt
+957	qwen2.5-coder:3b	watch -n 2 "lsof -p $PYTHONPID | wc -l"
+10064	qwen2.5-coder:3b	find /home -type f -name "*.mp4" -size +10M -exec rm {} \;
+171	qwen2.5-coder:3b	tar -czvf dst.tar.gz src/ --exclude='dst/'
+11266	qwen2.5-coder:3b	ls -l | grep '^-' | awk '{print $9}' | head -n 10
+10297	qwen2.5-coder:3b	ls /some/dir/*.c /some/dir/*.h
+7579	qwen2.5-coder:3b	`find /home -type f \( -name "*.ext" \) -exec sed -i 's/\r$//' {} +`
+304	qwen2.5-coder:3b	md5sum /path/**/*.py
+12308	qwen2.5-coder:3b	find . -maxdepth 1 -type f -name "file" -not -path "./.git/*"
+10013	qwen2.5-coder:3b	ls /original/*.processname | xargs -I {} ln -s {} .
+5707	qwen2.5-coder:3b	tail -n +1 -f -s 1 /dev/stdin | awk '{print NR, $0}' | head -n 786
+4092	qwen2.5-coder:3b	find . -type f -newermt "$date_time"
+6928	qwen2.5-coder:3b	read -a first <<< "$(cat)"
+6350	qwen2.5-coder:3b	awk '!seen[$0]++'
+7389	qwen2.5-coder:3b	rm \*~
+3753	qwen2.5-coder:3b	find / -type f -mtime -1
+11914	qwen2.5-coder:3b	`chown -R $(whoami) $(npm config get prefix)/lib $(npm config get prefix)/node_modules $(npm config get prefix)/bin $(npm config get prefix)/share`
+4303	qwen2.5-coder:3b	find . -name "*.sqlite3" -exec sqlite3 {} 'SELECT * FROM table WHERE column1="value"' | grep "value"
+4516	qwen2.5-coder:3b	rm *.jpg -size -50K
+7052	qwen2.5-coder:3b	chown -R www-data:www-data /var/www/.gnome2 /var/www/.config /var/www/.config/inkscape
+1799	qwen2.5-coder:3b	while true; do wget -qO- http://fake.link/file.txt; sleep 5; done
+7447	qwen2.5-coder:3b	rm -rf /home/user/Maildir/.SPAM/cur/*
+3713	qwen2.5-coder:3b	find . -name "test1.h"
+11643	qwen2.5-coder:3b	ls -l | grep "your_pattern" | awk '{print $5}' | du -sh | awk '{print $1}'
+10615	qwen2.5-coder:3b	ls | grep -i '^test'
+4672	qwen2.5-coder:3b	ip addr show | grep 'inet ' | awk '{print $2}' | head -n 1
+4038	qwen2.5-coder:3b	find / -type f -mtime -50 -print
+5150	qwen2.5-coder:3b	ls -l | grep '^d'
+1557	qwen2.5-coder:3b	diff -r -w -t repos1 repos2
+8671	qwen2.5-coder:3b	find /myfiles -type f -mtime +2
+4452	qwen2.5-coder:3b	grep -r "string to be searched" *.cs
+10793	qwen2.5-coder:3b	find . -type f -empty
+1250	qwen2.5-coder:3b	mkdir -p "$TMPDIR/$(basename "$0")-$(printf "%010x" "$$")"
+47	qwen2.5-coder:3b	cat "A new line" >> *.py
+11117	qwen2.5-coder:3b	grep -r "re" *.coffee
+8007	qwen2.5-coder:3b	find . -type f -exec file {} +
+4962	qwen2.5-coder:3b	ls -l /home/bozo/projects | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
+5346	qwen2.5-coder:3b	find / -name "testfile.txt" 2>/dev/null
+10929	qwen2.5-coder:3b	ls -a | grep -v '^.' | find . -type f -mtime -1
+6889	qwen2.5-coder:3b	date +"%A"
+1221	qwen2.5-coder:3b	touch tmpfile && echo "$(pwd)/tmpfile" > tmpfile
+734	qwen2.5-coder:3b	`pandoc foo.md -o foo.html && lynx foo.html`
+4214	qwen2.5-coder:3b	find /home/user -name "mysong.ogg"
+9750	qwen2.5-coder:3b	find . -type f \( -name "*.jpg" -o -name "*.png" \) -mtime -7
+8178	qwen2.5-coder:3b	md5sum $twofish | tee twofish.md5
+934	qwen2.5-coder:3b	ls -d /dev/sd*[a-z] | wc -l
+11519	qwen2.5-coder:3b	find /home/user -type f \( -iname "*.mp4" -o -iname "*.avi" -o -iname "*.mkv" -o -iname "*.mov" \)
+10850	qwen2.5-coder:3b	find . -type f -mtime +10
+8067	qwen2.5-coder:3b	bgxjobs=$(jobs -p)
+6372	qwen2.5-coder:3b	hostname -I
+6252	qwen2.5-coder:3b	wc -c "$file"
+1215	qwen2.5-coder:3b	`str="random file name"; rand_str="${str// /X}"; echo "$rand_str" > rand_str`
+3347	qwen2.5-coder:3b	chmod -R 0755 /path/to/dir && chmod -R 0644 /path/to/dir/**
+11917	qwen2.5-coder:3b	chown -R $(whoami) /usr/lib/node_modules/
+1094	qwen2.5-coder:3b	ssh-keygen -t rsa -b 4096 -f "$HOME/.ssh/id_rsa"
+11468	qwen2.5-coder:3b	ls -l | grep -v '\.comment$' > /tmp/list
+12213	qwen2.5-coder:3b	mkdir /mnt/hda1/test && find /mnt/hda1/zdjecia/test1/ -type f -name "*.jpg" -execdir mkdir {} \;
+160	qwen2.5-coder:3b	ssh myhost.net "mkdir -p /some/nonExisting/dirToCopyTO"
+3934	qwen2.5-coder:3b	ls -lh | grep "file_name" | awk '{print $5}'
+6266	qwen2.5-coder:3b	printf "%02d\n" {1..30}
+2324	qwen2.5-coder:3b	find . -type f -name "*.jpg"
+11999	qwen2.5-coder:3b	cat a.txt | tac > b.txt
+10562	qwen2.5-coder:3b	ls *.ext | grep -v -f list.txt
+3401	qwen2.5-coder:3b	find . -type f -o -type d -newermt "$(tar -tf backup.tar.gz | head -n 1)"
+10755	qwen2.5-coder:3b	find . -type f \( -name "*.o" -o -name "*.a.out" -o -name "core" \) -exec rm -f {} +
+2230	qwen2.5-coder:3b	rm /foo/*.txt
+2695	qwen2.5-coder:3b	find . -type f -executable
+7249	qwen2.5-coder:3b	rm * !(*.txt)
+7201	qwen2.5-coder:3b	ls -t | head -n 5
+2264	qwen2.5-coder:3b	find /basedir -type f \( -name "*.txt" -o -name "*.html" \) -iname "*company*"
+2197	qwen2.5-coder:3b	find . -type f -name "*.rpm"
+5708	qwen2.5-coder:3b	while true; do echo yes; done
+9324	qwen2.5-coder:3b	`awk -F. '{print $2, $0}' file1 file2 | sort`
+6015	qwen2.5-coder:3b	`diff -qr dir1 dir2 | grep -oP '(?<=\s+)(?P<path>.*?)(?=\s+)'`
+9550	qwen2.5-coder:3b	find . -type f -name "*.gz" ! -name "*dvportgroups*" ! -name "*nsanity*" ! -name "*vcsupport*" ! -name "*viclient*" ! -name "*vsantraces*" -exec gunzip {} +
+7957	qwen2.5-coder:3b	`find . -maxdepth 1 -type d -exec git pull \;`
+4054	qwen2.5-coder:3b	find . -type f -name "file*"
+4845	qwen2.5-coder:3b	ps aux | grep myuser | awk '{print $2}' | xargs kill -9
+10642	qwen2.5-coder:3b	ls -A | grep -v '^.'
+3795	qwen2.5-coder:3b	find $DIR -type f -mtime +15 -exec rm -f {} +
+5756	qwen2.5-coder:3b	`cat ips | xargs -n1 ping -c2`
+792	qwen2.5-coder:3b	cp sparse-1 sparse-1-copy
+8106	qwen2.5-coder:3b	date +"%Y-%m-%d" >> filename
+810	qwen2.5-coder:3b	cp -r /home/* /newhome/
+11460	qwen2.5-coder:3b	find . -type f -name "*.mod" | xargs remodup
+814	qwen2.5-coder:3b	cp $(find . -type f -iname "*foobar*") ~/foo/bar/
+11429	qwen2.5-coder:3b	find /var/www -name "*.pl"
+7297	qwen2.5-coder:3b	sudo mount -o remount,rw /
+11478	qwen2.5-coder:3b	find /travelphotos -type f -size +200k ! -name "*2015*"
+210	qwen2.5-coder:3b	tar -czvf /destinationfolder/archive.tar.gz --exclude='thefoldertoexclude' sourcefolder
+7995	qwen2.5-coder:3b	perl -V
+1833	qwen2.5-coder:3b	`find /path/to/files -type f -exec truncate -s 0 {} +`
+8071	qwen2.5-coder:3b	`abspath=$(realpath "$path")`
+2413	qwen2.5-coder:3b	`find . -type f -name 'a*' -name '*.html'`
+4793	qwen2.5-coder:3b	sudo apt update && sudo apt install firefox
+11577	qwen2.5-coder:3b	find . -type f -mtime -1
+1714	qwen2.5-coder:3b	echo "set -i" >> ~/.bashrc && source ~/.bashrc
+8012	qwen2.5-coder:3b	./myscript.sh $(find mydir -name "*.fasta" | xargs) > output.txt 2>&1 &
+2691	qwen2.5-coder:3b	find {} -maxdepth 1 \( -type l -executable -o -name "upvoter-*" \)
+12116	qwen2.5-coder:3b	grep -r "word" *.java
+7864	qwen2.5-coder:3b	df -h | sort -h
+9840	qwen2.5-coder:3b	find / -type f -name "*.rpm" -exec chmod 755 {} +
+1318	qwen2.5-coder:3b	find . -type d -empty -exec rmdir {} +
+11699	qwen2.5-coder:3b	rm *
+11549	qwen2.5-coder:3b	ls | grep -i foo
+9516	qwen2.5-coder:3b	unset GIT_DIR
+5801	qwen2.5-coder:3b	cat ips | while read ip; do echo "ping -c 2 $ip"; done
+10675	qwen2.5-coder:3b	find --version
+9918	qwen2.5-coder:3b	rsync -avz --exclude='*/' / /media/floppy/
+6567	qwen2.5-coder:3b	find . -type f -mmin -1 -printf "%f\n"
+6133	qwen2.5-coder:3b	`basename "$(basename "$0")" .`
+1132	qwen2.5-coder:3b	ln -s "$dir" "$1/link"
+682	qwen2.5-coder:3b	`date -d "20131202" +"%Y %m %d"`
+119	qwen2.5-coder:3b	cat file.txt >> .bash_history
+5065	qwen2.5-coder:3b	ps -ef
+2644	qwen2.5-coder:3b	`find mydir -mindepth 2 -type d`
+612	qwen2.5-coder:3b	`diff <(ls) <(ls *Music*) | grep -v '^<' | grep -v '^>'`
+4737	qwen2.5-coder:3b	cd /some/where/long
+6775	qwen2.5-coder:3b	man cp
+6305	qwen2.5-coder:3b	script -q /dev/null ./a | tee output.txt
+1062	qwen2.5-coder:3b	touch "$file1/tmpfile" && echo "$file1/tmpfile" > tmpfile
+5380	qwen2.5-coder:3b	mkdir -p folder{1..998} folder9991000
+6359	qwen2.5-coder:3b	`diff -rq folder1 folder2 | grep -E '^\(New\|Missing\|Differ\)'`
+6590	qwen2.5-coder:3b	ping -c 10 google.com | awk '{print $5}' | sort -n | head -n 1
+132	qwen2.5-coder:3b	tar -czvf /mnt/windowsabc/archive.tar.gz /home/abc/*
+11313	qwen2.5-coder:3b	find . -type f -mtime -1
+4540	qwen2.5-coder:3b	awk '{print $1, $2, $3}'
+1185	qwen2.5-coder:3b	crontab -l | grep -v "$command" | crontab -
+3487	qwen2.5-coder:3b	find /path/to/look/in -type d -name '.texturedata' -maxdepth 1
+6780	qwen2.5-coder:3b	ps -eou $euids | awk '{print $2}'
+219	qwen2.5-coder:3b	tar -cjf tarfile.tar.bz2 .
+12268	qwen2.5-coder:3b	find . -perm -o+w -perm -g+w
+9575	qwen2.5-coder:3b	gunzip file1.gz file2.gz && command -1 -2 file1 file2
+4519	qwen2.5-coder:3b	rm -rf *
+8354	qwen2.5-coder:3b	find MyApp.app -type d -name 'Headers' -exec rm -rf {} + 2>/dev/null
+9530	qwen2.5-coder:3b	unset -f ls /bin/ls
+5486	qwen2.5-coder:3b	`awk '{sum += $1} END {print sum}' filename`
+1168	qwen2.5-coder:3b	touch "${correctFilePathAndName[@]}"
+12476	qwen2.5-coder:3b	alias unsetvar='source /home/user/project/script/unsetvar'
+9452	qwen2.5-coder:3b	rm $(cat)
+1968	qwen2.5-coder:3b	find . -type f -name "*.o" -perm 664
+9954	qwen2.5-coder:3b	tar -czvf images.tar.gz *.jpg *.png
+8195	qwen2.5-coder:3b	echo $(awk '{print $1}' /proc/loadavg) > proc_load_average
+4000	qwen2.5-coder:3b	ls esofthub/* | grep test && ls esoft/* | grep test
+1669	qwen2.5-coder:3b	cal -d 2020-12-01
+1579	qwen2.5-coder:3b	`while true; do echo $(tr -cd '[:print:]' < /dev/urandom | fold -w 80); done`
+5596	qwen2.5-coder:3b	find . -type d -mtime -1 -exec mv {} /path/to/target-dir \;
+6453	qwen2.5-coder:3b	pwd
+10476	qwen2.5-coder:3b	ls -l | grep '\.html$' | awk '{print $9}' | xargs -I {} find {} -mtime +7 | xargs -I {} echo
+6425	qwen2.5-coder:3b	date +"%H:%M:%S": done waiting. both jobs terminated on their own or via timeout; resuming script
+5676	qwen2.5-coder:3b	vim *.java
+11772	qwen2.5-coder:3b	ls -la > files_and_folders
+11037	qwen2.5-coder:3b	find . -iname "*.sh"
+4359	qwen2.5-coder:3b	find . -maxdepth 4 -mindepth 2 -name "password*"
+3524	qwen2.5-coder:3b	ls -l | awk '{print $5}' | grep -oP '\.[^.]+$' | sort | uniq
+9212	qwen2.5-coder:3b	`shift; $1=$@`
+8736	qwen2.5-coder:3b	grep -r "needle text" .
+2142	qwen2.5-coder:3b	find . -name "*.mp3"
+9644	qwen2.5-coder:3b	tail -n +116 /home/user/project/history | head -n 5
+2761	qwen2.5-coder:3b	find . -exec echo first; false \;
+3567	qwen2.5-coder:3b	`find . -type f | wc -l`
+535	qwen2.5-coder:3b	ssh host "test -f /path/to/file"
+8616	qwen2.5-coder:3b	grep "Linux" ~/mail/*.txt
+12088	qwen2.5-coder:3b	mv junk/cart1 ~/junk/A
+8948	qwen2.5-coder:3b	grep "text to search" /directory/containing/files -r
+8110	qwen2.5-coder:3b	hostname -f | read hnd
+5341	qwen2.5-coder:3b	ssh -i id_rsa host
+5730	qwen2.5-coder:3b	phpinfo | less
+7366	qwen2.5-coder:3b	rm /home/luser/*.mpg
+11135	qwen2.5-coder:3b	find / -type f \( -user nogroup -o -user noname \) -exec ls -l {} +
+8281	qwen2.5-coder:3b	grep -r "hogehoge" *.c
+11787	qwen2.5-coder:3b	ls -d */ | grep -v dir1 | grep -v dir2
+4987	qwen2.5-coder:3b	find . -type f -mtime +1 | xargs ls -lh
+2484	qwen2.5-coder:3b	ls -d /var/www/html/build*/ | tail -n +6 | sed 's/^/rf /'
+1275	qwen2.5-coder:3b	sed -i 's/\r\n//g' yourfile.txt
+679	qwen2.5-coder:3b	tail -f backingfile | while read -r line; do echo "y"; done &
+11948	qwen2.5-coder:3b	find /usr -type f -atime +720 -exec rm -f {} +
+416	qwen2.5-coder:3b	chmod -R 755 *.php && echo "Modified files: $(find . -maxdepth 1 -name "*.php" | wc -l)"
+3742	qwen2.5-coder:3b	find . -type f -mtime +50
+993	qwen2.5-coder:3b	`find . -type f | wc -l`
+3581	qwen2.5-coder:3b	find . -type f -name "YourProgramName" -exec bash -c 'cd "$(dirname {})" && ./YourProgramName YourParameterFile' \;
+861	qwen2.5-coder:3b	rename 's/\d+//' *
+7953	qwen2.5-coder:3b	`command | while read -p "Press Enter to continue..."; do :; done`
+9348	qwen2.5-coder:3b	screen -S mySession -d -m myCommand
+973	qwen2.5-coder:3b	`who | wc -l`
+11506	qwen2.5-coder:3b	find / -type f -name "*.txt"
+9190	qwen2.5-coder:3b	echo "$(uname -r)" > MYPROGRAMNAME_KERNEL_VERSION
+7923	qwen2.5-coder:3b	id -Gn "$1" | grep -q "$2"
+8351	qwen2.5-coder:3b	find . -type d -name 'Headers' -exec rm -rf {} +
+10987	qwen2.5-coder:3b	find . -type f ! -name "*.o" ! -name "*.swp" -exec grep -l "soc_attach" {} +
+6943	qwen2.5-coder:3b	read -p "$(echo $@) ? [y/N] " YESNO
+7983	qwen2.5-coder:3b	`find . -type f -name "*.txt" | xargs awk -f your_script.awk`
+5367	qwen2.5-coder:3b	find /home/dm -type f -name '*uniform*'
+12104	qwen2.5-coder:3b	grep -r "word" *.C
+2153	qwen2.5-coder:3b	find . -iname "*.ogg"
+12208	qwen2.5-coder:3b	find . -type f -mtime +180 -exec du -sh {} + | awk '{print $1}' | tr -d 'M'
+4898	qwen2.5-coder:3b	ls -l | grep .svn
+10664	qwen2.5-coder:3b	wc -l *
+12480	qwen2.5-coder:3b	alias your_env='source ~/scripts/your_env.sh'
+5645	qwen2.5-coder:3b	mv some-dir x/
+686	qwen2.5-coder:3b	command-that-asks-for-input | tr -d '\n' | echo Y
+3971	qwen2.5-coder:3b	find /var/log -type f -mtime -1 -mmin -60
+8860	qwen2.5-coder:3b	find . -type f -mtime -10 -name "*.txt"
+1895	qwen2.5-coder:3b	`awk -F";" '{print $1, $2}'`
+4555	qwen2.5-coder:3b	`awk '{print $1, $2, $3}'`
+9614	qwen2.5-coder:3b	set -o pipefail && command1 | command2 | command3
+1633	qwen2.5-coder:3b	ls -d */ | grep -E '/$prefix$ypatt'

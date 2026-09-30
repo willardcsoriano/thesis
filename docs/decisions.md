@@ -37,6 +37,19 @@ This file records architectural and research design decisions that have been mad
   - [D29 — The thesis's algorithmic contribution is recoverability analysis of generated shell commands](#d29-the-thesiss-algorithmic-contribution-is-recoverability-analysis-of-generated-shell-commands)
   - [D30 — Generated commands stay visible to the user](#d30-generated-commands-stay-visible-to-the-user)
   - [D31 — Results are reported in natural language, not dumped as raw output](#d31-results-are-reported-in-natural-language-not-dumped-as-raw-output)
+  - [D32 — The algorithm becomes RQ1; the two contributions are independent, not subordinate](#d32-the-algorithm-becomes-rq1-the-two-contributions-are-independent-not-subordinate)
+  - [D33 — File manipulation runs on typed operations; the shell handles the remainder](#d33-file-manipulation-runs-on-typed-operations-the-shell-handles-the-remainder)
+  - [D34 — The algorithm is narrowed to composition and target resolution; the verdict alone is not the contribution](#d34-the-algorithm-is-narrowed-to-composition-and-target-resolution-the-verdict-alone-is-not-the-contribution)
+  - [D35 — The gate is default-on and strict; package and service state is modelled; ground truth is automated; dependencies are hoarded](#d35-the-gate-is-default-on-and-strict-package-and-service-state-is-modelled-ground-truth-is-automated-dependencies-are-hoarded)
+  - [D36 — Build priority: the algorithm and the distro are the mandatory deliverable; the comparative user study is secondary](#d36-build-priority-the-algorithm-and-the-distro-are-the-mandatory-deliverable-the-comparative-user-study-is-secondary)
+  - [D37 — The agent is homed where it starts; the login session starts in `~`; there is no directory boundary](#d37-the-agent-is-homed-where-it-starts-the-login-session-starts-in-there-is-no-directory-boundary)
+  - [D38 — The TUI is inline: finished lines go to the terminal's scrollback, not an alternate-screen viewport](#d38-the-tui-is-inline-finished-lines-go-to-the-terminals-scrollback-not-an-alternate-screen-viewport)
+  - [D39 — The loop reports typed events; the TUI shows the answer first and keeps the commands behind Ctrl+O](#d39-the-loop-reports-typed-events-the-tui-shows-the-answer-first-and-keeps-the-commands-behind-ctrlo)
+  - [D40 — Model-agnostic by construction: constrain the model's output in code, verify every model against the same test set, and put fixes where they can't rot into prompt tuning](#d40-model-agnostic-by-construction-constrain-the-models-output-in-code-verify-every-model-against-the-same-test-set-and-put-fixes-where-they-cant-rot-into-prompt-tuning)
+  - [D41 — Neat mode: an opt-in toggle that shows only the latest exchange, purely a rendering choice](#d41-neat-mode-an-opt-in-toggle-that-shows-only-the-latest-exchange-purely-a-rendering-choice)
+  - [D42 — Background, best-effort session compaction; CLI-like plain back-and-forth already exists as REPL mode](#d42-background-best-effort-session-compaction-cli-like-plain-back-and-forth-already-exists-as-repl-mode)
+  - [D43 — Scratch mode: REPL's persistent loop with no memory between tasks](#d43-scratch-mode-repls-persistent-loop-with-no-memory-between-tasks)
+  - [D44 — TUI mode gains a scratch variant: `synapse tui scratch`](#d44-tui-mode-gains-a-scratch-variant-synapse-tui-scratch)
 
 ## Decisions
 
@@ -414,6 +427,8 @@ On 2026-09-14 this entry was briefly revised to widen the contribution to *four*
 
 **Rejected, with reasons.** *Pre-execution verification* (does the command do what was asked?) — strong, and supported by reference [27]'s finding that verification is what makes CLI agents outperform GUI agents, but nothing of it is built and its evaluation entangles with model quality. *Failure recovery and reformulation* — a real defect (the loop repeats an identical failing command to the step cap), but with a 3B model it is impossible to separate the algorithm's contribution from the model's ceiling, and a panel will ask. *Context compression*, *risk-tiered gating*, *termination policy* — each too thin to carry a thesis alone; the first two remain available as extensions.
 
+**Narrowed 2026-09-20 — see D34.** The contribution is now composition through wrappers and resolution of run-time targets feeding a minimal capture plan, not verdicts for every command. Everything above stands as the record of how the contribution was first chosen.
+
 ---
 
 ### D30 — Generated commands stay visible to the user
@@ -468,3 +483,223 @@ It is also not a concession that interaction-model research would be invalid. HC
 - The two evaluations are stated as independent: the corpus study answers RQ1 without participants, the user study answers RQ2–RQ4 and waits on IRB.
 
 **Cost, accepted knowingly.** This is the most expensive tier in the repo — re-export, hardcoded TOC page-number re-derivation, ITRD compliance recheck. It is justified only because the idea being rendered was settled in `algorithms.md` first, so the chapters present finished work rather than thinking on the page.
+
+---
+
+### D33 — File manipulation runs on typed operations; the shell handles the remainder
+
+**Status:** Decided 2026-09-20. Resolves the decision half of F6 (`prototype/build-order.md`); the implementation half is still open.
+
+File-manipulation tasks — find, move, delete, rename, copy, the five operations in `internal/typedops` — are dispatched as typed calls. Everything else continues through generated bash under the existing classifier and undo journal. Two tracks, chosen deliberately rather than inherited.
+
+**Why.**
+
+- **The measurement.** F4 put raw bash at 80% call validity and 60% task success on the 3B model, against 100% and 100% for typed operations on the same tasks.
+- **Independent convergence.** Claude Code and Aider both split the work the same way: typed tools for file edits, with recovery attached, and a shell for the remainder, with none (`prior-art.md`, recovery-coverage entry; from published documentation, not source). Adopting a design that shipped tools already converged on is what the adopt-by-default rule (`vision.md`) asks for.
+- **A cleaner scope for the algorithm.** A typed call names its targets on its face, so it needs no static analysis. What is left for D29's algorithm is the shell: chains, redirects, substitution, package and process commands. That is a narrower claim than "one algorithm covers everything", and a more defensible one.
+
+**Rejected.** Staying on raw bash for everything: it leaves the reliability gap F4 measured in place and has no support from what comparable tools do. Adopting MCP wholesale: the protocol assumes a server process, and D8 fixes a single local binary; the pattern transfers without the plumbing, as F4's implementation already showed.
+
+**What this obliges, so that it is not a silent split.**
+
+- Chapter 3 must state plainly that file-manipulation tasks are dispatched through typed operations while the other categories use generated bash. F4's numbers make the headline results better for one category, and reporting them as the system's results without saying so would misdescribe what was measured.
+- The confirmation gate and undo journal must apply to typed calls as they do to bash. That is a requirement on F6's implementation; this entry does not specify how.
+- A1's corpus must be checked against the narrower role: the algorithm's evaluation takes a command as a string and does not depend on how the runtime dispatches, so the corpus stays valid, but it should still contain enough decidable, non-trivial shell commands once file-manipulation shapes are set aside (`prior-art.md`, typed-operations entry, "the honest test").
+
+**Amended 2026-09-20.** D34 narrows the algorithm's claim further. Package, service, and process commands, which the paragraph above lists among what is left for the algorithm, are outside the effect model and always ask; what the algorithm claims is composition through wrappers and target resolution for filesystem effects. The typed-operation decision itself is unchanged and its implementation is still open.
+
+---
+
+### D34 — The algorithm is narrowed to composition and target resolution; the verdict alone is not the contribution
+
+**Status:** Decided 2026-09-20. Narrows D29; supersedes the framing of D29's problem statement ("decide whether the effects of an arbitrary generated command are recoverable") and of `algorithms.md` Entry 1 as originally written.
+
+The recoverability algorithm claims two abilities, and only these:
+
+- **Composition through wrappers.** A generated line is analysed as the commands that actually mutate something, seen through `find -exec`, `xargs`, `for` loops, command and process substitution, pipelines, redirects, `sh -c`, and `sudo` and its relatives, with earlier parts of the line visible to later ones.
+- **Resolution of run-time targets.** Where a target is computed while the command runs (`rm $(ls *.log)`, `find … -delete`, `xargs rm`, `git clean -f`, `tar -x`, `rsync --delete`), the analysis learns the concrete targets by running a form of that command that cannot change anything, so that a capture plan covering exactly those targets can be made before the command runs.
+
+Single named commands with explicit targets stay with the list, which handled them in the pilot. A command the analysis does not model is **unknown, and unknown asks**: it fails closed, and it captures nothing.
+
+**Why.** D29 was chosen in response to adviser feedback, and its premise — that a hand-kept list is structurally inadequate — was argued after the choice, not tested before it. The pilot in `algorithms.md` ("Pilot — is a list already enough?", rounds 1, 2, and 2b) tested it. Its result, stated as the design record states it: a list flipped to fail closed accounts for the whole *verdict* advantage over the current classifier on the pilot data, so the verdict is not the contribution. What a fail-closed list cannot do is protect anything: it asks about everything it does not know and captures nothing, and it cannot tell a rename or a new-file redirect from a deletion, so it asks more often. The effect analysis captured the targets it resolved and asked less. The measured advantage is capture coverage and lower friction, and both trace to the two abilities above. That evidence is a pilot: one annotator, few dangerous commands in the realistic sample, fixtures written after the round-2 results were seen. A held-out round (a fresh sample, labelled and given fixtures before the analyser is run, with the analyser frozen) is the result that would carry weight, and it is pending.
+
+**What changes.**
+
+- **RQ1** is reworded from determining recoverability "more accurately than an enumerated list" to whether composition-aware analysis with target resolution protects more of what a generated command destroys, and asks less often, than a list and than a list flipped to fail closed.
+- **Algorithm 1** gains a RESOLVE step: before a wrapper's targets are declared unresolved, a read-only dry run is attempted, and it is run only if the same analysis proves it read-only. It also gains an overlay of what earlier parts of a line created or removed, and a MovedTo refinement so a rename or move needs no capture (not compression: the harness showed moving compressed bytes back is not an undo).
+- **Primary metrics** become silent loss and capture coverage (the share of recoverable-with-capture commands whose plan actually restores the prior state, verified by executing in a sandbox and diffing). False-negative reporting is kept.
+- **Baselines** become three: the current list (L0), a list flipped to fail closed (L1), and the effect analysis (ALG). Two primary comparisons follow, so the statistics gain a Holm correction.
+- **The corpus** is stratified by command shape as well as by effect kind, and its ground truth is defined relative to a stated filesystem state per command (a fixture). The pilot showed that a state-aware analysis cannot be scored against state-free labels.
+
+**Rejected.**
+
+- *Keeping the broad claim.* The pilot did not support it, and a claim the evidence does not support is the failure D29's own revision note describes.
+- *A language model as the analyser.* It is probabilistic and cannot give the one-sided soundness the design rests on: a wrong "safe" answer loses data. The project's own logs show this model stating confident falsehoods (`open-problems.md` rows 15 and 20).
+- *Hardening the list only.* It cannot resolve run-time targets, so it cannot capture them, and the pilot's largest gap was exactly the deletions the list asks about and then protects nothing for. It also remains the baseline and the fallback, which is where it belongs.
+
+**A required limit, stated wherever the algorithm is described.** The analyser's rule table is itself a list: a per-command table of effects and flags. The claim is what is built on top of it — composition, resolution, and the capture plan — and that unknown commands fail closed where a list fails open. It is not a claim to have eliminated enumeration.
+
+**Still open, in `open-problems.md`.** The default gate policy (ask on every capturable command, or capture silently and ask only when unrecoverable), the ground-truth definition for the corpus, the second annotator, and whether resolution runs when no read-only sandbox is available.
+
+### D35 — The gate is default-on and strict; package and service state is modelled; ground truth is automated; dependencies are hoarded
+
+**Status:** Decided 2026-09-20. Resolves the eight owner decisions (C1–C8) left open by D34.
+
+- **C1, gate policy.** The effect analysis is on by default in *strict* mode (ask unless recoverable with no capture). `SYNAPSE_ANALYSIS=capture` captures silently and asks only when unrecoverable; `off` restores the list alone. The list is still consulted, so the analysis can add a confirmation and never remove one.
+- **C2, ground truth.** State-relative: every corpus item carries its fixture and the analysis is run against that same fixture.
+- **C3, labelling.** No human labellers. Ground truth is produced by executing each command in a bubblewrap sandbox on its fixture and diffing the tree (`internal/oracle`, `cmd/corpusgen`). Commands that do not run cleanly are excluded and counted. Commands whose effect the filesystem cannot show form an external partition, never executed and labelled unrecoverable by construction. The generator shares no code with `internal/effects`.
+- **C4, RQ1 wording.** Accepted as revised in the paper, with the narrowing disclosed to the adviser (D34).
+- **C5, resolution without a sandbox.** Resolution stays on only where bubblewrap works; without it, anything needing resolution asks. Bubblewrap is a stated requirement of the evaluation and study machines.
+- **C6, package and service state.** Not left as a limitation. The analysis asks the system's own tools (`apt-get -s`, `dpkg-query`, `apt-cache policy`, `systemctl is-active` and `is-enabled`) what a command would do and derives an inverse command; the undo journal stores and runs it (`undo.Entry.Inverses`, run after trash and before content restore, with privilege if the original had it, printing the command if it fails). Removing a package whose old version is no longer offered is unrecoverable; purging captures the configuration files as removals. Maintainer scripts and other package managers stay outside the model.
+- **C7, editors and pagers.** Treated as read-only interactive tools, as before.
+- **C8, NL2Bash.** Cited as Lin et al. (LREC 2018), reference [51]; the raw dataset is GPL-3.0 and git-ignored, only sampled commands are kept.
+
+**Dependencies.** The distribution will be a bootable image, so every dependency is named in `distro/manifest.tsv`, checked by `distro/check.sh`, and collected by `distro/hoard.sh` (debs with their closure, Go modules, the Go toolchain, model blobs) into the git-ignored `distro/hoard/`. Existing tools are preferred over new code throughout.
+
+**Process.** Agility over ceremony: `make ci` (format, vet, tests) runs in GitHub Actions; the corpus is generated from a seed and regenerated in seconds of human time. The one piece of rigour kept is validity: a development corpus is used to fix the analysis and a second corpus, from a fresh seed, is run once after the rule table is frozen and is the reported result.
+
+---
+
+### D36 — Build priority: the algorithm and the distro are the mandatory deliverable; the comparative user study is secondary
+
+**Status:** Decided 2026-09-26, in response to the Thesis 1 adviser's scope-management comment on the resubmitted draft ("two studies... I would ask you to manage scope carefully").
+
+The team's real goal for this project is the distro (SynapseOS as a working, bootable conversational session layer) with the recoverability algorithm as its one required piece of evaluated research. Going forward, build time is allocated in that order: (1) the algorithm and its evaluation, both essentially complete (`algorithms.md`, round 7); (2) the distro itself — GUI-mode session launch (M8) and a provisioning path from a stock Debian+XFCE install; (3) the 40-participant comparative user study, time-permitting. If the schedule tightens, the study is what shrinks or is deferred, not the algorithm or the distro.
+
+**Reconciled with D32, not a reversal of it.** D32 (2026-09-14) made the algorithm an independent contribution specifically so that *removing the interface would still leave a contribution* — a test the reviewer applied and the algorithm passes on its own, corpus-based, no participants. D32 did not require the interface work to be built out to full 40-participant scale before the algorithm's own contribution counts; it required that a contribution survive without it. This decision answers a different question — not "does a contribution survive?" but "where does limited build time go?" — and the two answers are compatible: the paper still states all four RQs and does not need to be rewritten to drop RQ2–RQ4, but the team's own priority order now says plainly which of those RQs is guaranteed to be finished and which is upside.
+
+**Why now.** The adviser's comment names the exact risk directly: algorithm development, corpus creation, a user study, and interface development are, together, too much for one BSCS project. Telling him the priority order in writing is the actual answer to "manage scope carefully" — better than quietly doing less on one of them without saying so.
+
+**What changes.** Nothing in the paper's claims. `scope.md`'s Track A/B framing gets an explicit priority note. Candidate algorithmic ideas noticed while building the distro are logged in `candidate-algorithms.md` rather than acted on immediately, since the recoverability algorithm is the one being run with unless a decision here says otherwise.
+
+**Rejected.** Formally dropping RQ2–RQ4 from the proposal — the adviser did not ask for that, and D32's reasoning for keeping the interface work real rather than decorative still holds. This is a resourcing decision, not a claims decision.
+
+---
+
+### D37 — The agent is homed where it starts; the login session starts in `~`; there is no directory boundary
+
+**Status:** Decided 2026-09-27.
+
+Two questions that are easy to run together, answered separately. **Home** is the directory the agent starts in; it is what "here" and "this folder" resolve to, and every command runs there. Started from a terminal (`synapse`, `make tui`) it keeps the directory it was launched from, as any command-line tool does. Started as the login session (D27, `distro/synapseos-session`) it starts in the person's home folder, as a fresh login shell or a file manager would, set explicitly rather than left to whatever the login happened to leave behind. **Boundary** is what the agent may touch or must ask about, and there is no directory boundary: SynapseOS is a feature of the operating system, not a tool pointed at a project, so a rule keyed to a folder would make ordinary requests ("move this to Downloads") ask for confirmation and buy little over what is already there.
+
+**What already bounds it.** Reversibility (D34, D35): anything that cannot be undone asks first. Unix permissions: the agent runs as the person, so it cannot write system files or another user's files, and the model cannot supply a password to `sudo`. Package and service state is modelled separately (D35, C6).
+
+**Rejected.** A directory boundary (launch directory or home folder), as Claude Code and similar tools use. Those are installed tools scoped to a project; this is not. **Kept as an option:** a boundary keyed to the *kind* of change (always ask before anything privileged or system-wide), which the effect analysis has the data for and could measure with the existing corpus. Not needed now.
+
+**Found while testing:** `make tui` used to start in `prototype/` whatever directory it was run from, because the Makefile changed directory first; it now starts where `make` was run (`RUNDIR`).
+
+---
+
+### D38 — The TUI is inline: finished lines go to the terminal's scrollback, not an alternate-screen viewport
+
+**Status:** Decided 2026-09-27, after the first live use of the full-screen version.
+
+The TUI first ran in the alternate screen with a `bubbles/v2/viewport` for scrolling. The alternate screen has no scrollback, so only what fit on screen could be highlighted and copied, and a conversation cannot be shown to anyone (or pasted into a bug report) without maximising the window and copying it in pieces. The interface now prints each finished line with `tea.Println` into the terminal's normal scrollback and redraws only a small live region: the unfinished line, the status or confirmation, and the prompt. The terminal's own scrollbar, wheel, Shift+PgUp, and click-drag selection then cover the whole conversation, which is how Claude Code's CLI works too.
+
+**What it costs.** No scroll keys of our own and no `mouse` toggle (the command now says there is nothing to toggle). The window is no longer a cleared full screen: the header prints under the shell history. GUI mode is unaffected in practice, because the session launches the TUI in a fullscreen `xfce4-terminal` whose scrollbar now works over the whole conversation.
+
+**What had to stay true.** Output order: every printed line, including the echoed task and the y/n verdict, travels through the one ordered events channel and each print is sequenced before the next event is read, so the scrollback matches what happened. The confirmation gate is unchanged and still fails closed. Covered by tests that drive the real program and check a 60-line output appears once, in order, with no alternate-screen or mouse-reporting sequences.
+
+**Rejected.** Keeping the viewport and adding a copy-transcript command or a clipboard write: it treats the symptom and leaves the whole conversation unreachable by every normal terminal gesture.
+
+---
+
+### D39 — The loop reports typed events; the TUI shows the answer first and keeps the commands behind Ctrl+O
+
+**Status:** Decided 2026-09-27, after the first inline TUI showed commands, raw output, token counts, and exit codes interleaved with the answer, which a non-technical person cannot read.
+
+The task loop used to narrate everything as text on one `io.Writer`. A writer that also implements `loopevent.Emitter` (the TUI's does) now receives the same information as events (command chosen, result, answer, notice, problem, note, approval) and the loop writes none of it as text. Every other caller gets the unchanged text, so CLI and REPL output is identical, and what runs, what is gated, journaled, and logged is untouched.
+
+**What the person sees.** By default a task prints its answer and one dim line, "Ran N commands · Ctrl+O shows what it was". The command running right now shows on the live line under the spinner. A task that ends with no answer (the summary failed, the model said UNSUPPORTED after a successful step) prints the raw output instead, because then it is the only result. Ctrl+O switches the details view on: it prints the last task's commands, raw output, and what the model spent, and every later task prints its steps as they happen; pressing it again switches back. Scrollback cannot be rewritten, so this adds to it rather than expanding lines already printed, the one difference from Claude Code's Ctrl+O.
+
+**What stays visible regardless.** An approval always prints the command it is asking about (D30: showing the command is what makes approval consent), and problems always print their cause.
+
+**Also changed.** The TUI asks the model without streaming, since a command typed out token by token into a scrollback is noise; the spinner and the live command line cover the wait. Messages the program writes itself begin with a capital letter.
+
+**Rejected.** Hiding commands entirely (breaks the traceability principle in `vision.md`) and a persistent full-screen transcript overlay (needs the alternate screen, which D38 removed).
+
+---
+
+### D40 — Model-agnostic by construction: constrain the model's output in code, verify every model against the same test set, and put fixes where they can't rot into prompt tuning
+
+**Status:** Decided 2026-09-27, prompted by the question of whether fixes made for the 3B model would carry over to a larger one (e.g. qwen2.5-coder:7b).
+
+**The problem.** Most bugs found live in this project so far were one model's specific habits, patched one at a time: a stray `$ ` copied from an example (row 39's sibling, fixed same day), the DONE/UNSUPPORTED sentinel being restated after streaming, a working-directory prompt addition that dropped the technical tier from 100% to 58.3% (retrospective, 2026-09-08) because it was tuned around this model's reading of the prompt. None of that generalizes: a bigger or different model has different habits, and a prompt worded around one model's mistakes can make another model worse. "Perfect the 3B model" and "the fixes carry over to the 7B model" are not the same claim, and conflating them was the risk this decision heads off.
+
+**What does carry over regardless of model, and is unaffected by this decision:** the reversibility analysis and the confirmation gate (they judge the command, not who wrote it), undo, the typed events, and the TUI. These are model-independent by construction already.
+
+**What this decision changes, in order of leverage:**
+
+1. **Constrain what the model can produce, in code, rather than steer it with prose.** The propose step now asks Ollama for a JSON-schema-constrained reply (`internal/ollama`'s new `format` parameter, `cmd/synapse`'s `stepFormat`) instead of free text parsed by a growing pile of string rules. Verified against the Ollama 0.34 API docs (format applies to `/api/generate`, not just `/api/chat`) and live against `qwen2.5-coder:3b`: a real request now comes back `{"action":"run","command":"ls /tmp"}`. This is what removes the whole *class* the `$`-prefix and fence bugs belonged to, rather than adding one more rule per instance as it turns up. A reply that is not valid JSON in this shape (an older model, a server that ignores `format`) falls back to the previous free-text parse — the same compatibility path that let every existing scripted test keep passing unmodified.
+2. **Verify the output in code**, not just its shape: whether the command parses, and — not yet built — whether an answer only states what the executed commands actually showed (open-problems row 39, the "5.9Gi of RAM" figure reported as disk space). A stronger model should get caught by this less often; a weaker one, more often; the check itself does not change.
+3. **Measure, don't assume.** Any model change gets run through the same tiered live-model suite (`layer7_test.go`) before its result is trusted. This already existed; what changes is treating it as mandatory before a "bigger model, better result" claim, rather than optional.
+
+**What was rejected.** Hand-tuning the prompt further for each new model-specific failure as it appears — the pattern this decision replaces — and pursuing a "confirmation-gate policy that learns from the user" or similar per-model tuning, both logged as candidates in `candidate-algorithms.md` and left there deliberately: they add per-model state instead of removing the need for it.
+
+**What is still open.** Answer text itself is still free-form generation, unconstrained and unverified against what actually ran (row 39). Extending schema-constrained output to the answer step, or to the effect-grounded-answering candidate, is not done.
+
+---
+
+### D41 — Neat mode: an opt-in toggle that shows only the latest exchange, purely a rendering choice
+
+**Status:** Decided 2026-09-29, following a user request to keep the screen from "lengthening" as a session goes on.
+
+Typing `neat` toggles a mode where a new task discards the previous turn from view instead of adding to it — the live region shows only the current exchange plus the prompt, closer to how a single-card chat UI looks. Off by default.
+
+**Why this doesn't reopen D38.** D38 moved finished output into the terminal's own scrollback specifically so the whole conversation could be scrolled and copied natively, after an alternate-screen viewport made only on-screen text selectable. Neat mode does not touch that default, and it does not resurrect the alternate screen either: it keeps content inside the same live-redrawn region the partial line and status line already use, just retaining the current turn's rendered lines instead of committing them to scrollback via `tea.Println`. Turning it on trades away scrollback-and-copy for the current turn, in exchange for a screen that never grows — the same trade D38 removed as the default, offered back only as an explicit, reversible choice. Mode-switch confirmations ("Neat mode on/off") always print to scrollback regardless, since they're notes about the UI, not part of the conversation being trimmed.
+
+**What it does not touch.** Session memory (`internal/session`, D10) — what the model remembers between tasks — is unaffected either way; this is a display change only, confirmed by an explicit user question distinguishing "render only the latest turn" from "the model should forget everything," which was rejected (see below). Ctrl+O (D39) works identically inside neat mode: it expands the current turn's command detail in place rather than printing it below.
+
+**Rejected.** Making the session itself stateless ("like a calculator," no memory between tasks) to achieve a similar clean look. That is what CLI mode already does (D19), by design, for scriptability — but a TUI/REPL session losing pronoun resolution ("move it to Downloads") is a materially bigger trade than a display toggle, and no reason to want it was given beyond wanting a tidy screen, which neat mode already answers without the cost.
+
+**Amended 2026-09-30 — a real rendering bug, found live and fixed.** A short answer following a long one (e.g. a cancelled confirmation) left the long turn's text on screen, fused with the new one, in `tui scratch` and reproducible in plain `tui` too. `internal/tui`'s own model-level tests could not have caught it and did not: they proved `m.neatLines` (the Go state) resets correctly on every new task, which it always did — the bug was never in this package's logic. It was in `charm.land/bubbletea/v2`'s underlying renderer (`github.com/charmbracelet/ultraviolet`, `TerminalRenderer.Render`): in inline (non-altscreen) mode, it only clears trailing rows left over from a taller previous frame on an actual terminal *resize*; a same-size window whose *content* just got shorter does not trigger that path, verified by reading `terminal_renderer.go`'s `partialClear` condition directly. Every other live-region update in this file only ever grows by a line or two and self-corrects on the next keystroke, so the gap was invisible until neat mode made the live region carry a whole turn that can shrink by a lot in one step. Fixed by sending `tea.ClearScreen()` — which forces a full repaint of the live region, documented for exactly this case ("clear visual clutter when the alt screen is not in use") — every time a new task starts while neat is on. Locked in with a test that inspects the `Cmd` `startTask` returns for a `ClearScreen`-equivalent message, present only in neat mode.
+
+**What caught it, since this package's own tests could not.** A pty harness that only checks final text content (`manual-tests/drive_tui.py`, and this package's model-level tests) cannot see a redraw-clearing defect — the final text was already correct, it was the *screen* that was wrong along the way. Verification used a real VT100 emulation (`pyte`, driving the built binary through an actual pty, not just capturing bytes) to render what a terminal would actually show frame by frame, which is what surfaced this reliably. That script is a debugging tool, not a committed part of the suite.
+
+---
+
+### D42 — Background, best-effort session compaction; CLI-like plain back-and-forth already exists as REPL mode
+
+**Status:** Decided 2026-09-29, in response to two requests: a "CLI-like, plain back and forth" mode, and session memory that compacts the way Claude Code's does without adding perceived latency.
+
+**The plain-text ask was already built.** `synapse repl` (D19) is a persistent, plain-text, back-and-forth session — no color, no spinner, no compact/Ctrl+O presentation, session memory intact across turns — and needed no new work. Verified live: `echo "how much ram..." | synapse repl` prints exactly `step N: <command>`, its stats, its output, and the plain-language answer, in that order, nothing else. If what was wanted is a persistent session in the TUI's own window without its chrome, that is a different, unbuilt request — this decision covers only what was asked and already existed.
+
+**Compaction is now real, not a rolling window alone.** Previously (D10), the only mechanism was `session.Context.trim`: once the token budget was exceeded, the oldest turn was dropped outright, for free, with nothing kept of it. `internal/session` now also exposes `ApproachingLimit`, `Snapshot`, and `Compact` — a seam a caller with a model can use to condense older turns into one summary instead of losing them — while the package itself still has no model dependency (unchanged from D10's stated boundary; summarizing happens in `cmd/synapse`, not `internal/session`).
+
+**Why it never bothers the user with slowness.** `maybeCompact` (`cmd/synapse`) is called after every turn's `session.Append`, but only starts the summarizing model call in a detached background goroutine — `context.Background()` with its own timeout, not the task's own context, since that context is cancelled moments after the task's goroutine returns. Nothing in the foreground ever waits on it. Because compaction runs in the background, it cannot be reported on the turn it started on (it has not finished yet); it is reported on the *next* turn instead, once `TakeCompacted()` has something to say, the same lag pattern `TakeDropped()` already had.
+
+**Concurrency, handled once, generically.** A background summary can finish after history has already moved on — a new turn arrived, or `trim` already dropped exactly the turns being summarized. `Context` gained a generation counter: `Snapshot` hands out the generation it read at, and `Compact` is a silent no-op if that generation is no longer current, so a stale summary can never overwrite history it no longer describes. This also required giving `Context` a mutex (D10 previously assumed a single caller); verified under `go test -race` with concurrent `Append`/`Compact` calls.
+
+**What stays true either way.** `trim`'s drop-oldest behavior is the unconditional fallback: a failed, slow, or not-yet-finished compaction leaves the budget protected by the same free mechanism that already existed. Nothing about undo, the confirmation gate, or telemetry changes.
+
+**Rejected.** Compacting synchronously (inside `Append`, before the turn is reported done) — correct, but pays a model call's latency on the critical path, which is precisely the "bothers the user" outcome this was asked to avoid. Compacting at a lower threshold than proactive-vs-reactive requires (e.g. only once already over budget) — leaves no time for the background call to finish before `trim` would drop the same turns anyway, so summarization would rarely win the race; the proactive threshold (60% of budget) is deliberately ahead of `trim`'s trigger (100%) for this reason.
+
+---
+
+### D43 — Scratch mode: REPL's persistent loop with no memory between tasks
+
+**Status:** Decided 2026-09-29, following a request for "a one-to-one interface and backend engine... a much lighter version where the session has no memory, just whatever the last command is is its scope" — described as disposable.
+
+`synapse scratch` is a fourth interface mode: the same persistent, plain-text, back-and-forth loop as REPL (D19) — one process, several tasks, `exit`/`quit`/EOF to leave — with session memory never threaded through. Every task starts fresh; nothing before it is visible to it. Named `scratch` for the same reason a scratch buffer or scratchpad is named that: temporary, disposable, nothing kept.
+
+**Why a real mode, not a flag on REPL.** The two are close enough in shape that a flag was the first, and cheaper, idea (`synapse repl --stateless`). Asked directly, the answer was a fourth mode — reachable and discoverable the same way CLI, REPL, and TUI already are, with its own `make scratch` target and its own line in `make help`, rather than something you had to already know to look for behind a REPL flag.
+
+**Implementation stays a single shared loop.** REPL and scratch mode are `runREPL`/`runScratch`, two thin wrappers over one `runInteractiveSession(..., stateless bool)` — the confirmation-prompt/task-line reader-sharing, Ctrl+C-per-task handling, and telemetry wiring live in exactly one place, so the two modes cannot drift out of sync with each other by accident the way two independently maintained copies eventually would. The one behavioral difference is `stateless`: it selects the header text, and whether a `*session.Context` is constructed and passed to `runLoop` via `withSessionContext` at all. A nil session context was already the established "no memory" signal — it's what CLI mode's one-shot invocations already do (D19) — so scratch mode needed no new sentinel value, only a nil in a new place. `handleMemoryCommand`'s "context" and "clear" both check for nil and answer truthfully ("no memory is kept in this mode" / "nothing to forget") instead of touching a session that doesn't exist, rather than either command silently doing nothing or crashing.
+
+**The trade, stated plainly.** Follow-ups ("move it to Downloads") cannot resolve — there is no earlier turn to resolve them against. In exchange: no rolling window, no budget to approach, and nothing for D42's background compaction to ever do, since there is never enough history in scope for `ApproachingLimit` to be anything but false. For a quick sequence of unrelated one-off tasks, that is a fair trade; for a back-and-forth conversation, it is REPL's job, not this mode's.
+
+**Rejected.** A flag on REPL (see above — the "own mode, own name" ask was explicit). Reusing the name "cli" for this — that name already belongs to the true one-shot mode (D19), and reusing it here would make `make cli`/`make task` ambiguous with the new `make scratch`.
+
+---
+
+### D44 — TUI mode gains a scratch variant: `synapse tui scratch`
+
+**Status:** Decided 2026-09-29, extending D43 to the TUI after a request for "maximum uiux" — scratch mode should not be CLI-only.
+
+`synapse tui scratch` (`make tui-scratch`) is TUI mode with no session memory, the same relationship D43 gave REPL and scratch mode at the CLI. Every piece of the polished TUI presentation carries over unchanged and was verified live: the compact answer view and Ctrl+O detail toggle, the confirmation gate (including declining one), and neat mode. The only difference from ordinary TUI mode is the header, which says plainly that nothing carries between tasks instead of advertising follow-up resolution this mode does not have — and, underneath that, a nil `*session.Context` instead of a real one, the same "no memory" signal used everywhere else since D43.
+
+**How little of the TUI package had to change.** `internal/tui` gained one new constructor, `NewScratchModel`, alongside the existing `NewModel` — both now call a shared unexported `newModel(run, stateless bool)` that differs only in which header text it builds. Everything else — `Update`, `View`, the confirmation gate, Ctrl+O, neat mode, event handling — is the exact same code path for both, because none of it was ever about memory: memory lives entirely in the injected `TaskRunner`, which `cmd/synapse` builds with or without a session context. This is the same seam D26 established (TUI drives the shared loop, never reimplements it) doing its job again for a case it was not built with in mind.
+
+**A real bug found and fixed while building this.** The first attempt at dispatching `synapse tui scratch` placed the two-argument check inside the existing `if len(args) == 1 { ... }` guard, where `len(args) == 2` can never be true — so it silently fell through to one-shot CLI mode, running "tui scratch" as a literal task string. Caught immediately by driving the built binary through the pty harness before calling this done, not by code review; moved the check outside that guard, verified again, confirmed working.
+
+**What stays untested by an automated suite, same as ordinary TUI mode.** `runTUI`'s dispatch starts a real bubbletea program and cannot be driven by piping input (`manual-tests/m5-tui-mode.md`'s standing caveat) — its correctness is established by `internal/tui`'s own model-level tests (which do cover `NewScratchModel`'s header and behavior) plus this decision's live pty-harness verification, not by a unit test that calls `runTUI` itself.

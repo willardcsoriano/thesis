@@ -11,21 +11,34 @@
 //   - Session-scoped only. History lives in memory for one session and is
 //     gone when it ends. No persistence layer, and therefore no storage,
 //     no deletion UX, and no privacy surface to reason about.
-//   - A rolling window, not summarization. When the budget is exceeded the
-//     oldest turns are dropped. Summarizing would cost a second inference
-//     call per compression event to buy relevance this scale does not need.
+//   - A rolling window as the guaranteed fallback: Append drops the oldest
+//     turns immediately, for free, whenever the budget is exceeded, and
+//     never blocks on anything slower than that.
 //   - Results are stored compact, never raw. A single `find /` dump would
 //     otherwise crowd out the very turns that carry the referent a
 //     follow-up depends on.
 //
+// Amended: summarization is now available too (Snapshot/Compact), but it is
+// the caller's choice, not this package's. Condensing history costs a model
+// call, and this package has no model — see ApproachingLimit's own comment
+// for why that boundary is deliberate and where the actual summarization
+// call belongs.
+//
 // The package deliberately has no dependency on Ollama, the filesystem, or
 // any UI: it is a pure data structure with a rendering method, which is
-// what lets the whole of it be tested without a model.
+// what lets the whole of it be tested without a model. Snapshot/Compact are
+// exported specifically so a caller that *does* have a model can summarize
+// without this package importing one; they take and return plain strings.
+//
+// Safe for concurrent use: a caller that wants summarization to cost no
+// perceived latency has to run it in the background while the next task may
+// already be appending, so every exported method takes the same mutex.
 package session
 
 import (
 	"fmt"
 	"strings"
+	"sync"
 )
 
 // DefaultResultChars caps how much of a command's output is retained per
@@ -41,6 +54,11 @@ const DefaultResultChars = 200
 // window with the system prompt, the current task, and the in-task step
 // history — all of which the caller adds on top of whatever this returns.
 const DefaultMaxTokens = 1500
+
+// DefaultSummaryChars caps a compacted summary's stored length. Larger than
+// DefaultResultChars: a summary stands in for potentially many turns at
+// once, where a step result only ever has to carry one command's output.
+const DefaultSummaryChars = 800
 
 // charsPerToken converts characters to an approximate token count.
 //
@@ -68,6 +86,8 @@ type Turn struct {
 // Context is a session's rolling conversation memory. The zero value is
 // not usable; construct with New.
 type Context struct {
+	mu sync.Mutex
+
 	turns []Turn
 
 	maxTokens   int
@@ -83,6 +103,22 @@ type Context struct {
 	// because it looks exactly like the system working until it suddenly
 	// does not.
 	dropped int
+	// compacted counts turns folded into a summary rather than dropped
+	// outright, reported the same way dropped is: the user should always be
+	// able to find out that something happened to their history, whichever
+	// of the two it was.
+	compacted int
+
+	// gen counts every structural change (Append that trims, Compact,
+	// Clear). Snapshot hands its caller the generation the snapshot was
+	// taken at; Compact only applies if it is still current. Summarizing
+	// runs in the background over however long a model call takes, and
+	// history can change underneath it — a newer Append may already have
+	// dropped exactly the turns being summarized, or a second Compact may
+	// already have replaced them. Applying a summary anyway would silently
+	// overwrite history it no longer accurately describes, which is worse
+	// than the compaction simply not happening this time.
+	gen int
 }
 
 // New returns an empty Context with the default budget.
@@ -118,6 +154,8 @@ func (c *Context) Append(task string, steps []Step) {
 	if task == "" || len(steps) == 0 {
 		return
 	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	compact := make([]Step, 0, len(steps))
 	for _, s := range steps {
@@ -128,6 +166,12 @@ func (c *Context) Append(task string, steps []Step) {
 	}
 	c.turns = append(c.turns, Turn{Task: task, Steps: compact})
 	c.trim()
+	// Any new turn invalidates an outstanding Snapshot, trim-triggered or
+	// not: Compact reconstructs history from "the current newest keep
+	// turns", and after a new Append that set has shifted even if nothing
+	// was dropped — applying an old snapshot's summary against it would
+	// silently discard whatever arrived in between.
+	c.gen++
 }
 
 // trim drops oldest-first until the rendered history fits the budget.
@@ -155,6 +199,8 @@ func (c *Context) Calibrate(promptChars, promptTokens int) {
 	if promptChars <= 0 || promptTokens <= 0 {
 		return
 	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.ratio = float64(promptChars) / float64(promptTokens)
 }
 
@@ -167,7 +213,11 @@ func (c *Context) estimateTokens(s string) int {
 
 // Render returns the history as prompt text, or "" when empty so a caller
 // can omit the section entirely rather than emit an empty heading.
-func (c *Context) Render() string { return c.render(c.turns) }
+func (c *Context) Render() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.render(c.turns)
+}
 
 func (c *Context) render(turns []Turn) string {
 	if len(turns) == 0 {
@@ -192,6 +242,8 @@ func (c *Context) render(turns []Turn) string {
 // the system agree on what "it" refers to, and this is the only way to
 // check that agreement before issuing a destructive follow-up.
 func (c *Context) Summary() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if len(c.turns) == 0 {
 		return "no conversation history yet — the next task starts fresh."
 	}
@@ -210,19 +262,107 @@ func (c *Context) Summary() string {
 // otherwise resolve against a stale turn — without it the only remedy is
 // restarting the session, which is a poor answer to a one-word problem.
 func (c *Context) Clear() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.turns = nil
 	c.dropped = 0
+	c.compacted = 0
+	c.gen++
 }
 
 // Len reports how many turns are currently retained.
-func (c *Context) Len() int { return len(c.turns) }
+func (c *Context) Len() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return len(c.turns)
+}
 
 // TakeDropped returns how many turns have been evicted since the last call
 // and resets the counter, so a caller can report the loss exactly once.
 func (c *Context) TakeDropped() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	n := c.dropped
 	c.dropped = 0
 	return n
+}
+
+// TakeCompacted returns how many turns have been folded into a summary since
+// the last call and resets the counter, mirroring TakeDropped.
+func (c *Context) TakeCompacted() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	n := c.compacted
+	c.compacted = 0
+	return n
+}
+
+// compactThresholdRatio is how much of the budget history may use before it
+// is worth summarizing proactively, ahead of trim's reactive, unconditional
+// drop. Below Append's own trigger (100% of maxTokens) so summarization has
+// a real chance to finish in the background before a drop would otherwise
+// happen — summarizing at the same threshold trim already fires at would
+// mean the drop usually wins the race.
+const compactThresholdRatio = 0.6
+
+// ApproachingLimit reports whether history is past compactThresholdRatio of
+// the budget and worth condensing before trim is forced to drop a turn
+// outright with nothing kept of it.
+//
+// This package cannot do that condensing itself — summarizing needs a model
+// call, and the package doc explains why this type deliberately has none.
+// ApproachingLimit, Snapshot, and Compact are the seam: a caller that does
+// have a model checks this, takes a Snapshot, summarizes it however it
+// likes (in the background, so nothing here is blocked on it), and applies
+// the result with Compact.
+func (c *Context) ApproachingLimit() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if len(c.turns) < 2 {
+		return false // the newest turn is never summarized away; nothing to gain
+	}
+	return c.estimateTokens(c.render(c.turns)) > int(float64(c.maxTokens)*compactThresholdRatio)
+}
+
+// Snapshot returns the turns eligible for summarization — every turn except
+// the newest keep — rendered as text, and the generation this snapshot was
+// taken at. ok is false when there are not enough turns to summarize
+// anything (keep or fewer).
+func (c *Context) Snapshot(keep int) (text string, gen int, ok bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if keep < 0 {
+		keep = 0
+	}
+	if len(c.turns) <= keep {
+		return "", c.gen, false
+	}
+	return c.render(c.turns[:len(c.turns)-keep]), c.gen, true
+}
+
+// Compact replaces the turns a Snapshot(keep) returned with one synthetic
+// turn holding summary, provided nothing has changed history since that
+// snapshot was taken (gen still matches the current generation). Returns
+// whether it applied. A stale snapshot is discarded silently: the summary
+// no longer accurately describes current history, and falling back to
+// trim's ordinary drop-oldest behavior is the correct outcome, not an
+// error — this is a background optimization, never a requirement.
+func (c *Context) Compact(gen, keep int, summary string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	summary = strings.TrimSpace(summary)
+	if gen != c.gen || summary == "" || keep < 0 || len(c.turns) <= keep {
+		return false
+	}
+	folded := len(c.turns) - keep
+	synthetic := Turn{
+		Task:  "(earlier conversation, summarized)",
+		Steps: []Step{{Result: truncate(summary, DefaultSummaryChars)}},
+	}
+	c.turns = append([]Turn{synthetic}, c.turns[len(c.turns)-keep:]...)
+	c.compacted += folded
+	c.gen++
+	return true
 }
 
 func truncate(s string, n int) string {

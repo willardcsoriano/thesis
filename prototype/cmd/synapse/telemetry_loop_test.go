@@ -264,7 +264,7 @@ func TestTaskCommandRetargetsSubsequentEvents(t *testing.T) {
 	if !seen["T1"] || !seen["T5"] {
 		t.Fatalf("task ids recorded = %v, want both T1 and T5", seen)
 	}
-	if !strings.Contains(out.String(), "now recording events under task T5") {
+	if !strings.Contains(out.String(), "Now recording events under task T5") {
 		t.Error("the task command gave no confirmation to the facilitator")
 	}
 }
@@ -390,7 +390,7 @@ func TestAnswerFailureDoesNotFailTheTask(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("a failed summary failed the whole task: exit %d", code)
 	}
-	if !strings.Contains(out.String(), "task complete") {
+	if !strings.Contains(out.String(), "Task complete") {
 		t.Error("task completion was not reported when the summary failed")
 	}
 	if !strings.Contains(errOut.String(), "could not summarise") {

@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -44,11 +45,46 @@ func New(baseURL string) *Client {
 // generateRequest is the POST /api/generate body. Fields mirror the documented
 // Ollama contract; Stream selects between Generate and GenerateStream.
 type generateRequest struct {
-	Model   string         `json:"model"`
-	Prompt  string         `json:"prompt"`
-	System  string         `json:"system,omitempty"`
-	Stream  bool           `json:"stream"`
-	Options map[string]any `json:"options,omitempty"`
+	Model     string         `json:"model"`
+	Prompt    string         `json:"prompt"`
+	System    string         `json:"system,omitempty"`
+	Stream    bool           `json:"stream"`
+	Options   map[string]any `json:"options,omitempty"`
+	KeepAlive string         `json:"keep_alive,omitempty"`
+	// Format constrains the response to the literal "json" or a JSON schema
+	// object; see withFormat. Omitted (nil) leaves the response free text,
+	// which is every caller before this field existed.
+	Format any `json:"format,omitempty"`
+}
+
+// firstOrNil returns the first element of a variadic slice, or nil. Format is
+// variadic on Generate and GenerateStream so every existing call site — there
+// were seventeen across this package and cmd/synapse before this was added —
+// keeps compiling unchanged; only a caller that wants a constrained response
+// passes one.
+func firstOrNil(format []any) any {
+	if len(format) == 0 {
+		return nil
+	}
+	return format[0]
+}
+
+// defaultKeepAlive overrides Ollama's own default (5m) so the model stays
+// resident for a full interactive session instead of being evicted and
+// reloaded mid-conversation. Session 32 traced an apparent 34s generation
+// stall to exactly this: not slow inference, but a cold reload after the
+// idle window lapsed — indistinguishable from real latency in the
+// transcript, and easy to mistake for "the model is too slow" (or "too
+// small") when it is really "the model was not there yet." Override with
+// SYNAPSE_KEEP_ALIVE (Ollama's own duration syntax, e.g. "10m", or "-1" to
+// never unload) if 30 minutes doesn't fit a given session's shape.
+const defaultKeepAlive = "30m"
+
+func keepAlive() string {
+	if v := os.Getenv("SYNAPSE_KEEP_ALIVE"); v != "" {
+		return v
+	}
+	return defaultKeepAlive
 }
 
 // GenerateResponse is the reply body. With stream=false it is the whole
@@ -73,14 +109,19 @@ func (r *GenerateResponse) Latency() time.Duration {
 
 // Generate sends a single non-streaming completion request. system may be
 // empty. options passes model parameters (e.g. {"temperature": 0}); pass nil
-// for defaults.
-func (c *Client) Generate(ctx context.Context, model, system, prompt string, options map[string]any) (*GenerateResponse, error) {
+// for defaults. format, if given, is Ollama's structured-output constraint:
+// the literal "json", or a JSON schema object the response must match —
+// verified against the Ollama 0.34 API docs, which state format applies to
+// /api/generate exactly as it does to /api/chat.
+func (c *Client) Generate(ctx context.Context, model, system, prompt string, options map[string]any, format ...any) (*GenerateResponse, error) {
 	body, err := json.Marshal(generateRequest{
-		Model:   model,
-		Prompt:  prompt,
-		System:  system,
-		Stream:  false,
-		Options: options,
+		Model:     model,
+		Prompt:    prompt,
+		System:    system,
+		Stream:    false,
+		Options:   options,
+		KeepAlive: keepAlive(),
+		Format:    firstOrNil(format),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)
@@ -110,6 +151,38 @@ func (c *Client) Generate(ctx context.Context, model, system, prompt string, opt
 	return &out, nil
 }
 
+// Preload asks Ollama to load model into memory without generating anything, so
+// the first real request does not pay the load. A generate request with no prompt
+// is Ollama's documented way to do this. The options must be the same ones real
+// requests send: a different num_ctx makes Ollama treat it as another model
+// configuration and load it again, which would defeat the point.
+func (c *Client) Preload(ctx context.Context, model string, options map[string]any) error {
+	body, err := json.Marshal(struct {
+		Model     string         `json:"model"`
+		Options   map[string]any `json:"options,omitempty"`
+		KeepAlive string         `json:"keep_alive,omitempty"`
+	}{Model: model, Options: options, KeepAlive: keepAlive()})
+	if err != nil {
+		return fmt.Errorf("marshal request: %w", err)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/api/generate", bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return fmt.Errorf("call ollama: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return fmt.Errorf("ollama returned %s: %s", resp.Status, bytes.TrimSpace(snippet))
+	}
+	_, _ = io.Copy(io.Discard, resp.Body)
+	return nil
+}
+
 // GenerateStream is Generate with stream: true — same endpoint, same
 // request shape, same return type — invoking onToken with each fragment
 // as it arrives so a caller can render generation progressively. Pass a
@@ -132,13 +205,15 @@ func (c *Client) Generate(ctx context.Context, model, system, prompt string, opt
 // catastrophically different command. Refusing to return partial text
 // means a truncated generation can never reach the classifier or the
 // executor at all.
-func (c *Client) GenerateStream(ctx context.Context, model, system, prompt string, options map[string]any, onToken func(string)) (*GenerateResponse, error) {
+func (c *Client) GenerateStream(ctx context.Context, model, system, prompt string, options map[string]any, onToken func(string), format ...any) (*GenerateResponse, error) {
 	body, err := json.Marshal(generateRequest{
-		Model:   model,
-		Prompt:  prompt,
-		System:  system,
-		Stream:  true,
-		Options: options,
+		Model:     model,
+		Prompt:    prompt,
+		System:    system,
+		Stream:    true,
+		Options:   options,
+		KeepAlive: keepAlive(),
+		Format:    firstOrNil(format),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("marshal request: %w", err)

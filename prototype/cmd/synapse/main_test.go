@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -377,6 +378,39 @@ func TestAnswerConversational(t *testing.T) {
 		}
 	})
 
+	t.Run("reactions and small talk are answered locally, whatever the punctuation", func(t *testing.T) {
+		// Found live 2026-09-27: "really?" went to the model, which took 26 seconds
+		// to return UNSUPPORTED and was followed by a four-line explanation.
+		for _, in := range []string{
+			"really?", "Really??", "  really  ", "REALLY!", "are you sure?", "what?", "huh", "why?",
+			"how are you?", "How are you doing?", "how's it going", "what's up?",
+			"ok", "OK.", "cool!", "nice", "yes", "no", "nope", "lol", "hmm...", "wow!!",
+			"thx", "thanks a lot!", "bye", "goodbye!",
+		} {
+			var b strings.Builder
+			if !answerConversational(in, &b) {
+				t.Errorf("%q should be answered locally without the model", in)
+				continue
+			}
+			if strings.TrimSpace(b.String()) == "" {
+				t.Errorf("%q was consumed but printed nothing", in)
+			}
+		}
+	})
+
+	t.Run("a task that merely starts with chatter, or contains it, is still a task", func(t *testing.T) {
+		for _, in := range []string{
+			"ok, delete the logs", "really delete everything in tmp", "no more log files please",
+			"yes list the files", "why is the disk full", "what is using the disk", "how are the logs doing",
+			"wait for the download then unzip it", "sorry, put the notes in a folder",
+		} {
+			var b strings.Builder
+			if answerConversational(in, &b) {
+				t.Errorf("%q was swallowed as conversation; it is a task", in)
+			}
+		}
+	})
+
 	t.Run("a task with a greeting attached is still a task", func(t *testing.T) {
 		// The dangerous direction: swallowing real work because it opened
 		// politely. Exact matching on the normalised input is what prevents it.
@@ -393,4 +427,65 @@ func TestAnswerConversational(t *testing.T) {
 			}
 		}
 	})
+}
+
+// TestMain turns the effect analysis off for the tests that predate it, so they
+// keep exercising the list classifier they were written against. Tests of the
+// analysis set SYNAPSE_ANALYSIS themselves.
+func TestMain(m *testing.M) {
+	if os.Getenv("SYNAPSE_ANALYSIS") == "" {
+		os.Setenv("SYNAPSE_ANALYSIS", "off")
+	}
+	os.Exit(m.Run())
+}
+
+// A model that copies a shell prompt from an example produced "$ df -h", which
+// parses as a command named "$" and made the gate ask about nothing real.
+func TestCleanCommandDropsACopiedShellPrompt(t *testing.T) {
+	for in, want := range map[string]string{
+		"$ df -h | grep /home":  "df -h | grep /home",
+		"$ $ ls":                "ls",
+		"```sh\n$ ls -l\n```":   "ls -l",
+		"echo $HOME":            "echo $HOME",
+		"$HOME/bin/tool --flag": "$HOME/bin/tool --flag",
+	} {
+		if got := cleanCommand(in); got != want {
+			t.Errorf("cleanCommand(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestApprovalMessageSaysWhatIsKnown(t *testing.T) {
+	if got := approvalMessage(false, "opaque: unknown command foo"); !strings.Contains(got, "can't tell for certain") || strings.Contains(got, "delete") {
+		t.Errorf("an unanalysed command was described as a deletion:\n%s", got)
+	}
+	if got := approvalMessage(true, "rm can permanently delete files"); !strings.Contains(got, "can't be undone") || !strings.Contains(got, "rm can permanently") {
+		t.Errorf("a known deletion lost its warning or its reason:\n%s", got)
+	}
+}
+
+// TestLoopSystemPromptRequiresFullCoverageBeforeDone guards the rule found
+// live 2026-09-27: asked for RAM usage and remaining disk space, the loop
+// ran only a memory command, decided "done", and the answer stated a disk
+// figure that was never checked (open-problems.md row 39).
+func TestLoopSystemPromptRequiresFullCoverageBeforeDone(t *testing.T) {
+	if !strings.Contains(loopSystemPrompt, "more than one distinct thing") {
+		t.Error("loopSystemPrompt no longer requires covering every part of a multi-part request before done")
+	}
+}
+
+// TestAnswerSystemPromptForbidsMisattributingValues guards the other half of
+// the same live-found bug: the answer step relabelled a memory command's
+// second column as free disk space. The rule and its worked example must
+// both survive.
+func TestAnswerSystemPromptForbidsMisattributingValues(t *testing.T) {
+	for _, want := range []string{
+		"describes only what that command actually queried",
+		"say plainly that the rest was not checked",
+		"disk space was not checked",
+	} {
+		if !strings.Contains(answerSystemPrompt, want) {
+			t.Errorf("answerSystemPrompt no longer mentions %q; the grounding rule has been weakened", want)
+		}
+	}
 }

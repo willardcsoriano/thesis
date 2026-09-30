@@ -23,7 +23,7 @@ func TestRunUndoNothingToUndo(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
 	}
-	if !strings.Contains(out.String(), "nothing to undo") {
+	if !strings.Contains(out.String(), "Nothing to undo") {
 		t.Errorf("stdout = %q, want it to say there's nothing to undo", out.String())
 	}
 }
@@ -66,7 +66,7 @@ func TestRunUndoAppliesMoveOnConfirm(t *testing.T) {
 	if !strings.Contains(out.String(), "move back: "+filepath.Join("dest", "a.log")+" -> a.log") {
 		t.Errorf("stdout missing the move preview, got:\n%s", out.String())
 	}
-	if !strings.Contains(out.String(), "undo complete.") {
+	if !strings.Contains(out.String(), "Undo complete.") {
 		t.Errorf("stdout missing completion message, got:\n%s", out.String())
 	}
 
@@ -101,7 +101,7 @@ func TestRunUndoDeclinedLeavesEverythingIntact(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0 (a declined undo is a clean cancel); stderr:\n%s", code, errOut.String())
 	}
-	if !strings.Contains(out.String(), "cancelled.") {
+	if !strings.Contains(out.String(), "Cancelled.") {
 		t.Errorf("stdout missing cancellation message, got:\n%s", out.String())
 	}
 

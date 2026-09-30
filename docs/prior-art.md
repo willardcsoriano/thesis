@@ -11,6 +11,8 @@ This file is where a problem gets researched before anything is built for it. Th
 - [Entries](#entries)
   - [Progressive disclosure in a transcript with a text input](#progressive-disclosure-in-a-transcript-with-a-text-input)
   - [Typed operations versus raw shell (MCP filesystem/bash servers)](#typed-operations-versus-raw-shell-mcp-filesystembash-servers)
+  - [Agentic command-execution safety (gemini-cli)](#agentic-command-execution-safety-gemini-cli)
+  - [Recovery coverage in coding agents (Claude Code, Aider)](#recovery-coverage-in-coding-agents-claude-code-aider)
 - [Standing candidates](#standing-candidates)
 - [Sourcing rules](#sourcing-rules)
 - [Cross-references](#cross-references)
@@ -56,7 +58,7 @@ Each entry answers four questions:
 
 **The keybinding answer is modal focus, not a free key.** There is no convergence on a key safe beside a text input, and the established solution is to stop looking for one: scope bindings to a focus context. crush routes on a focus enum and uses `tab` to move between editor and transcript; only inside transcript focus does `space` toggle. aerc does the same thing with explicit context sections (`[messages]`, `[compose]`, `[compose::editor]`) for precisely this reason. Bubbletea's own `examples/chat` has no focus model at all — every key goes to the textarea — so the canonical example is our current design and does not solve this.
 
-A second, ctrl-modified global is worth adding for users who never discover `tab`. **It cannot be `ctrl+d`: that is already bound to viewport half-page-down in our own `internal/tui/tui.go` at lines 328 and 349** (verified). `ctrl+e` or `ctrl+r` are free here. Avoid `alt+` combinations as the primary affordance — terminals and window managers intercept them.
+A second, ctrl-modified global is worth adding for users who never discover `tab`. **It cannot be `ctrl+d`: it was bound to viewport half-page-down in our own `internal/tui/tui.go` when this was written (the viewport is gone since D38, but `ctrl+d` is still the terminal's end-of-input key).** `ctrl+e` or `ctrl+r` are free here. Avoid `alt+` combinations as the primary affordance — terminals and window managers intercept them.
 
 **Anti-patterns, each already paid for by someone else.** Undiscoverable hidden state, collapsing that hides almost nothing, expansion that yanks scroll position, and — the one that matters most here — **expansion fighting text selection**. Collapsed content cannot be selected or grepped, and crush's click handler explicitly bails when a selection is in progress so that dragging to select does not toggle. The mitigations are an explicit copy binding that copies the *full* content regardless of collapsed state, and a non-collapsing path that always exists: our CLI mode already is that path, which is an argument for leaving it verbose rather than a deficiency in it.
 
@@ -92,7 +94,7 @@ This is the gap frontier tool-calling APIs close for you: strict output formats 
 - **Operation set design.** Which primitives the reference MCP filesystem server exposes, and — more informative — which it deliberately does *not*. The boundary between "enough to be useful" and "so many that the model picks wrongly" is exactly the thing that is expensive to learn by experiment.
 - **Path safety.** How roots, traversal, and symlink escape are constrained. This is security-critical and is precisely the kind of thing that should be copied rather than reasoned out from scratch.
 - **Error surfaces.** What a failed operation returns to the model, and whether that shape lets it recover. This project has an observed failure where the model repeats an identical failing command to the step cap; a well-designed error return may be most of the fix.
-- **Bash-server safety.** How MCP bash/shell servers gate destructive commands, which is directly comparable to `safety-model.md`'s taxonomy and may be a stronger baseline than the pattern list currently named in `algorithms.md`.
+- **Bash-server safety.** How MCP bash/shell servers gate destructive commands, which is directly comparable to `safety-model.md`'s taxonomy and may be a stronger baseline than the pattern list currently named in `algorithms.md`. **Surveyed 2026-09-20 — it is not a stronger baseline.** The reference filesystem server (`modelcontextprotocol/servers`, `src/filesystem`) tags each tool with a `destructiveHint` — but the hint is a **fixed property of the tool type**, set once in the tool's own definition, not computed from the call's actual arguments: `move_file` is always `destructiveHint: true`, whether or not the destination already exists. This is the identical failure this project's own pattern list already names in `algorithms.md` Entry 1 — reasoning about a name (or here, a tool type) rather than an effect — now independently confirmed in the official MCP spec's own convention, not just in this project's baseline. There is also no recovery mechanism behind the hint at all: no backup, no undo, nothing beyond a `dryRun` preview mode offered on one tool (`edit_file`). The hint tells a client "be careful," and stops there.
 
 **Why this is not simply "adopt MCP."** The protocol assumes a server process and a client that speaks it. SynapseOS is a single local binary with no Node runtime and a deliberately minimal dependency surface (D8), and F4's implementation already showed the *pattern* transfers without the *protocol*. The likely outcome is **borrow the pattern, not the plumbing** — but that is a conclusion this entry should reach on evidence, not assert in advance.
 
@@ -105,6 +107,30 @@ Two readings, and F6 should pick one deliberately rather than inherit it. It **s
 
 **Open, and owed.** F6 requires a `decisions.md` entry recording the call and its reasoning, and — if typed operations are adopted — Chapter 3 must state plainly that file-manipulation tasks are dispatched differently from the rest, because reporting typed-ops reliability as the system's reliability without that sentence would misdescribe what was measured.
 
+### Agentic command-execution safety (gemini-cli)
+
+**Status: surveyed 2026-09-20, from published docs and the public issue tracker — not from source, per the sourcing rules below (gemini-cli is Apache 2.0, so source reading is not actually restricted here; this pass used docs and issues and a source-level read remains open if more detail is later needed).**
+
+**What it does.** `google-gemini/gemini-cli` gates shell commands with `tools.core`/`tools.exclude` — an allowlist and denylist matched against a command's **prefix** (`run_shell_command(git)` permits `git ...`). Chained commands (`&&`, `||`, `;`) are split and each part is checked against the same lists. No reversibility analysis exists anywhere in the mechanism; it is a permission decision only, exactly as this project's own pattern-list baseline is.
+
+**Why it matters beyond confirming the obvious.** The splitting logic has a live, currently-open bug (issue #11766) that is close to a direct demonstration of this study's "enumeration does not compose" argument (`algorithms.md` Entry 1): `true && rm important_file.txt` executes in full even with `rm` denylisted, because only the first command in the chain is validated — the fix (validate every command in a chain, not just the first) patches this one shape without addressing the underlying claim that pattern matching over composed commands does not generalize. This is independent, real-world evidence for the thesis's structural argument, not an invented example.
+
+**Not adopted.** The prefix-list mechanism itself is the thing being improved on, not a pattern to borrow. What is worth noting for `decisions.md` if ever relevant: gemini-cli's chain-splitting approach is one candidate shape for how a pattern-based system tries (and here, fails) to handle composition — useful as a concrete negative example, not as a design source.
+
+### Recovery coverage in coding agents (Claude Code, Aider)
+
+**Status: surveyed 2026-09-20, from each product's published documentation. Claude Code is closed source, so this is recorded as *observed documented behaviour* per the sourcing rules below; no source was read. Scope is recovery only — how each tool undoes what it did — not its permission model, which the gemini-cli entry above already covers.**
+
+**What they do.** Both split the work in two. File edits go through the agent's own typed editing tools, and those edits are recoverable: Claude Code checkpoints file state before each turn and offers `/rewind`; Aider commits each edit to git automatically and offers `/undo`. Everything else goes through a raw shell tool.
+
+**What they do not do.** Neither recovers what the shell tool does. Claude Code's checkpointing documentation states it directly: "Checkpointing does not track files modified by Bash commands", naming `rm file.txt`, `mv old.txt new.txt`, and `cp source.txt dest.txt` as changes that "cannot be undone through rewind". Aider's documentation scopes `/undo` and its automatic commits to "changes that Aider itself makes to files" and says nothing about shell commands. Claude Code's documentation also lists further gaps — subagent edits, symlinked and hard-linked paths, changes made outside the session — and describes checkpoints as "not a replacement for version control".
+
+**Why it matters.** The design both tools converged on is the hybrid F6 asks about: typed dispatch for file edits, with recovery attached, and a shell for the remainder, with none. That is independent support for F4's result (typed operations 100%/100% against raw bash 80%/60%), and it places the recoverability algorithm precisely: the region these tools leave uncovered is shell-command effects, which is the region `algorithms.md` Entry 1 targets. It also bears on the baseline. The pattern-list classifier with `internal/undo` behind it already recovers a bash `rm` (trash) and a bash `sed -i` (content backup), which Claude Code's documentation says its own mechanism cannot — so the current baseline is not a weak one, and the algorithm has to beat it rather than beat nothing.
+
+**Limits of this survey.** Documentation states what a tool claims, not everything it does; a claim that a tool has no shell recovery is only as strong as the docs are complete. Cursor and the other agents in the standing-candidates table have not been checked for this, and the Claude Code and Aider findings should not be generalised to them.
+
+**Not adopted as a mechanism.** Nothing here is code or a mechanism to borrow. The entry is evidence for the F6 decision, recorded as D33 in `decisions.md` on 2026-09-20.
+
 ## Standing candidates
 
 Things worth checking first for any new problem in this project's space, so that each survey does not restart from nothing.
@@ -112,8 +138,8 @@ Things worth checking first for any new problem in this project's space, so that
 | Domain | Worth checking |
 |---|---|
 | Terminal UI patterns | Charm's `bubbles` component library and Charm's own applications; lazygit, k9s, tig, htop, ranger, ncdu |
-| Agentic command execution | **`google-gemini/gemini-cli`** first — Apache 2.0, complete, and frozen (see the note below); then Aider, OpenHands, `block/goose`, Cline, Continue, SWE-agent, `charmbracelet/crush`, Alibaba's ANOLISA `cosh-ng`, Warp |
-| Typed operations for models | The reference MCP filesystem and bash/shell servers — operation-set design, path-safety constraints, error-return shape, destructive-command gating. See the entry above before surveying: the reliability question is already answered locally |
+| Agentic command execution | `google-gemini/gemini-cli` **surveyed 2026-09-20 — see the entries above**; Aider and Claude Code surveyed for recovery coverage only (docs, not source); still open: Aider's permission model, OpenHands, `block/goose`, Cline, Continue, SWE-agent, `charmbracelet/crush`, Alibaba's ANOLISA `cosh-ng`, Warp |
+| Typed operations for models | The reference MCP filesystem and bash/shell servers — operation-set design, path-safety constraints, error-return shape. Destructive-command gating **surveyed 2026-09-20 — see the entry above**; operation-set design and path-safety constraints remain open |
 | Shell parsing and static analysis | `mvdan/sh` (Go shell parser), ShellCheck, bashlex |
 | Undo and recovery | git's object model, `trash-cli`, OverlayFS and filesystem snapshotting, `fsmonitor` |
 | Local model serving | Ollama, llama.cpp, LM Studio |

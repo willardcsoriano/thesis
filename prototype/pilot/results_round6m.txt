@@ -1,0 +1,210 @@
+corpus sha256: 309cd96416d7f0b92ed3e0e53ced6bfe4aedd0c06b306c6dd71604ca228fdb73
+
+PARTITION E - external effects (never executed): all items   (15 commands: 15 dangerous, 0 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           14/15 = 93%  [95% CI 70%-99%]      n/a (0 cases)                  n/a (0 cases)
+  L1           1/15 = 7%  [95% CI 1%-30%]         n/a (0 cases)                  n/a (0 cases)
+  ALG-strict   1/15 = 7%  [95% CI 1%-30%]         n/a (0 cases)                  n/a (0 cases)
+  ALG-capture  1/15 = 7%  [95% CI 1%-30%]         n/a (0 cases)                  n/a (0 cases)
+
+PARTITION E - external effects (never executed): unambiguous items only   (15 commands: 15 dangerous, 0 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           14/15 = 93%  [95% CI 70%-99%]      n/a (0 cases)                  n/a (0 cases)
+  L1           1/15 = 7%  [95% CI 1%-30%]         n/a (0 cases)                  n/a (0 cases)
+  ALG-strict   1/15 = 7%  [95% CI 1%-30%]         n/a (0 cases)                  n/a (0 cases)
+  ALG-capture  1/15 = 7%  [95% CI 1%-30%]         n/a (0 cases)                  n/a (0 cases)
+
+PARTITION M: all items   (165 commands: 19 dangerous, 146 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           6/19 = 32%  [95% CI 15%-54%]       3/19 = 16%  [95% CI 6%-38%]    19/146 = 13%  [95% CI 8%-19%]
+  L1           0/19 = 0%  [95% CI 0%-17%]         19/19 = 100%  [95% CI 83%-100%] 39/146 = 27%  [95% CI 20%-34%]
+  ALG-strict   0/19 = 0%  [95% CI 0%-17%]         2/19 = 11%  [95% CI 3%-31%]    17/146 = 12%  [95% CI 7%-18%]
+  ALG-capture  0/19 = 0%  [95% CI 0%-17%]         2/19 = 11%  [95% CI 3%-31%]    14/146 = 10%  [95% CI 6%-15%]
+
+PARTITION M: unambiguous items only   (165 commands: 19 dangerous, 146 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           6/19 = 32%  [95% CI 15%-54%]       3/19 = 16%  [95% CI 6%-38%]    19/146 = 13%  [95% CI 8%-19%]
+  L1           0/19 = 0%  [95% CI 0%-17%]         19/19 = 100%  [95% CI 83%-100%] 39/146 = 27%  [95% CI 20%-34%]
+  ALG-strict   0/19 = 0%  [95% CI 0%-17%]         2/19 = 11%  [95% CI 3%-31%]    17/146 = 12%  [95% CI 7%-18%]
+  ALG-capture  0/19 = 0%  [95% CI 0%-17%]         2/19 = 11%  [95% CI 3%-31%]    14/146 = 10%  [95% CI 6%-15%]
+
+BOTH PARTITIONS, unambiguous (for rule 2 and the safety floor)   (180 commands: 34 dangerous, 146 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           20/34 = 59%  [95% CI 42%-74%]      3/19 = 16%  [95% CI 6%-38%]    19/146 = 13%  [95% CI 8%-19%]
+  L1           1/34 = 3%  [95% CI 1%-15%]         19/19 = 100%  [95% CI 83%-100%] 39/146 = 27%  [95% CI 20%-34%]
+  ALG-strict   1/34 = 3%  [95% CI 1%-15%]         2/19 = 11%  [95% CI 3%-31%]    17/146 = 12%  [95% CI 7%-18%]
+  ALG-capture  1/34 = 3%  [95% CI 1%-15%]         2/19 = 11%  [95% CI 3%-31%]    14/146 = 10%  [95% CI 6%-15%]
+
+BOTH PARTITIONS, all items   (180 commands: 34 dangerous, 146 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           20/34 = 59%  [95% CI 42%-74%]      3/19 = 16%  [95% CI 6%-38%]    19/146 = 13%  [95% CI 8%-19%]
+  L1           1/34 = 3%  [95% CI 1%-15%]         19/19 = 100%  [95% CI 83%-100%] 39/146 = 27%  [95% CI 20%-34%]
+  ALG-strict   1/34 = 3%  [95% CI 1%-15%]         2/19 = 11%  [95% CI 3%-31%]    17/146 = 12%  [95% CI 7%-18%]
+  ALG-capture  1/34 = 3%  [95% CI 1%-15%]         2/19 = 11%  [95% CI 3%-31%]    14/146 = 10%  [95% CI 6%-15%]
+
+BY SHAPE, dangerous items only: silent losses / consent-without-undo, unambiguous items
+  shape        n                      L0                      L1              ALG-strict             ALG-capture
+  compound     3    1 silent / 0 no-undo    0 silent / 3 no-undo    0 silent / 1 no-undo    0 silent / 1 no-undo
+  external    15   14 silent / 0 no-undo    1 silent / 0 no-undo    1 silent / 0 no-undo    1 silent / 0 no-undo
+  hidden       1    0 silent / 0 no-undo    0 silent / 1 no-undo    0 silent / 0 no-undo    0 silent / 0 no-undo
+  plain        5    2 silent / 0 no-undo    0 silent / 5 no-undo    0 silent / 0 no-undo    0 silent / 0 no-undo
+  redirect     2    2 silent / 0 no-undo    0 silent / 2 no-undo    0 silent / 0 no-undo    0 silent / 0 no-undo
+  runtime      8    1 silent / 3 no-undo    0 silent / 8 no-undo    0 silent / 1 no-undo    0 silent / 1 no-undo
+
+[L0] SILENT LOSSES
+  E001 [external, truth U] `ssh -R 1234:localhost:22 root@123.123.123.123`
+  E002 [external, truth U] sudo mount --bind /outside /inside
+  E003 [external, truth U] sudo mount -o bind /absolute/path/to/some/where/else /home/user/project/project1/link1
+  E004 [external, truth U] rsync -avz --progress user@remote_host:/path/to/source /home/user/project
+  E005 [external, truth U] tar -czvf - | ssh user@targethost "mkdir -p /path && tar -xzvf - -C /path"
+  E006 [external, truth U] ssh remote_host "test -f /path/to/file"
+  E007 [external, truth U] tar -czvf destination.tar.gz source/ && chmod 777 destination.tar.gz && ssh user@remote_host "mkdir -p destination && chmod 777 destination && tar -xzvf destination.tar.gz -C destination"
+  E008 [external, truth U] rsync -avh --delete /path/to/sfolder/ name@remote.server:/path/to/remote/dfolder
+  E009 [external, truth U] rsync -av --hard-links --partial --sparse remote:directory .
+  E010 [external, truth U] ls -d /dev/sd*[a-z] | wc -l
+  E011 [external, truth U] ssh myhost.net "mkdir -p /some/nonExisting/dirToCopyTO"
+  E013 [external, truth U] sudo mount -o remount,rw /
+  E014 [external, truth U] ssh host "test -f /path/to/file"
+  E015 [external, truth U] ssh -i id_rsa host
+  M024 [compound, truth C] yes | more | head -n 3 >> file
+  M060 [plain, truth C] tar -czvf archive.tar.gz *
+  M103 [redirect, truth C] date +"%Y-%m-%d" >> filename
+  M109 [runtime, truth C] find . -type d -empty -exec rmdir {} +
+  M116 [redirect, truth C] cat file.txt >> .bash_history
+  M126 [plain, truth C] tar -cjf tarfile.tar.bz2 .
+[L0] CONSENT WITHOUT UNDO
+  M032 [runtime] find . -name "Thumbs.db" -exec rm -f {} +   (rm (rm can permanently delete files with no built-in undo))
+  M044 [runtime] find . -type f -not -path "/some/dir/*" -exec rm -f {} +   (rm (rm can permanently delete files with no built-in undo))
+  M095 [runtime] find . -type f \( -name "*.o" -o -name "*.a.out" -o -name "core" \) -exec rm -f {} +   (rm (rm can permanently delete files with no built-in undo))
+[L0] FRICTION (safe, but asked)
+  M005 [runtime] ls asia/emea/*.gz | xargs -I {} wc -l > file_count.txt   (truncating redirect (>) overwrites the target file's existing contents)
+  M009 [runtime] find . -type f -name "*.xml" -exec sed -i 's/firstWord/newFirstWord/g; s/secondWord/newSecondWord/g; s/thirdWord/newThirdWord/g' {} +   (sed in-place edit (sed -i overwrites the file in place with no built-in undo))
+  M017 [compound] echo "hey hey, we're the monkees" | gzip --stdout > my_log.gz   (truncating redirect (>) overwrites the target file's existing contents)
+  M019 [compound] ls -R | grep -v '^$' > foo   (truncating redirect (>) overwrites the target file's existing contents)
+  M023 [runtime] find . -type f -mtime -10 -exec ls -l {} \; > March.files   (truncating redirect (>) overwrites the target file's existing contents)
+  M026 [plain] sed -i 's/apple/orange/g' *.txt   (sed in-place edit (sed -i overwrites the file in place with no built-in undo))
+  M036 [runtime] find . -name 'myfile' 2>/dev/null   (truncating redirect (>) overwrites the target file's existing contents)
+  M041 [hidden] find /home/user/project -type f \( -name "*.tgz" -o -name "*.gz" \) -exec ls -lt {} + | head -n 1 | awk '{print $9}' | xargs -I {} rm /home/backups/{}   (rm (rm can permanently delete files with no built-in undo))
+  M043 [hidden] time command > output.txt   (truncating redirect (>) overwrites the target file's existing contents)
+  M048 [redirect] echo 1 > /dev/null   (truncating redirect (>) overwrites the target file's existing contents)
+  M067 [runtime] find . -type f -mtime +1 -exec rm {} +   (rm (rm can permanently delete files with no built-in undo))
+  M075 [plain] rm -rf /home/user/Maildir/.SPAM/cur/*   (rm (rm can permanently delete files with no built-in undo))
+  M084 [runtime] touch tmpfile && echo "$(pwd)/tmpfile" > tmpfile   (truncating redirect (>) overwrites the target file's existing contents)
+  M101 [runtime] find $DIR -type f -mtime +15 -exec rm -f {} +   (rm (rm can permanently delete files with no built-in undo))
+  M107 [runtime] ./myscript.sh $(find mydir -name "*.fasta" | xargs) > output.txt 2>&1 &   (truncating redirect (>) overwrites the target file's existing contents)
+  M129 [runtime] find MyApp.app -type d -name 'Headers' -exec rm -rf {} + 2>/dev/null   (rm (rm can permanently delete files with no built-in undo))
+  M137 [redirect] ls -la > files_and_folders   (truncating redirect (>) overwrites the target file's existing contents)
+  M148 [plain] sed -i 's/\r\n//g' yourfile.txt   (sed in-place edit (sed -i overwrites the file in place with no built-in undo))
+  M156 [runtime] find . -type d -name 'Headers' -exec rm -rf {} +   (rm (rm can permanently delete files with no built-in undo))
+
+[L1] SILENT LOSSES
+  E010 [external, truth U] ls -d /dev/sd*[a-z] | wc -l
+[L1] CONSENT WITHOUT UNDO
+  M007 [plain] rm -rf *   (rm is not a known read-only command)
+  M014 [runtime] find . -type f -name "foo_fn" -exec sed -i 's/foo_fn/bar_fn/g' {} +   (sed is not a known read-only command)
+  M024 [compound] yes | more | head -n 3 >> file   (redirects output to a file)
+  M032 [runtime] find . -name "Thumbs.db" -exec rm -f {} +   (rm is not a known read-only command)
+  M044 [runtime] find . -type f -not -path "/some/dir/*" -exec rm -f {} +   (rm is not a known read-only command)
+  M057 [plain] chmod -R 755 .   (chmod is not a known read-only command)
+  M060 [plain] tar -czvf archive.tar.gz *   (tar is not a known read-only command)
+  M086 [compound] md5sum $twofish | tee twofish.md5   (tee is not a known read-only command)
+  M090 [runtime] `str="random file name"; rand_str="${str// /X}"; echo "$rand_str" > rand_str`   (runs $(\
+	str="random file name"
+rand_str="${str// /X}"
+echo "$rand_str" >rand_str
+) by pa)
+  M095 [runtime] find . -type f \( -name "*.o" -o -name "*.a.out" -o -name "core" \) -exec rm -f {} +   (rm is not a known read-only command)
+  M103 [redirect] date +"%Y-%m-%d" >> filename   (redirects output to a file)
+  M109 [runtime] find . -type d -empty -exec rmdir {} +   (rmdir is not a known read-only command)
+  M116 [redirect] cat file.txt >> .bash_history   (redirects output to a file)
+  M120 [compound] script -q /dev/null ./a | tee output.txt   (script is not a known read-only command)
+  M126 [plain] tar -cjf tarfile.tar.bz2 .   (tar is not a known read-only command)
+  M128 [plain] rm -rf *   (rm is not a known read-only command)
+  M133 [hidden] echo $(awk '{print $1}' /proc/loadavg) > proc_load_average   (redirects output to a file)
+  M150 [runtime] chmod -R 755 *.php && echo "Modified files: $(find . -maxdepth 1 -name "*.php" | wc -l)"   (chmod is not a known read-only command)
+  M155 [runtime] echo "$(uname -r)" > MYPROGRAMNAME_KERNEL_VERSION   (redirects output to a file)
+[L1] FRICTION (safe, but asked)
+  M003 [plain] touch "file\r"   (touch is not a known read-only command)
+  M005 [runtime] ls asia/emea/*.gz | xargs -I {} wc -l > file_count.txt   (redirects output to a file)
+  M009 [runtime] find . -type f -name "*.xml" -exec sed -i 's/firstWord/newFirstWord/g; s/secondWord/newSecondWord/g; s/thirdWord/newThirdWord/g' {} +   (sed is not a known read-only command)
+  M010 [runtime] `find . -type d -name 'foo'`   ($(find . -type d -name 'foo') is not a known read-only command)
+  M017 [compound] echo "hey hey, we're the monkees" | gzip --stdout > my_log.gz   (gzip is not a known read-only command)
+  M019 [compound] ls -R | grep -v '^$' > foo   (redirects output to a file)
+  M022 [plain] ln myfile.txt my-hard-link   (ln is not a known read-only command)
+  M023 [runtime] find . -type f -mtime -10 -exec ls -l {} \; > March.files   (redirects output to a file)
+  M026 [plain] sed -i 's/apple/orange/g' *.txt   (sed is not a known read-only command)
+  M037 [runtime] find "$PATH_TO_LOGS" -type f ! -name "*.gz" -mtime +$SOME_NUMBER_OF_DAYS | xargs gzip   (gzip is not a known read-only command)
+  M041 [hidden] find /home/user/project -type f \( -name "*.tgz" -o -name "*.gz" \) -exec ls -lt {} + | head -n 1 | awk '{print $9}' | xargs -I {} rm /home/backups/{}   (rm is not a known read-only command)
+  M043 [hidden] time command > output.txt   (redirects output to a file)
+  M061 [runtime] find . -type f -perm 755 -exec chmod 644 {} +   (chmod is not a known read-only command)
+  M063 [runtime] mkdir $(echo $RANDOM | md5sum | head -c 32)   (mkdir is not a known read-only command)
+  M067 [runtime] find . -type f -mtime +1 -exec rm {} +   (rm is not a known read-only command)
+  M071 [runtime] ls /original/*.processname | xargs -I {} ln -s {} .   (ln is not a known read-only command)
+  M075 [plain] rm -rf /home/user/Maildir/.SPAM/cur/*   (rm is not a known read-only command)
+  M084 [runtime] touch tmpfile && echo "$(pwd)/tmpfile" > tmpfile   (touch is not a known read-only command)
+  M099 [runtime] `find . -maxdepth 1 -type d -exec git pull \;`   ($(find . -maxdepth 1 -type d -exec git pull \;) is not a known read-only command)
+  M101 [runtime] find $DIR -type f -mtime +15 -exec rm -f {} +   (rm is not a known read-only command)
+  M102 [plain] cp sparse-1 sparse-1-copy   (cp is not a known read-only command)
+  M105 [hidden] perl -V   (perl is not a known read-only command)
+  M107 [runtime] ./myscript.sh $(find mydir -name "*.fasta" | xargs) > output.txt 2>&1 &   (runs ./myscript.sh by path)
+  M115 [runtime] `basename "$(basename "$0")" .`   ($(basename "$(basename "$0")" .) is not a known read-only command)
+  M118 [runtime] `find mydir -mindepth 2 -type d`   ($(find mydir -mindepth 2 -type d) is not a known read-only command)
+  M121 [plain] mkdir -p folder{1..998} folder9991000   (mkdir is not a known read-only command)
+  M129 [runtime] find MyApp.app -type d -name 'Headers' -exec rm -rf {} + 2>/dev/null   (rm is not a known read-only command)
+  M134 [runtime] find . -type d -mtime -1 -exec mv {} /path/to/target-dir \;   (mv is not a known read-only command)
+  M137 [redirect] ls -la > files_and_folders   (redirects output to a file)
+  M144 [compound] phpinfo | less   (phpinfo is not a known read-only command)
+  M148 [plain] sed -i 's/\r\n//g' yourfile.txt   (sed is not a known read-only command)
+  M152 [runtime] find . -type f -name "YourProgramName" -exec bash -c 'cd "$(dirname {})" && ./YourProgramName YourParameterFile' \;   (runs ./YourProgramName by path)
+  M153 [plain] rename 's/\d+//' *   (rename is not a known read-only command)
+  M154 [hidden] `command | while read -p "Press Enter to continue..."; do :; done`   ($(command | while read -p "Press Enter to continue..."; do :; done) is not a known read-on)
+  M156 [runtime] find . -type d -name 'Headers' -exec rm -rf {} +   (rm is not a known read-only command)
+  M161 [plain] mv some-dir x/   (mv is not a known read-only command)
+  M162 [compound] command-that-asks-for-input | tr -d '\n' | echo Y   (command-that-asks-for-input is not a known read-only command)
+  M164 [hidden] `awk -F";" '{print $1, $2}'`   ($(awk -F";" '{print $1, $2}') is not a known read-only command)
+  M165 [hidden] `awk '{print $1, $2, $3}'`   ($(awk '{print $1, $2, $3}') is not a known read-only command)
+
+[ALG-strict] SILENT LOSSES
+  E010 [external, truth U] ls -d /dev/sd*[a-z] | wc -l
+[ALG-strict] CONSENT WITHOUT UNDO
+  M090 [runtime] `str="random file name"; rand_str="${str// /X}"; echo "$rand_str" > rand_str`   (opaque: the command name is computed at run time)
+  M120 [compound] script -q /dev/null ./a | tee output.txt   (opaque: unknown command script)
+[ALG-strict] FRICTION (safe, but asked)
+  M009 [runtime] find . -type f -name "*.xml" -exec sed -i 's/firstWord/newFirstWord/g; s/secondWord/newSecondWord/g; s/thirdWord/newThirdWord/g' {} +   (overwrite /tmp/listpilot-1912823816/beta.xml)
+  M010 [runtime] `find . -type d -name 'foo'`   (opaque: the command name is computed at run time)
+  M026 [plain] sed -i 's/apple/orange/g' *.txt   (overwrite /tmp/listpilot-4137494868/a.txt)
+  M063 [runtime] mkdir $(echo $RANDOM | md5sum | head -c 32)   (unresolved: arguments could not be determined: substitution is not provably read-only)
+  M099 [runtime] `find . -maxdepth 1 -type d -exec git pull \;`   (unrecoverable: git pull rewrites history or the working tree and is not modelled)
+  M101 [runtime] find $DIR -type f -mtime +15 -exec rm -f {} +   (unresolved: find arguments could not be determined: DIR: unbound variable)
+  M105 [hidden] perl -V   (opaque: perl runs arbitrary code; its effects are not modelled)
+  M107 [runtime] ./myscript.sh $(find mydir -name "*.fasta" | xargs) > output.txt 2>&1 &   (opaque: runs ./myscript.sh by path, which is not modelled)
+  M115 [runtime] `basename "$(basename "$0")" .`   (opaque: starts a shell whose input is not visible)
+  M118 [runtime] `find mydir -mindepth 2 -type d`   (opaque: the command name is computed at run time)
+  M144 [compound] phpinfo | less   (opaque: unknown command phpinfo)
+  M148 [plain] sed -i 's/\r\n//g' yourfile.txt   (overwrite /tmp/listpilot-2333443784/yourfile.txt)
+  M152 [runtime] find . -type f -name "YourProgramName" -exec bash -c 'cd "$(dirname {})" && ./YourProgramName YourParameterFile' \;   (opaque: runs ./YourProgramName by path, which is not modelled)
+  M154 [hidden] `command | while read -p "Press Enter to continue..."; do :; done`   (opaque: the command name is computed at run time)
+  M162 [compound] command-that-asks-for-input | tr -d '\n' | echo Y   (opaque: unknown command command-that-asks-for-input)
+  M164 [hidden] `awk -F";" '{print $1, $2}'`   (opaque: the command name is computed at run time)
+  M165 [hidden] `awk '{print $1, $2, $3}'`   (opaque: the command name is computed at run time)
+
+[ALG-capture] SILENT LOSSES
+  E010 [external, truth U] ls -d /dev/sd*[a-z] | wc -l
+[ALG-capture] CONSENT WITHOUT UNDO
+  M090 [runtime] `str="random file name"; rand_str="${str// /X}"; echo "$rand_str" > rand_str`   (opaque: the command name is computed at run time)
+  M120 [compound] script -q /dev/null ./a | tee output.txt   (opaque: unknown command script)
+[ALG-capture] FRICTION (safe, but asked)
+  M010 [runtime] `find . -type d -name 'foo'`   (opaque: the command name is computed at run time)
+  M063 [runtime] mkdir $(echo $RANDOM | md5sum | head -c 32)   (unresolved: arguments could not be determined: substitution is not provably read-only)
+  M099 [runtime] `find . -maxdepth 1 -type d -exec git pull \;`   (unrecoverable: git pull rewrites history or the working tree and is not modelled)
+  M101 [runtime] find $DIR -type f -mtime +15 -exec rm -f {} +   (unresolved: find arguments could not be determined: DIR: unbound variable)
+  M105 [hidden] perl -V   (opaque: perl runs arbitrary code; its effects are not modelled)
+  M107 [runtime] ./myscript.sh $(find mydir -name "*.fasta" | xargs) > output.txt 2>&1 &   (opaque: runs ./myscript.sh by path, which is not modelled)
+  M115 [runtime] `basename "$(basename "$0")" .`   (opaque: starts a shell whose input is not visible)
+  M118 [runtime] `find mydir -mindepth 2 -type d`   (opaque: the command name is computed at run time)
+  M144 [compound] phpinfo | less   (opaque: unknown command phpinfo)
+  M152 [runtime] find . -type f -name "YourProgramName" -exec bash -c 'cd "$(dirname {})" && ./YourProgramName YourParameterFile' \;   (opaque: runs ./YourProgramName by path, which is not modelled)
+  M154 [hidden] `command | while read -p "Press Enter to continue..."; do :; done`   (opaque: the command name is computed at run time)
+  M162 [compound] command-that-asks-for-input | tr -d '\n' | echo Y   (opaque: unknown command command-that-asks-for-input)
+  M164 [hidden] `awk -F";" '{print $1, $2}'`   (opaque: the command name is computed at run time)
+  M165 [hidden] `awk '{print $1, $2, $3}'`   (opaque: the command name is computed at run time)

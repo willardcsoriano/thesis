@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=SynapseOS
+Comment=Conversational Session Layer for Linux
+Exec=/usr/bin/synapseos-session
+Type=Application
+DesktopNames=SynapseOS

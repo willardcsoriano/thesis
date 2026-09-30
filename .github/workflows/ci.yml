@@ -1,0 +1,21 @@
+name: ci
+on:
+  push:
+  pull_request:
+jobs:
+  prototype:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: prototype/go.mod
+          cache-dependency-path: prototype/go.sum
+      - name: Tools the tests exercise
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap jq git rsync rename unzip zip
+      - name: Sandbox works on this runner
+        run: bwrap --ro-bind / / --unshare-all --die-with-parent true || echo "bubblewrap unavailable; oracle and resolver tests will skip"
+      - name: Format, vet, test
+        run: make -C prototype ci
+      - name: Guard hook tests
+        run: bash tools/claude-hardening/test-guard.sh

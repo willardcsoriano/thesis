@@ -315,3 +315,6 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,linux,windows,visualstudiocode,go,python
 # <<< end gitignore.io block <<<
+
+# Dependency hoard for the image build (large; rebuilt by distro/hoard.sh)
+distro/hoard/

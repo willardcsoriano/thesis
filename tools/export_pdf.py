@@ -14,7 +14,7 @@ from pathlib import Path
 
 TOOLS_DIR = Path(__file__).resolve().parent
 VENDOR_DIR = TOOLS_DIR / "vendor"
-CHROMIUM_BIN = VENDOR_DIR / "chromium" / "chrome"
+CHROMIUM_BIN = Path(os.environ.get("SYNAPSE_CHROMIUM") or VENDOR_DIR / "chromium" / "chrome")
 LIBS_DIR = VENDOR_DIR / "libs"
 FONTS_DIR = VENDOR_DIR / "fonts"
 
@@ -65,12 +65,14 @@ def write_fontconfig() -> None:
 
 
 def export(html_path: Path, pdf_path: Path) -> None:
-    write_fontconfig()
-    env = os.environ.copy()
-    env["LD_LIBRARY_PATH"] = str(LIBS_DIR) + os.pathsep + env.get("LD_LIBRARY_PATH", "")
-    env["FONTCONFIG_PATH"] = str(FONTS_DIR)
-
-    os.environ.update(env)
+    # The vendored bundle (libraries and fonts) is used when present. With
+    # SYNAPSE_CHROMIUM pointing at a system browser, its own libraries and fonts apply.
+    if FONTS_DIR.exists():
+        write_fontconfig()
+        env = os.environ.copy()
+        env["LD_LIBRARY_PATH"] = str(LIBS_DIR) + os.pathsep + env.get("LD_LIBRARY_PATH", "")
+        env["FONTCONFIG_PATH"] = str(FONTS_DIR)
+        os.environ.update(env)
 
     from playwright.sync_api import sync_playwright
 

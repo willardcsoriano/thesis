@@ -1,0 +1,36 @@
+kind	name	probe	required	purpose
+apt	bubblewrap	bwrap	yes	read-only sandbox for resolution and for the corpus oracle; also the study-machine isolation
+apt	git	git	yes	version control; git clean -n and git diff --name-only resolvers
+apt	rsync	rsync	yes	rsync -n resolver
+apt	jq	jq	yes	config tooling and the guard hook
+apt	findutils	find	yes	find and xargs, the wrappers the analysis reasons about
+apt	coreutils	rm	yes	the commands under analysis
+apt	tar	tar	yes	tar -t resolver
+apt	unzip	unzip	yes	unzip -Z1 resolver
+apt	zip	zip	no	archive creation in corpus templates
+apt	gzip	gzip	yes	compression, which replaces the original
+apt	bzip2	bzip2	no	compression templates
+apt	xz-utils	xz	no	compression templates
+apt	sed	sed	yes	sed -i in place editing
+apt	gawk	gawk	no	awk one-liners in the corpus
+apt	perl	perl	yes	perl one-liners and the rename tool
+apt	rename	rename	yes	rename -n resolver (one corpus command needs it)
+apt	pv	pv	no	pipe viewer used by corpus commands
+apt	dos2unix	dos2unix	no	in-place conversion used by corpus commands
+apt	ed	ed	no	scripted editor used by corpus commands
+apt	strace	strace	no	tracing used by corpus commands
+apt	sqlite3	sqlite3	no	database commands in the corpus
+apt	shellcheck	shellcheck	no	lints the shell scripts in tools/ and distro/
+apt	make	make	yes	build and test entry points
+apt	python3	python3	yes	corpus analysis, config patching, PDF export
+apt	python3-venv	python3	no	virtual environment for the PDF export
+apt	chromium	chromium	no	renders the paper to PDF (SYNAPSE_CHROMIUM)
+apt	curl	curl	yes	fetching the toolchain and the model
+apt	apt	apt-get	yes	package simulation (apt-get -s) for the package-state model
+apt	dpkg	dpkg-query	yes	dpkg-query and dpkg-deb for the package-state model
+apt	systemd	systemctl	yes	is-active and is-enabled for the service-state model
+toolchain	go	go	yes	Go 1.25.0, the version prototype/go.mod requires (hoarded as a tarball)
+gomod	mvdan.cc/sh/v3	-	yes	shell parser and expander (v3.13.1; v3.14 needs Go 1.26)
+model	qwen2.5-coder:3b	-	yes	the local model the prototype runs on (about 1.9 GB)
+model	qwen2.5-coder:1.5b	-	no	the smaller model kept for comparison
+binary	ollama	ollama	yes	model runtime (installer script; hoarded by hoard.sh --ollama)

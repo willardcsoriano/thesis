@@ -1,0 +1,2 @@
+
+Blockers: the moment something blocks progress (a missing dependency, a command that needs a password or a terminal, a permission denial, a hook or classifier block), report it at once in one short message that names the blocker and gives the exact command for the user to run after `!`; for a missing dependency that is the one install line with sudo. Then keep working on every branch that does not depend on it. Never work around the absence, retry variants of a blocked action, or wait on it, and repeat any still-open blocker in the closing summary.

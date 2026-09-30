@@ -3,6 +3,7 @@ package tui
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"regexp"
 	"strings"
@@ -35,9 +36,9 @@ func staticRunner(chunks ...string) TaskRunner {
 // is drawn rather than on final model state:
 //
 //   - WithWindowSize supplies terminal dimensions. Without a TTY no
-//     WindowSizeMsg ever arrives, the viewport is never sized, and the program
-//     exits having painted nothing — which is why output-based assertions
-//     silently saw an empty frame.
+//     WindowSizeMsg ever arrives, and the program can exit having painted
+//     nothing — which is why output-based assertions once silently saw an
+//     empty frame.
 //   - Input arrives over a pipe rather than a pre-filled buffer, so keys can
 //     be sent after the first frame and after a task finishes. With everything
 //     buffered up front, a ctrl+c intended to quit instead arrives mid-task and
@@ -151,72 +152,56 @@ func (s *syncBuf) String() string {
 // interleaved with cursor movement and is not reliably contiguous after escape
 // stripping, which made the test fail roughly one run in ten under -race. That
 // path is covered deterministically at the Update level instead
-// (TestStreamedFragmentsFormOneLine and the appendChunk tests), and by
-// TestTaskOutputReachesTheTranscriptInSourceOrder for ordering. A flaky test
+// (TestStreamedFragmentsFormOneLine and the appendOutput tests), and by
+// TestTaskOutputReachesTheScrollbackInSourceOrder for ordering. A flaky test
 // that duplicates existing coverage is worse than no test.
 
-// The header was being clipped at the right edge because the viewport does not
-// wrap. Rendering at a narrow width is what catches that.
-func TestRenderedHeaderWrapsRatherThanTruncating(t *testing.T) {
+// The header is printed into the scrollback, so the terminal wraps it. A tail
+// word is the discriminating check: it is present only if the line was not
+// clipped. Whitespace is normalised because wrapping inserts newlines.
+func TestRenderedHeaderIsPrintedInFull(t *testing.T) {
 	_, out := renderProgram(t, staticRunner(), []keyStep{{send: "\x03"}})
-	got := plain(out)
-	if !strings.Contains(got, "SynapseOS") {
-		t.Fatalf("header never rendered:\n%s", got)
+	flat := strings.Join(strings.Fields(plain(out)), " ")
+	if !strings.Contains(flat, "SynapseOS") {
+		t.Fatalf("header never rendered:\n%s", flat)
 	}
-	// The viewport clips to its width, so an unwrapped long line does not
-	// overflow — it silently loses its tail. Asserting on a word from the
-	// END of the longest hint is therefore the discriminating check: it is
-	// present when the line wraps and absent when it is merely clipped.
-	// Whitespace is normalised because wrapping is exactly what inserts the
-	// newline this assertion would otherwise trip over.
-	flat := strings.Join(strings.Fields(got), " ")
-	if !strings.Contains(flat, "trade that for wheel scrolling") {
-		t.Errorf("the tail of the hint line was lost, so long lines are being clipped rather than wrapped:\n%s", got)
+	if !strings.Contains(flat, "with the terminal as usual") {
+		t.Errorf("the tail of the hint line was lost:\n%s", flat)
 	}
 }
 
-// Mouse reporting hands the terminal's pointer to the program, which takes
-// drag-to-select with it. It must stay off unless explicitly asked for,
-// otherwise the transcript cannot be copied.
-func TestMouseTrackingIsNotEnabledByDefault(t *testing.T) {
-	_, out := renderProgram(t, staticRunner(), []keyStep{{send: "\x03"}})
-	for _, seq := range []string{"\x1b[?1000h", "\x1b[?1002h", "\x1b[?1003h"} {
+// Neither the alternate screen nor mouse reporting may ever be requested:
+// the first has no scrollback, the second takes native selection and the
+// wheel with it. Both are what made the conversation impossible to copy.
+func TestProgramNeverRequestsAltScreenOrMouseReporting(t *testing.T) {
+	_, out := renderProgram(t, staticRunner("done\n"), []keyStep{{send: "go\r", want: "done"}, {send: "\x03"}})
+	for _, seq := range []string{"\x1b[?1049h", "\x1b[?47h", "\x1b[?1000h", "\x1b[?1002h", "\x1b[?1003h"} {
 		if strings.Contains(out, seq) {
-			t.Errorf("mouse tracking %q enabled without being asked; text selection is disabled while it is on", seq)
+			t.Errorf("the program emitted %q; it must stay in the normal screen with the mouse left to the terminal", seq)
 		}
 	}
 }
 
-// ...and the toggle must actually turn it on for anyone who prefers the wheel.
-func TestMouseCommandTogglesTrackingOn(t *testing.T) {
-	m, out := renderProgram(t, staticRunner(), []keyStep{{send: "mouse\r", want: "text selection is disabled"}, {send: "\x03"}})
-	if !m.mouseOn {
-		t.Fatal("the mouse command did not set the flag")
+// Every finished line of a long output is printed exactly once and in order.
+// This is what puts the whole conversation in the terminal's scrollback; a
+// viewport would only ever have shown what fits on screen.
+func TestLongOutputIsPrintedOnceAndInOrder(t *testing.T) {
+	var chunks []string
+	for i := 0; i < 60; i++ {
+		chunks = append(chunks, fmt.Sprintf("row-%02d\n", i))
 	}
-	if !strings.Contains(out, "\x1b[?1002h") && !strings.Contains(out, "\x1b[?1000h") {
-		t.Error("flag set but the view never asked the terminal for mouse reporting")
-	}
-	if !strings.Contains(plain(out), "text selection is disabled") {
-		t.Error("the trade-off was not explained to the user when they turned it on")
-	}
-}
-
-// The gap above the prompt was the viewport rendering a short transcript at
-// the top and leaving blank rows beneath it.
-func TestShortTranscriptRendersAgainstThePrompt(t *testing.T) {
-	_, out := renderProgram(t, staticRunner(), []keyStep{{send: "\x03"}})
+	_, out := renderProgram(t, staticRunner(chunks...), []keyStep{{send: "list\r", want: "row-59"}, {send: "\x03"}})
 	got := plain(out)
-	i := strings.Index(got, "type a task")
-	if i < 0 {
-		return // prompt placeholder not rendered in this frame; nothing to assert
-	}
-	before := got[:i]
-	lines := strings.Split(strings.TrimRight(before, "\n"), "\n")
-	blanks := 0
-	for j := len(lines) - 1; j >= 0 && strings.TrimSpace(lines[j]) == ""; j-- {
-		blanks++
-	}
-	if blanks > 3 {
-		t.Errorf("%d blank rows between the transcript and the prompt", blanks)
+	last := -1
+	for i := 0; i < 60; i++ {
+		tag := fmt.Sprintf("row-%02d", i)
+		if n := strings.Count(got, tag); n != 1 {
+			t.Fatalf("%s appears %d times, want exactly once (printed lines must not be redrawn)", tag, n)
+		}
+		at := strings.Index(got, tag)
+		if at < last {
+			t.Fatalf("%s printed out of order", tag)
+		}
+		last = at
 	}
 }

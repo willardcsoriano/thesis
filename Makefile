@@ -1,22 +1,19 @@
-.PHONY: setup export
+# Forwards every target to prototype/Makefile, so `make tui` works from the repo root.
+# Variables given on the command line pass through, e.g. make task TASK="list the files here".
+.DEFAULT_GOAL := help
 
-VENV := tools/venv
-PYTHON := $(VENV)/bin/python
+help:
+	@echo "Forwarding to prototype/. Every synapse mode has its own target — none are hidden behind a curated subset:"
+	@echo "  cli TASK=\"...\"   one-shot CLI mode (alias: task TASK=\"...\")"
+	@echo "  repl              persistent, plain-text back-and-forth session, with memory between tasks"
+	@echo "  scratch           the same, but disposable — no memory between tasks"
+	@echo "  tui               the bubbletea interface"
+	@echo "  tui-scratch       the bubbletea interface, in scratch mode — no memory between tasks"
+	@echo "  undo              undo the last recorded command"
+	@echo "  run               propose-only demo suite (no filesystem changes)"
+	@echo "Plus: build, test, ci, ollama-serve-bg, ollama-pull, ollama-status. See prototype/Makefile for the rest (pilot rounds, corpus generation, dependency hoarding)."
 
-setup:
-	@if [ ! -d tools/vendor/chromium ]; then \
-		echo "tools/vendor/ is missing (Chromium binary, shared libs, poppler, fonts)."; \
-		echo "This can't be rebuilt automatically — see tools/TOOLING.md for what's vendored and why."; \
-		exit 1; \
-	fi
-	python3 -m venv $(VENV)
-	$(VENV)/bin/pip install --quiet --upgrade pip
-	$(VENV)/bin/pip install --quiet -r tools/requirements.txt
-	@echo "Setup complete: $(PYTHON)"
+%:
+	@$(MAKE) --no-print-directory -C prototype RUNDIR="$(CURDIR)" $@
 
-export:
-	@if [ -z "$(FILE)" ]; then \
-		echo "Usage: make export FILE=path/to/chapter.html [OUT=path/to/chapter.pdf]"; \
-		exit 1; \
-	fi
-	$(PYTHON) tools/export_pdf.py "$(FILE)" $(OUT)
+.PHONY: help

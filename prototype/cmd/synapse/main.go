@@ -36,17 +36,21 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"mvdan.cc/sh/v3/syntax"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"synapseos/internal/loopevent"
 	"sync"
 	"time"
 
 	"synapseos/internal/classifier"
+	"synapseos/internal/effects"
 	"synapseos/internal/executor"
 	"synapseos/internal/ollama"
 	"synapseos/internal/session"
@@ -80,22 +84,71 @@ Rules:
 // deciding to skip the classifier/confirmation gate for a later step; that
 // gate is enforced by runAdHoc, not by anything the model is trusted to do.
 const loopSystemPrompt = `You are the command translator for a Linux system running Debian 13 (Trixie).
-Output the single next bash command needed to make progress on the task.
+Decide the single next step needed to make progress on the task. Reply with an "action" of "run", "done", or "unsupported":
+- "run": there is a bash command that makes progress. Put it, and only it, in "command" — no explanation, no commentary, no markdown code fences.
+- "done": the steps already run for the CURRENT task have fully accomplished it. Leave "command" empty.
+- "unsupported": the task cannot be done with a shell command at all. Leave "command" empty.
 
 The prompt may contain two clearly separate sections. Do not confuse them:
 - "Earlier in this session" is background from PREVIOUS, ALREADY-FINISHED tasks. Use it only to understand what words like "it", "that", or "the file" refer to. It is NEVER progress on the current task.
 - "Steps already run" is progress on the CURRENT task, and only those steps count toward finishing it.
 
 Rules:
-- Output ONLY the command. No explanation, no commentary, no markdown code fences.
-- If the CURRENT task has no steps run yet, always output a command — never DONE, no matter what earlier tasks did.
-- If the steps already run for the CURRENT task have fully accomplished it, output exactly: DONE
+- If the CURRENT task has no steps run yet, always choose "run" — never "done", no matter what earlier tasks did.
 - Combine steps into one line with pipes or && where you reasonably can, but if a step depends on seeing the result of a previous command first, propose only that next step.
 - Prefer standard, widely available utilities.
+- To find out where you are, run pwd. Never run cd to check: a directory change does not carry over from one command to the next.
 - Commands run in the working directory given below. Words like "here", "this folder", "this directory", or "the current folder" refer to THAT directory: write a relative path or ".", never an absolute path to somewhere else.
 - NEVER output a placeholder path. /path/to/folder, /path/to/file, /your/directory and similar are not real paths and the command will fail. If the task does not name a path, it means the working directory — use a relative path.
 - Do not substitute a well-known system directory for one the task did not mention. "the log files here" means log files in the working directory, not /var/log.
-- If the task cannot be done with a shell command at all, output exactly: UNSUPPORTED`
+- If the request asks about more than one distinct thing, only choose "done" once a step already run has checked each of them — a step that answers one part of the request does not make the others done.`
+
+// stepFormat constrains the model's reply for proposeStep to this exact
+// shape, verified against Ollama 0.34's documented structured-output support
+// (a JSON schema in the "format" field of /api/generate). This is what
+// removes a whole class of model-specific parsing bugs found by hand — a
+// stray "$ " copied from an example, markdown fences, restating the command
+// after the DONE sentinel — rather than adding another prompt sentence or
+// text-cleanup rule for each one as it turns up. Any model or server that
+// does not honor it still gets a fair shot: decodeStepDecision falls back to
+// the legacy free-text parse (cleanCommand) when the reply is not valid JSON
+// in this shape, which is also what keeps every scripted test response that
+// predates this unchanged.
+var stepFormat = map[string]any{
+	"type": "object",
+	"properties": map[string]any{
+		"action":  map[string]any{"type": "string", "enum": []string{"run", "done", "unsupported"}},
+		"command": map[string]any{"type": "string"},
+	},
+	"required": []string{"action", "command"},
+}
+
+// stepDecision is stepFormat's Go shape.
+type stepDecision struct {
+	Action  string `json:"action"`
+	Command string `json:"command"`
+}
+
+// decodeStepDecision reads a stepFormat-shaped reply. ok is false when raw is
+// not valid JSON in this shape at all — an older or non-conforming model, or
+// any of the many existing tests that script a bare command string — and the
+// caller falls back to treating raw as free text.
+func decodeStepDecision(raw string) (cmd string, ok bool) {
+	var d stepDecision
+	if err := json.Unmarshal([]byte(strings.TrimSpace(raw)), &d); err != nil {
+		return "", false
+	}
+	switch d.Action {
+	case "run":
+		return cleanCommand(d.Command), true
+	case "done":
+		return doneSentinel, true
+	case "unsupported":
+		return "UNSUPPORTED", true
+	default:
+		return "", false
+	}
+}
 
 // maxLoopSteps hard-caps the ad-hoc path's bounded loop (D21). Reaching the
 // cap is reported as an explicit failure, never silently treated as if the
@@ -144,6 +197,133 @@ func generationOptions() map[string]any {
 	}
 }
 
+// bareCd reports whether cmd is nothing but a directory change: one simple
+// command, `cd` or its stack cousins, with no pipeline, list, or redirect. A cd
+// that leads into other commands (`cd logs && ls`) is fine: the change lasts for
+// exactly the commands that follow it.
+func bareCd(cmd string) bool {
+	f, err := syntax.NewParser(syntax.Variant(syntax.LangBash)).Parse(strings.NewReader(cmd), "")
+	if err != nil || len(f.Stmts) != 1 {
+		return false
+	}
+	st := f.Stmts[0]
+	call, ok := st.Cmd.(*syntax.CallExpr)
+	if !ok || len(st.Redirs) != 0 || st.Background || st.Negated || len(call.Args) == 0 {
+		return false
+	}
+	switch call.Args[0].Lit() {
+	case "cd", "pushd", "popd":
+		return true
+	}
+	return false
+}
+
+// interactiveTUIPrograms names programs that take over the whole screen and
+// block waiting for keyboard input — they need a real controlling terminal,
+// which executor.Run does not give them (its stdout/stderr are buffers, not a
+// pty). Running one here fails immediately (`top: failed tty get`) or, worse,
+// hangs until the step timeout. Found live 2026-09-28: asked for CPU usage,
+// the model reached for `top`, watched it fail, then reached for `htop`,
+// which either failed the same way or hung — either way the task burned
+// every step in maxLoopSteps guessing at interactive alternatives instead of
+// the one-shot commands these programs are all built on top of and that work
+// fine headless. The map's value is what to suggest instead, named for the
+// specific program so the model reaches for something that actually answers
+// the same question rather than merely another interactive tool.
+//
+// Deliberately narrow: only programs that are always full-screen with no
+// headless mode in ordinary use. `less` and `man` are left off on purpose —
+// both already detect a non-terminal stdout and behave non-interactively in
+// that case, so blocking them would refuse commands that work.
+var interactiveTUIPrograms = map[string]string{
+	"top":    "top -bn1 (one batch snapshot instead of the live display)",
+	"htop":   "ps aux --sort=-%cpu | head (or top -bn1) — htop has no headless mode",
+	"vi":     "cat, or a non-interactive editor invocation such as sed -i, for reading or changing a file without opening an editor",
+	"vim":    "cat, or a non-interactive editor invocation such as sed -i, for reading or changing a file without opening an editor",
+	"nvim":   "cat, or a non-interactive editor invocation such as sed -i, for reading or changing a file without opening an editor",
+	"nano":   "cat, or a non-interactive editor invocation such as sed -i, for reading or changing a file without opening an editor",
+	"emacs":  "cat, or a non-interactive editor invocation such as sed -i, for reading or changing a file without opening an editor",
+	"pico":   "cat, or a non-interactive editor invocation such as sed -i, for reading or changing a file without opening an editor",
+	"joe":    "cat, or a non-interactive editor invocation such as sed -i, for reading or changing a file without opening an editor",
+	"watch":  "the command being watched, run once, since watch's own display needs a terminal",
+	"tmux":   "the command intended to run inside it, run directly — a new session cannot be attached to here",
+	"screen": "the command intended to run inside it, run directly — a new session cannot be attached to here",
+	"mc":     "ls, find, cp, or mv directly — mc is a full-screen file manager",
+	"ranger": "ls or find directly — ranger is a full-screen file manager",
+}
+
+// interactiveProgram reports whether cmd invokes a program from
+// interactiveTUIPrograms anywhere in its structure — as the whole command, one
+// side of a pipeline, or one statement in a list — and returns that program's
+// name and suggested alternative. syntax.Walk visits every node, so this
+// catches `ps aux | less` -style composition without hand-rolling a second
+// traversal alongside cdThenPwd's.
+func interactiveProgram(cmd string) (name, alternative string, found bool) {
+	f, err := syntax.NewParser(syntax.Variant(syntax.LangBash)).Parse(strings.NewReader(cmd), "")
+	if err != nil {
+		return "", "", false
+	}
+	syntax.Walk(f, func(n syntax.Node) bool {
+		if found {
+			return false
+		}
+		call, ok := n.(*syntax.CallExpr)
+		if !ok || len(call.Args) == 0 {
+			return true
+		}
+		word := call.Args[0].Lit()
+		if alt, ok := interactiveTUIPrograms[word]; ok {
+			name, alternative, found = word, alt, true
+			return false
+		}
+		return true
+	})
+	return name, alternative, found
+}
+
+// cdThenPwd reports whether cmd is a chain that starts by changing directory and
+// ends by printing it (`cd / && pwd`). It looks like a way of asking where the
+// session is and is the opposite: pwd only echoes wherever the cd just went, so
+// "are we in the root dir?" comes back "yes" whatever the truth. The model
+// reached for exactly this once it could no longer answer with a bare cd.
+func cdThenPwd(cmd string) bool {
+	f, err := syntax.NewParser(syntax.Variant(syntax.LangBash)).Parse(strings.NewReader(cmd), "")
+	if err != nil {
+		return false
+	}
+	var leaves []string
+	var walk func(st *syntax.Stmt) bool
+	walk = func(st *syntax.Stmt) bool {
+		if st == nil || len(st.Redirs) != 0 || st.Background || st.Negated {
+			return false
+		}
+		switch c := st.Cmd.(type) {
+		case *syntax.CallExpr:
+			if len(c.Args) == 0 {
+				return false
+			}
+			name := c.Args[0].Lit()
+			if name == "" {
+				return false
+			}
+			leaves = append(leaves, name)
+			return true
+		case *syntax.BinaryCmd:
+			if c.Op != syntax.AndStmt && c.Op != syntax.OrStmt {
+				return false
+			}
+			return walk(c.X) && walk(c.Y)
+		}
+		return false
+	}
+	for _, st := range f.Stmts {
+		if !walk(st) {
+			return false
+		}
+	}
+	return len(leaves) >= 2 && leaves[0] == "cd" && leaves[len(leaves)-1] == "pwd"
+}
+
 // envIntOr reads a positive integer from the environment, falling back to
 // the default on absence, unparseable input, or a non-positive value. A bad
 // value degrades to the working default rather than failing the run: a typo
@@ -182,6 +362,64 @@ const answerOutputChars = 2000
 // never to a slow task.
 const answerTimeout = 30 * time.Second
 
+// compactSystemPrompt drives the background call that condenses older
+// session history (D42). It is deliberately not the same prompt as
+// answerSystemPrompt: that one writes for the person; this one writes for a
+// later call to this same model, so the audience, and therefore what is
+// worth keeping, differs — a follow-up needs the referent, not a pleasant
+// sentence.
+const compactSystemPrompt = `You are condensing the older part of a conversation with a command-line assistant, so a later request can still resolve references like "it", "that file", or "the folder" without the original turns.
+
+Write a short paragraph naming what was done and any file, folder, package, or other resource a later request might refer back to. Do not narrate the commands themselves or their exit codes — only what changed and what it is called.
+
+No markdown, no preamble, no sign-off.`
+
+// compactKeepTurns is how many of the newest turns are always kept verbatim
+// and never handed to the summarizer — session.Context.trim already assumes
+// a follow-up overwhelmingly refers to the turn immediately before it, and
+// summarizing that one away would defeat the reason it is kept at all.
+const compactKeepTurns = 1
+
+// compactionTimeout bounds the background summarization call. Generous
+// relative to a normal step, deliberately: nothing in the foreground is
+// waiting on it, so failing slow only costs a missed compaction this time —
+// trim's ordinary drop-oldest behavior still protects the budget — never a
+// delayed answer to the task the person actually asked for.
+const compactionTimeout = 90 * time.Second
+
+// maybeCompact starts summarizing older session history in the background
+// once it is close to its budget, so a later turn does not have to be
+// dropped outright with nothing kept of it. It never blocks the caller: the
+// entire point is that summarizing costs a model call, and paying that cost
+// synchronously would bother the user with exactly the slowness this exists
+// to avoid. Best effort throughout — sc.Compact silently discards a summary
+// that arrives after history has moved on (see its own doc comment), and a
+// failed or slow call here simply means trim's free, immediate fallback
+// keeps doing the job alone, same as before this existed.
+func maybeCompact(client *ollama.Client, model string, sc *session.Context) {
+	if sc == nil || !sc.ApproachingLimit() {
+		return
+	}
+	text, gen, ok := sc.Snapshot(compactKeepTurns)
+	if !ok {
+		return
+	}
+	go func() {
+		// context.Background, not the task's own ctx: the task's context is
+		// cancelled the moment the task's goroutine returns (startTask's
+		// deferred cancel), which is at most a few lines of code after this
+		// goroutine is spawned — using it here would race the summarization
+		// call against its own cancellation almost every time.
+		ctx, cancel := context.WithTimeout(context.Background(), compactionTimeout)
+		defer cancel()
+		resp, err := client.Generate(ctx, model, compactSystemPrompt, text, generationOptions())
+		if err != nil {
+			return
+		}
+		sc.Compact(gen, compactKeepTurns, resp.Response)
+	}()
+}
+
 // sampleSuite is a first pass across the four task categories the study covers
 // (scope.md → Custom cross-platform task suite). It is a smoke test for
 // eyeballing quality, not the real study suite.
@@ -194,6 +432,65 @@ var sampleSuite = []struct{ category, task string }{
 	{"application & package management", "list every package I've installed that isn't a system default"},
 	{"text & data processing", "count how many lines in access.log contain the word error"},
 	{"text & data processing", "replace every tab with a comma in data.txt and save it as data.csv"},
+}
+
+// runTUI launches TUI mode; stateless selects scratch mode's header and its
+// nil session context (D43, D44), otherwise identical: same TaskRunner
+// injection, same warm-up, same everything else. TUI mode launches without a
+// connectivity precheck on purpose (M5 step 3) — a full-screen app that opens
+// and reports the problem inside the session beats one that exits to a bare
+// shell over a transient backend blip; an unreachable Ollama surfaces as an
+// ordinary error line in the transcript on the first proposal attempt, and
+// the session stays usable once the backend comes back.
+func runTUI(ctx context.Context, client *ollama.Client, model string, stateless bool) {
+	journalPath, err := undo.DefaultJournalPath()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "warning: undo journal unavailable, this session won't be undoable: %v\n", err)
+		journalPath = ""
+	}
+	// The injected runner is runLoop itself, with only the client, model, and
+	// journal bound in. TUI mode therefore executes the exact same
+	// propose/classify/confirm/execute path as CLI and REPL mode — no
+	// reimplementation, so safety gating cannot drift between interface
+	// modes. A nil sc is the same "no memory" signal scratch mode already
+	// uses everywhere else (D43): handleSessionCommand's "context"/"clear"
+	// and runLoop's own withSessionContext both already treat it that way.
+	var sc *session.Context
+	if !stateless {
+		sc = session.New()
+	}
+	tracker := newTaskTracker()
+	tel, closeTel := studyLogger(os.Stderr)
+	defer closeTel()
+	runner := func(taskCtx context.Context, task string, confirmFn func(string) bool, out, errOut io.Writer) int {
+		// Session commands are answered locally, never generated — see
+		// handleSessionCommand.
+		if handleSessionCommand(task, sc, tracker, out) {
+			return 0
+		}
+		opts := append(eventsFrom(out), withTelemetry(tel, tracker.current()))
+		if sc != nil {
+			opts = append(opts, withSessionContext(sc))
+		}
+		// The writer the TUI hands in also accepts typed events, so the loop
+		// reports commands, results, and answers as events and the TUI
+		// decides how to show them. That is presentation only: the command
+		// is still parsed from the whole response and classified exactly as
+		// before.
+		return runLoop(taskCtx, client, model, task, confirmFn, out, errOut, journalPath, opts...)
+	}
+	// Load the model while the user is still reading the header, so the first
+	// answer does not pay a cold start (measured at 30-40s on the reference
+	// machine). A failure is not fatal: the first real task will report it.
+	warm := func(ctx context.Context) error { return client.Preload(ctx, model, generationOptions()) }
+	newModel := tui.NewModel
+	if stateless {
+		newModel = tui.NewScratchModel
+	}
+	if err := tui.RunModelWithWarmup(newModel(runner), warm); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 func main() {
@@ -215,6 +512,10 @@ func main() {
 	// the exact moment it is most likely to be needed. Fixed Session 28 (this
 	// was a real, verified defect dating to M1/F2, found by review, not a
 	// deliberate design choice — nothing in decisions.md justified it).
+	if len(args) == 2 && args[0] == "tui" && args[1] == "scratch" {
+		runTUI(ctx, client, model, true)
+		return
+	}
 	if len(args) == 1 {
 		switch args[0] {
 		case "undo":
@@ -229,45 +530,7 @@ func main() {
 			closeTel()
 			os.Exit(code)
 		case "tui":
-			// M5 step 3: the real execution loop is wired in, but TUI mode
-			// still launches without a connectivity precheck on purpose. A
-			// full-screen app that opens and reports the problem inside the
-			// session beats one that exits to a bare shell over a transient
-			// backend blip — an unreachable Ollama surfaces as an ordinary
-			// error line in the transcript on the first proposal attempt, and
-			// the session stays usable once the backend comes back.
-			journalPath, err := undo.DefaultJournalPath()
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "warning: undo journal unavailable, this session won't be undoable: %v\n", err)
-				journalPath = ""
-			}
-			// The injected runner is runLoop itself, with only the client,
-			// model, and journal bound in. TUI mode therefore executes the
-			// exact same propose/classify/confirm/execute path as CLI and
-			// REPL mode — no reimplementation, so safety gating cannot drift
-			// between interface modes.
-			sc := session.New()
-			tracker := newTaskTracker()
-			tel, closeTel := studyLogger(os.Stderr)
-			defer closeTel()
-			runner := func(taskCtx context.Context, task string, confirmFn func(string) bool, out, errOut io.Writer) int {
-				// Session commands are answered locally, never generated —
-				// see handleSessionCommand.
-				if handleSessionCommand(task, sc, tracker, out) {
-					return 0
-				}
-				// withTokenStreaming is the one behavioral difference from
-				// CLI/REPL mode, and it is presentation-only: tokens render
-				// as they arrive instead of after generation finishes. The
-				// command still gets parsed from the fully assembled
-				// response and classified exactly as before.
-				return runLoop(taskCtx, client, model, task, confirmFn, out, errOut, journalPath,
-					withTokenStreaming(out), withSessionContext(sc), withTelemetry(tel, tracker.current()))
-			}
-			if err := tui.Run(runner); err != nil {
-				fmt.Fprintf(os.Stderr, "error: %v\n", err)
-				os.Exit(1)
-			}
+			runTUI(ctx, client, model, false)
 			return
 		}
 	}
@@ -289,6 +552,14 @@ func main() {
 				journalPath = ""
 			}
 			os.Exit(runREPL(ctx, client, model, journalPath, os.Stdin, os.Stdout, os.Stderr))
+		}
+		if len(args) == 1 && args[0] == "scratch" {
+			journalPath, err := undo.DefaultJournalPath()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "warning: undo journal unavailable, this session won't be undoable: %v\n", err)
+				journalPath = ""
+			}
+			os.Exit(runScratch(ctx, client, model, journalPath, os.Stdin, os.Stdout, os.Stderr))
 		}
 		runAdHoc(ctx, client, model, strings.Join(args, " "))
 		return
@@ -334,7 +605,7 @@ func runAdHoc(ctx context.Context, client *ollama.Client, model, task string) {
 	}
 	reader := bufio.NewReader(os.Stdin)
 	confirmFn := func(prompt string) bool { return confirm(reader, os.Stdout, prompt) }
-	fmt.Fprintf(os.Stdout, "each step may run for up to %s before it's automatically stopped.\n\n", stepExecutionTimeout)
+	fmt.Fprintf(os.Stdout, "Each step may run for up to %s before it's automatically stopped.\n\n", stepExecutionTimeout)
 	// Also answered on the one-shot path, not only in the session loops:
 	// `synapse hello` is as likely a first contact as typing it at the prompt.
 	if answerConversational(task, os.Stdout) {
@@ -370,17 +641,55 @@ func runAdHoc(ctx context.Context, client *ollama.Client, model, task string) {
 // intentionally ignored here; the whole point of a persistent loop is that
 // one bad task doesn't force a restart to try another.
 func runREPL(ctx context.Context, client *ollama.Client, model, journalPath string, in io.Reader, out, errOut io.Writer) int {
-	fmt.Fprintln(out, "persistent session — type a task and press enter; type exit or quit (or Ctrl+D) to leave.")
-	fmt.Fprintln(out, "while a task is running, Ctrl+C cancels just that task and returns you here.")
-	fmt.Fprintf(out, "each step may run for up to %s before it's automatically stopped.\n", stepExecutionTimeout)
-	fmt.Fprintln(out, "follow-ups can refer back (\"move it to Downloads\"); type context to see what's remembered, clear to forget it.")
+	return runInteractiveSession(ctx, client, model, journalPath, in, out, errOut, false)
+}
+
+// runScratch is scratch mode (D43): the same persistent, plain-text
+// back-and-forth loop as REPL, minus memory. Every task starts fresh —
+// "whatever the last command is is its scope" — which is what makes it
+// lighter than REPL: no rolling window, no budget to approach, nothing to
+// compact in the background (D42), nothing a stray "clear" needs to undo.
+// The trade is exactly what REPL exists to avoid: a follow-up like "move it
+// to Downloads" cannot resolve, because there is no earlier turn to resolve
+// it against. For a quick, disposable, one-thing-after-another session where
+// that trade is fine, this is the lighter mode to reach for.
+func runScratch(ctx context.Context, client *ollama.Client, model, journalPath string, in io.Reader, out, errOut io.Writer) int {
+	return runInteractiveSession(ctx, client, model, journalPath, in, out, errOut, true)
+}
+
+// runInteractiveSession is REPL's and scratch's shared loop (D43): read a
+// line, run it through the identical propose/classify/confirm/execute path
+// every mode uses, print the result, repeat until exit/quit/EOF. stateless
+// selects the one real difference — whether session memory is threaded
+// through runLoop at all — everything else (the shared bufio.Reader wiring
+// confirmation prompts to task-line reads, Ctrl+C-per-task, telemetry) is
+// identical between the two, which is deliberately kept in one place so
+// they cannot drift apart from each other by accident.
+func runInteractiveSession(ctx context.Context, client *ollama.Client, model, journalPath string, in io.Reader, out, errOut io.Writer, stateless bool) int {
+	fmt.Fprintln(out, "Persistent session — type a task and press enter; type exit or quit (or Ctrl+D) to leave.")
+	fmt.Fprintln(out, "While a task is running, Ctrl+C cancels just that task and returns you here.")
+	fmt.Fprintf(out, "Each step may run for up to %s before it's automatically stopped.\n", stepExecutionTimeout)
+	if stateless {
+		fmt.Fprintln(out, "Scratch mode: nothing carries over between tasks. Each one starts fresh, with no memory of the one before it.")
+	} else {
+		fmt.Fprintln(out, "Follow-ups can refer back (\"move it to Downloads\"); type context to see what's remembered, clear to forget it.")
+	}
 	if tel := os.Getenv("SYNAPSE_SESSION_LOG"); tel != "" {
-		fmt.Fprintln(out, "study telemetry is recording; type task <id> to mark which task the following events belong to.")
+		fmt.Fprintln(out, "Study telemetry is recording; type task <id> to mark which task the following events belong to.")
 	}
 
 	reader := bufio.NewReader(in)
 	confirmFn := func(prompt string) bool { return confirm(reader, out, prompt) }
-	sc := session.New()
+	// A nil *session.Context is scratch mode's whole implementation: every
+	// consumer downstream (handleMemoryCommand's "context"/"clear", and
+	// runLoop's own withSessionContext) already treats nil as "no memory" —
+	// that convention already existed for every other caller that omits
+	// session context (CLI mode, D19), so scratch mode needs no new branch
+	// anywhere except right here.
+	var sc *session.Context
+	if !stateless {
+		sc = session.New()
+	}
 	tracker := newTaskTracker()
 	tel, closeTel := studyLogger(errOut)
 	defer closeTel()
@@ -403,8 +712,11 @@ func runREPL(ctx context.Context, client *ollama.Client, model, journalPath stri
 				}
 				continue
 			}
-			runTaskInterruptibly(ctx, client, model, task, confirmFn, out, errOut, journalPath,
-				withSessionContext(sc), withTelemetry(tel, tracker.current()))
+			opts := []loopOption{withTelemetry(tel, tracker.current())}
+			if sc != nil {
+				opts = append(opts, withSessionContext(sc))
+			}
+			runTaskInterruptibly(ctx, client, model, task, confirmFn, out, errOut, journalPath, opts...)
 			fmt.Fprintln(out)
 		}
 
@@ -482,7 +794,7 @@ func runTaskInterruptibly(ctx context.Context, client *ollama.Client, model, tas
 	go func() {
 		select {
 		case <-sigCh:
-			fmt.Fprintln(syncOut, "\ncancelling this task — the session stays open.")
+			fmt.Fprintln(syncOut, "\nCancelling this task — the session stays open.")
 			cancel()
 		case <-watchDone:
 		}
@@ -550,6 +862,15 @@ type loopConfig struct {
 	// recording nothing. Only tests that script a fixed number of model
 	// responses set this.
 	answerDisabled bool
+
+	// events, when non-nil, receives what the loop would otherwise narrate as
+	// text: the command chosen, what it did, the answer, notices and problems.
+	// The loop then writes none of that to out or errOut. What runs, what is
+	// gated, what is journaled, and what telemetry records are identical; only
+	// the presentation moves to the interface. The model is also asked in a
+	// non-streaming call, because a command printed piece by piece into a
+	// scrollback reads as noise. Used only by TUI mode.
+	events func(loopevent.Event)
 }
 
 // withTokenStreaming makes the loop stream generation into w as it
@@ -557,6 +878,59 @@ type loopConfig struct {
 // CLI mode deliberately renders once generation finishes instead.
 func withTokenStreaming(w io.Writer) loopOption {
 	return func(c *loopConfig) { c.tokenSink = w }
+}
+
+// withEvents hands the loop's narration to fn as typed events instead of text.
+// See loopConfig.events.
+func withEvents(fn func(loopevent.Event)) loopOption {
+	return func(c *loopConfig) { c.events = fn }
+}
+
+// eventsFrom returns withEvents for a writer that wants events, or nothing for
+// one that does not, so every other caller keeps the text output unchanged.
+func eventsFrom(w io.Writer) []loopOption {
+	if em, ok := w.(loopevent.Emitter); ok {
+		return []loopOption{withEvents(em.Emit)}
+	}
+	return nil
+}
+
+// notice shows text to the person now: as an event, or as the given text line.
+func (c loopConfig) notice(out io.Writer, text string) {
+	if c.events != nil {
+		c.events(loopevent.Event{Kind: loopevent.Notice, Text: text})
+		return
+	}
+	fmt.Fprintln(out, text)
+}
+
+// note records bookkeeping that is only worth showing on request. Without an
+// event consumer it is written as the given legacy text.
+func (c loopConfig) note(out io.Writer, text, legacy string) {
+	if c.events != nil {
+		c.events(loopevent.Event{Kind: loopevent.Note, Text: text})
+		return
+	}
+	fmt.Fprint(out, legacy)
+}
+
+// problem reports something that went wrong: plain words and the technical
+// cause as an event, or the legacy line otherwise.
+func (c loopConfig) problem(errOut io.Writer, plain, detail, legacy string) {
+	if c.events != nil {
+		c.events(loopevent.Event{Kind: loopevent.Problem, Text: plain, Detail: detail})
+		return
+	}
+	fmt.Fprint(errOut, legacy)
+}
+
+// printAnswer writes the model's reply.
+func (c loopConfig) printAnswer(out io.Writer, answer string) {
+	if c.events != nil {
+		c.events(loopevent.Event{Kind: loopevent.Answer, Text: answer})
+		return
+	}
+	fmt.Fprintln(out, answer)
 }
 
 // withSessionContext gives the loop memory of earlier tasks in the same
@@ -612,9 +986,19 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 				})
 			}
 			cfg.session.Append(task, steps)
-			if n := cfg.session.TakeDropped(); n > 0 {
-				fmt.Fprintf(out, "note: dropped %d older turn(s) from memory to stay within the context budget.\n", n)
+			// Compacted is drained first: a background Compact from an
+			// earlier turn can land in the gap between this Append and this
+			// report, and a compaction that happened must not be reported as
+			// a silent drop just because it was noticed a turn late.
+			if n := cfg.session.TakeCompacted(); n > 0 {
+				text := fmt.Sprintf("Condensed %d older turn(s) into a short summary to stay within the context budget.", n)
+				cfg.note(out, text, fmt.Sprintf("note: condensed %d older turn(s) into a summary to stay within the context budget.\n", n))
 			}
+			if n := cfg.session.TakeDropped(); n > 0 {
+				text := fmt.Sprintf("Dropped %d older turn(s) from memory to stay within the context budget.", n)
+				cfg.note(out, text, fmt.Sprintf("note: dropped %d older turn(s) from memory to stay within the context budget.\n", n))
+			}
+			maybeCompact(client, model, cfg.session)
 		}()
 	}
 
@@ -631,7 +1015,7 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			if cfg.tokenSink != nil {
 				fmt.Fprintln(out)
 			}
-			fmt.Fprintf(errOut, "error: %v\n", err)
+			cfg.problem(errOut, "I couldn't get an answer from the language model.", err.Error(), fmt.Sprintf("error: %v\n", err))
 			taskOutcome = "propose_error"
 			return 1
 		}
@@ -642,10 +1026,15 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		// truthful reason instead of five identical error blocks.
 		for _, prior := range failedCommands(history) {
 			if prior == cmd {
-				fmt.Fprintf(out, "this command already failed here, so running it again will not help: %s\n", cmd)
+				if cfg.events != nil {
+					cfg.notice(out, "I already tried that and it did not work, so I'm stopping instead of repeating it.")
+					cfg.note(out, "Not run again, because it already failed here: "+cmd, "")
+				} else {
+					fmt.Fprintf(out, "This command already failed here, so running it again will not help: %s\n", cmd)
+				}
 				taskOutcome = "repeated_failure"
 				if answer, aerr := maybeAnswer(ctx, client, model, task, history, cfg); aerr == nil && answer != "" {
-					fmt.Fprintln(out, answer)
+					cfg.printAnswer(out, answer)
 					cfg.telemetry.TaskAnswered(cfg.taskID, answer)
 				}
 				return 1
@@ -653,7 +1042,9 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		}
 		cfg.telemetry.CommandIssued(cfg.taskID, i, cmd)
 
-		if cfg.tokenSink != nil {
+		if cfg.events != nil {
+			// Announced below, once it is known to be a command.
+		} else if cfg.tokenSink != nil {
 			fmt.Fprintln(out)
 			// The streamed text is the model's raw output; what actually
 			// runs has been through cleanCommand. Show the canonical form
@@ -685,32 +1076,48 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			// tasks like editing images") and asserted it every time, which
 			// made a failed `du` read as a request to edit an image
 			// (open-problems.md row 4, hit in live testing 2026-09-15).
+			if cfg.events != nil {
+				cfg.notice(out, strings.Join([]string{
+					"I couldn't work out a command for that.",
+					"I work by running shell commands on this machine, so I can reach files and folders, disk usage, processes, packages, text in files, and network settings — but not things with no command-line equivalent, like clicking buttons in a graphical application or editing an image.",
+					"I also don't answer general questions about the world — I only report what I can find on this machine, so that anything I tell you can be traced to a command that actually ran.",
+					"If it is something the command line can do, try naming the file or folder — for example \"how much space is this folder using\" or \"find the ten largest files here\".",
+				}, "\n"))
+				taskOutcome = "unsupported"
+				return 1
+			}
 			fmt.Fprintln(out, "I couldn't work out a command for that.")
 			fmt.Fprintln(out, "I work by running shell commands on this machine, so I can reach files and folders, disk usage, processes, packages, text in files, and network settings — but not things with no command-line equivalent, like clicking buttons in a graphical application or editing an image.")
 			fmt.Fprintln(out, "I also don't answer general questions about the world — I only report what I can find on this machine, so that anything I tell you can be traced to a command that actually ran.")
-			fmt.Fprintln(out, "if it is something the command line can do, try naming the file or folder — for example \"how much space is this folder using\" or \"find the ten largest files here\".")
+			fmt.Fprintln(out, "If it is something the command line can do, try naming the file or folder — for example \"how much space is this folder using\" or \"find the ten largest files here\".")
 			taskOutcome = "unsupported"
 			return 1
 		}
 		if strings.EqualFold(cmd, doneSentinel) {
 			if len(history) == 0 {
-				fmt.Fprintln(out, "model reported nothing needs to be done.")
+				cfg.notice(out, "Nothing needs to be done.")
 				taskOutcome = "nothing_to_do"
 				return 0
 			}
 			// The answer comes before the mechanical completion line: it is
 			// what the user asked for, and the step count is bookkeeping.
 			if answer, aerr := maybeAnswer(ctx, client, model, task, history, cfg); aerr == nil && answer != "" {
-				fmt.Fprintln(out, answer)
+				cfg.printAnswer(out, answer)
 				cfg.telemetry.TaskAnswered(cfg.taskID, answer)
 			} else if aerr != nil {
 				// Reported, not fatal. The task succeeded; only the summary
 				// did not, and the raw output above already stands on its own.
-				fmt.Fprintf(errOut, "note: could not summarise the result: %v\n", aerr)
+				cfg.problem(errOut, "I couldn't put the result into words this time.", aerr.Error(), fmt.Sprintf("note: could not summarise the result: %v\n", aerr))
 			}
-			fmt.Fprintf(out, "task complete in %d step(s).\n", len(history))
+			if cfg.events == nil {
+				fmt.Fprintf(out, "Task complete in %d step(s).\n", len(history))
+			}
 			taskOutcome = "complete"
 			return 0
+		}
+
+		if cfg.events != nil {
+			cfg.events(loopevent.Event{Kind: loopevent.Command, Step: i, Command: cmd, Tokens: resp.EvalCount, Latency: resp.Latency()})
 		}
 
 		// Resolved once per step and used both for the filesystem-aware
@@ -720,9 +1127,57 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		// no-filesystem-check behavior rather than failing the step.
 		wd, _ := os.Getwd()
 
+		// Each step runs in its own shell, so a lone `cd` changes nothing that
+		// outlasts it. Running it anyway and reporting success is how the session
+		// once answered "are we in the root dir?" with "We are now in the root
+		// directory" while sitting exactly where it started. Say so instead, as a
+		// failed step, so the next proposal sees it and reaches for `pwd` or a
+		// path.
+		if bareCd(cmd) || cdThenPwd(cmd) {
+			note := "cd only changes the directory of the shell that runs it, so it cannot move this session, which stays in " +
+				wd + ", and pwd right after a cd just repeats where the cd went. To look somewhere else, name the path in the command (for example ls /some/folder); to see where this session is, run pwd on its own."
+			if cfg.events != nil {
+				cfg.events(loopevent.Event{Kind: loopevent.Result, Step: i, Command: cmd, Stderr: note, ExitCode: 1, NotRun: true})
+			} else {
+				fmt.Fprintf(out, "not run: %s\n%s\n", cmd, note)
+			}
+			cfg.telemetry.CommandResult(cfg.taskID, i, cmd, telemetry.CommandOutcome{ExitCode: 1, RawExitCode: 1})
+			history = append(history, loopStep{command: cmd, result: executor.Result{Stderr: note, ExitCode: 1, RawExitCode: 1}})
+			continue
+		}
+
+		// A full-screen program has nothing to run against here — see
+		// interactiveTUIPrograms. Refused the same way a bare cd is: reported
+		// as a failed step with a working alternative, so the next proposal
+		// has something to act on instead of repeating the same dead end.
+		if prog, alt, ok := interactiveProgram(cmd); ok {
+			note := prog + " needs an interactive terminal, which is not available here, so it cannot run. Use " + alt + "."
+			if cfg.events != nil {
+				cfg.events(loopevent.Event{Kind: loopevent.Result, Step: i, Command: cmd, Stderr: note, ExitCode: 1, NotRun: true})
+			} else {
+				fmt.Fprintf(out, "not run: %s\n%s\n", cmd, note)
+			}
+			cfg.telemetry.CommandResult(cfg.taskID, i, cmd, telemetry.CommandOutcome{ExitCode: 1, RawExitCode: 1})
+			history = append(history, loopStep{command: cmd, result: executor.Result{Stderr: note, ExitCode: 1, RawExitCode: 1}})
+			continue
+		}
+
 		verdict, reason := classifier.ClassifyForDir(cmd, wd)
-		if verdict == classifier.Irreversible {
-			fmt.Fprintf(out, "blocked: %s is irreversible — %s\n", cmd, reason)
+		gd := analysisDecision(ctx, cmd, wd)
+		if verdict == classifier.Irreversible || (gd != nil && gd.Confirm) {
+			var approvalText string
+			if verdict == classifier.Irreversible {
+				approvalText = approvalMessage(true, reason)
+				if cfg.events == nil {
+					fmt.Fprintf(out, "blocked: %s is irreversible — %s\n", cmd, reason)
+				}
+			} else {
+				reason = firstReason(gd)
+				approvalText = approvalMessage(gd != nil && gd.Confident, reason)
+				if cfg.events == nil {
+					fmt.Fprintf(out, "blocked: %s needs confirmation — %s\n", cmd, reason)
+				}
+			}
 			// Consent has to cover recoverability, not just danger. D30
 			// argues that showing the command is what makes approval
 			// consent; row 19 showed that is not sufficient. A user shown
@@ -731,18 +1186,37 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			// only exist at runtime. Saying so before the prompt is the
 			// difference between an informed yes and an uninformed one.
 			unprotected := journalPath != "" && wd != "" && classifier.DeletionTargetsUnresolvable(cmd, wd)
-			if unprotected {
-				fmt.Fprintln(out, "  WARNING: this command decides what to delete while it runs, so I cannot")
-				fmt.Fprintln(out, "  copy anything first. undo will NOT be able to bring it back.")
-				fmt.Fprintln(out, "  if you want the safety net, name the files or folders directly instead.")
+			if gd != nil && journalPath != "" {
+				// With the analysis on, the warning follows what it could actually
+				// capture, not just the list's guess about run-time targets.
+				unprotected = !gd.Confident || gd.Verdict.Class == effects.Unrecoverable
 			}
-			approved := confirmFn("run it anyway?")
+			if unprotected {
+				warning := []string{
+					"  WARNING: This command decides what to delete while it runs, so I cannot",
+					"  copy anything first. Undo will NOT be able to bring it back.",
+					"  If you want the safety net, name the files or folders directly instead.",
+				}
+				if cfg.events != nil {
+					approvalText += "\nIf it goes wrong, I may not be able to undo it."
+				} else {
+					fmt.Fprintln(out, strings.Join(warning, "\n"))
+				}
+			}
+			if cfg.events != nil {
+				cfg.events(loopevent.Event{Kind: loopevent.Approval, Step: i, Command: cmd, Text: approvalText})
+			}
+			prompt := "run it anyway?"
+			if cfg.events != nil {
+				prompt = "Should I go ahead?"
+			}
+			approved := confirmFn(prompt)
 			// Logged for both answers. A declined gate is evidence about
 			// whether the warning is understood, which is exactly what RQ2
 			// asks; recording only approvals would leave that unmeasurable.
 			cfg.telemetry.ConfirmationTriggered(cfg.taskID, i, cmd, reason, approved)
 			if !approved {
-				fmt.Fprintln(out, "cancelled.")
+				cfg.notice(out, "Cancelled.")
 				taskOutcome = "declined"
 				return 0
 			}
@@ -759,14 +1233,25 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		// a single step when the command itself is a chain (e.g. "chmod -R
 		// 755 dir && rm other.txt" triggers both metadata backup and trash).
 		var undoBefore map[string]bool
+		var undoBeforeIDs map[string]undo.FileID
+		var gateEntry *undo.Entry
 		var contentBackups []undo.ContentBackup
 		var trashed []undo.TrashedItem
 		var gitReset string
 		var metadataBackups []undo.MetadataBackup
-		if journalPath != "" && wd != "" {
+		if journalPath != "" && wd != "" && gd != nil && gd.Confident {
+			// The analysis found nothing it could not resolve, so its effect set is
+			// complete and its plan replaces the legacy backups for this step.
+			e, errs := gd.Capture(wd, cmd)
+			for _, err := range errs {
+				cfg.problem(errOut, "I couldn't save a copy of what this changes first, so undo may not work for this step.", err.Error(), fmt.Sprintf("warning: could not capture before running: %v\n", err))
+			}
+			gateEntry = &e
+		} else if journalPath != "" && wd != "" {
 			switch verdict {
 			case classifier.Reversible:
 				undoBefore, _ = undo.Snapshot(wd)
+				undoBeforeIDs, _ = undo.SnapshotIDs(wd)
 			case classifier.Irreversible:
 				contentBackups, trashed, gitReset, metadataBackups = backupBeforeIrreversible(ctx, cmd, wd, errOut)
 				// Snapshot regardless. When capture found nothing to copy —
@@ -793,10 +1278,10 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 		execLatency := time.Since(execStart)
 		execCancel()
 		if result.Err != nil {
-			fmt.Fprintf(errOut, "error: command did not run: %v\n", result.Err)
+			cfg.problem(errOut, "I couldn't run that command.", result.Err.Error(), fmt.Sprintf("error: command did not run: %v\n", result.Err))
 			taskOutcome = "execution_error"
 			if answer, aerr := maybeAnswer(ctx, client, model, task, history, cfg); aerr == nil && answer != "" {
-				fmt.Fprintln(out, answer)
+				cfg.printAnswer(out, answer)
 				cfg.telemetry.TaskAnswered(cfg.taskID, answer)
 			}
 			return 1
@@ -807,22 +1292,36 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 			SIGPIPE:     result.SIGPIPE,
 			Latency:     execLatency,
 		})
-		if result.Stdout != "" {
-			fmt.Fprint(out, result.Stdout)
+		if cfg.events != nil {
+			cfg.events(loopevent.Event{Kind: loopevent.Result, Step: i, Command: cmd,
+				Stdout: result.Stdout, Stderr: result.Stderr, ExitCode: result.ExitCode, TimedOut: result.TimedOut})
+		} else {
+			if result.Stdout != "" {
+				fmt.Fprint(out, result.Stdout)
+			}
+			if result.Stderr != "" {
+				fmt.Fprint(errOut, result.Stderr)
+			}
+			if result.TimedOut {
+				fmt.Fprintf(out, "command exceeded %s and was terminated.\n", stepExecutionTimeout)
+			}
+			fmt.Fprintf(out, "exit code: %d\n\n", result.ExitCode)
 		}
-		if result.Stderr != "" {
-			fmt.Fprint(errOut, result.Stderr)
-		}
-		if result.TimedOut {
-			fmt.Fprintf(out, "command exceeded %s and was terminated.\n", stepExecutionTimeout)
-		}
-		fmt.Fprintf(out, "exit code: %d\n\n", result.ExitCode)
 
-		if wd != "" && undoBefore != nil && result.ExitCode == 0 {
+		if gateEntry != nil {
+			// Journaled whatever the exit code: the captures were taken before the
+			// command ran, so they can restore even a command that failed partway.
+			if !gateEntry.IsNoop() {
+				if err := undo.AppendJournal(journalPath, *gateEntry); err != nil {
+					cfg.problem(errOut, "I couldn't record this step for undo.", err.Error(), fmt.Sprintf("warning: could not record undo entry: %v\n", err))
+				}
+			}
+		} else if wd != "" && undoBefore != nil && result.ExitCode == 0 {
 			if after, err := undo.Snapshot(wd); err == nil {
-				if entry := undo.BuildEntry(wd, cmd, undoBefore, after); !entry.IsNoop() {
+				afterIDs, _ := undo.SnapshotIDs(wd)
+				if entry := undo.BuildEntryIDs(wd, cmd, undoBefore, after, undoBeforeIDs, afterIDs); !entry.IsNoop() {
 					if err := undo.AppendJournal(journalPath, entry); err != nil {
-						fmt.Fprintf(errOut, "warning: could not record undo entry: %v\n", err)
+						cfg.problem(errOut, "I couldn't record this step for undo.", err.Error(), fmt.Sprintf("warning: could not record undo entry: %v\n", err))
 					}
 				}
 			}
@@ -842,7 +1341,7 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 				MetadataBackups: metadataBackups,
 			}
 			if err := undo.AppendJournal(journalPath, entry); err != nil {
-				fmt.Fprintf(errOut, "warning: could not record undo entry: %v\n", err)
+				cfg.problem(errOut, "I couldn't record this step for undo.", err.Error(), fmt.Sprintf("warning: could not record undo entry: %v\n", err))
 			}
 		}
 
@@ -854,10 +1353,12 @@ func runLoop(ctx context.Context, client *ollama.Client, model, task string, con
 	// of steps leaves the user with a wall of failed commands and no statement
 	// of what went wrong; the raw output is evidence, not an explanation.
 	if answer, aerr := maybeAnswer(ctx, client, model, task, history, cfg); aerr == nil && answer != "" {
-		fmt.Fprintln(out, answer)
+		cfg.printAnswer(out, answer)
 		cfg.telemetry.TaskAnswered(cfg.taskID, answer)
 	}
-	fmt.Fprintf(errOut, "error: step limit reached (%d steps) without the task being reported complete — stopping.\n", maxLoopSteps)
+	cfg.problem(errOut, "I ran out of steps before finishing this task.",
+		fmt.Sprintf("step limit reached (%d steps) without the task being reported complete", maxLoopSteps),
+		fmt.Sprintf("error: step limit reached (%d steps) without the task being reported complete — stopping.\n", maxLoopSteps))
 	return 1
 }
 
@@ -970,19 +1471,23 @@ func proposeStep(ctx context.Context, client *ollama.Client, model, task string,
 	// (docs/interface-modes.md: CLI renders "once generation finishes").
 	// Only a caller that supplies a sink — TUI mode — pays for streaming.
 	if tokenSink == nil {
-		resp, err := client.Generate(reqCtx, model, loopSystemPrompt, prompt, opts)
+		resp, err := client.Generate(reqCtx, model, loopSystemPrompt, prompt, opts, stepFormat)
 		if err != nil {
 			return nil, "", err
 		}
 		calibrate(sc, prompt, resp)
-		return resp, cleanCommand(resp.Response), nil
+		cmd, ok := decodeStepDecision(resp.Response)
+		if !ok {
+			cmd = cleanCommand(resp.Response)
+		}
+		return resp, cmd, nil
 	}
 
 	resp, err := client.GenerateStream(reqCtx, model, loopSystemPrompt, prompt, opts, func(tok string) {
 		// Best effort: a failed write to the UI must never abort a
 		// generation that is otherwise fine.
 		fmt.Fprint(tokenSink, tok)
-	})
+	}, stepFormat)
 	if err != nil {
 		return nil, "", err
 	}
@@ -992,7 +1497,11 @@ func proposeStep(ctx context.Context, client *ollama.Client, model, task string,
 	// appears on screen, never what gets classified or executed. Combined
 	// with GenerateStream refusing to return a truncated stream at all,
 	// a partial generation can never reach the classifier.
-	return resp, cleanCommand(resp.Response), nil
+	cmd, ok := decodeStepDecision(resp.Response)
+	if !ok {
+		cmd = cleanCommand(resp.Response)
+	}
+	return resp, cmd, nil
 }
 
 // handleMemoryCommand intercepts the two session-memory commands and
@@ -1041,12 +1550,12 @@ func handleSessionCommand(task string, sc *session.Context, tr *taskTracker, out
 	if len(trimmed) > 5 && strings.EqualFold(trimmed[:5], "task ") {
 		if id := strings.TrimSpace(trimmed[5:]); id != "" && tr != nil {
 			tr.id = id
-			fmt.Fprintf(out, "now recording events under task %s.\n", id)
+			fmt.Fprintf(out, "Now recording events under task %s.\n", id)
 			return true
 		}
 	}
 	if strings.EqualFold(trimmed, "task") && tr != nil {
-		fmt.Fprintf(out, "current task: %s\n", tr.current())
+		fmt.Fprintf(out, "Current task: %s\n", tr.current())
 		return true
 	}
 	if answerConversational(task, out) {
@@ -1071,11 +1580,11 @@ func handleSessionCommand(task string, sc *session.Context, tr *taskTracker, out
 // greeting attached, and swallowing the latter would be far worse than
 // failing to recognise it.
 func answerConversational(task string, out io.Writer) bool {
-	norm := strings.Trim(strings.ToLower(strings.TrimSpace(task)), ".!?,")
+	norm := normaliseChatter(task)
 	switch norm {
 	case "hello", "hi", "hey", "yo", "hello there", "good morning", "good afternoon", "good evening":
-		fmt.Fprintln(out, "hello. tell me what you want done to this machine, in ordinary words — for example \"how much space is this folder using\" or \"put the log files in their own folder\".")
-		fmt.Fprintln(out, "type help to see what I can reach, or exit to leave.")
+		fmt.Fprintln(out, "Hello. Tell me what you want done to this machine, in ordinary words — for example \"how much space is this folder using\" or \"put the log files in their own folder\".")
+		fmt.Fprintln(out, "Type help to see what I can reach, or exit to leave.")
 		return true
 	case "what ai model are you", "what model are you", "which model are you", "what llm are you",
 		"are you human", "are you a human", "are you an ai", "are you a robot", "are you chatgpt",
@@ -1084,31 +1593,77 @@ func answerConversational(task string, out io.Writer) bool {
 		// them — and answers them locally, because the one thing worse than
 		// refusing is letting a 3B coder model improvise its own identity.
 		fmt.Fprintf(out, "I'm SynapseOS — a program on this machine, not a person. I use a local language model (%s) running on your own hardware through Ollama; nothing you type leaves this computer.\n", envOr("SYNAPSE_MODEL", defaultModel))
-		fmt.Fprintln(out, "what I actually do is turn what you say into shell commands and run them here. type help for what I can reach.")
+		fmt.Fprintln(out, "What I actually do is turn what you say into shell commands and run them here. Type help for what I can reach.")
 		return true
 	case "help", "what can you do", "what can you do?", "who are you", "what are you", "what is this":
 		fmt.Fprintln(out, "I turn what you say into shell commands and run them on this machine, showing you each command before it runs.")
 		fmt.Fprintln(out, "I can reach anything the command line can: files and folders, disk usage, processes, packages, text in files, and network settings.")
 		fmt.Fprintln(out, "I cannot click buttons in graphical applications, edit images, or browse web pages.")
-		fmt.Fprintln(out, "anything that cannot be undone stops and asks you first, and undo reverses the last thing I ran.")
-		fmt.Fprintln(out, "session commands: context (what I remember), clear (forget it), exit.")
+		fmt.Fprintln(out, "Anything that cannot be undone stops and asks you first, and undo reverses the last thing I ran.")
+		fmt.Fprintln(out, "Session commands: context (what I remember), clear (forget it), exit.")
 		return true
-	case "thanks", "thank you", "ty":
-		fmt.Fprintln(out, "you're welcome.")
+	case "thanks", "thank you", "ty", "thx", "cheers", "thanks a lot", "thank you very much", "thanks so much", "much appreciated":
+		fmt.Fprintln(out, "You're welcome.")
+		return true
+	case "how are you", "how are you doing", "how are you today", "how are you doing today", "how is it going",
+		"how's it going", "hows it going", "how do you do", "what's up", "whats up", "sup", "how have you been":
+		// Asked out of politeness, and a 3B coder model asked to turn it into a
+		// shell command spent 26 seconds concluding it could not. The honest answer
+		// is short and points back at the one thing this can do.
+		fmt.Fprintln(out, "I'm running fine — I'm a program on this machine, so there's not much to report.")
+		fmt.Fprintln(out, "Tell me what you want done, in ordinary words, or type help to see what I can reach.")
+		return true
+	case "really", "seriously", "are you sure", "are you serious", "what", "huh", "why", "why not", "what do you mean",
+		"how so", "oh really", "is that so", "is that right", "come again", "pardon", "sorry", "sorry?", "wait", "hold on":
+		// A reaction to what was just said, not a request. Nothing here can be
+		// checked on the machine, so say what this can and cannot stand behind
+		// rather than guessing at which earlier line the user is reacting to.
+		fmt.Fprintln(out, "Yes — I can only act by running commands on this machine, and I only report what they return.")
+		fmt.Fprintln(out, "Say what you want checked or done, in ordinary words, or type help.")
+		return true
+	case "ok", "okay", "k", "kk", "cool", "nice", "great", "good", "alright", "all right", "got it", "i see", "sure",
+		"yes", "yeah", "yep", "yup", "no", "nope", "nah", "nothing", "never mind", "nevermind", "lol", "haha", "hehe",
+		"wow", "hmm", "hm", "hmmm", "oh", "ah", "ooh", "interesting", "fine", "perfect", "awesome", "understood", "right":
+		fmt.Fprintln(out, "OK. Tell me what you want done when you're ready — help lists what I can reach.")
+		return true
+	case "bye", "goodbye", "good bye", "see you", "see ya", "cya", "good night", "goodnight", "later":
+		fmt.Fprintln(out, "Goodbye. Type exit to leave, or keep going.")
 		return true
 	}
 	return false
 }
 
+// normaliseChatter reduces a line to the form the exact-match table above is
+// keyed on: lower case, one space between words, and no trailing punctuation or
+// repeated question marks ("really??", "hello!!"). It changes only how a line is
+// written, never which words it contains, so a task with a greeting in front of
+// it still does not match.
+func normaliseChatter(task string) string {
+	s := strings.ToLower(strings.Join(strings.Fields(task), " "))
+	return strings.TrimRight(strings.TrimLeft(s, " ."), " .!?,;:…")
+}
+
+// handleMemoryCommand answers "context" and "clear". sc is nil in scratch
+// mode (D43), which has nothing to summarize or forget — both commands still
+// answer truthfully rather than falling through to the model, same reasoning
+// as every other case here.
 func handleMemoryCommand(task string, sc *session.Context, out io.Writer) bool {
 	switch strings.ToLower(strings.TrimSpace(task)) {
 	case "context":
+		if sc == nil {
+			fmt.Fprintln(out, "no memory is kept in this mode — every task starts fresh.")
+			return true
+		}
 		fmt.Fprintln(out, sc.Summary())
 		return true
 	case "clear":
+		if sc == nil {
+			fmt.Fprintln(out, "nothing to forget — this mode already keeps no memory between tasks.")
+			return true
+		}
 		n := sc.Len()
 		sc.Clear()
-		fmt.Fprintf(out, "forgot %d remembered task(s); the next task starts fresh.\n", n)
+		fmt.Fprintf(out, "Forgot %d remembered task(s); the next task starts fresh.\n", n)
 		return true
 	}
 	return false
@@ -1167,6 +1722,8 @@ Rules:
 - If the commands produced no output and succeeded, say what was done.
 - If the task did not succeed, say plainly what went wrong.
 - Do not describe which commands ran, and do not mention the shell.
+- A command's output describes only what that command actually queried. Do not attribute a value in it to something else the request asked about, even if the request mentioned several things and the output happens to have several values — check what the command itself did before deciding what a value means.
+- If the request asked about more than one thing and the commands above only cover some of them, say what you can from the output and say plainly that the rest was not checked, instead of guessing.
 - No markdown, no code blocks, no preamble, no sign-off.
 
 Examples:
@@ -1185,7 +1742,12 @@ Reply: This folder contains one file, renamed.txt.
 
 Request: list the contents of a folder called archives
 Output: ls: cannot access 'archives': No such file or directory
-Reply: There is no folder called archives here.`
+Reply: There is no folder called archives here.
+
+Request: how much ram is in use and how much disk space is left
+Commands: free -h | grep Mem | awk '{print $3, $4}'
+Output: 5.9Gi 528Mi
+Reply: 5.9GiB of RAM is currently in use (528MiB free), but disk space was not checked, so I can't answer that part.`
 
 // answerFromHistory turns what actually happened into a sentence the user can
 // read, which is the difference between a system that executes and one that
@@ -1389,11 +1951,11 @@ func runUndo(confirmFn func(string) bool, out, errOut io.Writer, journalPath str
 		return 1
 	}
 	if !ok {
-		fmt.Fprintln(out, "nothing to undo.")
+		fmt.Fprintln(out, "Nothing to undo.")
 		return 0
 	}
 
-	fmt.Fprintf(out, "undoing: %s\n  (ran in %s at %s)\n", entry.Command, entry.Dir, entry.Timestamp.Format(time.RFC3339))
+	fmt.Fprintf(out, "Undoing: %s\n  (ran in %s at %s)\n", entry.Command, entry.Dir, entry.Timestamp.Format(time.RFC3339))
 	for _, m := range entry.Moves {
 		fmt.Fprintf(out, "  move back: %s -> %s\n", m.NewPath, m.OldPath)
 	}
@@ -1417,7 +1979,7 @@ func runUndo(confirmFn func(string) bool, out, errOut io.Writer, journalPath str
 	}
 
 	if !confirmFn("apply this undo?") {
-		fmt.Fprintln(out, "cancelled.")
+		fmt.Fprintln(out, "Cancelled.")
 		// A declined undo is a finding, not a non-event: it says the
 		// participant reached for recovery and then chose not to take it.
 		tel.UndoInvoked(taskID, entry.Command, telemetry.UndoDeclined, "")
@@ -1439,7 +2001,7 @@ func runUndo(confirmFn func(string) bool, out, errOut io.Writer, journalPath str
 		tel.UndoInvoked(taskID, entry.Command, telemetry.UndoFailed, errs[0].Error())
 		return 1
 	}
-	fmt.Fprintln(out, "undo complete.")
+	fmt.Fprintln(out, "Undo complete.")
 	tel.UndoInvoked(taskID, entry.Command, telemetry.UndoApplied, "")
 	return 0
 }
@@ -1497,7 +2059,25 @@ func cleanCommand(s string) string {
 		s = strings.TrimSuffix(strings.TrimPrefix(s, "`"), "`")
 		s = strings.TrimSpace(s)
 	}
+	// A shell prompt copied from an example ("$ df -h") is not part of the
+	// command; left in, it parses as a command named "$" and the gate asks
+	// about something that is not there.
+	for strings.HasPrefix(s, "$ ") {
+		s = strings.TrimSpace(strings.TrimPrefix(s, "$ "))
+	}
 	return s
+}
+
+// approvalMessage says in plain words why a command is being held for approval.
+// The technical reason follows in brackets for anyone who wants it. When the
+// analysis could not tell what the command does, that is what is said, rather
+// than an alarm about deleting.
+func approvalMessage(understood bool, reason string) string {
+	head := "This could change or delete something, and it can't be undone."
+	if !understood || strings.HasPrefix(reason, "opaque:") {
+		head = "I can't tell for certain what this would change, so I'm checking with you first."
+	}
+	return head + "\n  (" + reason + ")"
 }
 
 func envOr(key, fallback string) string {

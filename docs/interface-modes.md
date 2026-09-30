@@ -16,8 +16,8 @@ This is the reference for how SynapseOS's three interface modes — CLI, TUI, an
   - [What TUI Reuses vs. Adds](#what-tui-reuses-vs-adds)
 - [5. GUI Mode (D11, D12, D27, M8 — study prototype)](#5-gui-mode-d11-d12-d27-m8-study-prototype)
   - [Session Mechanism](#session-mechanism)
-    - [Session registration — `/usr/share/xsessions/synapseos.desktop`](#session-registration-usrsharexsessionssynapseosdesktop)
-    - [Startup script — `/usr/bin/synapseos-session`](#startup-script-usrbinsynapseos-session)
+    - [Session registration — `distro/synapseos.desktop`, installed as `/usr/share/xsessions/synapseos.desktop`](#session-registration-distrosynapseosdesktop-installed-as-usrsharexsessionssynapseosdesktop)
+    - [Startup script — `distro/synapseos-session`, installed as `/usr/bin/synapseos-session`](#startup-script-distrosynapseos-session-installed-as-usrbinsynapseos-session)
   - [Packaging](#packaging)
   - [The XFCE Fallback (D20, simplified by D27)](#the-xfce-fallback-d20-simplified-by-d27)
 - [6. Post-Thesis "Overlay Mode" (D13 — deferred, not built)](#6-post-thesis-overlay-mode-d13-deferred-not-built)
@@ -52,7 +52,7 @@ A mode's job is only ever: collect input, drive the core, render output. Every m
 |---|---|---|---|
 | Process lifecycle | One-shot per invocation: a bounded, gated multi-step loop (propose → classify → (confirm) → execute → feed result back → repeat until done or step cap, D21) — not a single command | Persistent: runs until the user quits | Persistent: launched at login, fills the session |
 | State across turns | None — each invocation is independent | In-memory rolling history within the session (M6) | Same as TUI (wraps it) |
-| Model output rendering | Printed once generation finishes (blocking call) | Streamed token-by-token into a scrollable viewport | Same streaming, inside fullscreen chrome |
+| Model output rendering | Printed once generation finishes (blocking call) | The answer first, with the commands behind Ctrl+O (D39), printed into the terminal's own scrollback | Same, in a fullscreen terminal window |
 | Confirmation gate UX | Print the command + reason, block on stdin `y`/`N` | Render inline in the chat view, wait for a keypress | Same inline pattern, fullscreen |
 | Audience / use case | Scripting, automation, one-off remote commands over SSH | Interactive terminal session, local or remote | Study Condition A — novice users, no terminal exposure |
 | Built by | **M1 — done** | M4 (interim loop) + M5 (rendering) — **both done** | M8 |
@@ -78,16 +78,16 @@ TUI mode turns the one-shot CLI into a persistent, interactive session — the d
 
 - **Framework:** [bubbletea](https://github.com/charmbracelet/bubbletea), implementing the Elm Architecture (Model-Update-View loop) in Go.
 - **Styling & layout:** [lipgloss](https://github.com/charmbracelet/lipgloss) for borders, grids, and typography.
-- **Viewport:** `bubbles/v2/viewport` for scrollable output (a separate module from bubbletea itself).
+- **Scrolling:** none of our own. Finished lines are printed into the terminal's scrollback with `tea.Println`, so the terminal's scrollbar, wheel, and text selection cover the whole conversation. A `bubbles/v2/viewport` in the alternate screen was tried first and replaced (2026-09-27, D38): the alternate screen has no scrollback, so only what fit on screen could be highlighted or copied.
 - **Module paths:** all three live under `charm.land/…/v2`, not `github.com/charmbracelet/…` — the path moved with the v2 line. Requires Go ≥ 1.25.
 
 ### Loop Cycle
 
 **As built (Session 28), which differs from this section's original sketch in one important way.** The sketch had `Update` calling the model directly. It does not — TUI mode never reimplements any part of the propose/classify/confirm/execute loop. The *same* `runLoop` that CLI and REPL mode use is injected as a `tui.TaskRunner` and driven on its own goroutine, so every reversibility verdict, confirmation gate, and undo-journal write is literally the same code in every mode and cannot drift between them.
 
-1. **Model:** transcript, viewport scroll state, current input, whether a task is running, and any outstanding confirmation prompt.
+1. **Model:** the unfinished output line, current input, whether a task is running, and any outstanding confirmation prompt.
 2. **Update:** on `Enter`, launches the injected runner on a goroutine and returns immediately — `Update` must never block. Two channels bridge the synchronous loop into the event loop: the runner's `io.Writer` output arrives as messages (streamed token-by-token, since TUI passes `withTokenStreaming`), and when the loop hits an irreversible step its `confirmFn` publishes a confirmation request and *blocks* until `Update` — having rendered the prompt and taken a keypress — sends the verdict back. Ctrl+C mid-task cancels that task's context only; the session survives.
-3. **View:** renders the transcript through a `viewport`, plus either the input box, a working indicator, or the confirmation prompt — the last being the only bordered, colored element in the interface, so an irreversible-command gate can never be mistaken for ordinary output.
+3. **View:** draws only the live region — the unfinished line, plus either the input box, a working indicator, or the confirmation prompt — the last being the only bordered, colored element in the interface, so an irreversible-command gate can never be mistaken for ordinary output.
 
 ### What TUI Reuses vs. Adds
 
@@ -104,13 +104,13 @@ GUI mode is the fullscreen, study-facing interface for Condition A (novice users
 
 **Rescoped 2026-09-12 by D27, and the change is structural rather than cosmetic.** SynapseOS is an agentic layer running *over* an ordinary XFCE desktop, not a replacement for the desktop shell, session manager, and application launcher. GUI mode is therefore **the existing TUI, launched fullscreen, with the XFCE session running beneath it** — not a second rendering layer, not a webview, not a custom session. The two packaging options previously weighed below collapse to the first one, and the "takeover" framing is retired: nothing is taken over.
 
-What follows describes the session plumbing that remains. It is deliberately small, because the interface is already built.
+What follows describes the session plumbing that remains. It is built (`distro/synapseos.desktop`, `distro/synapseos-session`, `distro/install-session.sh`), not yet tried through a real login/logout cycle.
 
 ### Session Mechanism
 
 The display manager starts a session that launches the TUI fullscreen on top of a normal XFCE session, rather than in place of one.
 
-#### Session registration — `/usr/share/xsessions/synapseos.desktop`
+#### Session registration — `distro/synapseos.desktop`, installed as `/usr/share/xsessions/synapseos.desktop`
 
 ```ini
 [Desktop Entry]
@@ -121,7 +121,7 @@ Type=Application
 DesktopNames=SynapseOS
 ```
 
-#### Startup script — `/usr/bin/synapseos-session`
+#### Startup script — `distro/synapseos-session`, installed as `/usr/bin/synapseos-session`
 
 ```bash
 #!/bin/bash
@@ -129,16 +129,27 @@ DesktopNames=SynapseOS
 #    panels come up and stay up — SynapseOS layers on top of a working
 #    desktop rather than substituting for one (D27).
 xfce4-session &
+sleep 2
 
 # 2. Launch the TUI fullscreen on top of it. If it exits, the XFCE session
 #    underneath is still there; the participant lands on a usable desktop
-#    rather than being logged out.
-exec kitty --start-as=fullscreen -- /usr/bin/synapse tui
+#    rather than being logged out. Only the window border is hidden: the
+#    TUI prints into the terminal's own scrollback and never captures the
+#    mouse (D38), so the scrollbar, wheel, click-drag selection, and the
+#    terminal's right-click Copy/Paste cover the whole conversation —
+#    hiding the scrollbar or menu would only throw that away.
+#    The agent is homed where it starts (that is what "here" means to it), so
+#    start in the person's home folder rather than wherever login left us.
+cd "$HOME"
+exec xfce4-terminal --fullscreen --hide-borders \
+  -x /usr/bin/synapse tui
 ```
+
+`distro/install-session.sh` installs both files plus the built `synapse` binary. Run it, then log out — "SynapseOS" appears as a session choice at the greeter, next to "Xfce Session".
 
 ### Packaging
 
-A fast terminal emulator (`kitty`, `xfce4-terminal`) launched borderless and fullscreen, running the TUI binary. There is no second GUI application to build. The webview/Fyne option previously listed here was dropped with D27: it existed to make a replacement session feel like a desktop application, and there is no longer a replacement session.
+`xfce4-terminal` launched borderless and fullscreen, running the TUI binary — already part of the XFCE desktop this session starts, so no new dependency. There is no second GUI application to build. The webview/Fyne option previously listed here was dropped with D27: it existed to make a replacement session feel like a desktop application, and there is no longer a replacement session. `kitty`, mentioned in earlier drafts of this section, is not installed on the reference machine and is not needed; `xfce4-terminal` is preferred as the tool that already exists.
 
 The practical consequence for the study is that **GUI mode and TUI mode are the same program in a different frame**, which is also why the study-mode readiness checkpoint has a TUI fallback that costs the research nothing — the two conditions differ in presentation, not in the execution path, the safety gate, or the telemetry.
 

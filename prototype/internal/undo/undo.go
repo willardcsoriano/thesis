@@ -60,6 +60,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -137,6 +138,23 @@ type Entry struct {
 	Trashed         []TrashedItem    `json:"trashed,omitempty"`
 	GitReset        string           `json:"git_reset,omitempty"`
 	MetadataBackups []MetadataBackup `json:"metadata_backups,omitempty"`
+	// Inverses put package or service state back by running a command.
+	Inverses []Inverse `json:"inverses,omitempty"`
+}
+
+// Inverse is one command that undoes a change to package or service state.
+type Inverse struct {
+	Argv []string `json:"argv"`
+	Sudo bool     `json:"sudo,omitempty"`
+}
+
+// String renders the command as the user would type it, for the manual fallback.
+func (i Inverse) String() string {
+	argv := i.Argv
+	if i.Sudo {
+		argv = append([]string{"sudo"}, argv...)
+	}
+	return strings.Join(argv, " ")
 }
 
 // IsNoop reports whether e has nothing to undo — no filesystem effect was
@@ -145,7 +163,7 @@ type Entry struct {
 func (e Entry) IsNoop() bool {
 	return len(e.Moves) == 0 && len(e.Created) == 0 && len(e.Unhandled) == 0 &&
 		len(e.ContentBackups) == 0 && len(e.Trashed) == 0 &&
-		e.GitReset == "" && len(e.MetadataBackups) == 0
+		e.GitReset == "" && len(e.MetadataBackups) == 0 && len(e.Inverses) == 0
 }
 
 // Snapshot lists dir's contents up to one level of nesting (dir's direct
@@ -178,10 +196,59 @@ func Snapshot(dir string) (map[string]bool, error) {
 	return paths, nil
 }
 
+// FileID identifies a file independent of its name: the same device and inode
+// before and after means the same data, so a path that disappeared and a path
+// that appeared with the same FileID is a rename or move, whatever either is called.
+type FileID struct{ Dev, Ino uint64 }
+
+// SnapshotIDs is Snapshot's companion: the FileID of each path Snapshot would
+// list, from lstat so a symlink is identified as itself. Take both before the
+// command runs and both after, and pass them to BuildEntryIDs.
+func SnapshotIDs(dir string) (map[string]FileID, error) {
+	ids := map[string]FileID{}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("snapshot %s: %w", dir, err)
+	}
+	record := func(rel, abs string) {
+		if fi, err := os.Lstat(abs); err == nil {
+			if st, ok := fi.Sys().(*syscall.Stat_t); ok {
+				ids[rel] = FileID{Dev: uint64(st.Dev), Ino: uint64(st.Ino)}
+			}
+		}
+	}
+	for _, e := range entries {
+		record(e.Name(), filepath.Join(dir, e.Name()))
+		if !e.IsDir() {
+			continue
+		}
+		inner, err := os.ReadDir(filepath.Join(dir, e.Name()))
+		if err != nil {
+			continue
+		}
+		for _, ie := range inner {
+			rel := filepath.Join(e.Name(), ie.Name())
+			record(rel, filepath.Join(dir, rel))
+		}
+	}
+	return ids, nil
+}
+
 // BuildEntry diffs before (snapshotted just before cmd ran) against after
 // (snapshotted just after) and pairs disappeared/appeared paths by basename
-// to reconstruct Moves, Created, and Unhandled.
+// to reconstruct Moves, Created, and Unhandled. Pairing by basename alone
+// cannot see a rename to a new name; prefer BuildEntryIDs.
 func BuildEntry(dir, cmd string, before, after map[string]bool) Entry {
+	return BuildEntryIDs(dir, cmd, before, after, nil, nil)
+}
+
+// BuildEntryIDs is BuildEntry with file identity. Paths that vanished and
+// appeared with the same FileID are paired first, so `mv notes.txt renamed.txt`
+// is a move and is undone by moving it back, where basename pairing alone would
+// record "renamed.txt" as created and delete it on undo. Whatever identity
+// cannot pair falls back to the basename rule, which still covers moves across
+// filesystems (a new inode). Nil id maps give plain BuildEntry behaviour.
+func BuildEntryIDs(dir, cmd string, before, after map[string]bool, beforeIDs, afterIDs map[string]FileID) Entry {
 	var appeared, disappeared []string
 	for p := range after {
 		if !before[p] {
@@ -205,7 +272,41 @@ func BuildEntry(dir, cmd string, before, after map[string]bool) Entry {
 	var moves []Move
 	var created []string
 	used := map[string]bool{}
+	usedAppeared := map[string]bool{}
+
+	if beforeIDs != nil && afterIDs != nil {
+		byID := map[FileID][]string{}
+		for _, p := range disappeared {
+			if id, ok := beforeIDs[p]; ok {
+				byID[id] = append(byID[id], p)
+			}
+		}
+		for _, p := range appeared {
+			id, ok := afterIDs[p]
+			if !ok {
+				continue
+			}
+			for _, cand := range byID[id] {
+				if !used[cand] {
+					used[cand] = true
+					usedAppeared[p] = true
+					moves = append(moves, Move{OldPath: cand, NewPath: p})
+					break
+				}
+			}
+		}
+	}
+
+	// A renamed directory drags every path one level inside it along with it in
+	// the snapshot. Those nested pairs are implied by the directory's own move, and
+	// undoing them separately recreates the old directory first and then fails to
+	// move the directory back onto it.
+	moves = dropNestedMoves(moves)
+
 	for _, p := range appeared {
+		if usedAppeared[p] {
+			continue
+		}
 		b := filepath.Base(p)
 		matched := ""
 		for _, candidate := range disappearedByBase[b] {
@@ -239,6 +340,29 @@ func BuildEntry(dir, cmd string, before, after map[string]bool) Entry {
 	}
 }
 
+// dropNestedMoves removes a move whose old and new paths are each inside the old
+// and new paths of another move, by the same relative remainder.
+func dropNestedMoves(moves []Move) []Move {
+	var out []Move
+	for i, m := range moves {
+		nested := false
+		for j, outer := range moves {
+			if i == j {
+				continue
+			}
+			if strings.HasPrefix(m.OldPath, outer.OldPath+"/") && strings.HasPrefix(m.NewPath, outer.NewPath+"/") &&
+				strings.TrimPrefix(m.OldPath, outer.OldPath) == strings.TrimPrefix(m.NewPath, outer.NewPath) {
+				nested = true
+				break
+			}
+		}
+		if !nested {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
 // Apply reverses e: moves are moved back to their original location, and
 // created paths are removed. It keeps going after an individual failure so
 // one bad step doesn't strand the rest of an otherwise-undoable entry, and
@@ -251,9 +375,29 @@ func BuildEntry(dir, cmd string, before, after map[string]bool) Entry {
 // doesn't understand.
 func Apply(e Entry) []error {
 	var errs []error
-	for _, cb := range e.ContentBackups {
-		if err := copyFile(cb.BackupPath, cb.Path, cb.Mode); err != nil {
-			errs = append(errs, fmt.Errorf("restoring content of %s: %w", cb.Path, err))
+
+	// Order matters, and each step below exists because the step before it would
+	// otherwise undo it:
+	//  1. Moves go back first. A move onto an existing name leaves the moved
+	//     data sitting at the destination; restoring the destination's old
+	//     content before moving it back would write the old bytes into the
+	//     moved file and destroy it.
+	//  2. Trash is restored next; it puts back whole paths.
+	//  3. git reset --hard runs before content is restored. A hard reset
+	//     discards working-tree changes, so restoring a dirty file first and
+	//     resetting after would erase exactly what was just restored.
+	//  4. Content and metadata are restored last, on top of the settled tree.
+	//  5. Created paths are removed once nothing needs them.
+	for i := len(e.Moves) - 1; i >= 0; i-- {
+		m := e.Moves[i]
+		oldAbs := filepath.Join(e.Dir, m.OldPath)
+		newAbs := filepath.Join(e.Dir, m.NewPath)
+		if err := os.MkdirAll(filepath.Dir(oldAbs), 0o755); err != nil {
+			errs = append(errs, fmt.Errorf("restoring %s: %w", m.OldPath, err))
+			continue
+		}
+		if err := os.Rename(newAbs, oldAbs); err != nil {
+			errs = append(errs, fmt.Errorf("moving %s back to %s: %w", m.NewPath, m.OldPath, err))
 		}
 	}
 
@@ -264,15 +408,6 @@ func Apply(e Entry) []error {
 		}
 		if err := os.Rename(item.TrashPath, item.OriginalPath); err != nil {
 			errs = append(errs, fmt.Errorf("restoring %s from trash: %w", item.OriginalPath, err))
-		}
-	}
-
-	for _, mb := range e.MetadataBackups {
-		if err := os.Chmod(mb.Path, mb.Mode); err != nil {
-			errs = append(errs, fmt.Errorf("restoring mode of %s: %w", mb.Path, err))
-		}
-		if err := os.Chown(mb.Path, mb.UID, mb.GID); err != nil {
-			errs = append(errs, fmt.Errorf("restoring ownership of %s: %w", mb.Path, err))
 		}
 	}
 
@@ -287,26 +422,80 @@ func Apply(e Entry) []error {
 		}
 	}
 
-	for _, m := range e.Moves {
-		oldAbs := filepath.Join(e.Dir, m.OldPath)
-		newAbs := filepath.Join(e.Dir, m.NewPath)
-		if err := os.MkdirAll(filepath.Dir(oldAbs), 0o755); err != nil {
-			errs = append(errs, fmt.Errorf("restoring %s: %w", m.OldPath, err))
-			continue
+	// Package and service state goes back by running the inverse command. It runs
+	// after trash so that configuration files restored from trash are already in
+	// place (the inverse install keeps them), and before content restore. They run
+	// in the order stored, which the journal writer makes the reverse of the changes.
+	for _, inv := range e.Inverses {
+		if err := inverseRunner(inv); err != nil {
+			errs = append(errs, fmt.Errorf("undoing package or service state failed (%w); run it yourself: %s", err, inv))
 		}
-		if err := os.Rename(newAbs, oldAbs); err != nil {
-			errs = append(errs, fmt.Errorf("moving %s back to %s: %w", m.NewPath, m.OldPath, err))
+	}
+
+	for _, cb := range e.ContentBackups {
+		if err := restoreContent(cb); err != nil {
+			errs = append(errs, fmt.Errorf("restoring content of %s: %w", cb.Path, err))
+		}
+	}
+
+	for _, mb := range e.MetadataBackups {
+		if err := os.Chmod(mb.Path, mb.Mode); err != nil {
+			errs = append(errs, fmt.Errorf("restoring mode of %s: %w", mb.Path, err))
+		}
+		if err := os.Chown(mb.Path, mb.UID, mb.GID); err != nil {
+			errs = append(errs, fmt.Errorf("restoring ownership of %s: %w", mb.Path, err))
 		}
 	}
 
 	created := append([]string(nil), e.Created...)
 	sort.Sort(sort.Reverse(sort.StringSlice(created)))
 	for _, c := range created {
-		if err := os.Remove(filepath.Join(e.Dir, c)); err != nil {
+		if err := os.Remove(filepath.Join(e.Dir, c)); err != nil && !os.IsNotExist(err) {
 			errs = append(errs, fmt.Errorf("removing %s: %w", c, err))
 		}
 	}
 	return errs
+}
+
+// inverseRunner is how Apply runs an inverse; a variable so tests can observe
+// and order-check the calls without executing a package manager.
+var inverseRunner = runInverse
+
+// restoreContent puts a file's bytes and permission bits back. If the command replaced
+// the file with a symlink (ln -sf), writing through it would overwrite the link's
+// target and leave the link in place, so the link is removed first. The mode is set
+// explicitly afterwards, because a command that recreated the file (git checkout,
+// install) gave it a mode of its own and opening an existing file keeps that mode.
+func restoreContent(cb ContentBackup) error {
+	if fi, err := os.Lstat(cb.Path); err == nil && fi.Mode()&os.ModeSymlink != 0 {
+		if err := os.Remove(cb.Path); err != nil {
+			return fmt.Errorf("removing the link that replaced %s: %w", cb.Path, err)
+		}
+	}
+	if err := copyFile(cb.BackupPath, cb.Path, cb.Mode); err != nil {
+		return err
+	}
+	if err := os.Chmod(cb.Path, cb.Mode); err != nil {
+		return fmt.Errorf("restoring mode of %s: %w", cb.Path, err)
+	}
+	return nil
+}
+
+// runInverse runs one inverse command attached to the terminal, so a privilege
+// prompt can be answered. Time-limited so a wedged package manager cannot hang undo.
+func runInverse(inv Inverse) error {
+	if len(inv.Argv) == 0 {
+		return errors.New("empty command")
+	}
+	argv := inv.Argv
+	if inv.Sudo && os.Geteuid() != 0 {
+		argv = append([]string{"sudo"}, argv...)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	return cmd.Run()
 }
 
 // DefaultJournalPath is ~/.synapse/undo.log, creating the parent directory
@@ -470,6 +659,29 @@ func BackupMetadata(dirs []string) ([]MetadataBackup, []error) {
 	return backups, errs
 }
 
+// BackupMetadataPaths records the mode and ownership of exactly the paths given,
+// without walking into them. BackupMetadata walks each tree, which is right when
+// the caller names a directory and lets chmod -R reach everything under it; a
+// caller that has already listed every affected path (internal/gate) would pay
+// for the same walk once per path.
+func BackupMetadataPaths(paths []string) ([]MetadataBackup, []error) {
+	var backups []MetadataBackup
+	var errs []error
+	for _, p := range paths {
+		info, err := os.Lstat(p)
+		if err != nil {
+			continue // not there: nothing to protect
+		}
+		stat, ok := info.Sys().(*syscall.Stat_t)
+		if !ok {
+			errs = append(errs, fmt.Errorf("could not read ownership metadata for %s", p))
+			continue
+		}
+		backups = append(backups, MetadataBackup{Path: p, Mode: info.Mode(), UID: int(stat.Uid), GID: int(stat.Gid)})
+	}
+	return backups, errs
+}
+
 // CaptureGitHead returns the commit HEAD currently points at in the git
 // repository at dir, for a caller to record on Entry.GitReset immediately
 // before a confirmed git reset --hard runs there. Apply restores it via
@@ -515,7 +727,16 @@ var linkFunc = os.Link
 // hardlinkTree walks srcDir, recreating its directory structure at dstDir
 // and hardlinking each regular file it contains rather than copying data.
 func hardlinkTree(srcDir, dstDir string) error {
-	return filepath.WalkDir(srcDir, func(path string, d fs.DirEntry, err error) error {
+	// Directory modes are applied after the walk, deepest first: a directory
+	// captured as read-only could not otherwise receive its own children, and
+	// a hardlink shares its file's mode but a new directory would come back as
+	// 0755 whatever it was.
+	type dirMode struct {
+		path string
+		mode os.FileMode
+	}
+	var dirs []dirMode
+	err := filepath.WalkDir(srcDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -525,6 +746,11 @@ func hardlinkTree(srcDir, dstDir string) error {
 		}
 		target := filepath.Join(dstDir, rel)
 		if d.IsDir() {
+			info, ierr := d.Info()
+			if ierr != nil {
+				return ierr
+			}
+			dirs = append(dirs, dirMode{target, info.Mode().Perm()})
 			return os.MkdirAll(target, 0o755)
 		}
 		if err := linkFunc(path, target); err != nil {
@@ -539,6 +765,15 @@ func hardlinkTree(srcDir, dstDir string) error {
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+	for i := len(dirs) - 1; i >= 0; i-- {
+		if cerr := os.Chmod(dirs[i].path, dirs[i].mode); cerr != nil {
+			return cerr
+		}
+	}
+	return nil
 }
 
 // copyFile copies src to dst, creating dst with the given mode.

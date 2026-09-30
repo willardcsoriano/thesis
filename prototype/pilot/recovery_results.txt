@@ -1,0 +1,113 @@
+sandbox self-test: a write outside the fixture is blocked, a write inside is allowed
+case                     class                     plan              V1    V2    V3    captured B  entries  fixture B  plan+capture s  command s  exit
+B01                      recoverable-with-capture  content           NO    yes   yes   2           1        53         0.005           0.011      0
+B02                      recoverable-with-capture  content           yes   yes   yes   8           1        53         0.000           0.010      0
+B03                      recoverable-with-capture  trash             yes   yes   yes   0           2        53         0.007           0.007      0
+B04                      recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.008           0.009      0
+B05                      recoverable                                 yes   yes   yes   0           0        53         0.009           0.023      0
+B11                      recoverable-with-capture  metadata          yes   yes   yes   0           2        53         0.000           0.007      1
+B12                      recoverable-with-capture  content+git-head  yes   yes   yes   18          2        135        0.010           0.009      0
+B13                      recoverable-with-capture  content           yes   yes   yes   4           1        53         0.000           0.007      0
+B14                      recoverable-with-capture  content           yes   yes   yes   6           1        53         0.000           0.006      0
+B15                      recoverable-with-capture  trash             yes   yes   yes   0           2        53         0.007           0.009      0
+B16                      recoverable                                 yes   yes   yes   0           0        53         0.000           0.010      0
+B17                      recoverable-with-capture  trash             yes   yes   yes   0           2        53         0.000           0.009      0
+B18                      unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: python3 runs arbitrary code; its effects are not modelled
+B19                      recoverable-with-capture  trash             NO    yes   yes   0           1        53         0.000           0.013      0
+B20                      recoverable-with-capture  content           yes   yes   yes   2           1        53         0.000           0.008      0
+B21                      recoverable-with-capture  content           NO    NO    yes   2           1        53         0.000           0.007      0
+B22                      recoverable-with-capture  content           yes   yes   yes   8           1        53         0.000           0.007      0
+B23                      recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+B24                      recoverable-with-capture  trash             NO    yes   yes   0           1        53         0.053           0.057      0
+S01-rm-tree              recoverable-with-capture  trash             yes   yes   yes   0           2        53         0.000           0.010      0
+S02-rm-glob              recoverable-with-capture  trash             yes   yes   yes   0           3        53         0.001           0.007      0
+S03-mv-onto-existing     recoverable-with-capture  content           NO    NO    yes   2           1        53         0.000           0.007      0
+S04-mv-dir               recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+S05-mv-dir-into-dir      recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+S06-cp-r-over-tree       recoverable-with-capture  content           yes   yes   yes   4           1        62         0.000           0.007      0
+S07-sed-i-multi          recoverable-with-capture  content           yes   yes   yes   10          3        53         0.000           0.008      0
+S08-chmod-R              recoverable-with-capture  metadata          yes   yes   yes   0           2        53         0.000           0.007      1
+S09-chmod-single         recoverable-with-capture  metadata          yes   yes   yes   0           1        53         0.000           0.007      0
+S10-truncate             recoverable-with-capture  content           yes   yes   yes   4           1        53         0.000           0.008      0
+S11-redirect-truncate    recoverable-with-capture  content           yes   yes   yes   6           1        53         0.000           0.006      0
+S12-redirect-append      recoverable-with-capture  content           yes   yes   yes   6           1        53         0.000           0.008      0
+S13-tee                  recoverable-with-capture  content           yes   yes   yes   6           1        53         0.000           0.007      0
+S14-sort-o               recoverable-with-capture  content           yes   yes   yes   8           1        53         0.000           0.007      0
+S15-gzip                 recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.008      2
+S16-gunzip               recoverable-with-capture  trash             yes   yes   yes   0           1        81         0.000           0.008      2
+S17-tar-x-over-existing  recoverable-with-capture  content           yes   yes   yes   11          2        237        0.008           0.008      0
+S18-tar-create           recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+S19-find-delete          recoverable-with-capture  trash             yes   yes   yes   0           2        53         0.006           0.010      0
+S20-find-exec-rm         recoverable-with-capture  trash             yes   yes   yes   0           2        53         0.007           0.009      0
+S21-find-exec-chmod      recoverable-with-capture  metadata          yes   yes   yes   0           2        53         0.007           0.011      0
+S22-xargs-rm             recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.009           0.010      0
+S23-for-loop-rm          recoverable-with-capture  trash             yes   yes   yes   0           2        53         0.000           0.008      0
+S24-git-reset-hard       recoverable-with-capture  content+git-head  yes   yes   yes   12          2        129        0.010           0.009      0
+S25-git-clean-fd         recoverable-with-capture  trash             yes   yes   yes   0           14       123        0.009           0.009      0
+S26-create-then-delete   recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+S27-rename-collision     recoverable-with-capture  content           NO    yes   yes   2           1        55         0.000           0.012      0
+S28-spaces               recoverable-with-capture  trash             yes   yes   yes   0           1        55         0.000           0.008      0
+S29-newline-name         recoverable-with-capture  trash             yes   yes   yes   0           1        55         0.000           0.009      0
+S30-rm-symlink           recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.008      0
+S31-rm-dangling-symlink  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.008      0
+S32-hidden-file          recoverable-with-capture  trash             yes   yes   yes   0           1        55         0.000           0.007      0
+S33-empty-dir            recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+S34-large-remove         recoverable-with-capture  trash             yes   yes   yes   0           1        10485813   0.000           0.007      0
+S36-rename-new-name      recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+S37-mv-into-subdir       recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+S35-large-overwrite      recoverable-with-capture  content           yes   yes   yes   10485760    1        10485813   0.005           0.007      0
+
+SUMMARY
+  cases: 56 total, 55 executed, 1 skipped (unrecoverable verdict, or no sandbox)
+  recovered exactly, V1 (production-equivalent undo): 49/55 = 89%
+  recovered exactly, V2 (captures + directory-diff):  53/55 = 96%
+  recovered exactly, V3 (internal/gate entry alone):  55/55 = 100%
+  storage overhead vs a full copy of the fixture, over 46 capture cases: median 0.0000%, max 99.9995% (S35-large-overwrite)
+  modification times are not compared; inside .git only HEAD and refs/ are.
+
+FAILURES (V1, V2 or V3 not exact), with the reproduction
+
+B01  class=recoverable-with-capture plan=content
+  setup:   
+  command: mkdir -p out && sed -i 's/foo/bar/' a.txt && cp a.txt out/
+  V2: exact
+  V3: exact
+  V1 differences: extra out; extra out/a.txt
+
+B19  class=recoverable-with-capture plan=trash
+  setup:   
+  command: tar -czf src.tar.gz src && rm -rf src
+  V1 differences: extra src.tar.gz
+  V2: exact
+  V3: exact
+
+B21  class=recoverable-with-capture plan=content
+  setup:   
+  command: mv a.txt b.txt
+  V1 differences: missing a.txt
+  V2 differences: missing a.txt
+  V3: exact
+
+B24  class=recoverable-with-capture plan=trash
+  setup:   
+  command: rsync -a --delete src/ backup/
+  V2: exact
+  V3: exact
+  V1 differences: extra backup/main.go
+
+S03-mv-onto-existing  class=recoverable-with-capture plan=content
+  setup:   
+  command: mv a.txt b.txt
+  V1 differences: missing a.txt
+  V2 differences: missing a.txt
+  V3: exact
+
+S27-rename-collision  class=recoverable-with-capture plan=content
+  setup:   echo c > x_a.txt
+  command: for f in *.txt; do mv "$f" "x_$f"; done
+  V1 differences: missing a.txt; missing b.txt; missing notes.txt; extra x_b.txt; extra x_notes.txt; extra x_x_a.txt
+  V2: exact
+  V3: exact
+
+SKIPPED
+  B18: unrecoverable, not executed: opaque: python3 runs arbitrary code; its effects are not modelled

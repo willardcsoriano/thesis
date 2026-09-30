@@ -12,6 +12,7 @@ This file tracks which parts of the PDF-export toolchain have been moved into Py
 ## Exported to Python
 
 - **`tools/export_pdf.py`** — the single entrypoint. Drives the browser, generates the PDF (including the outline/bookmarks sidebar via a direct `Page.printToPDF` CDP call), and provides `find_page()` for locating a heading's page number in an already-exported PDF.
+- **`tools/build_paper.py`** — builds the submission PDF: renders the HTML through `export_pdf.py`, settles the table-of-contents page numbers with `fix_toc.py`, and stamps page numbers with `stamp_pages.py` following the university writing guidelines (`pagelabels.py`): roman numerals for the front matter, Arabic from Chapter 1, bottom centre on the page that carries a major title, top right elsewhere. Run it with `SYNAPSE_CHROMIUM=/usr/bin/chromium tools/venv/bin/python tools/build_paper.py`. It needs `pypdf` and `reportlab` in the venv (see `requirements.txt`). Keep every table inside the printable width: an overflowing element makes the browser shrink the whole document below 12 pt.
 - **`playwright`** (pip package, inside `tools/venv/`) — the only real Python dependency. Talks to the vendored Chromium over the DevTools Protocol; replaces the hand-rolled WebSocket/CDP client and the old ad-hoc bash invocation.
 - **Page-load waiting, retries, CDP session handling** — previously hand-rolled (and buggy, as of the first hand-rolled attempt this session); now Playwright's job.
 

@@ -1,0 +1,144 @@
+corpus sha256: 92113811a2eb9c5bd42fa5751bc072593b4e3c032c7cd1a7162083bac4e29747
+
+PARTITION C - held-out NL2Bash: all items   (100 commands: 23 dangerous, 77 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           19/23 = 83%  [95% CI 63%-93%]      2/17 = 12%  [95% CI 3%-34%]    2/77 = 3%  [95% CI 1%-9%]
+  L1           0/23 = 0%  [95% CI -0%-14%]        17/17 = 100%  [95% CI 82%-100%] 19/77 = 25%  [95% CI 16%-35%]
+  ALG-strict   2/23 = 9%  [95% CI 2%-27%]         4/17 = 24%  [95% CI 10%-47%]   11/77 = 14%  [95% CI 8%-24%]
+  ALG-capture  2/23 = 9%  [95% CI 2%-27%]         4/17 = 24%  [95% CI 10%-47%]   11/77 = 14%  [95% CI 8%-24%]
+
+PARTITION C - held-out NL2Bash: unambiguous items only   (85 commands: 11 dangerous, 74 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           7/11 = 64%  [95% CI 35%-85%]       2/10 = 20%  [95% CI 6%-51%]    2/74 = 3%  [95% CI 1%-9%]
+  L1           0/11 = 0%  [95% CI 0%-26%]         10/10 = 100%  [95% CI 72%-100%] 16/74 = 22%  [95% CI 14%-32%]
+  ALG-strict   0/11 = 0%  [95% CI 0%-26%]         2/10 = 20%  [95% CI 6%-51%]    10/74 = 14%  [95% CI 8%-23%]
+  ALG-capture  0/11 = 0%  [95% CI 0%-26%]         2/10 = 20%  [95% CI 6%-51%]    10/74 = 14%  [95% CI 8%-23%]
+
+BOTH PARTITIONS, unambiguous (for rule 2 and the safety floor)   (85 commands: 11 dangerous, 74 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           7/11 = 64%  [95% CI 35%-85%]       2/10 = 20%  [95% CI 6%-51%]    2/74 = 3%  [95% CI 1%-9%]
+  L1           0/11 = 0%  [95% CI 0%-26%]         10/10 = 100%  [95% CI 72%-100%] 16/74 = 22%  [95% CI 14%-32%]
+  ALG-strict   0/11 = 0%  [95% CI 0%-26%]         2/10 = 20%  [95% CI 6%-51%]    10/74 = 14%  [95% CI 8%-23%]
+  ALG-capture  0/11 = 0%  [95% CI 0%-26%]         2/10 = 20%  [95% CI 6%-51%]    10/74 = 14%  [95% CI 8%-23%]
+
+BOTH PARTITIONS, all items   (100 commands: 23 dangerous, 77 safe)
+  system       silent loss                        consent w/o undo (C)           friction
+  L0           19/23 = 83%  [95% CI 63%-93%]      2/17 = 12%  [95% CI 3%-34%]    2/77 = 3%  [95% CI 1%-9%]
+  L1           0/23 = 0%  [95% CI -0%-14%]        17/17 = 100%  [95% CI 82%-100%] 19/77 = 25%  [95% CI 16%-35%]
+  ALG-strict   2/23 = 9%  [95% CI 2%-27%]         4/17 = 24%  [95% CI 10%-47%]   11/77 = 14%  [95% CI 8%-24%]
+  ALG-capture  2/23 = 9%  [95% CI 2%-27%]         4/17 = 24%  [95% CI 10%-47%]   11/77 = 14%  [95% CI 8%-24%]
+
+BY SHAPE, dangerous items only: silent losses / consent-without-undo, unambiguous items
+  shape        n                      L0                      L1              ALG-strict             ALG-capture
+  compound     1    1 silent / 0 no-undo    0 silent / 1 no-undo    0 silent / 0 no-undo    0 silent / 0 no-undo
+  nonfs        1    1 silent / 0 no-undo    0 silent / 0 no-undo    0 silent / 0 no-undo    0 silent / 0 no-undo
+  runtime      9    5 silent / 2 no-undo    0 silent / 9 no-undo    0 silent / 2 no-undo    0 silent / 2 no-undo
+
+[L0] SILENT LOSSES
+  C002 [nonfs, ambiguous, truth U] rsync -av /home/user1 wobgalaxy02:/home/user1
+  C003 [runtime, ambiguous, truth C] find . -type d | sed -e 's/\.\///g' -e 's/\./avoid/g' | grep -v avoid | awk '{print $1"\t"$1}' | xargs chgrp
+  C006 [runtime, truth C] echo *.txt | xargs gzip -9
+  C007 [nonfs, ambiguous, truth U] ssh -l ${USERNAME} ${HOSTNAME} "${SCRIPT}"
+  C008 [runtime, ambiguous, truth C] find . -name '*FooBar*' -exec cp -t ~/foobar -- {} +
+  C012 [compound, truth C] find data/ -print0 | tar -T - --null --create -f archive.tar
+  C017 [runtime, truth C] find . -iname '*.cgi' | xargs chmod 755
+  C022 [runtime, truth C] sudo find /path/to/Dir -type d -print0 | xargs -0 sudo chmod 755
+  C026 [runtime, truth C] find /home/username/public_html/themes -type f -exec chmod 640 {} +
+  C047 [nonfs, ambiguous, truth U] ssh user@host -X
+  C060 [nonfs, ambiguous, truth U] rsync -rvv *.txt user@remote.machine:/tmp/newdir/
+  C061 [nonfs, truth U] sudo mount -o remount -o exec /dev/sda7
+  C063 [runtime, ambiguous, truth C] find /path/to/the/folder -depth -type d -print0 | xargs -0 rmdir
+  C064 [runtime, truth C] ln -f -s -T `readlink SomeLibrary | sed 's/version.old/version.new/'` SomeLibrary
+  C080 [runtime, ambiguous, truth C] find /mydir -type f -name "*.txt" -execdir chown root {} ';'
+  C089 [hidden, ambiguous, truth C] find . -type l -daystart -mtime $date_dif -exec copy_it.sh $verbose -s {} -t $to_dir \;
+  C095 [runtime, ambiguous, truth C] find . -atime +1 -type f -exec mv {} TMP \; # mv files older then 1 day to dir TMP
+  C096 [nonfs, ambiguous, truth U] su - username command
+  C100 [hidden, ambiguous, truth C] alias jump="cd $(myscript.sh)"
+[L0] CONSENT WITHOUT UNDO
+  C004 [runtime] find . \( -name a.out -o -name '*.o' -o -name 'core' \) -exec rm {} \;   (rm (rm can permanently delete files with no built-in undo))
+  C062 [runtime] find . -type f -name "*.txt" | xargs    -i ksh -c "echo deleting {}; rm {}"   (rm (rm can permanently delete files with no built-in undo))
+[L0] FRICTION (safe, but asked)
+  C086 [readonly] find /. -name 'toBeSearched.file' 2>&1 | grep -v 'Permission denied'   (truncating redirect (>) overwrites the target file's existing contents)
+  C092 [redirect] find . 2>&1 | grep -v 'permission denied' > files_and_folders   (truncating redirect (>) overwrites the target file's existing contents)
+
+[L1] SILENT LOSSES
+[L1] CONSENT WITHOUT UNDO
+  C001 [runtime] find . -name \*.py -print0 | xargs -0 sed -i '1a Line of text here'   (sed is not a known read-only command)
+  C003 [runtime] find . -type d | sed -e 's/\.\///g' -e 's/\./avoid/g' | grep -v avoid | awk '{print $1"\t"$1}' | xargs chgrp   (chgrp is not a known read-only command)
+  C004 [runtime] find . \( -name a.out -o -name '*.o' -o -name 'core' \) -exec rm {} \;   (rm is not a known read-only command)
+  C006 [runtime] echo *.txt | xargs gzip -9   (gzip is not a known read-only command)
+  C008 [runtime] find . -name '*FooBar*' -exec cp -t ~/foobar -- {} +   (cp is not a known read-only command)
+  C012 [compound] find data/ -print0 | tar -T - --null --create -f archive.tar   (tar is not a known read-only command)
+  C017 [runtime] find . -iname '*.cgi' | xargs chmod 755   (chmod is not a known read-only command)
+  C022 [runtime] sudo find /path/to/Dir -type d -print0 | xargs -0 sudo chmod 755   (chmod is not a known read-only command)
+  C025 [runtime] find ./ -type f -exec sed -i "s/$1/$2/" {} \;   (sed is not a known read-only command)
+  C026 [runtime] find /home/username/public_html/themes -type f -exec chmod 640 {} +   (chmod is not a known read-only command)
+  C062 [runtime] find . -type f -name "*.txt" | xargs    -i ksh -c "echo deleting {}; rm {}"   (rm is not a known read-only command)
+  C063 [runtime] find /path/to/the/folder -depth -type d -print0 | xargs -0 rmdir   (rmdir is not a known read-only command)
+  C064 [runtime] ln -f -s -T `readlink SomeLibrary | sed 's/version.old/version.new/'` SomeLibrary   (ln is not a known read-only command)
+  C080 [runtime] find /mydir -type f -name "*.txt" -execdir chown root {} ';'   (chown is not a known read-only command)
+  C089 [hidden] find . -type l -daystart -mtime $date_dif -exec copy_it.sh $verbose -s {} -t $to_dir \;   (copy_it.sh is not a known read-only command)
+  C095 [runtime] find . -atime +1 -type f -exec mv {} TMP \; # mv files older then 1 day to dir TMP   (mv is not a known read-only command)
+  C100 [hidden] alias jump="cd $(myscript.sh)"   (myscript.sh is not a known read-only command)
+[L1] FRICTION (safe, but asked)
+  C009 [runtime] find . -name "*foo*" | sed -e "s/'/\\\'/g" -e 's/"/\\"/g' -e 's/ /\\ /g' | xargs cp /your/dest   (cp is not a known read-only command)
+  C013 [runtime] echo -e "Icon\\r" | xargs touch   (touch is not a known read-only command)
+  C016 [readonly] find . ( -name a.out -o -name *.o ) -print   (does not parse)
+  C023 [runtime] find /path/to/dir -mindepth 1 -maxdepth 1 -type d -execdir sh -c 'd=${1##*/}; sudo tar -zcpvf "$d".tar.gz "$d"' - {} \;   (tar is not a known read-only command)
+  C024 [runtime] find /path/to/dir -mindepth 1 -maxdepth 1 -type d -execdir sudo tar -zcpvf {}.tar.gz {} \;   (tar is not a known read-only command)
+  C037 [compound] find . -name "*.pl" | xargs tar -zcf pl.tar.gz   (tar is not a known read-only command)
+  C039 [hidden] find . -iname "*.jpg" -ls |perl -lane '$t += $F[6]; print $t/1024/1024/1024 . " GB"'   (perl is not a known read-only command)
+  C040 [readonly] fg 1   (fg is not a known read-only command)
+  C045 [runtime] mkdir $(seq -f "$HOME/Labs/lab4a/folder%03g" 3)   (mkdir is not a known read-only command)
+  C046 [readonly] mkdir -p ./some/path   (mkdir is not a known read-only command)
+  C048 [readonly] xmllint example.xml --xpath "/config/*/@*" | sed "s| key|\nkey|g" | nl   (xmllint is not a known read-only command)
+  C065 [hidden] \time -f "%E real,%U user,%s sys" ls -Fs   (time is not a known read-only command)
+  C066 [hidden] cat file | xclip -selection clipboard   (xclip is not a known read-only command)
+  C073 [flag] find / -name *.mp3 -fprint nameoffiletoprintto   (find writes files)
+  C074 [readonly] shopt -s globstar nullglob   (shopt is not a known read-only command)
+  C076 [hidden] split --numeric-suffixes=1 --additional-suffix=.csv -l100 data.csv data_   (split is not a known read-only command)
+  C077 [hidden] tmux set-environment -u RBENV_VERSION   (tmux is not a known read-only command)
+  C078 [hidden] yes | tr \\n x | head -c $BYTES | pv | grep n   (pv is not a known read-only command)
+  C092 [redirect] find . 2>&1 | grep -v 'permission denied' > files_and_folders   (redirects output to a file)
+
+[ALG-strict] SILENT LOSSES
+  C008 [runtime, ambiguous, truth C] find . -name '*FooBar*' -exec cp -t ~/foobar -- {} +
+  C095 [runtime, ambiguous, truth C] find . -atime +1 -type f -exec mv {} TMP \; # mv files older then 1 day to dir TMP
+[ALG-strict] CONSENT WITHOUT UNDO
+  C022 [runtime] sudo find /path/to/Dir -type d -print0 | xargs -0 sudo chmod 755   (unresolved: runs with elevated privilege, so its input cannot be resolved as the current u)
+  C025 [runtime] find ./ -type f -exec sed -i "s/$1/$2/" {} \;   (unresolved: find arguments could not be determined: 1: unbound variable)
+  C089 [hidden] find . -type l -daystart -mtime $date_dif -exec copy_it.sh $verbose -s {} -t $to_dir \;   (unresolved: find arguments could not be determined: date_dif: unbound variable)
+  C100 [hidden] alias jump="cd $(myscript.sh)"   (opaque: unknown command myscript.sh)
+[ALG-strict] FRICTION (safe, but asked)
+  C016 [readonly] find . ( -name a.out -o -name *.o ) -print   (opaque: does not parse as shell: 1:8: a command can only contain words and redirects; enco)
+  C023 [runtime] find /path/to/dir -mindepth 1 -maxdepth 1 -type d -execdir sh -c 'd=${1##*/}; sudo tar -zcpvf "$d".tar.gz "$d"' - {} \;   (unresolved: arguments could not be determined: d: unbound variable)
+  C039 [hidden] find . -iname "*.jpg" -ls |perl -lane '$t += $F[6]; print $t/1024/1024/1024 . " GB"'   (opaque: perl runs arbitrary code; its effects are not modelled)
+  C040 [readonly] fg 1   (opaque: unknown command fg)
+  C048 [readonly] xmllint example.xml --xpath "/config/*/@*" | sed "s| key|\nkey|g" | nl   (opaque: unknown command xmllint)
+  C065 [hidden] \time -f "%E real,%U user,%s sys" ls -Fs   (opaque: unknown command time)
+  C066 [hidden] cat file | xclip -selection clipboard   (opaque: unknown command xclip)
+  C074 [readonly] shopt -s globstar nullglob   (opaque: unknown command shopt)
+  C076 [hidden] split --numeric-suffixes=1 --additional-suffix=.csv -l100 data.csv data_   (opaque: unknown command split)
+  C077 [hidden] tmux set-environment -u RBENV_VERSION   (opaque: unknown command tmux)
+  C078 [hidden] yes | tr \\n x | head -c $BYTES | pv | grep n   (opaque: unknown command pv)
+
+[ALG-capture] SILENT LOSSES
+  C008 [runtime, ambiguous, truth C] find . -name '*FooBar*' -exec cp -t ~/foobar -- {} +
+  C095 [runtime, ambiguous, truth C] find . -atime +1 -type f -exec mv {} TMP \; # mv files older then 1 day to dir TMP
+[ALG-capture] CONSENT WITHOUT UNDO
+  C022 [runtime] sudo find /path/to/Dir -type d -print0 | xargs -0 sudo chmod 755   (unresolved: runs with elevated privilege, so its input cannot be resolved as the current u)
+  C025 [runtime] find ./ -type f -exec sed -i "s/$1/$2/" {} \;   (unresolved: find arguments could not be determined: 1: unbound variable)
+  C089 [hidden] find . -type l -daystart -mtime $date_dif -exec copy_it.sh $verbose -s {} -t $to_dir \;   (unresolved: find arguments could not be determined: date_dif: unbound variable)
+  C100 [hidden] alias jump="cd $(myscript.sh)"   (opaque: unknown command myscript.sh)
+[ALG-capture] FRICTION (safe, but asked)
+  C016 [readonly] find . ( -name a.out -o -name *.o ) -print   (opaque: does not parse as shell: 1:8: a command can only contain words and redirects; enco)
+  C023 [runtime] find /path/to/dir -mindepth 1 -maxdepth 1 -type d -execdir sh -c 'd=${1##*/}; sudo tar -zcpvf "$d".tar.gz "$d"' - {} \;   (unresolved: arguments could not be determined: d: unbound variable)
+  C039 [hidden] find . -iname "*.jpg" -ls |perl -lane '$t += $F[6]; print $t/1024/1024/1024 . " GB"'   (opaque: perl runs arbitrary code; its effects are not modelled)
+  C040 [readonly] fg 1   (opaque: unknown command fg)
+  C048 [readonly] xmllint example.xml --xpath "/config/*/@*" | sed "s| key|\nkey|g" | nl   (opaque: unknown command xmllint)
+  C065 [hidden] \time -f "%E real,%U user,%s sys" ls -Fs   (opaque: unknown command time)
+  C066 [hidden] cat file | xclip -selection clipboard   (opaque: unknown command xclip)
+  C074 [readonly] shopt -s globstar nullglob   (opaque: unknown command shopt)
+  C076 [hidden] split --numeric-suffixes=1 --additional-suffix=.csv -l100 data.csv data_   (opaque: unknown command split)
+  C077 [hidden] tmux set-environment -u RBENV_VERSION   (opaque: unknown command tmux)
+  C078 [hidden] yes | tr \\n x | head -c $BYTES | pv | grep n   (opaque: unknown command pv)

@@ -1,0 +1,31 @@
+working directory: 1165 files, 580M (a copy of distro/hoard/debs)
+
+-- first snapshot (no previous to link against; the worst case, paid once) --
+  time: 0.552s   bytes written: 605784672
+
+-- steady-state snapshot: nothing has changed since the last one --
+   this is the tax paid before every command once the system is running: the cost a
+   hardlink-based snapshot cannot avoid even when the command that follows touches nothing
+  run 1 — time: 0.071s
+  run 2 — time: 0.068s
+  run 3 — time: 0.063s
+
+-- one file changed out of 1165 (the realistic case: a command writes or removes one path) --
+  time: 0.082s   (rsync itself reports 1 path(s) actually differing)
+
+-- for comparison: the analysis's capture plan for single-file cases --
+   from pilot/recovery_results6.txt: internal/gate.Decision.Capture touches only the
+   path a command names, so its cost does not depend on the size of the directory around it
+     N001: 0.009s plan+capture, 0 bytes captured, 140 bytes fixture
+     N002: 0.000s plan+capture, 0 bytes captured, 53 bytes fixture
+     N003: 0.000s plan+capture, 0 bytes captured, 53 bytes fixture
+     N004: 0.000s plan+capture, 0 bytes captured, 53 bytes fixture
+     N005: 0.001s plan+capture, 0 bytes captured, 154 bytes fixture
+
+Reading it: a snapshot taken before every command pays the cost of walking and stat'ing
+the whole tree, whether nothing changed or one file did, because deciding what to
+hardlink still means visiting every entry. The capture plan's cost is set by what the
+command touches, not by how large the directory around it is. This is the trade the
+capture plan is built to avoid, on a filesystem (ext4) with no cheaper primitive to
+lean on; a copy-on-write filesystem such as btrfs would make the snapshot itself
+closer to free and change which mechanism is worth building.

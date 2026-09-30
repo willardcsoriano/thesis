@@ -1,0 +1,400 @@
+{"id":"C001","system":"L0","prompted":true,"protected":true,"reason":"sed in-place edit (sed -i overwrites the file in place with no built-in undo)"}
+{"id":"C001","system":"L1","prompted":true,"protected":false,"reason":"sed is not a known read-only command"}
+{"id":"C001","system":"ALG-strict","prompted":true,"protected":true,"reason":"overwrite /tmp/listpilot-2911444138/sub/b.py","class":"recoverable-with-capture"}
+{"id":"C001","system":"ALG-capture","prompted":false,"protected":true,"reason":"overwrite /tmp/listpilot-2911444138/sub/b.py","class":"recoverable-with-capture"}
+{"id":"C002","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C002","system":"L1","prompted":true,"protected":false,"reason":"rsync is not a known read-only command"}
+{"id":"C002","system":"ALG-strict","prompted":true,"protected":false,"reason":"unrecoverable: rsync to or from a remote host","class":"unrecoverable"}
+{"id":"C002","system":"ALG-capture","prompted":true,"protected":false,"reason":"unrecoverable: rsync to or from a remote host","class":"unrecoverable"}
+{"id":"C003","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C003","system":"L1","prompted":true,"protected":false,"reason":"chgrp is not a known read-only command"}
+{"id":"C003","system":"ALG-strict","prompted":true,"protected":true,"reason":"change metadata of /tmp/listpilot-4220528565/d3","class":"recoverable-with-capture"}
+{"id":"C003","system":"ALG-capture","prompted":false,"protected":true,"reason":"change metadata of /tmp/listpilot-4220528565/d3","class":"recoverable-with-capture"}
+{"id":"C004","system":"L0","prompted":true,"protected":false,"reason":"rm (rm can permanently delete files with no built-in undo)"}
+{"id":"C004","system":"L1","prompted":true,"protected":false,"reason":"rm is not a known read-only command"}
+{"id":"C004","system":"ALG-strict","prompted":true,"protected":true,"reason":"remove /tmp/listpilot-1246204202/sub/y.o","class":"recoverable-with-capture"}
+{"id":"C004","system":"ALG-capture","prompted":false,"protected":true,"reason":"remove /tmp/listpilot-1246204202/sub/y.o","class":"recoverable-with-capture"}
+{"id":"C005","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C005","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C005","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C005","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C006","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C006","system":"L1","prompted":true,"protected":false,"reason":"gzip is not a known read-only command"}
+{"id":"C006","system":"ALG-strict","prompted":true,"protected":true,"reason":"remove /tmp/listpilot-1650102878/a.txt","class":"recoverable-with-capture"}
+{"id":"C006","system":"ALG-capture","prompted":false,"protected":true,"reason":"remove /tmp/listpilot-1650102878/a.txt","class":"recoverable-with-capture"}
+{"id":"C007","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C007","system":"L1","prompted":true,"protected":false,"reason":"ssh is not a known read-only command"}
+{"id":"C007","system":"ALG-strict","prompted":true,"protected":false,"reason":"opaque: unknown command ssh","class":"unrecoverable"}
+{"id":"C007","system":"ALG-capture","prompted":true,"protected":false,"reason":"opaque: unknown command ssh","class":"unrecoverable"}
+{"id":"C008","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C008","system":"L1","prompted":true,"protected":false,"reason":"cp is not a known read-only command"}
+{"id":"C008","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C008","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C009","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C009","system":"L1","prompted":true,"protected":false,"reason":"cp is not a known read-only command"}
+{"id":"C009","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C009","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C010","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C010","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C010","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C010","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C011","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C011","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C011","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C011","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C012","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C012","system":"L1","prompted":true,"protected":false,"reason":"tar is not a known read-only command"}
+{"id":"C012","system":"ALG-strict","prompted":true,"protected":true,"reason":"overwrite /tmp/listpilot-3754919622/archive.tar","class":"recoverable-with-capture"}
+{"id":"C012","system":"ALG-capture","prompted":false,"protected":true,"reason":"overwrite /tmp/listpilot-3754919622/archive.tar","class":"recoverable-with-capture"}
+{"id":"C013","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C013","system":"L1","prompted":true,"protected":false,"reason":"touch is not a known read-only command"}
+{"id":"C013","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C013","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C014","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C014","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C014","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C014","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C015","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C015","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C015","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C015","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C016","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C016","system":"L1","prompted":true,"protected":false,"reason":"does not parse"}
+{"id":"C016","system":"ALG-strict","prompted":true,"protected":false,"reason":"opaque: does not parse as shell: 1:8: a command can only contain words and redirects; encountered `(`","class":"unrecoverable"}
+{"id":"C016","system":"ALG-capture","prompted":true,"protected":false,"reason":"opaque: does not parse as shell: 1:8: a command can only contain words and redirects; encountered `(`","class":"unrecoverable"}
+{"id":"C017","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C017","system":"L1","prompted":true,"protected":false,"reason":"chmod is not a known read-only command"}
+{"id":"C017","system":"ALG-strict","prompted":true,"protected":true,"reason":"change metadata of /tmp/listpilot-2751058279/cgi/b.CGI","class":"recoverable-with-capture"}
+{"id":"C017","system":"ALG-capture","prompted":false,"protected":true,"reason":"change metadata of /tmp/listpilot-2751058279/cgi/b.CGI","class":"recoverable-with-capture"}
+{"id":"C018","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C018","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C018","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C018","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C019","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C019","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C019","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C019","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C020","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C020","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C020","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C020","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C021","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C021","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C021","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C021","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C022","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C022","system":"L1","prompted":true,"protected":false,"reason":"chmod is not a known read-only command"}
+{"id":"C022","system":"ALG-strict","prompted":true,"protected":false,"reason":"unresolved: runs with elevated privilege, so its input cannot be resolved as the current user","class":"unrecoverable"}
+{"id":"C022","system":"ALG-capture","prompted":true,"protected":false,"reason":"unresolved: runs with elevated privilege, so its input cannot be resolved as the current user","class":"unrecoverable"}
+{"id":"C023","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C023","system":"L1","prompted":true,"protected":false,"reason":"tar is not a known read-only command"}
+{"id":"C023","system":"ALG-strict","prompted":true,"protected":false,"reason":"unresolved: arguments could not be determined: d: unbound variable","class":"unrecoverable"}
+{"id":"C023","system":"ALG-capture","prompted":true,"protected":false,"reason":"unresolved: arguments could not be determined: d: unbound variable","class":"unrecoverable"}
+{"id":"C024","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C024","system":"L1","prompted":true,"protected":false,"reason":"tar is not a known read-only command"}
+{"id":"C024","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C024","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C025","system":"L0","prompted":true,"protected":true,"reason":"sed in-place edit (sed -i overwrites the file in place with no built-in undo)"}
+{"id":"C025","system":"L1","prompted":true,"protected":false,"reason":"sed is not a known read-only command"}
+{"id":"C025","system":"ALG-strict","prompted":true,"protected":false,"reason":"unresolved: find arguments could not be determined: 1: unbound variable","class":"unrecoverable"}
+{"id":"C025","system":"ALG-capture","prompted":true,"protected":false,"reason":"unresolved: find arguments could not be determined: 1: unbound variable","class":"unrecoverable"}
+{"id":"C026","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C026","system":"L1","prompted":true,"protected":false,"reason":"chmod is not a known read-only command"}
+{"id":"C026","system":"ALG-strict","prompted":true,"protected":true,"reason":"change metadata of /tmp/listpilot-3683885027/home/username/public_html/themes/t1/style.css","class":"recoverable-with-capture"}
+{"id":"C026","system":"ALG-capture","prompted":false,"protected":true,"reason":"change metadata of /tmp/listpilot-3683885027/home/username/public_html/themes/t1/style.css","class":"recoverable-with-capture"}
+{"id":"C027","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C027","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C027","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C027","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C028","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C028","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C028","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C028","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C029","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C029","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C029","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C029","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C030","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C030","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C030","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C030","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C031","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C031","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C031","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C031","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C032","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C032","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C032","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C032","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C033","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C033","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C033","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C033","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C034","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C034","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C034","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C034","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C035","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C035","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C035","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C035","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C036","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C036","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C036","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C036","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C037","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C037","system":"L1","prompted":true,"protected":false,"reason":"tar is not a known read-only command"}
+{"id":"C037","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C037","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C038","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C038","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C038","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C038","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C039","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C039","system":"L1","prompted":true,"protected":false,"reason":"perl is not a known read-only command"}
+{"id":"C039","system":"ALG-strict","prompted":true,"protected":false,"reason":"opaque: perl runs arbitrary code; its effects are not modelled","class":"unrecoverable"}
+{"id":"C039","system":"ALG-capture","prompted":true,"protected":false,"reason":"opaque: perl runs arbitrary code; its effects are not modelled","class":"unrecoverable"}
+{"id":"C040","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C040","system":"L1","prompted":true,"protected":false,"reason":"fg is not a known read-only command"}
+{"id":"C040","system":"ALG-strict","prompted":true,"protected":false,"reason":"opaque: unknown command fg","class":"unrecoverable"}
+{"id":"C040","system":"ALG-capture","prompted":true,"protected":false,"reason":"opaque: unknown command fg","class":"unrecoverable"}
+{"id":"C041","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C041","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C041","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C041","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C042","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C042","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C042","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C042","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C043","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C043","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C043","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C043","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C044","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C044","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C044","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C044","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C045","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C045","system":"L1","prompted":true,"protected":false,"reason":"mkdir is not a known read-only command"}
+{"id":"C045","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C045","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C046","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C046","system":"L1","prompted":true,"protected":false,"reason":"mkdir is not a known read-only command"}
+{"id":"C046","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C046","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C047","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C047","system":"L1","prompted":true,"protected":false,"reason":"ssh is not a known read-only command"}
+{"id":"C047","system":"ALG-strict","prompted":true,"protected":false,"reason":"opaque: unknown command ssh","class":"unrecoverable"}
+{"id":"C047","system":"ALG-capture","prompted":true,"protected":false,"reason":"opaque: unknown command ssh","class":"unrecoverable"}
+{"id":"C048","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C048","system":"L1","prompted":true,"protected":false,"reason":"xmllint is not a known read-only command"}
+{"id":"C048","system":"ALG-strict","prompted":true,"protected":false,"reason":"opaque: unknown command xmllint","class":"unrecoverable"}
+{"id":"C048","system":"ALG-capture","prompted":true,"protected":false,"reason":"opaque: unknown command xmllint","class":"unrecoverable"}
+{"id":"C049","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C049","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C049","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C049","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C050","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C050","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C050","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C050","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C051","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C051","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C051","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C051","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C052","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C052","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C052","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C052","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C053","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C053","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C053","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C053","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C054","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C054","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C054","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C054","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C055","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C055","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C055","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C055","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C056","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C056","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C056","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C056","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C057","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C057","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C057","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C057","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C058","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C058","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C058","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C058","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C059","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C059","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C059","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C059","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C060","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C060","system":"L1","prompted":true,"protected":false,"reason":"rsync is not a known read-only command"}
+{"id":"C060","system":"ALG-strict","prompted":true,"protected":false,"reason":"unrecoverable: rsync to or from a remote host","class":"unrecoverable"}
+{"id":"C060","system":"ALG-capture","prompted":true,"protected":false,"reason":"unrecoverable: rsync to or from a remote host","class":"unrecoverable"}
+{"id":"C061","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C061","system":"L1","prompted":true,"protected":false,"reason":"mount is not a known read-only command"}
+{"id":"C061","system":"ALG-strict","prompted":true,"protected":false,"reason":"unrecoverable: changes what is mounted","class":"unrecoverable"}
+{"id":"C061","system":"ALG-capture","prompted":true,"protected":false,"reason":"unrecoverable: changes what is mounted","class":"unrecoverable"}
+{"id":"C062","system":"L0","prompted":true,"protected":false,"reason":"rm (rm can permanently delete files with no built-in undo)"}
+{"id":"C062","system":"L1","prompted":true,"protected":false,"reason":"rm is not a known read-only command"}
+{"id":"C062","system":"ALG-strict","prompted":true,"protected":true,"reason":"remove /tmp/listpilot-3184894165/notes.txt","class":"recoverable-with-capture"}
+{"id":"C062","system":"ALG-capture","prompted":false,"protected":true,"reason":"remove /tmp/listpilot-3184894165/notes.txt","class":"recoverable-with-capture"}
+{"id":"C063","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C063","system":"L1","prompted":true,"protected":false,"reason":"rmdir is not a known read-only command"}
+{"id":"C063","system":"ALG-strict","prompted":true,"protected":true,"reason":"remove /tmp/listpilot-2320890629/path/to/the/folder/e2/e3","class":"recoverable-with-capture"}
+{"id":"C063","system":"ALG-capture","prompted":false,"protected":true,"reason":"remove /tmp/listpilot-2320890629/path/to/the/folder/e2/e3","class":"recoverable-with-capture"}
+{"id":"C064","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C064","system":"L1","prompted":true,"protected":false,"reason":"ln is not a known read-only command"}
+{"id":"C064","system":"ALG-strict","prompted":true,"protected":true,"reason":"overwrite /tmp/listpilot-2903842704/SomeLibrary","class":"recoverable-with-capture"}
+{"id":"C064","system":"ALG-capture","prompted":false,"protected":true,"reason":"overwrite /tmp/listpilot-2903842704/SomeLibrary","class":"recoverable-with-capture"}
+{"id":"C065","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C065","system":"L1","prompted":true,"protected":false,"reason":"time is not a known read-only command"}
+{"id":"C065","system":"ALG-strict","prompted":true,"protected":false,"reason":"opaque: unknown command time","class":"unrecoverable"}
+{"id":"C065","system":"ALG-capture","prompted":true,"protected":false,"reason":"opaque: unknown command time","class":"unrecoverable"}
+{"id":"C066","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C066","system":"L1","prompted":true,"protected":false,"reason":"xclip is not a known read-only command"}
+{"id":"C066","system":"ALG-strict","prompted":true,"protected":false,"reason":"opaque: unknown command xclip","class":"unrecoverable"}
+{"id":"C066","system":"ALG-capture","prompted":true,"protected":false,"reason":"opaque: unknown command xclip","class":"unrecoverable"}
+{"id":"C067","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C067","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C067","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C067","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C068","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C068","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C068","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C068","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C069","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C069","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C069","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C069","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C070","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C070","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C070","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C070","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C071","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C071","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C071","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C071","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C072","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C072","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C072","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C072","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C073","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C073","system":"L1","prompted":true,"protected":false,"reason":"find writes files"}
+{"id":"C073","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C073","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C074","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C074","system":"L1","prompted":true,"protected":false,"reason":"shopt is not a known read-only command"}
+{"id":"C074","system":"ALG-strict","prompted":true,"protected":false,"reason":"opaque: unknown command shopt","class":"unrecoverable"}
+{"id":"C074","system":"ALG-capture","prompted":true,"protected":false,"reason":"opaque: unknown command shopt","class":"unrecoverable"}
+{"id":"C075","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C075","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C075","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C075","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C076","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C076","system":"L1","prompted":true,"protected":false,"reason":"split is not a known read-only command"}
+{"id":"C076","system":"ALG-strict","prompted":true,"protected":false,"reason":"opaque: unknown command split","class":"unrecoverable"}
+{"id":"C076","system":"ALG-capture","prompted":true,"protected":false,"reason":"opaque: unknown command split","class":"unrecoverable"}
+{"id":"C077","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C077","system":"L1","prompted":true,"protected":false,"reason":"tmux is not a known read-only command"}
+{"id":"C077","system":"ALG-strict","prompted":true,"protected":false,"reason":"opaque: unknown command tmux","class":"unrecoverable"}
+{"id":"C077","system":"ALG-capture","prompted":true,"protected":false,"reason":"opaque: unknown command tmux","class":"unrecoverable"}
+{"id":"C078","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C078","system":"L1","prompted":true,"protected":false,"reason":"pv is not a known read-only command"}
+{"id":"C078","system":"ALG-strict","prompted":true,"protected":false,"reason":"opaque: unknown command pv","class":"unrecoverable"}
+{"id":"C078","system":"ALG-capture","prompted":true,"protected":false,"reason":"opaque: unknown command pv","class":"unrecoverable"}
+{"id":"C079","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C079","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C079","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C079","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C080","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C080","system":"L1","prompted":true,"protected":false,"reason":"chown is not a known read-only command"}
+{"id":"C080","system":"ALG-strict","prompted":true,"protected":true,"reason":"change metadata of /tmp/listpilot-3519507018/mydir/a.txt","class":"recoverable-with-capture"}
+{"id":"C080","system":"ALG-capture","prompted":false,"protected":true,"reason":"change metadata of /tmp/listpilot-3519507018/mydir/a.txt","class":"recoverable-with-capture"}
+{"id":"C081","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C081","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C081","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C081","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C082","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C082","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C082","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C082","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C083","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C083","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C083","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C083","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C084","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C084","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C084","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C084","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C085","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C085","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C085","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C085","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C086","system":"L0","prompted":true,"protected":true,"reason":"truncating redirect (\u003e) overwrites the target file's existing contents"}
+{"id":"C086","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C086","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C086","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C087","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C087","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C087","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C087","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C088","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C088","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C088","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C088","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C089","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C089","system":"L1","prompted":true,"protected":false,"reason":"copy_it.sh is not a known read-only command"}
+{"id":"C089","system":"ALG-strict","prompted":true,"protected":false,"reason":"unresolved: find arguments could not be determined: date_dif: unbound variable","class":"unrecoverable"}
+{"id":"C089","system":"ALG-capture","prompted":true,"protected":false,"reason":"unresolved: find arguments could not be determined: date_dif: unbound variable","class":"unrecoverable"}
+{"id":"C090","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C090","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C090","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C090","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C091","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C091","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C091","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C091","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C092","system":"L0","prompted":true,"protected":true,"reason":"truncating redirect (\u003e) overwrites the target file's existing contents"}
+{"id":"C092","system":"L1","prompted":true,"protected":false,"reason":"redirects output to a file"}
+{"id":"C092","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C092","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C093","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C093","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C093","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C093","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C094","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C094","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C094","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C094","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C095","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C095","system":"L1","prompted":true,"protected":false,"reason":"mv is not a known read-only command"}
+{"id":"C095","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C095","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C096","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C096","system":"L1","prompted":true,"protected":false,"reason":"su is not a known read-only command"}
+{"id":"C096","system":"ALG-strict","prompted":true,"protected":false,"reason":"opaque: unknown command su","class":"unrecoverable"}
+{"id":"C096","system":"ALG-capture","prompted":true,"protected":false,"reason":"opaque: unknown command su","class":"unrecoverable"}
+{"id":"C097","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C097","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C097","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C097","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C098","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C098","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C098","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C098","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C099","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C099","system":"L1","prompted":false,"protected":false,"reason":""}
+{"id":"C099","system":"ALG-strict","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C099","system":"ALG-capture","prompted":false,"protected":false,"reason":"","class":"recoverable"}
+{"id":"C100","system":"L0","prompted":false,"protected":false,"reason":""}
+{"id":"C100","system":"L1","prompted":true,"protected":false,"reason":"myscript.sh is not a known read-only command"}
+{"id":"C100","system":"ALG-strict","prompted":true,"protected":false,"reason":"opaque: unknown command myscript.sh","class":"unrecoverable"}
+{"id":"C100","system":"ALG-capture","prompted":true,"protected":false,"reason":"opaque: unknown command myscript.sh","class":"unrecoverable"}

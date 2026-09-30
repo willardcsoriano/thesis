@@ -1,0 +1,990 @@
+sandbox self-test: a write outside the fixture is blocked, a write inside is allowed
+Deleted branch feature (was d42e2bd).
+Dropped refs/stash@{0} (a17b6c4086105d975952cf22c336cad02c3d733b)
+case  class                     plan              V1    V2    V3    captured B  entries  fixture B  plan+capture s  command s  exit
+N001  recoverable                                 yes   yes   yes   0           0        152        0.007           0.008      0
+N002  recoverable                                 yes   yes   yes   0           0        208        0.009           0.011      0
+N003  recoverable                                 yes   yes   yes   0           0        53         0.001           0.008      0
+N004  recoverable                                 yes   yes   yes   0           0        53         0.009           0.040      0
+N005  recoverable                                 yes   yes   yes   0           0        53         0.000           0.011      0
+N006  recoverable-with-capture  metadata          yes   yes   yes   0           1        215        0.000           0.009      0
+N007  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: arguments could not be determined: f: unbound variable
+N008  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: arguments could not be determined: 1: unbound variable
+N009  recoverable                                 yes   yes   yes   0           0        247        0.000           0.008      0
+N010  recoverable                                 yes   yes   yes   0           0        53         0.000           0.010      0
+N011  recoverable                                 yes   yes   yes   0           0        208        0.000           0.024      0
+N012  recoverable                                 yes   yes   yes   0           0        143        0.000           0.008      0
+N013  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N014  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N015  recoverable-with-capture  content           yes   yes   yes   99          2        200        0.001           0.010      0
+N016  recoverable                                 NO    NO    yes   0           0        53         0.000           0.009      0
+N017  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command iconv
+N018  recoverable                                 yes   yes   yes   0           0        164        0.000           0.008      0
+N019  recoverable                                 yes   yes   yes   0           0        95         0.008           0.008      0
+N020  recoverable                                 yes   yes   yes   0           0        152        0.000           0.008      0
+N021  recoverable                                 yes   yes   yes   0           0        53         0.006           0.009      0
+N022  recoverable                                 yes   yes   yes   0           0        53         0.000           0.011      0
+N023  recoverable                                 yes   yes   yes   0           0        53         0.000           0.010      0
+N024  recoverable                                 NO    NO    NO    0           0        163        0.108           0.102      0
+N025  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N026  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N027  recoverable                                 yes   yes   yes   0           0        53         0.001           0.012      0
+N028  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: perl runs arbitrary code; its effects are not modelled
+N029  recoverable-with-capture  metadata          yes   yes   yes   0           6        422        0.008           0.010      0
+N030  recoverable                                 yes   yes   yes   0           0        53         0.000           0.016      0
+N031  recoverable                                 yes   yes   yes   0           0        168        0.000           0.008      0
+N032  recoverable                                 yes   yes   yes   0           0        175        0.000           0.009      0
+N033  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+N034  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N035  recoverable                                 yes   yes   yes   0           0        53         0.021           0.089      0
+N036  recoverable-with-capture  trash             yes   yes   yes   0           2        155        0.006           0.010      0
+N037  recoverable                                 yes   yes   yes   0           0        99         0.008           0.009      0
+N038  recoverable                                 yes   yes   yes   0           0        53         0.009           0.009      0
+N039  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N040  recoverable-with-capture  trash             yes   yes   yes   0           2        152        0.009           0.014      0
+N041  recoverable                                 yes   yes   yes   0           0        152        0.008           0.010      0
+N042  recoverable                                 yes   yes   yes   0           0        96         0.000           0.008      0
+N043  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command lshw
+N044  recoverable                                 yes   yes   yes   0           0        100        0.000           0.008      0
+N045  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N046  recoverable                                 yes   yes   yes   0           0        105        0.000           0.008      0
+N047  recoverable                                 yes   yes   yes   0           0        154        0.000           0.008      0
+N048  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+N049  recoverable-with-capture  content           yes   yes   yes   49          1        288        0.000           0.008      0
+N050  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N051  recoverable                                 yes   yes   yes   0           0        53         0.000           0.010      0
+N052  recoverable                                 yes   yes   yes   0           0        98         0.000           0.008      0
+N053  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+N054  recoverable                                 yes   yes   yes   0           0        160        0.000           0.012      0
+N055  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: creates files inside the tree it is searching, so the set of matches changes while it runs
+N056  recoverable                                 yes   yes   yes   0           0        256        0.000           0.009      0
+N057  recoverable-with-capture  trash             yes   yes   yes   0           4        139        0.012           0.014      0
+N058  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command make
+N059  recoverable                                 yes   yes   yes   0           0        152        0.000           0.009      0
+N060  recoverable                                 yes   yes   yes   0           0        96         0.000           0.010      0
+N061  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N062  recoverable                                 yes   yes   yes   0           0        53         0.000           0.013      0
+N063  recoverable                                 yes   yes   yes   0           0        167        0.000           0.017      0
+N064  recoverable                                 yes   yes   yes   0           0        152        0.001           0.010      0
+N065  recoverable                                 yes   yes   yes   0           0        53         0.000           0.012      0
+N066  recoverable                                 yes   yes   yes   0           0        152        0.001           0.015      0
+N067  recoverable                                 yes   yes   yes   0           0        108        0.000           0.013      0
+N068  recoverable                                 yes   yes   yes   0           0        106        0.000           0.022      0
+N069  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N070  recoverable                                 yes   yes   yes   0           0        53         0.000           0.016      0
+N071  recoverable-with-capture  metadata          yes   yes   yes   0           1        99         0.000           0.009      0
+N072  recoverable                                 yes   yes   yes   0           0        95         0.000           0.008      0
+N073  recoverable-with-capture  metadata          yes   yes   yes   0           20       99         0.009           0.012      0
+N074  recoverable                                 yes   yes   yes   0           0        107        0.007           0.008      0
+N075  recoverable                                 yes   yes   yes   0           0        53         0.000           0.011      0
+N076  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N077  recoverable                                 yes   yes   yes   0           0        53         0.010           0.066      0
+N078  recoverable                                 yes   yes   yes   0           0        145        0.000           0.014      0
+N079  recoverable                                 yes   yes   yes   0           0        150        0.001           0.011      0
+N080  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N081  recoverable                                 yes   yes   yes   0           0        202        0.000           0.010      0
+N082  recoverable                                 yes   yes   yes   0           0        53         0.009           0.009      0
+N083  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: runs ./generate_commands by path, which is not modelled
+N084  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N085  recoverable                                 yes   yes   yes   0           0        204        0.000           0.011      0
+N086  recoverable                                 yes   yes   yes   0           0        102        0.000           0.009      0
+N087  recoverable                                 yes   yes   yes   0           0        53         0.001           0.008      0
+N088  recoverable                                 yes   yes   yes   0           0        96         0.000           0.008      0
+N089  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N090  recoverable-with-capture  trash             yes   yes   yes   0           2        220        0.008           0.009      0
+N091  recoverable-with-capture  content           yes   yes   yes   73          8        96         0.014           0.030      0
+N092  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+N093  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command split
+N094  recoverable                                 yes   yes   yes   0           0        97         0.000           0.008      0
+N095  recoverable                                 yes   yes   yes   0           0        109        0.000           0.014      0
+N096  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unrecoverable: executes code piped in from another command
+N097  recoverable                                 yes   yes   yes   0           0        99         0.000           0.009      0
+N098  recoverable                                 yes   yes   yes   0           0        152        0.000           0.008      0
+N099  recoverable                                 yes   yes   yes   0           0        100        0.000           0.007      0
+N100  recoverable                                 yes   yes   yes   0           0        153        0.000           0.012      0
+N101  recoverable                                 yes   yes   yes   0           0        53         0.000           0.010      0
+N102  recoverable-with-capture  trash             yes   yes   yes   0           5        152        0.008           0.008      0
+N103  recoverable                                 yes   yes   yes   0           0        158        0.000           0.376      0
+N104  recoverable                                 yes   yes   yes   0           0        53         0.001           0.009      0
+N105  recoverable                                 yes   yes   yes   0           0        150        0.000           0.008      0
+N106  recoverable-with-capture  metadata          yes   yes   yes   0           2        211        0.008           0.013      0
+N107  recoverable                                 yes   yes   yes   0           0        101        0.000           0.008      0
+N108  recoverable                                 yes   yes   yes   0           0        152        0.000           0.013      0
+N109  recoverable                                 yes   yes   yes   0           0        53         0.000           0.024      0
+N110  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command bind
+N111  recoverable                                 yes   yes   yes   0           0        96         0.000           0.011      0
+N112  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N113  recoverable                                 yes   yes   yes   0           0        195        0.009           0.010      0
+N114  recoverable                                 yes   yes   yes   0           0        143        0.000           0.015      0
+N115  recoverable                                 yes   yes   yes   0           0        303        0.000           0.008      0
+N116  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unrecoverable: executes code piped in from another command
+N117  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N118  recoverable                                 yes   yes   yes   0           0        98         0.000           0.009      0
+N119  recoverable                                 yes   yes   yes   0           0        372        0.000           0.008      0
+N120  recoverable                                 yes   yes   yes   0           0        154        0.000           0.009      0
+N121  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N122  recoverable-with-capture  trash             yes   yes   yes   0           6        152        0.007           0.008      0
+N123  recoverable                                 yes   yes   yes   0           0        150        0.000           0.009      0
+N124  recoverable                                 yes   yes   yes   0           0        53         0.000           0.011      0
+N125  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: runs /path/to/my/script by path, which is not modelled
+N126  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N127  recoverable                                 yes   yes   yes   0           0        101        0.000           0.009      0
+N128  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N129  recoverable                                 yes   yes   yes   0           0        96         0.008           0.027      0
+N130  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N131  recoverable                                 yes   yes   yes   0           0        103        0.008           0.008      0
+N132  recoverable                                 yes   yes   yes   0           0        96         0.000           0.013      0
+N133  recoverable                                 yes   yes   yes   0           0        145        0.000           0.008      0
+N134  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command split
+N135  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N136  recoverable                                 yes   yes   yes   0           0        96         0.008           0.008      0
+N137  recoverable                                 yes   yes   yes   0           0        152        0.010           0.014      0
+N138  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N139  recoverable                                 yes   yes   yes   0           0        53         0.000           0.010      0
+N140  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N141  recoverable                                 yes   yes   yes   0           0        152        0.000           0.015      0
+N142  recoverable                                 yes   yes   yes   0           0        152        0.000           0.010      0
+N143  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: perl runs arbitrary code; its effects are not modelled
+N144  recoverable                                 yes   yes   yes   0           0        152        0.000           0.009      0
+N145  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N146  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N147  recoverable                                 yes   yes   yes   0           0        161        0.000           0.008      0
+N148  recoverable                                 yes   yes   yes   0           0        207        0.107           0.116      0
+N149  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: the awk program writes files or runs commands
+N150  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N151  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N152  recoverable                                 yes   yes   yes   0           0        98         0.000           0.009      0
+N153  recoverable-with-capture  trash             yes   yes   yes   0           13       53         0.007           0.008      0
+N154  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N155  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N156  recoverable                                 yes   yes   yes   0           0        176        0.000           0.010      0
+N157  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N158  recoverable                                 yes   yes   yes   0           0        53         0.000           0.010      0
+N159  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N160  recoverable                                 yes   yes   yes   0           0        198        0.000           0.008      0
+N161  recoverable                                 yes   yes   yes   0           0        154        0.000           0.008      0
+N162  recoverable                                 yes   yes   yes   0           0        53         0.008           0.009      0
+N163  recoverable-with-capture  content           yes   yes   yes   44          1        188        0.000           0.012      0
+N164  recoverable                                 yes   yes   yes   0           0        53         0.008           0.008      0
+N165  recoverable                                 yes   yes   yes   0           0        95         0.000           0.008      0
+N166  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+N167  recoverable                                 yes   yes   yes   0           0        152        0.000           0.008      0
+N168  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+N169  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N170  recoverable                                 yes   yes   yes   0           0        109        0.000           0.010      0
+N171  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N172  recoverable                                 yes   yes   yes   0           0        98         0.000           0.024      0
+N173  recoverable                                 yes   yes   yes   0           0        53         0.010           0.009      0
+N174  recoverable                                 yes   yes   yes   0           0        53         0.007           0.009      0
+N175  recoverable                                 yes   yes   yes   0           0        111        0.077           0.075      0
+N176  recoverable                                 yes   yes   yes   0           0        53         0.000           0.010      0
+N177  recoverable                                 yes   yes   yes   0           0        148        0.000           0.008      0
+N178  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command process
+N179  recoverable                                 yes   yes   yes   0           0        217        0.000           0.008      0
+N180  recoverable-with-capture  metadata          yes   yes   yes   0           23       203        0.008           0.090      0
+N181  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N182  recoverable                                 yes   yes   yes   0           0        277        0.007           0.008      0
+N183  recoverable                                 yes   yes   yes   0           0        210        0.000           0.024      0
+N184  recoverable                                 yes   yes   yes   0           0        99         0.008           0.021      0
+N185  recoverable                                 yes   yes   yes   0           0        96         0.009           0.009      0
+N186  recoverable                                 yes   yes   yes   0           0        102        0.000           0.010      0
+N187  recoverable                                 yes   yes   yes   0           0        218        0.008           0.008      0
+N188  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command pv
+N189  recoverable-with-capture  content           yes   yes   yes   50          1        103        0.000           0.010      0
+N190  recoverable-with-capture  content           yes   yes   yes   141         14       141        0.023           0.033      0
+N191  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N192  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N193  recoverable                                 yes   yes   yes   0           0        112        0.009           0.008      0
+N194  recoverable                                 yes   yes   yes   0           0        152        0.000           0.008      0
+N195  recoverable                                 yes   yes   yes   0           0        53         0.000           0.028      0
+N196  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N197  recoverable                                 yes   yes   yes   0           0        97         0.008           0.009      0
+N198  recoverable                                 yes   yes   yes   0           0        150        0.000           0.010      0
+N199  recoverable                                 yes   yes   yes   0           0        53         0.008           0.008      0
+N200  recoverable                                 yes   yes   yes   0           0        247        0.000           0.008      0
+N201  recoverable-with-capture  metadata          yes   yes   yes   0           5        99         0.008           0.009      0
+N202  recoverable-with-capture  metadata          yes   yes   yes   0           12       53         0.007           0.009      0
+N203  recoverable                                 yes   yes   yes   0           0        53         0.000           0.022      0
+N204  recoverable                                 yes   yes   yes   0           0        148        0.000           0.007      0
+N205  recoverable                                 yes   yes   yes   0           0        53         0.000           0.058      0
+N206  recoverable                                 yes   yes   yes   0           0        53         0.007           0.008      0
+N207  recoverable-with-capture  content           yes   yes   yes   113         6        152        0.010           0.009      0
+N208  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+N209  recoverable                                 yes   yes   yes   0           0        158        0.000           0.013      0
+N210  recoverable                                 yes   yes   yes   0           0        161        0.000           0.008      0
+N211  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: arguments could not be determined: 2: unbound variable
+N212  recoverable-with-capture  content+trash     NO    NO    yes   48          2        315        0.010           0.012      0
+N213  recoverable-with-capture  metadata          yes   yes   yes   0           13       112        0.007           0.039      0
+N214  recoverable                                 yes   yes   yes   0           0        102        0.000           0.009      0
+N215  recoverable-with-capture  trash             yes   yes   yes   0           4        237        0.007           0.017      0
+N216  recoverable                                 yes   yes   yes   0           0        101        0.000           0.008      0
+N217  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+N218  recoverable-with-capture  trash             yes   yes   yes   0           1        155        0.008           0.009      0
+N219  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N220  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N221  recoverable                                 yes   yes   yes   0           0        143        0.000           0.010      0
+N222  recoverable                                 yes   yes   yes   0           0        100        0.000           0.011      0
+N223  recoverable                                 yes   yes   yes   0           0        106        0.000           0.007      0
+N224  recoverable                                 yes   yes   yes   0           0        53         0.000           0.010      0
+N225  recoverable-with-capture  trash             yes   yes   yes   0           2        146        0.007           0.009      0
+N226  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+N227  recoverable-with-capture  metadata          yes   yes   yes   0           1        149        0.000           0.007      0
+N228  recoverable-with-capture  content           yes   yes   yes   50          1        103        0.000           0.008      0
+N229  recoverable                                 yes   yes   yes   0           0        152        0.000           0.007      0
+N230  recoverable                                 yes   yes   yes   0           0        98         0.000           0.007      0
+N231  recoverable                                 yes   yes   yes   0           0        108        0.000           0.008      0
+N232  recoverable                                 yes   yes   yes   0           0        152        0.000           0.009      0
+N233  recoverable                                 yes   yes   yes   0           0        392        0.000           0.008      0
+N234  recoverable                                 yes   yes   yes   0           0        154        0.000           0.008      0
+N235  recoverable                                 yes   yes   yes   0           0        158        0.009           0.010      0
+N236  recoverable                                 yes   yes   yes   0           0        53         0.000           0.010      0
+N237  recoverable                                 yes   yes   yes   0           0        156        0.000           0.008      0
+N238  recoverable                                 yes   yes   yes   0           0        152        0.008           0.008      0
+N239  recoverable                                 yes   yes   yes   0           0        100        0.000           0.191      0
+N240  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N241  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N242  recoverable                                 yes   yes   yes   0           0        53         0.008           0.008      0
+N243  recoverable                                 yes   yes   yes   0           0        53         0.001           0.009      0
+N244  recoverable                                 yes   yes   yes   0           0        114        0.000           0.007      0
+N245  recoverable                                 yes   yes   yes   0           0        150        0.000           0.010      0
+N246  recoverable                                 yes   yes   yes   0           0        158        0.000           0.009      0
+N247  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N248  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+N249  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N250  recoverable                                 yes   yes   yes   0           0        53         0.000           0.010      0
+N251  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N252  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N253  recoverable                                 yes   yes   yes   0           0        53         0.007           0.010      0
+N254  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: php runs arbitrary code; its effects are not modelled
+N255  recoverable                                 yes   yes   yes   0           0        100        0.000           0.010      0
+N256  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: perl runs arbitrary code; its effects are not modelled
+N257  recoverable                                 yes   yes   yes   0           0        106        0.008           0.026      0
+N258  recoverable-with-capture  content           yes   yes   yes   74          8        342        0.008           0.010      0
+N259  recoverable                                 yes   yes   yes   0           0        96         0.000           0.059      0
+N260  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N261  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: find arguments could not be determined: d: unbound variable
+N262  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N263  recoverable                                 yes   yes   yes   0           0        145        0.000           0.009      0
+N264  recoverable                                 yes   yes   yes   0           0        138        0.000           0.010      0
+N265  recoverable                                 yes   yes   yes   0           0        102        0.000           0.011      0
+N266  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N267  recoverable                                 yes   yes   yes   0           0        53         0.000           0.011      0
+N268  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N269  recoverable                                 yes   yes   yes   0           0        146        0.000           0.008      0
+N270  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+N271  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N272  recoverable                                 yes   yes   yes   0           0        205        0.000           0.008      0
+N273  recoverable-with-capture  metadata          yes   yes   yes   0           20       99         0.009           0.009      0
+N274  recoverable                                 yes   yes   yes   0           0        101        0.006           0.010      0
+N275  recoverable                                 yes   yes   yes   0           0        111        0.000           0.008      0
+N276  recoverable                                 yes   yes   yes   0           0        155        0.000           0.009      0
+N277  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N278  recoverable                                 yes   yes   yes   0           0        405        0.000           0.009      0
+N279  recoverable                                 yes   yes   yes   0           0        101        0.000           0.007      0
+N280  recoverable                                 yes   yes   yes   0           0        162        0.000           0.007      0
+N281  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N282  recoverable                                 yes   yes   yes   0           0        100        0.000           0.010      0
+N283  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N284  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: find arguments could not be determined: srch1: unbound variable
+N285  recoverable                                 yes   yes   yes   0           0        207        0.000           0.105      0
+N286  recoverable                                 yes   yes   yes   0           0        53         0.000           0.006      0
+N287  recoverable                                 yes   yes   yes   0           0        104        0.014           0.009      0
+N288  recoverable-with-capture  trash             yes   yes   yes   0           2        195        0.009           0.009      0
+N289  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N290  recoverable                                 yes   yes   yes   0           0        98         0.000           0.008      0
+N291  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N292  recoverable                                 yes   yes   yes   0           0        163        0.000           0.009      0
+N293  recoverable                                 yes   yes   yes   0           0        255        0.000           0.010      0
+N294  recoverable                                 yes   yes   yes   0           0        99         0.001           0.009      0
+N295  recoverable-with-capture  trash             yes   yes   yes   0           1        98         0.014           0.017      0
+N296  recoverable                                 yes   yes   yes   0           0        161        0.001           0.020      0
+N297  recoverable                                 yes   yes   yes   0           0        163        0.000           0.012      0
+N298  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command split
+N299  recoverable                                 yes   yes   yes   0           0        109        0.000           0.008      0
+N300  recoverable                                 yes   yes   yes   0           0        145        0.001           0.011      0
+N301  recoverable                                 yes   yes   yes   0           0        143        0.000           0.008      0
+N302  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N303  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command dos2unix
+N304  recoverable                                 yes   yes   yes   0           0        53         0.000           0.016      0
+N305  recoverable                                 yes   yes   yes   0           0        254        0.000           0.010      0
+N306  recoverable-with-capture  content           NO    NO    yes   44          1        145        0.000           0.007      0
+N307  recoverable                                 yes   yes   yes   0           0        238        0.000           0.009      0
+N308  recoverable                                 yes   yes   yes   0           0        98         0.000           0.008      0
+N309  recoverable                                 yes   yes   yes   0           0        145        0.000           0.008      0
+N310  recoverable                                 yes   yes   yes   0           0        53         0.000           0.011      0
+N311  recoverable                                 yes   yes   yes   0           0        97         0.000           0.008      0
+N312  recoverable                                 yes   yes   yes   0           0        98         0.000           0.008      0
+N313  recoverable                                 yes   yes   yes   0           0        195        0.001           0.010      0
+N314  recoverable                                 yes   yes   yes   0           0        152        0.001           0.010      0
+N315  recoverable                                 yes   yes   yes   0           0        152        0.008           0.008      0
+N316  recoverable-with-capture  content           yes   yes   yes   293         16       293        0.008           0.036      0
+N317  recoverable                                 yes   yes   yes   0           0        53         0.008           0.009      0
+N318  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command uuid
+N319  recoverable-with-capture  content           yes   yes   yes   49          1        102        0.000           0.008      0
+N320  recoverable                                 yes   yes   yes   0           0        110        0.000           0.009      0
+N321  recoverable                                 yes   yes   yes   0           0        146        0.000           0.011      0
+N322  recoverable                                 yes   yes   yes   0           0        209        0.000           0.008      0
+N323  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+N324  recoverable-with-capture  metadata          yes   yes   yes   0           12       53         0.008           0.011      0
+N325  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+N326  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+N327  recoverable                                 yes   yes   yes   0           0        216        0.000           0.011      0
+N328  recoverable-with-capture  trash             yes   yes   yes   0           2        53         0.007           0.010      0
+N329  recoverable-with-capture  metadata          yes   yes   yes   0           20       99         0.008           0.010      0
+N330  recoverable-with-capture  trash             yes   yes   yes   0           1        103        0.007           0.009      0
+N331  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: arguments could not be determined: UNDOFILE: unbound variable
+N332  recoverable-with-capture  trash             yes   yes   yes   0           2        189        0.009           0.009      0
+N333  recoverable-with-capture  metadata          yes   yes   yes   0           2        152        0.007           0.009      0
+N334  recoverable-with-capture  trash             yes   yes   yes   0           1        106        0.010           0.011      0
+N335  recoverable-with-capture  trash             yes   yes   yes   0           2        200        0.008           0.010      0
+N336  recoverable-with-capture  trash             yes   yes   yes   0           1        103        0.007           0.011      0
+N337  unrecoverable             content           skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command whatever
+N338  recoverable-with-capture  trash             yes   yes   yes   0           1        98         0.007           0.009      0
+N339  recoverable-with-capture  trash             yes   yes   yes   0           2        156        0.007           0.010      0
+N340  recoverable-with-capture  metadata          yes   yes   yes   0           3        237        0.009           0.010      0
+N341  recoverable-with-capture  metadata          yes   yes   yes   0           11       53         0.007           0.014      0
+N342  recoverable-with-capture  content+trash     yes   yes   yes   52          5        261        0.010           0.010      0
+N343  recoverable-with-capture  trash             NO    yes   yes   0           1        193        0.008           0.011      0
+N344  recoverable-with-capture  content           yes   yes   yes   51          1        293        0.009           0.012      0
+N345  recoverable-with-capture  trash             yes   yes   yes   0           2        53         0.007           0.008      0
+N346  recoverable-with-capture  content           yes   yes   yes   54          1        208        0.006           0.008      0
+N347  recoverable-with-capture  trash             yes   yes   yes   0           3        96         0.012           0.014      0
+N348  recoverable-with-capture  trash             yes   yes   yes   0           2        200        0.008           0.010      0
+N349  recoverable-with-capture  content           yes   yes   yes   50          1        222        0.000           0.029      0
+N350  recoverable-with-capture  content           yes   yes   yes   101         2        154        0.007           0.010      0
+N351  recoverable-with-capture  trash             yes   yes   yes   0           2        154        0.009           0.010      0
+N352  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: arguments could not be determined: f: unbound variable
+N353  recoverable-with-capture  content           yes   yes   yes   409         17       409        0.008           0.010      0
+N354  recoverable-with-capture  trash             yes   yes   yes   0           2        152        0.008           0.009      0
+N355  recoverable-with-capture  content           NO    NO    yes   56          1        247        0.008           0.010      0
+N356  recoverable-with-capture  metadata          yes   yes   yes   0           19       53         0.007           0.016      0
+N357  recoverable-with-capture  content           NO    NO    yes   49          1        150        0.000           0.008      0
+N358  recoverable-with-capture  trash             yes   yes   yes   0           1        117        0.006           0.009      0
+N359  recoverable-with-capture  metadata          yes   yes   yes   0           12       53         0.006           0.020      0
+N360  recoverable-with-capture  content           NO    NO    yes   45          1        282        0.010           0.010      0
+N361  recoverable-with-capture  content           NO    NO    yes   57          1        169        0.007           0.009      0
+N362  recoverable-with-capture  content           yes   yes   yes   48          1        144        0.000           0.013      0
+N363  recoverable-with-capture  content           yes   yes   yes   58          1        153        0.000           0.008      0
+N364  recoverable-with-capture  trash             yes   yes   yes   0           6        152        0.007           0.014      0
+N365  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: find arguments could not be determined: d: unbound variable
+N366  recoverable-with-capture  trash             yes   yes   yes   0           2        152        0.007           0.010      0
+N367  recoverable-with-capture  content           yes   yes   yes   56          1        261        0.000           0.009      0
+N368  recoverable-with-capture  trash             yes   yes   yes   0           2        53         0.008           0.009      0
+N369  recoverable-with-capture  content           yes   yes   yes   48          1        101        0.000           0.019      0
+N370  recoverable-with-capture  trash             yes   yes   yes   0           2        200        0.010           0.010      123
+N371  recoverable-with-capture  trash             yes   yes   yes   0           2        150        0.008           0.010      0
+N372  recoverable-with-capture  content           yes   yes   yes   53          1        156        0.000           0.008      0
+N373  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unrecoverable: shred destroys content on purpose
+N374  unrecoverable             trash             skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unrecoverable: removes the directory it runs in, which cannot be captured beforehand
+N375  recoverable-with-capture  metadata          yes   yes   yes   0           12       53         0.008           0.022      0
+N376  recoverable-with-capture  content           yes   yes   yes   45          1        189        0.009           0.010      0
+N377  recoverable-with-capture  content           yes   yes   yes   47          1        210        0.000           0.008      0
+N378  recoverable-with-capture  trash             yes   yes   yes   0           2        152        0.006           0.011      0
+N379  recoverable-with-capture  metadata          yes   yes   yes   0           2        152        0.008           0.014      0
+N380  recoverable-with-capture  content           NO    NO    yes   56          1        205        0.009           0.010      0
+N381  unrecoverable             content           skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command update-client
+N382  recoverable-with-capture  trash             yes   yes   yes   0           12       53         0.007           0.019      0
+N383  recoverable-with-capture  content           yes   yes   yes   51          1        148        0.009           0.013      0
+N384  recoverable-with-capture  metadata          yes   yes   yes   0           12       53         0.007           0.020      0
+N385  unrecoverable             content           skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command progam.sh
+N386  recoverable-with-capture  trash             yes   yes   yes   0           6        152        0.007           0.008      0
+N387  recoverable-with-capture  content           yes   yes   yes   51          1        201        0.000           0.009      0
+N388  recoverable-with-capture  content           yes   yes   yes   52          1        492        0.053           0.055      0
+N389  recoverable-with-capture  metadata          yes   yes   yes   0           19       53         0.007           0.026      0
+N390  recoverable-with-capture  trash             yes   yes   yes   0           14       105        0.009           0.009      0
+N391  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: arguments could not be determined: 1: unbound variable
+N392  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: rsync option that changes the source or runs a remote command
+N393  recoverable-with-capture  content+trash     yes   yes   yes   46          2        205        0.007           0.010      0
+N394  recoverable-with-capture  trash             yes   yes   yes   0           1        155        0.008           0.010      0
+N395  unrecoverable             content           skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: runs ./a by path, which is not modelled
+N396  recoverable-with-capture  trash             yes   yes   yes   0           2        152        0.006           0.010      0
+N397  recoverable-with-capture  content           yes   yes   yes   63          1        172        0.052           0.053      0
+N398  recoverable-with-capture  content           yes   yes   yes   49          1        375        0.008           0.010      0
+N399  recoverable-with-capture  trash             yes   yes   yes   0           3        195        0.008           0.009      0
+N400  recoverable-with-capture  trash             yes   yes   yes   0           2        195        0.008           0.009      0
+N401  recoverable-with-capture  trash             yes   yes   yes   0           3        195        0.009           0.011      0
+N402  recoverable-with-capture  content           yes   yes   yes   230         15       230        0.007           0.029      0
+N403  unrecoverable             content           skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command cpio
+N404  recoverable-with-capture  content           yes   yes   yes   54          1        152        0.008           0.012      0
+N405  recoverable-with-capture  trash             yes   yes   yes   0           2        53         0.007           0.008      0
+N406  recoverable-with-capture  metadata          yes   yes   yes   0           2        198        0.008           0.009      0
+N407  recoverable-with-capture  trash             yes   yes   yes   0           2        189        0.009           0.017      0
+N408  recoverable-with-capture  metadata          yes   yes   yes   0           12       53         0.009           0.019      0
+N409  unrecoverable             content           skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: runs ./program by path, which is not modelled
+N410  recoverable-with-capture  trash             yes   yes   yes   0           12       53         0.007           0.026      0
+N411  recoverable-with-capture  trash             yes   yes   yes   0           1        147        0.000           0.007      0
+N412  recoverable-with-capture  content           yes   yes   yes   299         16       299        0.008           0.032      0
+N413  recoverable-with-capture  metadata          yes   yes   yes   0           20       99         0.008           0.012      0
+N414  recoverable-with-capture  trash             yes   yes   yes   0           2        195        0.008           0.009      0
+N415  recoverable-with-capture  metadata          yes   yes   yes   0           13       108        0.008           0.011      0
+N416  recoverable-with-capture  trash             yes   yes   yes   0           2        204        0.009           0.009      0
+N417  recoverable-with-capture  metadata          yes   yes   yes   0           12       53         0.006           0.019      0
+N418  recoverable-with-capture  trash             yes   yes   yes   0           1        106        0.007           0.013      0
+N419  unrecoverable             content           skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command someCommand
+N420  recoverable-with-capture  trash             yes   yes   yes   0           1        98         0.006           0.008      0
+N421  recoverable-with-capture  metadata          yes   yes   yes   0           19       53         0.009           0.011      0
+N422  recoverable-with-capture  content           yes   yes   yes   51          1        104        0.001           0.008      0
+N423  recoverable-with-capture  trash             yes   yes   yes   0           2        195        0.012           0.013      123
+N424  recoverable-with-capture  trash             yes   yes   yes   0           2        162        0.007           0.008      0
+N425  recoverable-with-capture  content           yes   yes   yes   55          1        390        0.054           0.053      0
+N426  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: unknown command pv
+N427  recoverable-with-capture  metadata          yes   yes   yes   0           2        111        0.008           0.008      0
+N428  recoverable-with-capture  metadata          yes   yes   yes   0           19       53         0.007           0.015      0
+N429  recoverable-with-capture  trash             yes   yes   yes   0           1        98         0.010           0.008      0
+N430  recoverable-with-capture  content           yes   yes   yes   52          1        105        0.000           0.009      0
+N431  recoverable-with-capture  trash             yes   yes   yes   0           2        150        0.007           0.011      0
+N432  recoverable-with-capture  trash             yes   yes   yes   0           5        239        0.007           0.012      0
+N433  recoverable-with-capture  trash             yes   yes   yes   0           1        98         0.007           0.011      0
+N434  recoverable-with-capture  content           yes   yes   yes   348         17       348        0.009           0.010      0
+N435  recoverable-with-capture  content           yes   yes   yes   64          1        260        0.008           0.010      0
+N436  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: perl runs arbitrary code; its effects are not modelled
+N437  recoverable-with-capture  metadata          yes   yes   yes   0           12       53         0.007           0.019      0
+N438  recoverable-with-capture  content           yes   yes   yes   55          1        162        0.053           0.058      0
+N439  recoverable-with-capture  trash             yes   yes   yes   0           2        156        0.006           0.010      0
+N440  recoverable-with-capture  content           NO    NO    yes   57          1        169        0.006           0.010      0
+N441  recoverable-with-capture  metadata          yes   yes   yes   0           2        106        0.007           0.009      0
+N442  recoverable-with-capture  trash             yes   yes   yes   0           1        98         0.009           0.008      0
+N443  recoverable-with-capture  trash             yes   yes   yes   0           13       95         0.007           0.024      0
+N444  recoverable-with-capture  metadata          yes   yes   yes   0           2        109        0.007           0.008      0
+N445  recoverable-with-capture  trash             yes   yes   yes   0           1        98         0.007           0.009      0
+N446  recoverable-with-capture  content           yes   yes   yes   48          1        101        0.000           0.008      0
+N447  recoverable-with-capture  trash             yes   yes   yes   0           1        177        0.000           0.007      0
+N448  recoverable-with-capture  content           yes   yes   yes   58          1        111        0.000           0.011      0
+N449  recoverable-with-capture  trash             yes   yes   yes   0           1        150        0.008           0.010      0
+N450  recoverable-with-capture  trash             yes   yes   yes   0           2        195        0.012           0.010      0
+T001  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+T002  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T003  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.008      1
+T004  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.008      0
+T005  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T006  recoverable-with-capture  trash             yes   yes   yes   0           6        152        0.007           0.017      0
+T007  recoverable-with-capture  content           yes   yes   yes   4           1        53         0.000           0.006      0
+T008  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.007           0.009      0
+T009  recoverable                                 yes   yes   yes   0           0        53         0.008           0.008      0
+T010  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: xargs reads input from somewhere the analysis cannot see
+T011  recoverable-with-capture  metadata          yes   yes   yes   0           1        99         0.000           0.008      0
+T012  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T013  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T014  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.008      0
+T015  recoverable                                 yes   yes   yes   0           0        191        0.008           0.013      0
+T016  recoverable-with-capture  trash             yes   yes   yes   0           2        109        0.000           0.008      0
+T017  recoverable-with-capture  content           yes   yes   yes   4           1        96         0.000           0.008      0
+T018  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T019  recoverable-with-capture  trash             yes   yes   yes   0           3        195        0.008           0.008      0
+T020  recoverable-with-capture  content           yes   yes   yes   10          3        53         0.001           0.007      0
+T021  recoverable                                 yes   yes   yes   0           0        98         0.008           0.012      0
+T022  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.008      0
+T023  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T024  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: the awk program writes files or runs commands
+T025  recoverable-with-capture  trash             yes   yes   yes   0           5        195        0.009           0.010      0
+T026  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T027  recoverable-with-capture  content+trash     yes   yes   yes   49          2        202        0.000           0.014      0
+T028  recoverable-with-capture  content+trash     yes   yes   yes   49          2        199        0.000           0.011      0
+T029  recoverable-with-capture  metadata          yes   yes   yes   0           1        53         0.000           0.007      0
+T030  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+T031  recoverable-with-capture  content           yes   yes   yes   8           1        212        0.000           0.008      0
+T032  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T033  recoverable-with-capture  trash             NO    yes   yes   0           1        106        0.000           0.011      0
+T034  recoverable-with-capture  trash             yes   yes   yes   0           1        109        0.000           0.007      0
+T035  recoverable                                 yes   yes   yes   0           0        53         0.001           0.010      0
+T036  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      1
+T037  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.000           0.008      0
+T038  recoverable-with-capture  trash             yes   yes   yes   0           6        195        0.009           0.010      0
+T039  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T040  recoverable-with-capture  metadata          yes   yes   yes   0           12       53         0.007           0.009      0
+T041  recoverable-with-capture  trash             yes   yes   yes   0           3        179        0.008           0.008      0
+T042  recoverable                                 yes   yes   yes   0           0        148        0.000           0.012      0
+T043  recoverable-with-capture  trash             NO    yes   yes   0           1        98         0.000           0.009      0
+T044  recoverable-with-capture  content+trash     NO    yes   yes   56          2        162        0.052           0.054      0
+T045  recoverable                                 yes   yes   yes   0           0        108        0.000           0.007      0
+T046  recoverable-with-capture  trash             yes   yes   yes   0           1        159        0.000           0.008      0
+T047  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.000           0.008      0
+T048  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.008      0
+T049  recoverable-with-capture  trash             NO    yes   yes   0           1        106        0.001           0.011      0
+T050  recoverable-with-capture  trash             NO    yes   yes   0           1        160        0.000           0.009      0
+T051  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: python3 runs arbitrary code; its effects are not modelled
+T052  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.000           0.011      0
+T053  recoverable-with-capture  trash             yes   yes   yes   0           6        152        0.007           0.011      0
+T054  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+T055  recoverable-with-capture  trash             yes   yes   yes   0           1        108        0.000           0.007      0
+T056  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.001           0.007      0
+T057  recoverable-with-capture  trash             yes   yes   yes   0           3        191        0.008           0.010      0
+T058  recoverable-with-capture  trash             yes   yes   yes   0           3        154        0.007           0.011      0
+T059  recoverable-with-capture  content           yes   yes   yes   50          1        146        0.000           0.008      0
+T060  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.008      0
+T061  recoverable-with-capture  content           NO    NO    yes   2           1        53         0.000           0.009      0
+T062  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.009      0
+T063  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.000           0.008      0
+T064  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+T065  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.009      0
+T066  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T067  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: perl runs arbitrary code; its effects are not modelled
+T068  recoverable-with-capture  trash             yes   yes   yes   0           1        106        0.000           0.007      0
+T069  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T070  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: perl runs arbitrary code; its effects are not modelled
+T071  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: creates files inside the tree it is searching, so the set of matches changes while it runs
+T072  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T073  recoverable-with-capture  content           yes   yes   yes   8           1        53         0.000           0.006      0
+T074  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.000           0.010      0
+T075  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T076  recoverable-with-capture  content           yes   yes   yes   4           1        53         0.000           0.008      0
+T077  recoverable                                 yes   yes   yes   0           0        152        0.000           0.008      0
+T078  recoverable-with-capture  content           yes   yes   yes   56          1        208        0.000           0.007      0
+T079  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T080  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+T081  recoverable-with-capture  content           yes   yes   yes   4           1        53         0.000           0.007      0
+T082  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: the awk program writes files or runs commands
+T083  recoverable-with-capture  content           yes   yes   yes   50          1        146        0.000           0.009      0
+T084  recoverable-with-capture  metadata          yes   yes   yes   0           1        53         0.000           0.007      0
+T085  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+T086  recoverable                                 yes   yes   yes   0           0        148        0.000           0.008      0
+T087  recoverable-with-capture  trash             yes   yes   yes   0           5        152        0.007           0.013      0
+T088  recoverable-with-capture  metadata          yes   yes   yes   0           1        99         0.000           0.008      0
+T089  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.006           0.009      0
+T090  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T091  recoverable                                 yes   yes   yes   0           0        53         0.008           0.008      0
+T092  recoverable-with-capture  trash             NO    yes   yes   0           1        164        0.001           0.009      0
+T093  recoverable-with-capture  trash             yes   yes   yes   0           2        152        0.008           0.010      0
+T094  recoverable-with-capture  metadata          yes   yes   yes   0           1        99         0.001           0.018      0
+T095  recoverable                                 yes   yes   yes   0           0        53         0.000           0.031      0
+T096  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: xargs reads input from somewhere the analysis cannot see
+T097  recoverable-with-capture  content           yes   yes   yes   6           1        95         0.000           0.008      0
+T098  recoverable-with-capture  content           yes   yes   yes   2           1        53         0.001           0.006      0
+T099  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.009      0
+T100  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T101  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: python3 runs arbitrary code; its effects are not modelled
+T102  recoverable-with-capture  trash             yes   yes   yes   0           1        107        0.000           0.008      0
+T103  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T104  recoverable-with-capture  content           yes   yes   yes   8           1        53         0.000           0.007      0
+T105  recoverable                                 yes   yes   yes   0           0        53         0.000           0.010      0
+T106  recoverable                                 NO    NO    yes   0           0        53         0.000           0.007      0
+T107  recoverable                                 yes   yes   yes   0           0        137        0.000           0.007      0
+T108  recoverable-with-capture  content           yes   yes   yes   97          3        307        0.007           0.012      0
+T109  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.000           0.008      0
+T110  recoverable-with-capture  content           yes   yes   yes   8           1        53         0.000           0.007      0
+T111  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.008      0
+T112  recoverable-with-capture  content+trash     yes   yes   yes   49          2        200        0.001           0.011      0
+T113  recoverable-with-capture  trash             yes   yes   yes   0           2        151        0.009           0.009      0
+T114  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unrecoverable: shred destroys content on purpose
+T115  recoverable-with-capture  content           yes   yes   yes   6           1        53         0.000           0.007      0
+T116  recoverable-with-capture  content           yes   yes   yes   2           1        53         0.000           0.008      0
+T117  recoverable-with-capture  content           yes   yes   yes   2           1        96         0.000           0.006      0
+T118  recoverable-with-capture  content           NO    NO    yes   2           1        53         0.000           0.008      0
+T119  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: find arguments could not be determined: RANDOM: unbound variable
+T120  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unrecoverable: shred destroys content on purpose
+T121  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+T122  recoverable-with-capture  metadata          yes   yes   yes   0           1        53         0.000           0.009      0
+T123  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.000           0.008      0
+T124  recoverable-with-capture  content           yes   yes   yes   2           1        53         0.000           0.008      0
+T125  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T126  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unrecoverable: shred destroys content on purpose
+T127  unrecoverable             trash             skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: creates files inside the tree it is searching, so the set of matches changes while it runs
+T128  recoverable                                 NO    NO    yes   0           0        53         0.000           0.008      0
+T129  recoverable-with-capture  trash             yes   yes   yes   0           15       144        0.001           0.008      0
+T130  recoverable-with-capture  content           yes   yes   yes   4           1        53         0.000           0.009      0
+T131  recoverable-with-capture  trash             yes   yes   yes   0           1        98         0.012           0.013      123
+T132  recoverable-with-capture  content           yes   yes   yes   56          1        152        0.000           0.008      0
+T133  recoverable-with-capture  content           yes   yes   yes   8           1        53         0.000           0.007      0
+T134  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.008           0.009      0
+T135  recoverable-with-capture  content           yes   yes   yes   8           1        96         0.000           0.006      0
+T136  recoverable                                 yes   yes   yes   0           0        203        0.007           0.014      0
+T137  recoverable-with-capture  content           yes   yes   yes   2           1        53         0.000           0.010      0
+T138  recoverable                                 yes   yes   yes   0           0        217        0.067           0.071      0
+T139  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T140  recoverable                                 yes   yes   yes   0           0        152        0.000           0.012      0
+T141  recoverable-with-capture  content           yes   yes   yes   4           1        53         0.000           0.007      0
+T142  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T143  recoverable-with-capture  content+trash     yes   yes   yes   49          2        102        0.000           0.010      0
+T144  recoverable                                 yes   yes   yes   0           0        154        0.000           0.011      0
+T145  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T146  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T147  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      2
+T148  recoverable-with-capture  trash             yes   yes   yes   0           1        98         0.008           0.009      123
+T149  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T150  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: xargs reads input from somewhere the analysis cannot see
+T151  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      2
+T152  recoverable-with-capture  trash             NO    yes   yes   0           3        106        0.000           0.012      0
+T153  recoverable-with-capture  trash             yes   yes   yes   0           2        108        0.000           0.008      0
+T154  recoverable                                 yes   yes   yes   0           0        53         0.000           0.010      0
+T155  unrecoverable             trash             skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: creates files inside the tree it is searching, so the set of matches changes while it runs
+T156  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.009      0
+T157  recoverable-with-capture  trash             yes   yes   yes   0           3        154        0.008           0.009      0
+T158  recoverable                                 yes   yes   yes   0           0        197        0.008           0.013      0
+T159  recoverable                                 yes   yes   yes   0           0        53         0.001           0.006      0
+T160  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: python3 runs arbitrary code; its effects are not modelled
+T161  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      2
+T162  recoverable-with-capture  trash             NO    yes   yes   0           1        166        0.000           0.009      0
+T163  recoverable                                 yes   yes   yes   0           0        235        0.000           0.010      0
+T164  recoverable-with-capture  trash             yes   yes   yes   0           2        149        0.008           0.009      0
+T165  recoverable                                 yes   yes   yes   0           0        239        0.000           0.010      0
+T166  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T167  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: opaque: the awk program writes files or runs commands
+T168  recoverable-with-capture  trash             yes   yes   yes   0           3        195        0.008           0.009      0
+T169  recoverable                                 NO    NO    yes   0           0        164        0.000           0.007      0
+T170  recoverable                                 NO    NO    yes   0           0        166        0.000           0.008      0
+T171  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T172  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.008      0
+T173  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.000           0.008      0
+T174  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.000           0.008      0
+T175  recoverable-with-capture  content+git-head  yes   yes   yes   10          2        179        0.012           0.010      0
+T176  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T177  recoverable-with-capture  inverse           NO    NO    yes   0           0        230        0.006           0.008      0
+T178  recoverable-with-capture  trash             yes   yes   yes   0           6        152        0.009           0.010      0
+T179  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T180  recoverable                                 yes   yes   yes   0           0        99         0.008           0.008      0
+T181  recoverable-with-capture  trash             yes   yes   yes   0           1        108        0.000           0.007      0
+T182  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.008      0
+T183  recoverable                                 yes   yes   yes   0           0        241        0.000           0.011      0
+T184  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: creates files inside the tree it is searching, so the set of matches changes while it runs
+T185  recoverable-with-capture  content+trash     yes   yes   yes   49          2        199        0.000           0.012      0
+T186  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+T187  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.000           0.008      0
+T188  recoverable-with-capture  content           yes   yes   yes   107         3        311        0.007           0.012      0
+T189  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T190  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: find arguments could not be determined: RANDOM: unbound variable
+T191  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T192  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: find arguments could not be determined: RANDOM: unbound variable
+T193  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T194  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.010      0
+T195  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T196  recoverable-with-capture  trash             yes   yes   yes   0           5        195        0.009           0.010      0
+T197  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.008           0.009      0
+T198  recoverable-with-capture  content           yes   yes   yes   52          1        148        0.000           0.008      0
+T199  recoverable-with-capture  trash             yes   yes   yes   0           1        106        0.000           0.008      0
+T200  recoverable                                 NO    NO    yes   0           0        168        0.000           0.008      0
+T201  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T202  recoverable-with-capture  metadata          yes   yes   yes   0           1        53         0.000           0.007      0
+T203  recoverable-with-capture  content+inverse   NO    NO    yes   10          1        179        0.007           0.016      0
+T204  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.000           0.009      0
+T205  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T206  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+T207  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: xargs reads input from somewhere the analysis cannot see
+T208  recoverable-with-capture  content           yes   yes   yes   6           1        53         0.000           0.008      0
+T209  recoverable-with-capture  content           yes   yes   yes   57          1        210        0.000           0.007      0
+T210  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: creates files inside the tree it is searching, so the set of matches changes while it runs
+T211  recoverable-with-capture  content           yes   yes   yes   2           1        53         0.000           0.008      0
+T212  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.007      0
+T213  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.000           0.008      0
+T214  unrecoverable                               skip  skip  skip  -           -        -          -               -          unrecoverable, not executed: unresolved: find arguments could not be determined: RANDOM: unbound variable
+T215  recoverable                                 yes   yes   yes   0           0        99         0.008           0.008      0
+T216  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.008           0.010      0
+T217  recoverable                                 yes   yes   yes   0           0        53         0.000           0.008      0
+T218  recoverable                                 yes   yes   yes   0           0        203        0.007           0.011      0
+T219  recoverable                                 yes   yes   yes   0           0        152        0.000           0.008      0
+T220  recoverable-with-capture  trash             yes   yes   yes   0           1        106        0.000           0.007      0
+T221  recoverable-with-capture  trash             yes   yes   yes   0           1        160        0.000           0.008      0
+T222  recoverable-with-capture  trash             yes   yes   yes   0           3        53         0.000           0.011      0
+T223  recoverable                                 yes   yes   yes   0           0        53         0.008           0.008      0
+T224  recoverable-with-capture  trash             yes   yes   yes   0           3        107        0.000           0.008      0
+T225  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.008      0
+T226  recoverable                                 yes   yes   yes   0           0        195        0.008           0.017      0
+T227  recoverable-with-capture  content           yes   yes   yes   6           1        53         0.000           0.007      0
+T228  recoverable-with-capture  content           yes   yes   yes   4           1        53         0.000           0.007      0
+T229  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.008      0
+T230  recoverable                                 yes   yes   yes   0           0        53         0.000           0.010      0
+T231  recoverable                                 yes   yes   yes   0           0        53         0.000           0.009      0
+T232  recoverable-with-capture  content           yes   yes   yes   8           1        53         0.000           0.009      0
+T233  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.010      2
+T234  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.000           0.014      0
+T235  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.001           0.035      0
+T236  recoverable-with-capture  content           yes   yes   yes   4           1        53         0.000           0.015      0
+T237  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.001           0.029      0
+T238  recoverable                                 yes   yes   yes   0           0        96         0.000           0.029      0
+T239  recoverable-with-capture  trash             yes   yes   yes   0           1        53         0.000           0.010      0
+T240  recoverable-with-capture  content           yes   yes   yes   4           1        53         0.000           0.009      0
+T241  recoverable-with-capture  trash             yes   yes   yes   0           1        96         0.000           0.008      0
+T242  recoverable-with-capture  trash             yes   yes   yes   0           5        152        0.007           0.008      0
+T243  recoverable-with-capture  content+trash     yes   yes   yes   49          2        102        0.000           0.009      0
+T244  recoverable-with-capture  content+trash     yes   yes   yes   48          3        101        0.000           0.009      0
+T245  recoverable                                 yes   yes   yes   0           0        53         0.000           0.007      0
+T246  recoverable-with-capture  trash             yes   yes   yes   0           3        154        0.009           0.008      0
+T247  recoverable-with-capture  content           yes   yes   yes   10          1        182        0.008           0.008      0
+
+SUMMARY
+  cases: 697 total, 631 executed, 66 skipped (unrecoverable verdict, or no sandbox)
+  recovered exactly, V1 (production-equivalent undo): 603/631 = 96%
+  recovered exactly, V2 (captures + directory-diff):  612/631 = 97%
+  recovered exactly, V3 (internal/gate entry alone):  630/631 = 100%
+  storage overhead vs a full copy of the fixture, over 304 capture cases: median 0.0000%, max 100.0000% (N190)
+  modification times are not compared; inside .git only HEAD and refs/ are.
+
+FAILURES (V1, V2 or V3 not exact), with the reproduction
+
+N016  class=recoverable plan=
+  setup:   
+  command: mkdir -p x/p/q
+  V1 differences: extra x; extra x/p; extra x/p/q
+  V1 errors: undo: removing x/p: remove /tmp/rc-fix-2381487820/x/p: directory not empty; undo: removing x: remove /tmp/rc-fix-2381487820/x: directory not empty
+  V2 differences: extra x; extra x/p; extra x/p/q
+  V2 errors: undo: removing x/p: remove /tmp/rc-fix-3128562980/x/p: directory not empty; undo: removing x: remove /tmp/rc-fix-3128562980/x: directory not empty
+  V3: exact
+
+N024  class=recoverable plan=
+  setup:   
+  command: rsync -ur dir_a dir_b && rsync -ur dir_b dir_a
+  V1 differences: extra dir_a/dir_b; extra dir_a/dir_b/dir_a; extra dir_a/dir_b/dir_a/item.txt; extra dir_a/dir_b/item.txt; extra dir_b/dir_a; extra dir_b/dir_a/item.txt
+  V1 errors: undo: removing dir_b/dir_a: remove /tmp/rc-fix-544551654/dir_b/dir_a: directory not empty; undo: removing dir_a/dir_b: remove /tmp/rc-fix-544551654/dir_a/dir_b: directory not empty
+  V2 differences: extra dir_a/dir_b; extra dir_a/dir_b/dir_a; extra dir_a/dir_b/dir_a/item.txt; extra dir_a/dir_b/item.txt; extra dir_b/dir_a; extra dir_b/dir_a/item.txt
+  V2 errors: undo: removing dir_b/dir_a: remove /tmp/rc-fix-3141868475/dir_b/dir_a: directory not empty; undo: removing dir_a/dir_b: remove /tmp/rc-fix-3141868475/dir_a/dir_b: directory not empty
+  V3 differences: extra dir_a/dir_b; extra dir_a/dir_b/dir_a; extra dir_a/dir_b/dir_a/item.txt
+  V3 errors: undo: removing dir_a/dir_b: remove /tmp/rc-fix-636864330/dir_a/dir_b: directory not empty
+
+N212  class=recoverable-with-capture plan=content+trash
+  setup:   
+  command: find . -name '*.ISOLATE.*.txt' -maxdepth 1 -print0 | xargs -0 -IFILE mv FILE ./ISOLATE
+  V1 differences: missing alpha.ISOLATE.alpha.txt
+  V2 differences: missing alpha.ISOLATE.alpha.txt
+  V3: exact
+
+N306  class=recoverable-with-capture plan=content
+  setup:   
+  command: mv -T www_new www
+  V2 differences: missing www_new
+  V3: exact
+  V1 differences: missing www_new
+
+N343  class=recoverable-with-capture plan=trash
+  setup:   
+  command: find . -name "*.sh" -print0 | xargs -0 -I {} mv {} ~/back.scripts
+  V1 differences: missing alpha.sh; extra home/back.scripts
+  V2: exact
+  V3: exact
+
+N355  class=recoverable-with-capture plan=content
+  setup:   
+  command: find . -name some_pattern -print0 | xargs -0 -I % mv % target_location
+  V2 differences: missing some_pattern
+  V3: exact
+  V1 differences: missing some_pattern
+
+N357  class=recoverable-with-capture plan=content
+  setup:   
+  command: mv Tux.png .Tux.png
+  V1 differences: missing Tux.png
+  V2 differences: missing Tux.png
+  V3: exact
+
+N360  class=recoverable-with-capture plan=content
+  setup:   
+  command: find . -maxdepth 1 -type f -name '\.*' | sed -e 's,^\./\.,,' | sort | xargs -iname mv .name name
+  V1 differences: missing .name
+  V2 differences: missing .name
+  V3: exact
+
+N361  class=recoverable-with-capture plan=content
+  setup:   
+  command: find sourceDir -mindepth 1 -maxdepth 1 -exec mv --target-directory=destDir '{}' +
+  V1 differences: missing sourceDir/item.txt
+  V2 differences: missing sourceDir/item.txt
+  V3: exact
+
+N380  class=recoverable-with-capture plan=content
+  setup:   
+  command: find . -name some_pattern -print0 | xargs -0 -i mv {} target_location
+  V3: exact
+  V1 differences: missing some_pattern
+  V2 differences: missing some_pattern
+
+N440  class=recoverable-with-capture plan=content
+  setup:   
+  command: find sourceDir -mindepth 1 -exec mv "{}" --target-directory=destDir \;
+  V1 differences: missing sourceDir/item.txt
+  V2 differences: missing sourceDir/item.txt
+  V3: exact
+
+T033  class=recoverable-with-capture plan=trash
+  setup:   
+  command: mkdir -p out && cp *.log out/ && rm *.log
+  V1 differences: extra out/big.log
+  V2: exact
+  V3: exact
+
+T043  class=recoverable-with-capture plan=trash
+  setup:   
+  command: touch new1 new2 && rm new1
+  V1 differences: extra new2
+  V2: exact
+  V3: exact
+
+T044  class=recoverable-with-capture plan=content+trash
+  setup:   
+  command: rsync -a --delete src/ backup/
+  V1 differences: extra backup/main.go
+  V2: exact
+  V3: exact
+
+T049  class=recoverable-with-capture plan=trash
+  setup:   
+  command: mkdir -p out && cp *.conf out/ && rm *.conf
+  V1 differences: extra out/app.conf
+  V2: exact
+  V3: exact
+
+T050  class=recoverable-with-capture plan=trash
+  setup:   
+  command: cp -r src src2 && rm -r src
+  V1 differences: extra src2/src; extra src2/src/item.txt; extra src2/src/main.go
+  V2: exact
+  V3: exact
+
+T061  class=recoverable-with-capture plan=content
+  setup:   
+  command: mv a.txt b.txt; mv notes.txt a.txt
+  V1 differences: content a.txt; missing notes.txt
+  V2 differences: content a.txt; missing notes.txt
+  V3: exact
+
+T092  class=recoverable-with-capture plan=trash
+  setup:   
+  command: cp -r build build2 && rm -r build
+  V2: exact
+  V3: exact
+  V1 differences: extra build2/build; extra build2/build/item.txt; extra build2/build/out.o
+
+T106  class=recoverable plan=
+  setup:   
+  command: mkdir -p tmp/deep/er
+  V1 differences: extra tmp/deep; extra tmp/deep/er
+  V1 errors: undo: removing tmp/deep: remove /tmp/rc-fix-3150721650/tmp/deep: directory not empty
+  V2 differences: extra tmp/deep; extra tmp/deep/er
+  V2 errors: undo: removing tmp/deep: remove /tmp/rc-fix-2344145433/tmp/deep: directory not empty
+  V3: exact
+
+T118  class=recoverable-with-capture plan=content
+  setup:   
+  command: mv a.txt b.txt
+  V1 differences: missing a.txt
+  V2 differences: missing a.txt
+  V3: exact
+
+T128  class=recoverable plan=
+  setup:   
+  command: mkdir -p logs/deep/er
+  V1 differences: extra logs/deep; extra logs/deep/er
+  V1 errors: undo: removing logs/deep: remove /tmp/rc-fix-825105540/logs/deep: directory not empty
+  V2 differences: extra logs/deep; extra logs/deep/er
+  V2 errors: undo: removing logs/deep: remove /tmp/rc-fix-1404041100/logs/deep: directory not empty
+  V3: exact
+
+T152  class=recoverable-with-capture plan=trash
+  setup:   
+  command: mkdir -p out && cp *.txt out/ && rm *.txt
+  V1 differences: extra out/a.txt; extra out/b.txt; extra out/notes.txt
+  V2: exact
+  V3: exact
+
+T162  class=recoverable-with-capture plan=trash
+  setup:   
+  command: cp -r backup backup2 && rm -r backup
+  V1 differences: extra backup2/backup; extra backup2/backup/item.txt; extra backup2/backup/old.txt
+  V2: exact
+  V3: exact
+
+T169  class=recoverable plan=
+  setup:   
+  command: cp -r tmp tmp_copy
+  V1 differences: extra tmp_copy/tmp; extra tmp_copy/tmp/item.txt
+  V1 errors: undo: removing tmp_copy/tmp: remove /tmp/rc-fix-2134899900/tmp_copy/tmp: directory not empty
+  V2 differences: extra tmp_copy/tmp; extra tmp_copy/tmp/item.txt
+  V2 errors: undo: removing tmp_copy/tmp: remove /tmp/rc-fix-4012469694/tmp_copy/tmp: directory not empty
+  V3: exact
+
+T170  class=recoverable plan=
+  setup:   
+  command: cp -r logs logs_copy
+  V1 differences: extra logs_copy/logs; extra logs_copy/logs/item.txt; extra logs_copy/logs/x.log; extra logs_copy/logs/y.log
+  V1 errors: undo: removing logs_copy/logs: remove /tmp/rc-fix-3338973203/logs_copy/logs: directory not empty
+  V2 differences: extra logs_copy/logs; extra logs_copy/logs/item.txt; extra logs_copy/logs/x.log; extra logs_copy/logs/y.log
+  V2 errors: undo: removing logs_copy/logs: remove /tmp/rc-fix-3126624188/logs_copy/logs: directory not empty
+  V3: exact
+
+T177  class=recoverable-with-capture plan=inverse
+  setup:   git init -q && git add -A && git -c user.email=t@t -c user.name=t commit -qm init && echo changed >> a.txt && echo scratch > untracked.txt
+  command: git checkout -b feature
+  V1 differences: content .git/HEAD; extra .git/refs/heads/feature
+  V2 differences: content .git/HEAD; extra .git/refs/heads/feature
+  V3: exact
+
+T200  class=recoverable plan=
+  setup:   
+  command: cp -r build build_copy
+  V1 differences: extra build_copy/build; extra build_copy/build/item.txt; extra build_copy/build/out.o
+  V1 errors: undo: removing build_copy/build: remove /tmp/rc-fix-1765006268/build_copy/build: directory not empty
+  V2 differences: extra build_copy/build; extra build_copy/build/item.txt; extra build_copy/build/out.o
+  V2 errors: undo: removing build_copy/build: remove /tmp/rc-fix-2648754082/build_copy/build: directory not empty
+  V3: exact
+
+T203  class=recoverable-with-capture plan=content+inverse
+  setup:   git init -q && git add -A && git -c user.email=t@t -c user.name=t commit -qm init && echo changed >> a.txt && echo scratch > untracked.txt
+  command: git stash
+  V1 differences: extra .git/refs/stash
+  V2 differences: extra .git/refs/stash
+  V3: exact
+
+SKIPPED
+  N007: unrecoverable, not executed: unresolved: arguments could not be determined: f: unbound variable
+  N008: unrecoverable, not executed: unresolved: arguments could not be determined: 1: unbound variable
+  N017: unrecoverable, not executed: opaque: unknown command iconv
+  N028: unrecoverable, not executed: opaque: perl runs arbitrary code; its effects are not modelled
+  N043: unrecoverable, not executed: opaque: unknown command lshw
+  N055: unrecoverable, not executed: unresolved: creates files inside the tree it is searching, so the set of matches changes while it runs
+  N058: unrecoverable, not executed: opaque: unknown command make
+  N083: unrecoverable, not executed: opaque: runs ./generate_commands by path, which is not modelled
+  N093: unrecoverable, not executed: opaque: unknown command split
+  N096: unrecoverable, not executed: unrecoverable: executes code piped in from another command
+  N110: unrecoverable, not executed: opaque: unknown command bind
+  N116: unrecoverable, not executed: unrecoverable: executes code piped in from another command
+  N125: unrecoverable, not executed: opaque: runs /path/to/my/script by path, which is not modelled
+  N134: unrecoverable, not executed: opaque: unknown command split
+  N143: unrecoverable, not executed: opaque: perl runs arbitrary code; its effects are not modelled
+  N149: unrecoverable, not executed: opaque: the awk program writes files or runs commands
+  N178: unrecoverable, not executed: opaque: unknown command process
+  N188: unrecoverable, not executed: opaque: unknown command pv
+  N211: unrecoverable, not executed: unresolved: arguments could not be determined: 2: unbound variable
+  N254: unrecoverable, not executed: opaque: php runs arbitrary code; its effects are not modelled
+  N256: unrecoverable, not executed: opaque: perl runs arbitrary code; its effects are not modelled
+  N261: unrecoverable, not executed: unresolved: find arguments could not be determined: d: unbound variable
+  N284: unrecoverable, not executed: unresolved: find arguments could not be determined: srch1: unbound variable
+  N298: unrecoverable, not executed: opaque: unknown command split
+  N303: unrecoverable, not executed: opaque: unknown command dos2unix
+  N318: unrecoverable, not executed: opaque: unknown command uuid
+  N331: unrecoverable, not executed: unresolved: arguments could not be determined: UNDOFILE: unbound variable
+  N337: unrecoverable, not executed: opaque: unknown command whatever
+  N352: unrecoverable, not executed: unresolved: arguments could not be determined: f: unbound variable
+  N365: unrecoverable, not executed: unresolved: find arguments could not be determined: d: unbound variable
+  N373: unrecoverable, not executed: unrecoverable: shred destroys content on purpose
+  N374: unrecoverable, not executed: unrecoverable: removes the directory it runs in, which cannot be captured beforehand
+  N381: unrecoverable, not executed: opaque: unknown command update-client
+  N385: unrecoverable, not executed: opaque: unknown command progam.sh
+  N391: unrecoverable, not executed: unresolved: arguments could not be determined: 1: unbound variable
+  N392: unrecoverable, not executed: unresolved: rsync option that changes the source or runs a remote command
+  N395: unrecoverable, not executed: opaque: runs ./a by path, which is not modelled
+  N403: unrecoverable, not executed: opaque: unknown command cpio
+  N409: unrecoverable, not executed: opaque: runs ./program by path, which is not modelled
+  N419: unrecoverable, not executed: opaque: unknown command someCommand
+  N426: unrecoverable, not executed: opaque: unknown command pv
+  N436: unrecoverable, not executed: opaque: perl runs arbitrary code; its effects are not modelled
+  T010: unrecoverable, not executed: unresolved: xargs reads input from somewhere the analysis cannot see
+  T024: unrecoverable, not executed: opaque: the awk program writes files or runs commands
+  T051: unrecoverable, not executed: opaque: python3 runs arbitrary code; its effects are not modelled
+  T067: unrecoverable, not executed: opaque: perl runs arbitrary code; its effects are not modelled
+  T070: unrecoverable, not executed: opaque: perl runs arbitrary code; its effects are not modelled
+  T071: unrecoverable, not executed: unresolved: creates files inside the tree it is searching, so the set of matches changes while it runs
+  T082: unrecoverable, not executed: opaque: the awk program writes files or runs commands
+  T096: unrecoverable, not executed: unresolved: xargs reads input from somewhere the analysis cannot see
+  T101: unrecoverable, not executed: opaque: python3 runs arbitrary code; its effects are not modelled
+  T114: unrecoverable, not executed: unrecoverable: shred destroys content on purpose
+  T119: unrecoverable, not executed: unresolved: find arguments could not be determined: RANDOM: unbound variable
+  T120: unrecoverable, not executed: unrecoverable: shred destroys content on purpose
+  T126: unrecoverable, not executed: unrecoverable: shred destroys content on purpose
+  T127: unrecoverable, not executed: unresolved: creates files inside the tree it is searching, so the set of matches changes while it runs
+  T150: unrecoverable, not executed: unresolved: xargs reads input from somewhere the analysis cannot see
+  T155: unrecoverable, not executed: unresolved: creates files inside the tree it is searching, so the set of matches changes while it runs
+  T160: unrecoverable, not executed: opaque: python3 runs arbitrary code; its effects are not modelled
+  T167: unrecoverable, not executed: opaque: the awk program writes files or runs commands
+  T184: unrecoverable, not executed: unresolved: creates files inside the tree it is searching, so the set of matches changes while it runs
+  T190: unrecoverable, not executed: unresolved: find arguments could not be determined: RANDOM: unbound variable
+  T192: unrecoverable, not executed: unresolved: find arguments could not be determined: RANDOM: unbound variable
+  T207: unrecoverable, not executed: unresolved: xargs reads input from somewhere the analysis cannot see
+  T210: unrecoverable, not executed: unresolved: creates files inside the tree it is searching, so the set of matches changes while it runs
+  T214: unrecoverable, not executed: unresolved: find arguments could not be determined: RANDOM: unbound variable

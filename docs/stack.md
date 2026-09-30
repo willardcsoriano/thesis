@@ -33,7 +33,7 @@ The session manager, TUI, and execution engine. Ships as a single binary.
 |---|---|
 | TUI framework | [bubbletea](https://github.com/charmbracelet/bubbletea) — v2 line, module path `charm.land/bubbletea/v2` (moved off `github.com/charmbracelet/...`, confirmed via `go get`), requires Go ≥ 1.25 (`prototype/go.mod` bumped for M5 — done) |
 | TUI styling | [lipgloss](https://github.com/charmbracelet/lipgloss) — v2 line, module path `charm.land/lipgloss/v2`, same Go ≥ 1.25 requirement |
-| TUI scrollback | [bubbles](https://github.com/charmbracelet/bubbles)/`viewport` — v2 line, module path `charm.land/bubbles/v2` |
+| TUI scrollback | The terminal's own: finished lines are printed with `tea.Println` (bubbletea v2), no viewport component (D38) |
 | Ollama client | HTTP to `localhost:11434/api/generate`, non-streaming today (`Stream: false`, `internal/ollama.Client.Generate`) — streaming (`stream: true`, newline-delimited JSON per token, `done: true` on the final line) is M5's step 4, not yet built; verified current wire format via Ollama's own API docs before planning that step, not assumed |
 | Bash execution | `os/exec` — subprocess with stdout/stderr streaming |
 | Confirmation gate | Custom: classifies command reversibility before dispatch |
@@ -69,7 +69,10 @@ Runs offline. Never executes during the user study.
 | CPU | x86-64 + AVX2; 2 vCPU minimum |
 | RAM | 4 GB (CLI/TUI, D19) / 8 GB recommended (GUI, D12) |
 | Storage | 10 GB |
+| Filesystem | ext4 root, the Debian installer's default. It has no cheap snapshots or reflinks, which is why the capture plan exists rather than a copy before every command. Btrfs or XFS would make capture cheaper and is future work (`notes/future-features.md`). |
 | Display | CLI/TUI: any terminal (SSH included; no display server required). GUI: XFCE desktop, X11 session (D12) — SynapseOS launches fullscreen within it, with a participant-accessible fallback back to XFCE (D20) |
+
+The reference machine the prototype is developed and measured on is a 2015 MacBook Air (i5-5350U, 7.7 GiB RAM, SSD) running Debian 13, XFCE 4.20 on X11, kernel 6.12, ext4. It is a deliberately pessimistic rig: CPU-only, dual-core, and near the RAM recommendation for GUI mode.
 
 SynapseOS presents its own identity regardless of mode; Debian (all three modes) and XFCE (GUI mode only) are the reused, unadvertised substrate underneath — see `layers.md` and decisions D12, D19, D20.
 

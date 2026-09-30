@@ -505,3 +505,105 @@ func TestGenerateStreamWorksWithNilOnToken(t *testing.T) {
 		t.Errorf("Response = %q, want %q", resp.Response, "ab")
 	}
 }
+
+// Preload must ask Ollama to load the model without generating: no prompt, the
+// same options real requests use (a different num_ctx would make Ollama load the
+// model a second time), and the keep-alive that keeps it resident afterwards.
+func TestPreloadSendsALoadOnlyRequestWithTheSameOptions(t *testing.T) {
+	var got map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/generate" || r.Method != http.MethodPost {
+			t.Errorf("request = %s %s, want POST /api/generate", r.Method, r.URL.Path)
+		}
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		w.Write([]byte(`{"model":"m","done":true,"done_reason":"load"}`))
+	}))
+	defer server.Close()
+
+	opts := map[string]any{"temperature": 0, "num_ctx": 8192}
+	if err := New(server.URL).Preload(context.Background(), "m", opts); err != nil {
+		t.Fatalf("Preload: %v", err)
+	}
+	if got["model"] != "m" {
+		t.Errorf("model = %v, want m", got["model"])
+	}
+	if _, hasPrompt := got["prompt"]; hasPrompt {
+		t.Errorf("a preload must not carry a prompt, or Ollama would generate: %v", got)
+	}
+	o, _ := got["options"].(map[string]any)
+	if o["num_ctx"] != float64(8192) {
+		t.Errorf("num_ctx = %v, want the same 8192 real requests send", o["num_ctx"])
+	}
+	if got["keep_alive"] == "" || got["keep_alive"] == nil {
+		t.Error("a preload must set keep_alive, or the model is evicted on Ollama's shorter default")
+	}
+}
+
+func TestPreloadReportsAServerError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "model not found", http.StatusNotFound)
+	}))
+	defer server.Close()
+	if err := New(server.URL).Preload(context.Background(), "nope", nil); err == nil {
+		t.Fatal("a 404 must be an error")
+	}
+}
+
+// Format is opt-in: an existing caller (or test) that never passes one keeps
+// sending the exact request it always did.
+func TestGenerateOmitsFormatWhenNotGiven(t *testing.T) {
+	var raw map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&raw)
+		json.NewEncoder(w).Encode(GenerateResponse{Response: "ok", Done: true})
+	}))
+	defer server.Close()
+
+	if _, err := New(server.URL).Generate(context.Background(), "m", "", "p", nil); err != nil {
+		t.Fatalf("Generate returned error: %v", err)
+	}
+	if _, ok := raw["format"]; ok {
+		t.Errorf("request carried a format field with none given: %v", raw)
+	}
+}
+
+// A caller that wants a constrained reply passes a JSON schema, and it goes
+// out on the wire exactly as given.
+func TestGenerateSendsTheGivenFormat(t *testing.T) {
+	var raw map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&raw)
+		json.NewEncoder(w).Encode(GenerateResponse{Response: `{"ok":true}`, Done: true})
+	}))
+	defer server.Close()
+
+	schema := map[string]any{"type": "object", "properties": map[string]any{"ok": map[string]any{"type": "boolean"}}}
+	if _, err := New(server.URL).Generate(context.Background(), "m", "", "p", nil, schema); err != nil {
+		t.Fatalf("Generate returned error: %v", err)
+	}
+	got, ok := raw["format"].(map[string]any)
+	if !ok {
+		t.Fatalf("request format = %v, want the schema", raw["format"])
+	}
+	if got["type"] != "object" {
+		t.Errorf("format.type = %v, want object", got["type"])
+	}
+}
+
+func TestGenerateStreamSendsTheGivenFormat(t *testing.T) {
+	var raw map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&raw)
+		json.NewEncoder(w).Encode(GenerateResponse{Response: `{"ok":true}`, Done: true})
+	}))
+	defer server.Close()
+
+	if _, err := New(server.URL).GenerateStream(context.Background(), "m", "", "p", nil, nil, "json"); err != nil {
+		t.Fatalf("GenerateStream returned error: %v", err)
+	}
+	if raw["format"] != "json" {
+		t.Errorf("request format = %v, want the literal \"json\"", raw["format"])
+	}
+}

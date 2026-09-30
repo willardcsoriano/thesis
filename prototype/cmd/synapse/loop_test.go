@@ -11,10 +11,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
+	"synapseos/internal/loopevent"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"synapseos/internal/executor"
 	"synapseos/internal/ollama"
@@ -95,7 +98,7 @@ func TestRunLoopMultiStepReversibleNeverPromptsAndAppliesRealEffects(t *testing.
 	if _, err := os.Stat(target); err != nil {
 		t.Errorf("expected %s to have been created by the executed step: %v", target, err)
 	}
-	if !strings.Contains(out.String(), "task complete in 1 step(s).") {
+	if !strings.Contains(out.String(), "Task complete in 1 step(s).") {
 		t.Errorf("stdout missing completion message, got:\n%s", out.String())
 	}
 }
@@ -120,7 +123,7 @@ func TestSessionAnnouncesTheExecutionTimeoutOnceNotPerTask(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
 	}
-	want := fmt.Sprintf("each step may run for up to %s", stepExecutionTimeout)
+	want := fmt.Sprintf("Each step may run for up to %s", stepExecutionTimeout)
 	if n := strings.Count(out.String(), want); n != 1 {
 		t.Errorf("timeout notice appeared %d times across two tasks, want exactly 1:\n%s", n, out.String())
 	}
@@ -134,7 +137,7 @@ func TestRunLoopItselfEmitsNoSessionPreamble(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	runLoop(context.Background(), ollama.New(server.URL), "m", "do nothing", neverConfirm(t), &out, &errOut, "")
-	if strings.Contains(out.String(), "each step may run for up to") {
+	if strings.Contains(out.String(), "Each step may run for up to") {
 		t.Errorf("runLoop printed the session preamble:\n%s", out.String())
 	}
 }
@@ -169,7 +172,7 @@ func TestRunLoopIrreversibleCancelledNeverExecutes(t *testing.T) {
 	if _, err := os.Stat(target); err != nil {
 		t.Errorf("file should have survived the declined confirmation, but stat failed: %v", err)
 	}
-	if !strings.Contains(out.String(), "blocked:") || !strings.Contains(out.String(), "cancelled.") {
+	if !strings.Contains(out.String(), "blocked:") || !strings.Contains(out.String(), "Cancelled.") {
 		t.Errorf("stdout missing blocked/cancelled messaging, got:\n%s", out.String())
 	}
 }
@@ -320,7 +323,7 @@ func TestRunLoopDoneOnFirstStepWithNoHistory(t *testing.T) {
 	if code != 0 {
 		t.Errorf("exit code = %d, want 0", code)
 	}
-	if !strings.Contains(out.String(), "nothing needs to be done") {
+	if !strings.Contains(out.String(), "Nothing needs to be done") {
 		t.Errorf("stdout missing the no-history DONE message, got:\n%s", out.String())
 	}
 }
@@ -1366,5 +1369,511 @@ func TestFailedCommandsAreNamedInThePrompt(t *testing.T) {
 	}
 	if strings.Contains(p, "- true") {
 		t.Error("a command that succeeded was listed as failed")
+	}
+}
+
+// A lone cd changes nothing that outlasts the shell that ran it. Running it and
+// reporting success made the session answer "are we in the root dir?" with "We
+// are now in the root directory" while it sat exactly where it started. It must be
+// refused as a failed step, say why, and let the next proposal (pwd) go through.
+func TestRunLoopBareCdIsRefusedNotReportedAsSuccess(t *testing.T) {
+	before, _ := os.Getwd()
+	server := scriptedOllamaServer(t, []string{"cd /", "pwd", "DONE"})
+	defer server.Close()
+
+	var out, errOut bytes.Buffer
+	code := runLoop(context.Background(), ollama.New(server.URL), "m", "are we in the root dir?", neverConfirm(t), &out, &errOut, "")
+
+	got := out.String()
+	if !strings.Contains(got, "not run: cd /") {
+		t.Errorf("a bare cd should be reported as not run, got:\n%s", got)
+	}
+	if !strings.Contains(got, "cannot move this session") {
+		t.Errorf("the refusal should say why, got:\n%s", got)
+	}
+	if strings.Contains(got, "exit code: 0\n\nstep 2") && !strings.Contains(got, before) {
+		t.Errorf("step 2 (pwd) should have run and printed the real directory %q, got:\n%s", before, got)
+	}
+	if !strings.Contains(got, before) {
+		t.Errorf("the real working directory %q should appear in the output, got:\n%s", before, got)
+	}
+	if code != 0 {
+		t.Errorf("the task should still complete via pwd, exit %d; stderr:\n%s", code, errOut.String())
+	}
+	if now, _ := os.Getwd(); now != before {
+		t.Errorf("the process directory moved from %q to %q", before, now)
+	}
+}
+
+func TestCdThenPwd(t *testing.T) {
+	for cmd, want := range map[string]bool{
+		"cd / && pwd": true, "cd /tmp; pwd": true, "cd /x || pwd": true, "cd / && cd /tmp && pwd": true,
+		"pwd": false, "cd /": false, "cd logs && ls": false, "pwd && cd /": false,
+		"cd / && pwd > out": false, "cd / && pwd | cat": false, "ls && pwd": false, "": false,
+	} {
+		if got := cdThenPwd(cmd); got != want {
+			t.Errorf("cdThenPwd(%q) = %v, want %v", cmd, got, want)
+		}
+	}
+}
+
+func TestRunLoopCdThenPwdIsRefusedToo(t *testing.T) {
+	before, _ := os.Getwd()
+	server := scriptedOllamaServer(t, []string{"cd / && pwd", "pwd", "DONE"})
+	defer server.Close()
+	var out, errOut bytes.Buffer
+	code := runLoop(context.Background(), ollama.New(server.URL), "m", "are we in the root dir?", neverConfirm(t), &out, &errOut, "")
+	got := out.String()
+	if !strings.Contains(got, "not run: cd / && pwd") {
+		t.Errorf("cd-then-pwd should be reported as not run, got:\n%s", got)
+	}
+	if !strings.Contains(got, before) || code != 0 {
+		t.Errorf("the follow-up pwd should report the real directory %q and finish (exit %d), got:\n%s", before, code, got)
+	}
+}
+
+func TestBareCd(t *testing.T) {
+	for cmd, want := range map[string]bool{
+		"cd /": true, "cd": true, "cd ~/x": true, "pushd /tmp": true, "popd": true,
+		"cd logs && ls": false, "ls": false, "cd /tmp; ls": false, "echo cd": false,
+		"cd / > out": false, "cd / | cat": false, "": false, "cd 'unterminated": false,
+	} {
+		if got := bareCd(cmd); got != want {
+			t.Errorf("bareCd(%q) = %v, want %v", cmd, got, want)
+		}
+	}
+}
+
+// With an event consumer the loop reports what happened as typed events and
+// writes none of it as text; what ran is the same.
+func collectEvents() (*[]loopevent.Event, loopOption) {
+	var evs []loopevent.Event
+	return &evs, withEvents(func(e loopevent.Event) { evs = append(evs, e) })
+}
+
+func kinds(evs []loopevent.Event) []loopevent.Kind {
+	out := make([]loopevent.Kind, len(evs))
+	for i, e := range evs {
+		out[i] = e.Kind
+	}
+	return out
+}
+
+func TestRunLoopEventsReplaceTheNarration(t *testing.T) {
+	server := scriptedOllamaServer(t, []string{"echo hi", "DONE"})
+	defer server.Close()
+
+	evs, opt := collectEvents()
+	var out, errOut bytes.Buffer
+	code := runLoop(context.Background(), ollama.New(server.URL), "m", "say hi", neverConfirm(t), &out, &errOut, "", opt)
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
+	}
+	if out.Len() != 0 || errOut.Len() != 0 {
+		t.Errorf("the loop still wrote text alongside its events:\nout: %q\nerr: %q", out.String(), errOut.String())
+	}
+	want := []loopevent.Kind{loopevent.Command, loopevent.Result, loopevent.Answer}
+	if got := kinds(*evs); !reflect.DeepEqual(got, want) {
+		t.Fatalf("event kinds = %v, want %v", got, want)
+	}
+	cmd, res := (*evs)[0], (*evs)[1]
+	if cmd.Command != "echo hi" || cmd.Step != 1 || cmd.Tokens != 1 {
+		t.Errorf("command event = %+v", cmd)
+	}
+	if res.Stdout != "hi\n" || res.ExitCode != 0 {
+		t.Errorf("result event = %+v", res)
+	}
+}
+
+func TestRunLoopEventsReportAFailureAndRefusalsAsData(t *testing.T) {
+	server := scriptedOllamaServer(t, []string{"false", "UNSUPPORTED"})
+	defer server.Close()
+
+	evs, opt := collectEvents()
+	var out, errOut bytes.Buffer
+	runLoop(context.Background(), ollama.New(server.URL), "m", "do it", neverConfirm(t), &out, &errOut, "", opt)
+	want := []loopevent.Kind{loopevent.Command, loopevent.Result, loopevent.Notice}
+	if got := kinds(*evs); !reflect.DeepEqual(got, want) {
+		t.Fatalf("event kinds = %v, want %v", got, want)
+	}
+	if (*evs)[1].ExitCode != 1 {
+		t.Errorf("result exit code = %d, want 1", (*evs)[1].ExitCode)
+	}
+	if !strings.Contains((*evs)[2].Text, "couldn't work out a command") {
+		t.Errorf("notice = %q", (*evs)[2].Text)
+	}
+}
+
+func TestRunLoopEventsAnnounceAnApprovalBeforeAsking(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "keep.txt")
+	os.WriteFile(target, []byte("x"), 0o644)
+	server := scriptedOllamaServer(t, []string{fmt.Sprintf("rm %q", target)})
+	defer server.Close()
+
+	evs, opt := collectEvents()
+	var out, errOut bytes.Buffer
+	asked := false
+	confirm := func(string) bool {
+		asked = true
+		if n := len(*evs); n < 2 || (*evs)[n-1].Kind != loopevent.Approval {
+			t.Errorf("the approval was not announced before asking: %v", kinds(*evs))
+		}
+		return false
+	}
+	runLoop(context.Background(), ollama.New(server.URL), "m", "remove it", confirm, &out, &errOut, "", opt)
+	if !asked {
+		t.Fatal("the gate never asked")
+	}
+	ap := (*evs)[1]
+	if ap.Command == "" || !strings.Contains(ap.Text, "can't be undone") {
+		t.Errorf("approval event = %+v", ap)
+	}
+	if last := (*evs)[len(*evs)-1]; last.Kind != loopevent.Notice || last.Text != "Cancelled." {
+		t.Errorf("last event = %+v, want the cancellation", last)
+	}
+	if _, err := os.Stat(target); err != nil {
+		t.Error("the file was removed although the person declined")
+	}
+}
+
+func TestEventsFromOnlyAttachesToAnEmitter(t *testing.T) {
+	if got := eventsFrom(&bytes.Buffer{}); got != nil {
+		t.Error("a plain writer must keep the text output")
+	}
+	if got := eventsFrom(&fakeEmitter{}); len(got) != 1 {
+		t.Error("a writer that accepts events must get them")
+	}
+}
+
+type fakeEmitter struct{ bytes.Buffer }
+
+func (*fakeEmitter) Emit(loopevent.Event) {}
+
+// --- structured step decisions (schema-constrained model replies) ---------
+
+func TestDecodeStepDecisionParsesEachAction(t *testing.T) {
+	cases := []struct {
+		raw     string
+		wantCmd string
+	}{
+		{`{"action":"run","command":"ls -la"}`, "ls -la"},
+		{`{"action":"done","command":""}`, doneSentinel},
+		{`{"action":"unsupported","command":""}`, "UNSUPPORTED"},
+		// cleanCommand still runs on the extracted command, so a model that
+		// wraps it in backticks inside the JSON string is still handled.
+		{"{\"action\":\"run\",\"command\":\"`ls -la`\"}", "ls -la"},
+	}
+	for _, tc := range cases {
+		got, ok := decodeStepDecision(tc.raw)
+		if !ok {
+			t.Errorf("decodeStepDecision(%q) ok = false, want true", tc.raw)
+			continue
+		}
+		if got != tc.wantCmd {
+			t.Errorf("decodeStepDecision(%q) = %q, want %q", tc.raw, got, tc.wantCmd)
+		}
+	}
+}
+
+// Anything that is not this exact shape — free text, an unknown action, a
+// malformed object — is reported as not decoded, so the caller falls back to
+// treating the reply as a plain command. This is the compatibility path that
+// keeps every pre-existing scripted test (a bare "DONE" or a bare command
+// string) working without being rewritten for this change.
+func TestDecodeStepDecisionFallsBackOnAnythingElse(t *testing.T) {
+	for _, raw := range []string{
+		"DONE",
+		"UNSUPPORTED",
+		`touch "a.txt"`,
+		`{"action":"maybe","command":"ls"}`,
+		`not json at all`,
+		``,
+	} {
+		if _, ok := decodeStepDecision(raw); ok {
+			t.Errorf("decodeStepDecision(%q) ok = true, want false (fall back to free text)", raw)
+		}
+	}
+}
+
+// scriptedStructuredServer scripts the model's replies as stepFormat JSON
+// instead of bare command strings, so runLoop is exercised against exactly
+// what a real, schema-constrained server sends.
+func scriptedStructuredServer(t *testing.T, decisions ...stepDecision) *httptest.Server {
+	t.Helper()
+	raw := make([]string, len(decisions))
+	for i, d := range decisions {
+		b, err := json.Marshal(d)
+		if err != nil {
+			t.Fatalf("marshal scripted decision: %v", err)
+		}
+		raw[i] = string(b)
+	}
+	return scriptedOllamaServer(t, raw)
+}
+
+func TestRunLoopHandlesAStructuredReplyEndToEnd(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "a.txt")
+
+	server := scriptedStructuredServer(t,
+		stepDecision{Action: "run", Command: fmt.Sprintf("touch %q", target)},
+		stepDecision{Action: "done"},
+	)
+	defer server.Close()
+
+	var out, errOut bytes.Buffer
+	code := runLoop(context.Background(), ollama.New(server.URL), "m", "create a.txt", neverConfirm(t), &out, &errOut, "")
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
+	}
+	if _, err := os.Stat(target); err != nil {
+		t.Errorf("expected %s to have been created: %v", target, err)
+	}
+}
+
+func TestRunLoopHandlesAStructuredUnsupportedReply(t *testing.T) {
+	server := scriptedStructuredServer(t, stepDecision{Action: "unsupported"})
+	defer server.Close()
+
+	var out, errOut bytes.Buffer
+	code := runLoop(context.Background(), ollama.New(server.URL), "m", "edit this image", neverConfirm(t), &out, &errOut, "")
+	if code != 1 {
+		t.Errorf("exit code = %d, want 1", code)
+	}
+	if !strings.Contains(out.String(), "couldn't work out a command") {
+		t.Errorf("stdout missing the unsupported message, got:\n%s", out.String())
+	}
+}
+
+// proposeStep must ask for the structured format on both the non-streaming
+// and the streaming path, so a real server actually constrains the reply.
+func TestProposeStepRequestsTheStepFormat(t *testing.T) {
+	var raw map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&raw)
+		json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: `{"action":"done","command":""}`, Done: true, EvalCount: 1})
+	}))
+	defer server.Close()
+
+	client := ollama.New(server.URL)
+	if _, _, err := proposeStep(context.Background(), client, "m", "task", nil, nil, nil); err != nil {
+		t.Fatalf("proposeStep: %v", err)
+	}
+	if raw["format"] == nil {
+		t.Error("non-streaming propose call did not request the step format")
+	}
+
+	var out bytes.Buffer
+	if _, _, err := proposeStep(context.Background(), client, "m", "task", nil, &out, nil); err != nil {
+		t.Fatalf("proposeStep (streaming): %v", err)
+	}
+	if raw["format"] == nil {
+		t.Error("streaming propose call did not request the step format")
+	}
+}
+
+// --- interactive/full-screen programs (found live 2026-09-28) ------------
+//
+// executor.Run gives a command buffers for stdout/stderr, not a controlling
+// terminal. A full-screen program fails immediately or hangs to the step
+// timeout either way. Live, asked for CPU usage, the model reached for top
+// (failed with "top: failed tty get"), then htop, and burned every step in
+// maxLoopSteps guessing at interactive alternatives with nothing to show
+// for it.
+
+func TestInteractiveProgramDetectsKnownTUIPrograms(t *testing.T) {
+	cases := []struct {
+		cmd      string
+		wantProg string
+		wantOK   bool
+	}{
+		{"top", "top", true},
+		{"htop", "htop", true},
+		{"ps aux | less", "", false}, // less is deliberately not on the list
+		{"ps aux | htop", "htop", true},
+		{"top -bn1", "top", true}, // still refused; the flag alone doesn't make it headless
+		{"vim notes.txt", "vim", true},
+		{"echo top", "", false}, // "top" as an argument, not the program
+		{"ls -la", "", false},
+	}
+	for _, tc := range cases {
+		prog, alt, ok := interactiveProgram(tc.cmd)
+		if ok != tc.wantOK || (ok && prog != tc.wantProg) {
+			t.Errorf("interactiveProgram(%q) = (%q, ok=%v), want (%q, ok=%v)", tc.cmd, prog, ok, tc.wantProg, tc.wantOK)
+		}
+		if ok && alt == "" {
+			t.Errorf("interactiveProgram(%q) returned no suggested alternative", tc.cmd)
+		}
+	}
+}
+
+func TestRunLoopRefusesAnInteractiveProgramAndSuggestsAnAlternative(t *testing.T) {
+	server := scriptedOllamaServer(t, []string{"top", "DONE"})
+	defer server.Close()
+
+	var out, errOut bytes.Buffer
+	code := runLoop(context.Background(), ollama.New(server.URL), "m", "what is my cpu usage?", neverConfirm(t), &out, &errOut, "")
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
+	}
+	got := out.String()
+	if !strings.Contains(got, "not run: top") {
+		t.Errorf("top should have been refused rather than executed, got:\n%s", got)
+	}
+	if !strings.Contains(got, "top -bn1") {
+		t.Errorf("the refusal should suggest the non-interactive alternative, got:\n%s", got)
+	}
+}
+
+func TestRunLoopRefusalAsEventsCarriesTheAlternative(t *testing.T) {
+	server := scriptedOllamaServer(t, []string{"htop", "DONE"})
+	defer server.Close()
+
+	evs, opt := collectEvents()
+	var out, errOut bytes.Buffer
+	runLoop(context.Background(), ollama.New(server.URL), "m", "cpu usage", neverConfirm(t), &out, &errOut, "", opt)
+	// The command that was chosen is still announced (Command), the same as any
+	// other step; what differs is that its Result says it was never run.
+	want := []loopevent.Kind{loopevent.Command, loopevent.Result, loopevent.Answer}
+	if got := kinds(*evs); !reflect.DeepEqual(got, want) {
+		t.Fatalf("event kinds = %v, want %v", got, want)
+	}
+	res := (*evs)[1]
+	if !res.NotRun {
+		t.Errorf("result event NotRun = false, want true: %+v", res)
+	}
+	if !strings.Contains(res.Stderr, "ps aux") {
+		t.Errorf("result event stderr = %q, want the suggested alternative", res.Stderr)
+	}
+}
+
+// --- background session compaction (D42) ----------------------------------
+
+// compactionAwareServer answers all three call shapes a session-carrying task
+// can produce — the propose step, the plain-language answer, and (new) the
+// background compaction call — routed by which system prompt the request
+// carries, since that is the one thing that reliably distinguishes them.
+// compactCalls counts how many times the compaction prompt specifically was
+// received, so a test can assert whether the background call happened at all
+// without racing on it.
+func compactionAwareServer(t *testing.T, proposeResponses []string, compactCalls *int32) *httptest.Server {
+	t.Helper()
+	var call int32
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body struct{ System string }
+		b, _ := io.ReadAll(r.Body)
+		json.Unmarshal(b, &body)
+		switch {
+		case strings.Contains(body.System, "You are reporting the outcome of a task"):
+			json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: testAnswerText, EvalCount: 1})
+		case strings.Contains(body.System, "condensing the older part of a conversation"):
+			atomic.AddInt32(compactCalls, 1)
+			json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: "condensed: earlier turns summarized", EvalCount: 1})
+		default:
+			i := int(atomic.AddInt32(&call, 1)) - 1
+			if i >= len(proposeResponses) {
+				t.Fatalf("ollama called %d times, only %d scripted propose responses", i+1, len(proposeResponses))
+			}
+			json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: proposeResponses[i], EvalCount: 1})
+		}
+	}))
+}
+
+func TestMaybeCompactDoesNothingWhenHistoryIsNotApproachingTheLimit(t *testing.T) {
+	var compactCalls int32
+	server := compactionAwareServer(t, nil, &compactCalls)
+	defer server.Close()
+
+	sc := session.New() // large default budget; one small turn is nowhere near it
+	sc.Append("a small task", []session.Step{{Command: "ls", Result: "ok"}})
+
+	maybeCompact(ollama.New(server.URL), "m", sc)
+	time.Sleep(50 * time.Millisecond) // give a wrongly-started goroutine a chance to show up
+	if n := atomic.LoadInt32(&compactCalls); n != 0 {
+		t.Errorf("compaction call made with history nowhere near the budget: %d calls", n)
+	}
+}
+
+func TestMaybeCompactRunsInTheBackgroundAndDoesNotBlock(t *testing.T) {
+	release := make(chan struct{})
+	var compactCalls int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&compactCalls, 1)
+		<-release // held open until the test explicitly releases it
+		json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: "a summary", EvalCount: 1})
+	}))
+	defer server.Close()
+	defer close(release)
+
+	sc := session.NewWithBudget(50, 200)
+	for i := 0; i < 10; i++ {
+		sc.Append("task", []session.Step{{Command: "ls", Result: "some reasonably long output text here"}})
+	}
+	if !sc.ApproachingLimit() {
+		t.Fatal("setup: expected this history to already be approaching the limit")
+	}
+
+	start := time.Now()
+	maybeCompact(ollama.New(server.URL), "m", sc)
+	if elapsed := time.Since(start); elapsed > 200*time.Millisecond {
+		t.Errorf("maybeCompact blocked the caller for %s; the whole point is that it must not", elapsed)
+	}
+	select {
+	case <-time.After(2 * time.Second):
+		t.Fatal("the background call to the (held-open) server never started")
+	default:
+	}
+	// Confirm the call did eventually reach the server, without racing on it:
+	// poll rather than assert immediately, since "started" and "blocked the
+	// caller" are different claims and only the second was just checked above.
+	deadline := time.Now().Add(2 * time.Second)
+	for atomic.LoadInt32(&compactCalls) == 0 && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if atomic.LoadInt32(&compactCalls) == 0 {
+		t.Fatal("the background compaction call never reached the server")
+	}
+}
+
+// End to end: a session's history that is close to its budget gets condensed
+// across two tasks, and the person is told about it on the turn after it
+// happens — not the turn it started on, since it runs in the background.
+func TestRunLoopReportsCompactionOnTheFollowingTurn(t *testing.T) {
+	var compactCalls int32
+	server := compactionAwareServer(t, []string{"DONE", "DONE"}, &compactCalls)
+	defer server.Close()
+	client := ollama.New(server.URL)
+
+	sc := session.NewWithBudget(120, 200)
+	for i := 0; i < 6; i++ {
+		sc.Append("earlier task", []session.Step{{Command: "ls", Result: "some reasonably long output text here"}})
+	}
+	if !sc.ApproachingLimit() {
+		t.Fatal("setup: expected this history to already be approaching the limit")
+	}
+
+	var out1, errOut1 bytes.Buffer
+	runLoop(context.Background(), client, "m", "first task", neverConfirm(t), &out1, &errOut1, "", withSessionContext(sc))
+	if strings.Contains(out1.String(), "Condensed") {
+		t.Errorf("compaction was reported on the same turn it started, before it could have finished:\n%s", out1.String())
+	}
+
+	deadline := time.Now().Add(3 * time.Second)
+	for atomic.LoadInt32(&compactCalls) == 0 && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if atomic.LoadInt32(&compactCalls) == 0 {
+		t.Fatal("background compaction never reached the server")
+	}
+	time.Sleep(20 * time.Millisecond) // let sc.Compact apply after the response is sent
+
+	var out2, errOut2 bytes.Buffer
+	runLoop(context.Background(), client, "m", "second task", neverConfirm(t), &out2, &errOut2, "", withSessionContext(sc))
+	if !strings.Contains(out2.String(), "condensed 5 older turn(s)") {
+		t.Errorf("the next turn should report the compaction that finished in between, got:\n%s", out2.String())
+	}
+	if !strings.Contains(sc.Render(), "condensed: earlier turns summarized") {
+		t.Errorf("session history should carry the summary, got:\n%s", sc.Render())
 	}
 }
