@@ -1,0 +1,11 @@
+node_modules/
+# Vercel link, pulled settings, and build output. `vercel pull` writes the
+# project's secrets into .vercel/, so it must never be committed.
+.vercel/
+# Secrets for `npm run dev`: ANTHROPIC_API_KEY and ACCESS_CODE. Never commit.
+.env.local
+# Rebuilt from sources.txt by `npm run index`.
+src/generated/
+eval/results/
+# Output of the Node ESM smoke check.
+.esm-check/

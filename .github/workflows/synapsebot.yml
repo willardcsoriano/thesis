@@ -1,0 +1,38 @@
+name: synapsebot
+on:
+  push:
+    paths:
+      - "synapsebot/**"
+      - "docs/**"
+      - "prototype/*.md"
+      - "distro/README.md"
+      - "README.md"
+      - "research-methods/consolidated/**"
+      - ".github/workflows/synapsebot.yml"
+  pull_request:
+    paths:
+      - "synapsebot/**"
+      - "docs/**"
+      - "prototype/*.md"
+      - "distro/README.md"
+      - "README.md"
+      - "research-methods/consolidated/**"
+      - ".github/workflows/synapsebot.yml"
+jobs:
+  synapsebot:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: synapsebot
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: synapsebot/package-lock.json
+      - run: npm ci
+      # Builds the corpus (with its private-data check), typechecks, runs the
+      # unit tests and the free retrieval eval, and loads the Vercel entry as
+      # plain Node ESM. No API key, no model calls.
+      - run: npm run ci

@@ -1,0 +1,342 @@
+/* SynapseBot: a page from an academic book. Serif text for reading,
+   typewriter type for the reader's own voice and for apparatus (labels,
+   file paths, running heads). Warm paper, one ink, one restrained accent. */
+
+@font-face {
+  font-family: "EB Garamond";
+  src: url("fonts/eb-garamond-latin-400-normal.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "EB Garamond";
+  src: url("fonts/eb-garamond-latin-400-italic.woff2") format("woff2");
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: "EB Garamond";
+  src: url("fonts/eb-garamond-latin-600-normal.woff2") format("woff2");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Courier Prime";
+  src: url("fonts/courier-prime-latin-400-normal.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Courier Prime";
+  src: url("fonts/courier-prime-latin-700-normal.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+:root {
+  --paper: #f5f0e6;
+  --ink: #221e19;
+  --ink-soft: #5f574c;
+  --rule: #d8cdb9;
+  --accent: #7b2d22;
+  --field: #fbf8f2;
+  --serif: "EB Garamond", "Garamond", "Georgia", serif;
+  --mono: "Courier Prime", "Courier New", monospace;
+  --measure: 36rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1a1815;
+    --ink: #e7dfd0;
+    --ink-soft: #a89e8d;
+    --rule: #3b362e;
+    --accent: #d99477;
+    --field: #221f1b;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #1a1815;
+  --ink: #e7dfd0;
+  --ink-soft: #a89e8d;
+  --rule: #3b362e;
+  --accent: #d99477;
+  --field: #221f1b;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.1875rem;
+  line-height: 1.6;
+  font-variant-numeric: oldstyle-nums proportional-nums;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+}
+
+.page {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 3.5rem 1rem 4rem;
+}
+
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 0.15em; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* Masthead ---------------------------------------------------------------- */
+
+.masthead { text-align: center; margin-bottom: 2.75rem; }
+.running-head {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0 0 1.75rem;
+}
+.masthead h1 {
+  font-weight: 400;
+  font-size: clamp(2.4rem, 7vw, 3.2rem);
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  margin: 0;
+}
+.subtitle {
+  font-style: italic;
+  color: var(--ink-soft);
+  margin: 0.5rem 0 0;
+}
+.masthead::after {
+  content: "❦";
+  display: block;
+  margin-top: 1.5rem;
+  color: var(--ink-soft);
+  font-size: 1.1rem;
+}
+
+/* Preface ----------------------------------------------------------------- */
+
+.preface p {
+  margin: 0;
+  text-align: justify;
+  hyphens: auto;
+}
+.dropcap::first-letter {
+  float: left;
+  font-size: 3.6em;
+  line-height: 0.85;
+  padding: 0.08em 0.08em 0 0;
+  color: var(--accent);
+}
+
+/* Contents ---------------------------------------------------------------- */
+
+.contents { margin: 2.75rem 0 1rem; }
+.contents h2, .composer label, .access label {
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 0.78rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 0;
+}
+.contents-note { font-style: italic; color: var(--ink-soft); margin: 0.25rem 0 0.75rem; }
+.contents ol {
+  list-style: upper-roman;
+  margin: 0;
+  padding-left: 2.25rem;
+}
+.contents li { padding-left: 0.35rem; }
+.contents li::marker { color: var(--ink-soft); font-size: 0.9em; }
+.contents button {
+  all: unset;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+}
+.contents button:hover { border-bottom-color: var(--accent); color: var(--accent); }
+.contents button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.contents[hidden] { display: none; }
+
+/* Transcript -------------------------------------------------------------- */
+
+.transcript { margin-top: 1rem; }
+
+.entry {
+  border-top: 1px solid var(--rule);
+  padding-top: 1.75rem;
+  margin-top: 1.75rem;
+}
+.question {
+  font-family: var(--mono);
+  font-size: 0.98rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0 0 1rem;
+  display: grid;
+  grid-template-columns: 2.1rem 1fr;
+}
+.question::before {
+  content: "Q.";
+  color: var(--accent);
+}
+
+.answer { text-align: justify; hyphens: auto; overflow-wrap: break-word; }
+.answer p, .answer ul, .answer ol, .answer pre { margin: 0 0 0.85rem; }
+.answer p + p { text-indent: 1.5em; margin-top: -0.85rem; }
+.answer ul, .answer ol { padding-left: 1.5rem; text-align: left; }
+.answer code {
+  font-family: var(--mono);
+  font-size: 0.84em;
+  background: var(--field);
+  border: 1px solid var(--rule);
+  padding: 0 0.2em;
+  border-radius: 2px;
+}
+.answer pre {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  background: var(--field);
+  border-left: 2px solid var(--rule);
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  text-align: left;
+}
+.answer pre code { border: 0; background: none; padding: 0; font-size: inherit; }
+.answer sup a {
+  font-family: var(--mono);
+  font-size: 0.68em;
+  text-decoration: none;
+  padding: 0 0.1em;
+}
+.answer.pending::after {
+  content: "▍";
+  font-family: var(--mono);
+  color: var(--accent);
+  animation: blink 1s steps(1) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+.notice, .error {
+  font-style: italic;
+  color: var(--accent);
+  margin: 0.5rem 0 0;
+}
+.error:empty { display: none; }
+
+.footnotes {
+  margin: 1.25rem 0 0;
+  padding: 0.6rem 0 0;
+  list-style: none;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  position: relative;
+}
+.footnotes::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5rem;
+  border-top: 1px solid var(--ink-soft);
+}
+.footnotes li {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr;
+  margin-bottom: 0.3rem;
+}
+.footnotes .num { font-family: var(--mono); font-size: 0.78rem; color: var(--accent); padding-top: 0.15em; }
+.footnotes .path {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+.footnotes li:target { background: var(--field); }
+
+/* Forms ------------------------------------------------------------------- */
+
+.composer, .access {
+  margin-top: 2.5rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 1.5rem;
+}
+.composer textarea, .access input {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  font-family: var(--mono);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--field);
+  border: 0;
+  border-bottom: 1px solid var(--ink-soft);
+  border-radius: 0;
+  padding: 0.6rem 0.75rem;
+  resize: vertical;
+  caret-color: var(--accent);
+}
+.composer textarea::placeholder { color: var(--ink-soft); opacity: 0.8; }
+.composer textarea:focus, .access input:focus { outline: none; border-bottom-color: var(--accent); }
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+.access .row { margin-top: 0; }
+.access .row input { margin-top: 0; }
+.hint { font-style: italic; color: var(--ink-soft); font-size: 0.9rem; margin: 0.25rem 0 0; }
+.row .hint { margin: 0; }
+.composer button, .access button {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  padding: 0.55rem 1.3rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.composer button:hover, .access button:hover { background: var(--ink); color: var(--paper); }
+.composer button:disabled { opacity: 0.5; cursor: default; }
+.composer button:disabled:hover { background: transparent; color: var(--ink); }
+
+/* Colophon ---------------------------------------------------------------- */
+
+.colophon {
+  margin-top: 4rem;
+  text-align: center;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.colophon::before {
+  content: "⁂";
+  display: block;
+  margin-bottom: 1.25rem;
+  font-size: 1.1rem;
+}
+.colophon p { margin: 0 auto 0.4rem; max-width: 30rem; }
+.colophon .set-in { font-style: italic; margin-top: 1rem; }
+.colophon code { font-family: var(--mono); font-size: 0.9em; }
+
+@media (max-width: 30rem) {
+  body { font-size: 1.0625rem; }
+  .page { padding-top: 2.25rem; }
+  .answer, .preface p { text-align: left; }
+  .row .hint { display: none; }
+  .row { justify-content: flex-end; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .answer.pending::after { animation: none; }
+}
