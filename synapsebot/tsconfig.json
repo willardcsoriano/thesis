@@ -22,6 +22,7 @@
     "test",
     "eval",
     "api",
-    "dev"
+    "dev",
+    "vitest.config.ts"
   ]
 }

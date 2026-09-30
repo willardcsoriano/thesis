@@ -7,7 +7,7 @@
     "dev": "npm run index && node --env-file-if-exists=.env.local --import tsx dev/server.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "esm-check": "tsc --noEmit false --outDir .esm-check --rootDir . && node --input-type=module -e \"await import('./.esm-check/api/[[...path]].js'); console.log('api entry loads as plain Node ESM')\"",
+    "esm-check": "rm -rf .esm-check && tsc --noEmit false --outDir .esm-check --rootDir . && node --input-type=module -e \"await import('./.esm-check/api/[[...path]].js'); console.log('api entry loads as plain Node ESM')\" && rm -rf .esm-check",
     "ci": "npm run index && npm run typecheck && npm test && npm run esm-check",
     "eval": "tsx eval/run.ts",
     "deploy": "npm run ci && vercel pull --yes --environment=production && vercel build --prod && vercel deploy --prebuilt --prod"
