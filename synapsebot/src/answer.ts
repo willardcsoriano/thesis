@@ -131,7 +131,7 @@ export async function* answer(
         text: "This question was declined by the model's safety checks. Try rephrasing it, or ask the author directly.",
       };
     } else if (final.stop_reason === "max_tokens") {
-      yield { type: "notice", text: "The answer was cut off at its length limit. Ask a narrower follow-up for the rest." };
+      yield { type: "notice", text: "The answer was cut off. Ask a narrower follow-up for the rest." };
     }
   } catch (err) {
     log.error = describeError(err);
