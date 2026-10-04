@@ -211,6 +211,45 @@ a:hover { text-decoration-thickness: 2px; }
   text-decoration: none;
   padding: 0 0.1em;
 }
+/* "In principle" / "In practice": typewriter labels in the book's apparatus
+   voice; the practice part folds like a marginal note the reader opens. */
+.part-label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 0.35rem;
+}
+.practice { margin-top: 1rem; }
+.practice > summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5em;
+  margin-bottom: 0.35rem;
+}
+.practice > summary::-webkit-details-marker { display: none; }
+.practice > summary::before {
+  content: "▸";
+  font-size: 0.9em;
+  transition: transform 0.15s ease;
+}
+.practice[open] > summary::before { transform: rotate(90deg); }
+.practice > summary::after {
+  content: "read more";
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.95rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-soft);
+}
+.practice[open] > summary::after { content: ""; }
+.practice > summary:hover { color: var(--ink); }
+.practice[hidden] { display: none; }
+
 .answer.pending::after {
   content: "▍";
   font-family: var(--mono);
@@ -338,5 +377,44 @@ a:hover { text-decoration-thickness: 2px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .answer.pending::after { animation: none; }
+  /* "In principle" / "In practice": typewriter labels in the book's apparatus
+   voice; the practice part folds like a marginal note the reader opens. */
+.part-label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 0.35rem;
+}
+.practice { margin-top: 1rem; }
+.practice > summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5em;
+  margin-bottom: 0.35rem;
+}
+.practice > summary::-webkit-details-marker { display: none; }
+.practice > summary::before {
+  content: "▸";
+  font-size: 0.9em;
+  transition: transform 0.15s ease;
+}
+.practice[open] > summary::before { transform: rotate(90deg); }
+.practice > summary::after {
+  content: "read more";
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.95rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-soft);
+}
+.practice[open] > summary::after { content: ""; }
+.practice > summary:hover { color: var(--ink); }
+.practice[hidden] { display: none; }
+
+.answer.pending::after { animation: none; }
 }

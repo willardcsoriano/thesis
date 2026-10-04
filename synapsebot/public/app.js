@@ -96,14 +96,25 @@ function newEntry(question) {
   const entry = el("article", "entry");
   entry.id = id;
   entry.append(el("p", "question", question));
+  // An answer has an "In principle" part, always shown, and an optional
+  // "In practice" part, folded until the reader opens it. Each part is
+  // re-rendered on its own so opening the fold mid-stream stays open.
   const answer = el("div", "answer pending");
+  const principleLabel = el("p", "part-label", "In principle");
+  principleLabel.hidden = true;
+  const principle = el("div", "part");
+  const practice = el("details", "practice");
+  practice.hidden = true;
+  const practiceBody = el("div", "part");
+  practice.append(el("summary", "part-label", "In practice"), practiceBody);
+  answer.append(principleLabel, principle, practice);
   const notes = el("ol", "footnotes");
   notes.hidden = true;
   const status = el("p", "notice");
   status.hidden = true;
   entry.append(answer, status, notes);
   transcript.append(entry);
-  return { id, entry, answer, notes, status };
+  return { id, entry, answer, principleLabel, principle, practice, practiceBody, notes, status };
 }
 
 function addFootnote(view, source) {
@@ -143,9 +154,28 @@ async function ask(question) {
   inFlight = controller;
   setBusy(true);
 
-  let text = "";
+  const parts = { principle: "", practice: "" };
+  let part = "principle";
   let failed = false;
-  const render = () => { view.answer.innerHTML = renderAnswer(text, view.id); };
+  const render = () => {
+    const body = part === "principle" ? view.principle : view.practiceBody;
+    body.innerHTML = renderAnswer(parts[part], view.id);
+  };
+  const startPractice = () => {
+    part = "practice";
+    view.principleLabel.hidden = false;
+    view.practice.hidden = false;
+  };
+  const clearAnswer = () => {
+    parts.principle = parts.practice = "";
+    part = "principle";
+    view.principle.replaceChildren();
+    view.practiceBody.replaceChildren();
+    view.principleLabel.hidden = true;
+    view.practice.hidden = true;
+    view.notes.replaceChildren();
+    view.notes.hidden = true;
+  };
   const say = (message) => {
     view.status.textContent = message;
     view.status.hidden = false;
@@ -186,10 +216,11 @@ async function ask(question) {
         if (!frame.startsWith("data: ")) continue;
         const event = JSON.parse(frame.slice(6));
         switch (event.type) {
-          case "text": text += event.text; render(); break;
-          case "cite": text += citeMarker(event.ref); render(); break;
+          case "text": parts[part] += event.text; render(); break;
+          case "cite": parts[part] += citeMarker(event.ref); render(); break;
+          case "practice": startPractice(); break;
           case "source": addFootnote(view, event); break;
-          case "reset": text = ""; view.notes.replaceChildren(); view.notes.hidden = true; render(); break;
+          case "reset": clearAnswer(); break;
           case "notice": say(event.text); break;
           case "error": failed = true; say(event.text); break;
         }
@@ -202,8 +233,11 @@ async function ask(question) {
     inFlight = null;
     setBusy(false);
     view.answer.classList.remove("pending");
-    if (!text) view.answer.remove();
-    const answerText = stripCiteMarkers(text).trim();
+    if (!parts.principle && !parts.practice) view.answer.remove();
+    // Sent back with follow-ups in the same two-part form the model writes.
+    const answerText = stripCiteMarkers(
+      parts.practice ? `${parts.principle.trim()}\n[[practice]]\n${parts.practice.trim()}` : parts.principle,
+    ).trim();
     if (!failed && answerText) history.push({ role: "user", text: question }, { role: "assistant", text: answerText });
     if (!accessForm.hidden) return;
     questionBox.focus();
