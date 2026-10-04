@@ -1,16 +1,16 @@
 ## Overview
 
-This document answers the 53 questions Steve and Alex raised about SynapseOS, deduplicated (their lists overlap almost entirely) and grouped by theme rather than by who asked. Every answer is grounded in the actual proposal (`research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html`) and the project's design-decision log (`docs/decisions.md`, cited as `D#`) — nothing here is invented for the occasion. The short version, if there is time for only one paragraph: SynapseOS is an interface layer, not an operating system; its one required research contribution is an algorithm that figures out what a generated shell command will change *before* it runs, so a destructive mistake can be undone, and that algorithm is evaluated on its own, with no user study needed, against a held-out corpus of 776 commands. The 40-participant comparison against each person's own OS is a second, independent piece of evidence, not the thing the thesis stands or falls on. Sections below: what SynapseOS is, safety and undo, why this counts as Computer Science, how it is evaluated, feasibility and architecture, and the literature review.
+This document answers the 53 questions Steve and Alex raised about SynapseOS, deduplicated (their lists overlap almost entirely) and grouped by theme rather than by who asked. Every answer is grounded in the actual proposal (`thesis 1/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html`) and the project's design-decision log (`docs/decisions.md`, cited as `D#`) — nothing here is invented for the occasion. The short version, if there is time for only one paragraph: SynapseOS is an interface layer, not an operating system; its one required research contribution is an algorithm that figures out what a generated shell command will change *before* it runs, so a destructive mistake can be undone, and that algorithm is evaluated on its own, with no user study needed, against a held-out corpus of 776 commands. The 40-participant comparison against each person's own OS is a second, independent piece of evidence, not the thing the thesis stands or falls on. Sections below: what SynapseOS is, safety and undo, why this counts as Computer Science, how it is evaluated, feasibility and architecture, and the literature review.
 
 ## Table of Contents
 
 - [Overview](#overview)
-- [1. What SynapseOS actually is](#what-synapseos-actually-is)
-- [2. Safety, undo, and what happens when things go wrong](#safety-undo-and-what-happens-when-things-go-wrong)
-- [3. Is this Computer Science, and where is the contribution](#is-this-computer-science-and-where-is-the-contribution)
-- [4. How the thesis is evaluated](#how-the-thesis-is-evaluated)
-- [5. Feasibility, timeline, and architecture](#feasibility-timeline-and-architecture)
-- [6. The literature review](#the-literature-review)
+- [1. What SynapseOS actually is](#1-what-synapseos-actually-is)
+- [2. Safety, undo, and what happens when things go wrong](#2-safety-undo-and-what-happens-when-things-go-wrong)
+- [3. Is this Computer Science, and where is the contribution](#3-is-this-computer-science-and-where-is-the-contribution)
+- [4. How the thesis is evaluated](#4-how-the-thesis-is-evaluated)
+- [5. Feasibility, timeline, and architecture](#5-feasibility-timeline-and-architecture)
+- [6. The literature review](#6-the-literature-review)
 
 ## 1. What SynapseOS actually is
 

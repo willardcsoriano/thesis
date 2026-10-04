@@ -84,7 +84,7 @@ Not documentation — the artifact.
 
 | Path | What it is |
 |---|---|
-| `../research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html` | **The sole living document** for Chapters 1–3. Its paired `.pdf` is what gets graded and must be re-exported after every edit |
+| `../thesis 1/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html` | **The sole living document** for Chapters 1–3. Its paired `.pdf` is what gets graded and must be re-exported after every edit |
 | `../research-methods/archive/submitted-2026-07-10/` | The frozen graded snapshot. Historical record — never edited |
 
 ## Where does this belong?

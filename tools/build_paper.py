@@ -14,7 +14,7 @@ sys.path.insert(0, str(TOOLS))
 import export_pdf  # noqa: E402
 from stamp_pages import stamp  # noqa: E402
 
-html = Path(sys.argv[1] if len(sys.argv) > 1 else TOOLS.parent / "research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html").resolve()
+html = Path(sys.argv[1] if len(sys.argv) > 1 else TOOLS.parent / "thesis 1/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html").resolve()
 pdf = Path(sys.argv[2] if len(sys.argv) > 2 else html.with_suffix(".pdf")).resolve()
 
 with tempfile.TemporaryDirectory() as td:
