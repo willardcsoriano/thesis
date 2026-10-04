@@ -33,7 +33,8 @@ synapsebot/
 1. `npm run index` reads the files matched by `sources.txt` and splits them into sections at their headings. The paper's HTML is split at its `h2`/`h3` ids. The build records the commit, and the function ships with the result.
 2. A question is searched with BM25 over those sections. The previous question counts at half weight, so a follow-up like "why?" keeps its topic. Up to eight sections, capped at about 24,000 characters, are sent along with the orientation section (`docs/vision.md` Overview).
 3. The sections go to `claude-sonnet-5-5` as `search_result` blocks with citations on, using adaptive thinking at `low` effort. Server-side refusal fallback (`fallbacks: "default"`) is enabled.
-4. The answer streams back to the page. Each citation becomes a numbered footnote that links to the file on GitHub at the exact commit the corpus was built from.
+4. Claude answers in two parts, separated by a `[[practice]]` marker that the server turns into a section break. **In principle** is at most two sentences at the highest level, with no file, tool, or decision names, and is always shown. **In practice** gives the concrete mechanism and is folded until the reader opens it. Off-topic or uncovered questions get a single short reply.
+5. The answer streams back to the page. Each citation becomes a numbered footnote that links to the file on GitHub at the exact commit the corpus was built from.
 
 If nothing in the corpus matches, the bot answers with a fixed message and makes no API call.
 
@@ -87,6 +88,7 @@ The owner's standing preference: **the page reads like a book, because the subje
 - EB Garamond for reading text: justified, hyphenated, old-style numerals, indented follow-on paragraphs.
 - Courier Prime (typewriter) for the reader's own voice and for apparatus: questions, labels, running heads, file paths, footnote numbers.
 - Warm paper and a single ink, with one oxblood accent. A dark "night reading" variant follows the system setting.
+- Answers as "In principle" (always visible) and "In practice" (folded, opened with "read more"), labelled in the typewriter apparatus voice. These terms replace "high level / low level" on purpose.
 - Book furniture instead of app chrome: a running head, a drop cap, a "Contents" list of starter questions, footnotes under each answer, a fleuron and a colophon. No chat bubbles, avatars, or cards.
 
 Keep future UI changes within this direction.

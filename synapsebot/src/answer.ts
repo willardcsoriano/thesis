@@ -6,6 +6,7 @@ import { chunkUrl, type Chunk, type Corpus } from "./corpus.js";
 import { buildMessages, MAX_TOKENS, MODEL, SYSTEM_PROMPT } from "./prompt.js";
 import type { AskRequest } from "./request.js";
 import type { SearchIndex } from "./search.js";
+import { SectionSplitter } from "./sections.js";
 
 /** Most sections sent per question, and the character budget they share. */
 export const MAX_RESULTS = 8;
@@ -21,6 +22,8 @@ export type OpenStream = (params: StreamParams) => AnswerStream;
 
 export type AnswerEvent =
   | { type: "text"; text: string }
+  /** The "In principle" part is done; following text is "In practice". */
+  | { type: "practice" }
   /** First citation of a section: its footnote number and where it lives. */
   | { type: "source"; ref: number; path: string; title: string; url: string | null }
   /** A footnote marker at the end of the text written so far. */
@@ -81,6 +84,7 @@ export async function* answer(
 
   const refs = new Map<number, number>(); // search_result_index -> footnote number
   let pending: number[] = []; // footnotes cited by the text block being streamed
+  const splitter = new SectionSplitter();
 
   try {
     const stream = openStream({
@@ -100,7 +104,7 @@ export async function* answer(
       if (event.type === "content_block_delta") {
         const delta = event.delta;
         if (delta.type === "text_delta") {
-          yield { type: "text", text: delta.text };
+          yield* splitter.push(delta.text);
         } else if (delta.type === "citations_delta" && delta.citation.type === "search_result_location") {
           const index = delta.citation.search_result_index;
           const chunk = chunks[index];
@@ -115,11 +119,14 @@ export async function* answer(
           if (!pending.includes(ref)) pending.push(ref);
         }
       } else if (event.type === "content_block_stop") {
+        // Footnote markers go after the block's text, so release any held text first.
+        yield* splitter.flush();
         for (const ref of pending) yield { type: "cite", ref };
         pending = [];
       }
     }
 
+    yield* splitter.flush();
     const final = await stream.finalMessage();
     log.stopReason = final.stop_reason;
     log.inputTokens = final.usage.input_tokens;

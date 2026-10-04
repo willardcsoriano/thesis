@@ -97,6 +97,21 @@ describe("POST /api/ask", () => {
     ]);
   });
 
+  it("marks where the In practice part begins", async () => {
+    const { app } = setup(() =>
+      fakeStream([text("Every change can be reversed.\n[[prac"), text("tice]]\nUndo is recorded"), cite(1), text("."), stop]),
+    );
+    const got = await events(await app.fetch(ask({ question: "how does undo work?" }), env));
+    expect(got.filter((e) => e.type !== "source")).toEqual([
+      { type: "text", text: "Every change can be reversed." },
+      { type: "practice" },
+      { type: "text", text: "Undo is recorded" },
+      { type: "text", text: "." },
+      { type: "cite", ref: 1 },
+      { type: "done" },
+    ]);
+  });
+
   it("answers without calling Claude when nothing in the corpus matches", async () => {
     const { app, spy } = setup(() => fakeStream([]));
     const res = await app.fetch(ask({ question: "hello there" }), env);
