@@ -87,7 +87,7 @@ The owner's standing preference: **the page reads like a book, because the subje
 
 - EB Garamond for reading text: justified, hyphenated, old-style numerals, indented follow-on paragraphs.
 - Courier Prime (typewriter) for the reader's own voice and for apparatus: questions, labels, running heads, file paths, footnote numbers.
-- Warm paper and a single ink, with one oxblood accent. A dark "night reading" variant follows the system setting.
+- Warm paper and a single ink, with one oxblood accent. A dark "night reading" variant follows the system setting until the reader picks one with the Light/Dark toggle; the choice is remembered in that browser only.
 - Answers as "In principle" (always visible) and "In practice" (folded, opened with "read more"), labelled in the typewriter apparatus voice. These terms replace "high level / low level" on purpose.
 - Book furniture instead of app chrome: a running head, a drop cap, a "Contents" list of starter questions, footnotes under each answer, a fleuron and a colophon. No chat bubbles, avatars, or cards.
 
