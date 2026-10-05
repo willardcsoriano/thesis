@@ -259,4 +259,31 @@ async function loadProvenance() {
   } catch { /* the colophon keeps its generic line */ }
 }
 
+// Light/dark toggle. theme.js has already applied a saved choice; with none,
+// the page follows the system setting until the reader picks one.
+const THEME_KEY = "synapsebot.theme";
+const themeToggle = document.getElementById("theme-toggle");
+const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
+
+function currentTheme() {
+  return document.documentElement.dataset.theme ?? (systemDark.matches ? "dark" : "light");
+}
+
+function showThemeToggle() {
+  const dark = currentTheme() === "dark";
+  themeToggle.textContent = dark ? "Light" : "Dark";
+  themeToggle.setAttribute("aria-pressed", String(dark));
+  themeToggle.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+}
+
+themeToggle.addEventListener("click", () => {
+  const next = currentTheme() === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  document.documentElement.style.colorScheme = next;
+  try { localStorage.setItem(THEME_KEY, next); } catch { /* the choice lasts for this page only */ }
+  showThemeToggle();
+});
+systemDark.addEventListener("change", showThemeToggle);
+showThemeToggle();
+
 loadProvenance();
