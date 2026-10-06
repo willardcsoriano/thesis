@@ -56,6 +56,7 @@ These explain things. Consulted, not read front to back.
 | `../prototype/testing-plan.md` | The six-layer engine test plan (F3/F4) |
 | `../prototype/setup.md` | Prerequisites, install, run commands |
 | `../prototype/manual-tests/` | One hands-on walkthrough per milestone, for what automated tests cannot cover |
+| `testing-environment.md` | The disposable cloud VM used for destructive testing and for the manual tests that need a real TTY/GUI — what's installed, how it's reached, the snapshot/reset workflow. The provisioning script itself lives outside this repo (one fact, one home); this is what stays reproducible without it |
 | `diagrams/` | Standalone HTML figures used in the paper and in explanation |
 
 ## Tier 3 — Logs
@@ -105,6 +106,7 @@ The question that prevents this map from decaying.
 | A mistake worth not repeating, or a problem now resolved | `retrospective.md` |
 | A fact that will be wrong in six months | `drift.md` |
 | An idea for after the thesis | `notes/future-features.md` |
+| How the destructive-testing environment is set up and reached | `testing-environment.md` |
 
 If it fits none of these, that is the only case where a new document is warranted — and it needs a row here before it is written.
 
@@ -122,6 +124,8 @@ If it fits none of these, that is the only case where a new document is warrante
 - **Never hand-write a Table of Contents.** A PostToolUse hook generates it. Edit `.md` files with the Edit/Write tools rather than shell commands, or the hook will not fire and the TOC will silently rot.
 
 ## Change log for this map
+
+**2026-10-06** — `testing-environment.md` added: none of the eight prior rows fit a disposable cloud VM used for destructive testing and real-TTY/GUI manual tests, so it's the one case the map's own rule allows a new document for. The provisioning script stays in a separate ops repo (one fact, one home); this doc is what keeps the setup reproducible without it.
 
 **2026-09-13** — `prior-art.md` added (survey before building; the practice behind the adopt-first principle) and `open-problems.md` added (live register of what is open; resolved rows move out to `retrospective.md`). `algorithms.md` added, taking the recoverability specification out of `safety-model.md`, which keeps the taxonomy.
 
