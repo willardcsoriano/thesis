@@ -168,29 +168,6 @@ function bullets(items, opts = {}) {
   return arr;
 }
 
-// A styled "terminal panel" placeholder box - stands in for a real capture
-function terminalPlaceholder(slide, { x, y, w, h, caption }) {
-  slide.addShape(pres.ShapeType.roundRect, {
-    x, y, w, h, rectRadius: 0.08,
-    fill: { color: THEME.colors.dk2 },
-    line: { color: THEME.colors.lt2, width: 1, dashType: "dash" },
-    shadow: { type: "outer", color: "000000", opacity: 0.4, blur: 6, offset: 3, angle: 90 },
-  });
-  // fake terminal chrome dots
-  const dotColors = [DANGER, "F0A500", GOOD];
-  dotColors.forEach((col, i) => {
-    slide.addShape(pres.ShapeType.ellipse, {
-      x: x + 0.22 + i * 0.26, y: y + 0.2, w: 0.14, h: 0.14,
-      fill: { color: col }, line: { type: "none" },
-    });
-  });
-  slide.addText(caption, {
-    x: x + 0.4, y: y + 0.6, w: w - 0.8, h: h - 1.0,
-    fontFace: "Courier New", fontSize: 16, color: C.background2,
-    align: "center", valign: "middle", italic: true, isTextBox: true, margin: 0,
-  });
-}
-
 function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
   slide.addShape(pres.ShapeType.roundRect, {
     x, y, w, h, rectRadius: 0.08,
@@ -373,12 +350,12 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
   s.addText("What It Looks Like", { placeholder: "title" });
-  terminalPlaceholder(s, {
-    x: 1.3, y: 1.75, w: 10.7, h: 5.0,
-    caption: "[ placeholder — terminal capture: a natural-language request,\nthe generated command, the confirmation gate, and the result ]",
+  s.addImage({
+    path: "media/what-it-looks-like.gif",
+    x: 1.35, y: 2.0, w: 10.6, h: 4.47,
   });
   s.addNotes(
-    "This slide will show a real recording once we finish capturing and checking it — someone typing a plain request, the command SynapseOS generates, a safety check, and the result. " +
+    "This is a real, recorded exchange — someone typing a plain request, the command SynapseOS generates, and the result. " +
     "We're showing this early to make one thing clear: this already works today, it isn't just a plan on paper."
   );
 }
@@ -412,31 +389,31 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   s.addText("The Algorithm (RQ1) — What It Claims", { placeholder: "title" });
 
   s.addShape(pres.ShapeType.roundRect, {
-    x: 0.6, y: 1.6, w: 5.85, h: 2.75, rectRadius: 0.08,
+    x: 0.6, y: 1.5, w: 5.85, h: 1.85, rectRadius: 0.08,
     fill: { color: THEME.colors.dk2 }, line: { color: THEME.colors.accent1, width: 1.2 },
   });
   s.addText("Composition through wrappers", {
-    x: 0.85, y: 1.8, w: 5.35, h: 0.55, fontFace: "Courier New", fontSize: 17, bold: true, color: C.accent1, isTextBox: true, margin: 0,
+    x: 0.85, y: 1.65, w: 5.35, h: 0.5, fontFace: "Courier New", fontSize: 16, bold: true, color: C.accent1, isTextBox: true, margin: 0,
   });
   s.addText(
     "find -exec, xargs, loops, substitution, pipelines, sudo — earlier segments visible to later ones",
-    { x: 0.85, y: 2.4, w: 5.35, h: 1.85, fontFace: THEME.bodyFontFace, fontSize: 16, color: C.background1, isTextBox: true, margin: 0 }
+    { x: 0.85, y: 2.2, w: 5.35, h: 1.1, fontFace: THEME.bodyFontFace, fontSize: 15, color: C.background1, isTextBox: true, margin: 0 }
   );
 
   s.addShape(pres.ShapeType.roundRect, {
-    x: 6.75, y: 1.6, w: 5.85, h: 2.75, rectRadius: 0.08,
+    x: 6.75, y: 1.5, w: 5.85, h: 1.85, rectRadius: 0.08,
     fill: { color: THEME.colors.dk2 }, line: { color: THEME.colors.accent1, width: 1.2 },
   });
   s.addText("Resolution of run-time targets", {
-    x: 7.0, y: 1.8, w: 5.35, h: 0.55, fontFace: "Courier New", fontSize: 17, bold: true, color: C.accent1, isTextBox: true, margin: 0,
+    x: 7.0, y: 1.65, w: 5.35, h: 0.5, fontFace: "Courier New", fontSize: 16, bold: true, color: C.accent1, isTextBox: true, margin: 0,
   });
   s.addText(
     "Targets computed at run time (rm $(ls *.log), find -delete, xargs rm) resolved via a read-only dry run before execution",
-    { x: 7.0, y: 2.4, w: 5.35, h: 1.85, fontFace: THEME.bodyFontFace, fontSize: 16, color: C.background1, isTextBox: true, margin: 0 }
+    { x: 7.0, y: 2.2, w: 5.35, h: 1.1, fontFace: THEME.bodyFontFace, fontSize: 15, color: C.background1, isTextBox: true, margin: 0 }
   );
 
   s.addShape(pres.ShapeType.roundRect, {
-    x: 0.6, y: 4.55, w: 12.0, h: 0.85, rectRadius: 0.06,
+    x: 0.6, y: 3.55, w: 12.0, h: 0.65, rectRadius: 0.06,
     fill: { color: THEME.colors.dk2 }, line: { color: THEME.colors.accent2, width: 1 },
   });
   s.addText(
@@ -444,12 +421,12 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
       { text: "Deliberately narrow: ", options: { bold: true, color: C.accent2 } },
       { text: "unmodeled commands are unknown → fail closed, ask, capture nothing.", options: { color: C.background1 } },
     ],
-    { x: 0.9, y: 4.55, w: 11.4, h: 0.85, fontFace: THEME.bodyFontFace, fontSize: 16, valign: "middle", isTextBox: true, margin: 0 }
+    { x: 0.9, y: 3.55, w: 11.4, h: 0.65, fontFace: THEME.bodyFontFace, fontSize: 15, valign: "middle", isTextBox: true, margin: 0 }
   );
 
-  terminalPlaceholder(s, {
-    x: 0.6, y: 5.55, w: 12.0, h: 1.45,
-    caption: "[ placeholder — terminal capture: the safety gate catching a destructive\ncommand and asking for confirmation before it runs ]",
+  s.addImage({
+    path: "media/safety-gate.png",
+    x: 2.45, y: 4.4, w: 8.4, h: 2.7,
   });
 
   s.addNotes(
