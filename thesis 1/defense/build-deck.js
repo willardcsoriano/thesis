@@ -10,16 +10,18 @@
 // if this one has moved after a skill update) — not vendored here, since it belongs
 // to that skill rather than to this repo.
 //
-// Sizing and notes policy (2026-10-07, revised again same day): body text sized
-// for reading from the back of a defense room — titles 34-44pt, body 18-20pt,
-// card text no smaller than 15pt. On-slide text is kept to short phrases and
-// fragments, not full sentences — nobody reads prose off a slide. The content a
-// full sentence would have carried moves to the speaker notes instead, written
-// as 3-5 sentences of formal, academic, spoken prose: a presenter's script with
-// enough context to orient a listener, not a one-line cue and not a transcript
-// to read verbatim. Where a slide's content genuinely split into two separate
-// points too large for one script, it was split into two slides rather than
-// compressed into one dense note.
+// Sizing and notes policy (2026-10-07, revised a third time same day): body text
+// sized for reading from the back of a defense room — titles 34-44pt, body
+// 18-20pt, card text no smaller than 15pt. On-slide text is kept to short
+// phrases and fragments, not full sentences — nobody reads prose off a slide.
+// Speaker notes are 2-3 short, plain-language sentences per slide: enough to
+// orient a listener without boring them, written as if the audience is smart
+// but not a specialist in this subfield — plain words over jargon ("a safe
+// test run" over "a read-only dry run", "a lookup table" over "an enumerated
+// rule table"), technical terms introduced only where the slide itself can't
+// avoid them (RQ wording, baseline names). Not a one-line cue, not a paragraph
+// transcript. Where a slide's content genuinely split into two separate points
+// too large for one short note, it was split into two slides instead.
 const pptxgen = require("pptxgenjs");
 const { applyTheme } = require("/home/willard/.claude/skills/synced/52694aae-ba96-4669-9afa-6d301ea140af_9d0ddd6e-8877-4575-a3ce-ad3e2d35de48/pptx/scripts/apply_theme.js");
 
@@ -241,9 +243,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     { placeholder: "subtitle" }
   );
   s.addNotes(
-    "Good [morning/afternoon], panel. We present the Thesis 1 proposal for SynapseOS, a conversational interface layer for personal computing, developed to let a person operate a Linux desktop in ordinary language rather than through memorized commands or a fixed menu of GUI actions. " +
-    "This defense addresses the research plan and methodology set out in Chapters 1 through 3; the comparative user study itself has not yet been conducted, so our results today are necessarily preliminary, not final. " +
-    "We will walk through the research gap motivating this work, our two independent research contributions, how each will be evaluated, our current progress against the proposed timeline, and, finally, one open question we want to raise ourselves before the panel does."
+    "Good [morning/afternoon]. We're presenting our Thesis 1 proposal for SynapseOS — software that lets someone control a computer by typing plain English instead of memorized commands. " +
+    "This is a proposal defense, so we're presenting our plan, not final results — the comparison study with real users hasn't run yet."
   );
 }
 
@@ -263,10 +264,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     { placeholder: "body" }
   );
   s.addNotes(
-    "The command line can, in principle, express nearly any operation a computer supports, but only for someone fluent enough to write the syntax. " +
-    "The graphical desktop removed that syntactic barrier, but replaced it with a different one: a user can only do what the interface's designers anticipated and built a control for. " +
-    "Large language models have reopened a research thread that is, in fact, decades old — the Berkeley UNIX Consultant demonstrated a working natural-language interface to Unix as early as 1988 — but with substantially greater capability than was available then. " +
-    "What remains missing, despite this renewed interest, is an implemented and empirically evaluated system that places a conversational layer over the entire Linux desktop session, rather than over the shell alone or a single application; that is precisely the gap this study addresses."
+    "The command line can do almost anything, but only if you know the right words to type. A graphical desktop is easier, but limits you to the buttons someone else thought to add. " +
+    "Nobody has yet built and tested a system that lets you control a whole Linux desktop just by talking to it normally — that's the gap we're filling."
   );
 }
 
@@ -289,9 +288,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     }
   );
   s.addNotes(
-    "This statement captures the thesis's central premise: a computer's functional capability does not change between the command line and the graphical desktop, but a person's ability to reach that capability does, depending entirely on which interface they happen to be fluent in. " +
-    "SynapseOS proposes a third interface — natural language — specifically because it is the one mode of expression most people already possess, regardless of technical background. " +
-    "Chapters 1 through 3 of this proposal exist to argue that such an interface can be built, and, more importantly, that its value can be measured rather than merely asserted."
+    "In one line: what a computer can actually do for you depends on which interface you already know how to use. " +
+    "Our goal is a third option, ordinary language, that closes that gap for people regardless of technical background."
   );
 }
 
@@ -322,9 +320,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     { x: 0.9, y: 6.25, w: 11.5, h: 0.75, fontFace: THEME.bodyFontFace, fontSize: 15, valign: "middle", isTextBox: true, margin: 0 }
   );
   s.addNotes(
-    "These four research questions were deliberately reordered following an earlier review, in which our adviser posed a pointed test: if the conversational interface were removed entirely, would any research contribution survive? For the manuscript as it then stood, the honest answer was no. " +
-    "In response, we restructured the proposal so that the recoverability algorithm now leads as RQ1, standing as an independent, corpus-evaluated contribution that requires no human participants at all. Research Questions 2 through 4 remain the interface questions, and these are what the 40-participant comparative study is designed to answer. " +
-    "Our four research objectives mirror these questions one-to-one, so satisfying each objective directly answers its corresponding question."
+    "We reordered these after an earlier review — our adviser asked whether anything would be left if we removed the chat interface entirely. " +
+    "So we made the safety algorithm its own standalone contribution, listed first; the other three questions are about the interface itself, and our user study answers those."
   );
 }
 
@@ -365,9 +362,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     }
   );
   s.addNotes(
-    "This four-layer pipeline — Input, Reasoning, Action, and Operating-System Integration — is the organizing framework developed in Chapter 2's review of the literature. It proved diagnostic in practice: nearly every surveyed system's principal limitation could be located at exactly one of these four layers, which is what makes the framework useful rather than merely descriptive. " +
-    "SynapseOS instantiates the pipeline directly — natural language enters at Input, a locally-hosted small language model reasons over it, the resulting shell commands execute at the Action layer, and the system spans the full graphical session rather than a single application at the Operating-System Integration layer. " +
-    "The recoverability algorithm that answers RQ1 lives specifically within the Action layer: it is the mechanism that decides, before anything executes, whether a command is safe to run outright or must first be confirmed."
+    "This four-stage flow — understand the request, decide what to do, act on the computer, fit into the existing desktop — comes from our literature review in Chapter 2. " +
+    "SynapseOS follows this same flow, and the safety algorithm we'll discuss next lives in the 'acting' stage, right before anything actually runs."
   );
 }
 
@@ -382,8 +378,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     caption: "[ placeholder — terminal capture: a natural-language request,\nthe generated command, the confirmation gate, and the result ]",
   });
   s.addNotes(
-    "This slide is a placeholder for a recorded, verified terminal session, which we will substitute once captured. What it will show, concretely, is a plain-English request typed by a user, the shell command SynapseOS generates in response, the confirmation gate intervening before anything irreversible occurs, and the resulting output. " +
-    "We include this here deliberately, ahead of the algorithm's technical details, to make one point plain before anything else: this system already runs, today, on real hardware, and is not merely a design on paper."
+    "This slide will show a real recording once we finish capturing and checking it — someone typing a plain request, the command SynapseOS generates, a safety check, and the result. " +
+    "We're showing this early to make one thing clear: this already works today, it isn't just a plan on paper."
   );
 }
 
@@ -403,10 +399,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     { placeholder: "body" }
   );
   s.addNotes(
-    "Allowing a language model to act on a real filesystem introduces a risk the interface layer alone cannot resolve: a generated command may destroy data before its author has any opportunity to review it. " +
-    "The conventional safeguard — matching a command against an enumerated list of known-dangerous patterns — judges the command by its surface form, its name, rather than by what it will actually do, so a disguised or simply unfamiliar variant of a dangerous operation passes through undetected. " +
-    "The naive alternative, refusing every command the list does not recognize, is safe in the narrow sense but practically useless: it protects nothing and interrupts the user constantly. " +
-    "What this study proposes instead is a third approach — an algorithm that understands a command's effects well enough, before execution, to know specifically what it will change."
+    "If an AI types commands for you, it might accidentally delete something important before anyone notices. Today's safety check just looks at whether a command looks familiar, not at what it actually does. " +
+    "That leaves two bad options: let unfamiliar commands through and risk damage, or block everything unfamiliar and interrupt the user constantly. We want a third option."
   );
 }
 
@@ -459,9 +453,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   });
 
   s.addNotes(
-    "The algorithm's claim is deliberately narrow, and that narrowness is itself a design decision rather than a limitation we are apologizing for. It claims exactly two abilities: composition through wrappers, meaning it sees through constructs such as find -exec, xargs, shell loops, command and process substitution, pipelines, and sudo, treating earlier segments of a line as visible context for later ones; and resolution of run-time targets, meaning that where a target is computed only at execution time, a read-only dry run establishes the concrete targets in advance, so a capture plan can be built before anything actually runs. " +
-    "Commands with explicit, statically-named targets remain the responsibility of the existing pattern list, which already handled them adequately in our pilot work. Anything the analysis does not model is simply treated as unknown, and unknown fails closed by design — the system asks for confirmation and captures nothing, rather than guessing. " +
-    "We want to be explicit that we are not claiming to have solved recoverability in general; we are claiming these two specific abilities, and measuring them against baselines."
+    "Our algorithm does two things, deliberately, and nothing more. First, it can see through common tricks for hiding what a command really does — loops, shortcuts, chaining several commands together. Second, when it can't know a command's target until the moment it runs, it does a safe test run first to find out exactly what would be affected. " +
+    "If a command is too unusual for it to understand, it simply stops and asks — it never guesses."
   );
 }
 
@@ -497,9 +490,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   });
 
   s.addNotes(
-    "We report the algorithm study and the user study as two genuinely independent contributions, because they are established through entirely separate evidence. The algorithm study requires no human participants at all: it is evaluated against a held-out corpus of generated commands, with ground truth established by sandboxed execution rather than human judgment, compared across the existing pattern list, that same list made to fail closed, and our algorithm. " +
-    "The user study, by contrast, follows a classical within-subjects design, comparing each of 40 participants against the operating system they already use daily, with task performance measured through OSWorld and a custom cross-platform suite, and subjective experience measured through the System Usability Scale and the NASA Task Load Index. " +
-    "That second study is the one still awaiting institutional ethics approval before it can proceed."
+    "We're proving these two halves of our thesis in two separate ways. The safety algorithm is tested against hundreds of sample commands, with no human volunteers needed at all. " +
+    "The interface itself will be tested with 40 real users, once we have ethics approval to run that study."
   );
 }
 
@@ -535,8 +527,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   );
 
   s.addNotes(
-    "Out of the 405 commands in our held-out corpus that touch something outside the filesystem or lose data outright, the existing pattern list allows silent data loss in 41.2 percent of cases — a figure that, in a real deployment, represents irreversible harm the user was never even asked to accept. " +
-    "Both the fail-closed list and our algorithm reduce that figure to exactly zero. This equivalence is itself an important, somewhat counterintuitive finding: on the silent-loss metric alone, the two safe approaches are statistically indistinguishable, which tells us directly that the verdict a system reaches is not, by itself, the contribution worth claiming."
+    "Out of several hundred risky commands we tested, today's safety list let data get silently destroyed over 40 percent of the time — damage the user never agreed to. " +
+    "Our algorithm, and a much stricter 'block everything unfamiliar' approach, both brought that down to essentially zero."
   );
 }
 
@@ -572,9 +564,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   );
 
   s.addNotes(
-    "Silent-loss safety is necessary but not sufficient — a system that simply refuses everything it does not recognize is equally safe by that measure, yet protects nothing. This second chart is where the approaches actually separate: of the 325 commands in our corpus that do lose something recoverable, the fail-closed list restores none of them, by construction, since it never attempts capture at all. " +
-    "Our algorithm, by contrast, restores 89.5 percent of those losses, with every restoration independently verified by executing the command in a sandbox and comparing the resulting filesystem tree. " +
-    "We want to be transparent that this result comes from a single held-out round with a single annotator; a second annotator and a larger corpus remain open work, tracked explicitly in our documentation rather than left implicit."
+    "Being safe isn't enough on its own — a system that blocks everything is also 'safe', but useless, because it never actually saves anything. " +
+    "Our algorithm actually recovers the lost data about 9 times out of 10; the overly-cautious approach recovers none of it, because it never even tries."
   );
 }
 
@@ -594,9 +585,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     { placeholder: "body" }
   );
   s.addNotes(
-    "The comparative study follows a within-subjects design, meaning every participant serves as their own control, evaluated against whichever operating system they already use daily — Windows, macOS, or Linux. We deliberately recruit two distinct populations: individuals fluent in neither the command line nor the graphical desktop, and individuals fluent in both. " +
-    "The gap between these two populations, rather than the raw performance of either group in isolation, is our primary outcome of interest, because it is the most direct test of our central hypothesis. " +
-    "Task performance is measured using the OSWorld benchmark together with a custom cross-platform task suite we developed, while subjective experience is captured through the System Usability Scale, the NASA Task Load Index, and a semi-structured post-study interview."
+    "We'll compare SynapseOS against whatever operating system each participant already uses every day. " +
+    "We're deliberately recruiting two kinds of users — people comfortable with neither the command line nor a typical desktop, and people comfortable with both — because the gap between those two groups is what we actually care about measuring."
   );
 }
 
@@ -625,9 +615,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   );
 
   s.addNotes(
-    "Our adviser's own written feedback on an earlier draft instructed us, in those exact words, to manage our scope carefully — a fair concern, given that this proposal combines algorithm development, corpus construction, interface engineering, and a controlled user study within a single undergraduate thesis. " +
-    "Our response is a written, explicit priority ordering rather than a vague reassurance: the recoverability algorithm and the GUI-mode session launch, which together constitute the distribution we intend to ship, are treated as the mandatory deliverable. Model fine-tuning details and the full forty-participant comparative study remain real, planned work, but they are explicitly the first components we would scale back if our timeline comes under pressure. " +
-    "This ordering reflects priority, not ambition — we are not abandoning either track, only stating plainly which one yields first."
+    "Our adviser told us, directly, to manage our scope carefully — fair, since this thesis covers a lot of ground. " +
+    "Our answer: the safety algorithm and getting the interface running are non-negotiable; fine-tuning the AI model and the full user study are real plans, but the first things we'd trim if we run short on time."
   );
 }
 
@@ -656,8 +645,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   });
 
   s.addNotes(
-    "As of today, the algorithm track is essentially complete, with round seven standing as our reported, frozen result. The build track — the runtime and the GUI-mode session launch — remains actively in progress. " +
-    "The genuine bottleneck is ethics: our study instruments are fully drafted, but the institutional review board application itself has not yet been submitted. Because IRB turnaround is the least controllable variable in our entire timeline, we are prioritizing its submission now, in parallel with remaining build work, rather than sequencing it afterward."
+    "The algorithm work is basically finished. The interface build is underway. " +
+    "The real bottleneck is ethics approval — our paperwork is ready, but not yet submitted, so that's our top priority right now."
   );
 }
 
@@ -688,9 +677,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   );
 
   s.addNotes(
-    "We would rather raise this question ourselves than have it put to us cold, because our adviser has in fact already asked it, in an earlier review, and it deserves a direct answer rather than an evasive one. At present, our answer is a prose argument rather than a measured number: we contend that the per-command rule table underlying the algorithm is itself simply a list, comparable in kind to the baseline we compare against, and that what we actually claim credit for is what the algorithm builds on top of that table — composition through wrappers, and resolution of run-time targets. " +
-    "We have not yet isolated the rule table's own contribution as an explicit ablation, and we say so plainly rather than let the panel discover the gap on their own. " +
-    "Our concrete plan to close it: add a flag to the analyzer that routes all wrapper and composition handling to an opaque fallback instead of resolving through it, run that configuration as a fourth comparison column against the same held-out corpus, and report whatever delta results — a scoped, well-defined next step, not an open-ended promise."
+    "We're raising this ourselves because our adviser already asked it once: how much of our result comes from the algorithm, versus just the lookup table it's built on? " +
+    "Right now we can only answer that in words, not numbers — but we already have a concrete plan to measure it directly, and we're not hiding that gap."
   );
 }
 
@@ -722,8 +710,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   });
 
   s.addNotes(
-    "Should both evaluations proceed as designed, SynapseOS will have produced two genuinely independent contributions. The first is a recoverability algorithm, measurably safer and more useful than the pattern-matching approach it extends, evaluated entirely without human participants. The second, pending institutional approval, is the first controlled empirical evidence addressing whether a conversational interface actually narrows the gap between users fluent in the command line and users fluent in neither existing interface. " +
-    "Critically, each contribution stands on its own merit even if the other is delayed or scaled back — that mutual independence was a deliberate decision made early in this project's design, not a fortunate accident discovered later."
+    "If both halves of this project succeed, we'll have two separate wins: a safer, more useful way to catch dangerous commands, and, pending approval, the first real evidence on whether talking to a computer actually helps people who struggle with existing interfaces. " +
+    "Each one holds up on its own even if the other gets delayed."
   );
 }
 
@@ -734,7 +722,7 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   const s = pres.addSlide({ masterName: "TITLE" });
   s.addText("Questions", { placeholder: "title" });
   s.addText("Thank you.", { placeholder: "subtitle" });
-  s.addNotes("We welcome the panel's questions, and thank you for your time and consideration.");
+  s.addNotes("Thank you — we're happy to take your questions.");
 }
 
 (async () => {
