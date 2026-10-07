@@ -10,14 +10,16 @@
 // if this one has moved after a skill update) — not vendored here, since it belongs
 // to that skill rather than to this repo.
 //
-// Sizing and notes policy (2026-10-07 revision): body text sized for reading from
-// the back of a defense room, not a laptop screen — titles 34-44pt, body 18-20pt,
-// card text no smaller than 15pt. Speaker notes are short spoken cues (1-2
-// sentences), not a transcript — the substance already lives on the slide itself
-// (bullets, boxes, charts) and in the thesis documents; notes only add the one
-// thing not visible on the slide (a quote, a transition, why this slide matters).
-// Where a slide used to carry two distinct points under one long note, it was
-// split into two slides instead of writing a long note to cover both.
+// Sizing and notes policy (2026-10-07, revised again same day): body text sized
+// for reading from the back of a defense room — titles 34-44pt, body 18-20pt,
+// card text no smaller than 15pt. On-slide text is kept to short phrases and
+// fragments, not full sentences — nobody reads prose off a slide. The content a
+// full sentence would have carried moves to the speaker notes instead, written
+// as 3-5 sentences of formal, academic, spoken prose: a presenter's script with
+// enough context to orient a listener, not a one-line cue and not a transcript
+// to read verbatim. Where a slide's content genuinely split into two separate
+// points too large for one script, it was split into two slides rather than
+// compressed into one dense note.
 const pptxgen = require("pptxgenjs");
 const { applyTheme } = require("/home/willard/.claude/skills/synced/52694aae-ba96-4669-9afa-6d301ea140af_9d0ddd6e-8877-4575-a3ce-ad3e2d35de48/pptx/scripts/apply_theme.js");
 
@@ -239,7 +241,9 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     { placeholder: "subtitle" }
   );
   s.addNotes(
-    "This is a proposal defense for SynapseOS, Chapters 1 through 3 — the research plan, not final results, since the user study hasn't run yet."
+    "Good [morning/afternoon], panel. We present the Thesis 1 proposal for SynapseOS, a conversational interface layer for personal computing, developed to let a person operate a Linux desktop in ordinary language rather than through memorized commands or a fixed menu of GUI actions. " +
+    "This defense addresses the research plan and methodology set out in Chapters 1 through 3; the comparative user study itself has not yet been conducted, so our results today are necessarily preliminary, not final. " +
+    "We will walk through the research gap motivating this work, our two independent research contributions, how each will be evaluated, our current progress against the proposed timeline, and, finally, one open question we want to raise ourselves before the panel does."
   );
 }
 
@@ -251,15 +255,18 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   s.addText("The Gap", { placeholder: "title" });
   s.addText(
     bullets([
-      "Nearly any operation a computer supports can be expressed on the command line — but only by someone who can write it",
-      "Everyone else is limited to what a graphical desktop's designers anticipated",
-      "LLMs have reopened a decades-old research thread (Berkeley UNIX Consultant, 1988) with far greater capability",
-      "But no implemented, evaluated system places a conversational layer over the whole Linux desktop session — existing work covers only the shell, or only individual applications",
+      "Command line — full capability, syntax barrier",
+      "Graphical desktop — limited to what designers anticipated",
+      "LLMs reopen the thread (Berkeley UNIX Consultant, 1988) with far greater capability",
+      "Missing: an implemented, evaluated system for the whole Linux desktop session",
     ]),
     { placeholder: "body" }
   );
   s.addNotes(
-    "Nobody has built and evaluated a conversational layer over the full Linux desktop session — that's the gap we're targeting."
+    "The command line can, in principle, express nearly any operation a computer supports, but only for someone fluent enough to write the syntax. " +
+    "The graphical desktop removed that syntactic barrier, but replaced it with a different one: a user can only do what the interface's designers anticipated and built a control for. " +
+    "Large language models have reopened a research thread that is, in fact, decades old — the Berkeley UNIX Consultant demonstrated a working natural-language interface to Unix as early as 1988 — but with substantially greater capability than was available then. " +
+    "What remains missing, despite this renewed interest, is an implemented and empirically evaluated system that places a conversational layer over the entire Linux desktop session, rather than over the shell alone or a single application; that is precisely the gap this study addresses."
   );
 }
 
@@ -270,18 +277,22 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   const s = pres.addSlide({ masterName: "CONTENT" });
   s.addText("Problem Statement", { placeholder: "title" });
   s.addShape(pres.ShapeType.roundRect, {
-    x: 1.0, y: 2.2, w: 11.3, h: 2.8, rectRadius: 0.1,
+    x: 1.3, y: 2.6, w: 10.7, h: 2.0, rectRadius: 0.1,
     fill: { color: THEME.colors.dk2 }, line: { color: THEME.colors.accent1, width: 1 },
   });
   s.addText(
-    "The capability of a personal computer is unevenly reachable. This study addresses the absence of a conversational interface layer — one that accepts intent in ordinary language and carries it out through the standard system toolchain — that has been empirically evaluated against the conventional graphical workflow, specifically for whether it changes what people of differing technical fluency can accomplish.",
+    "Computer capability is unevenly reachable — gated by which interface a person is fluent in.",
     {
-      x: 1.4, y: 2.5, w: 10.5, h: 2.2,
-      fontFace: THEME.bodyFontFace, fontSize: 19, color: C.background1,
+      x: 1.7, y: 2.6, w: 9.9, h: 2.0,
+      fontFace: THEME.bodyFontFace, fontSize: 24, color: C.background1,
       align: "left", valign: "middle", isTextBox: true, margin: 0, italic: true,
     }
   );
-  s.addNotes("Direct from Chapter 1 — the frame for everything that follows.");
+  s.addNotes(
+    "This statement captures the thesis's central premise: a computer's functional capability does not change between the command line and the graphical desktop, but a person's ability to reach that capability does, depending entirely on which interface they happen to be fluent in. " +
+    "SynapseOS proposes a third interface — natural language — specifically because it is the one mode of expression most people already possess, regardless of technical background. " +
+    "Chapters 1 through 3 of this proposal exist to argue that such an interface can be built, and, more importantly, that its value can be measured rather than merely asserted."
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -292,11 +303,11 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   s.addText("Research Questions", { placeholder: "title" });
   s.addText(
     bullets([
-      "RQ1 — Can we find what a generated command will do before it runs, and capture enough to undo it — losing less data and asking less often than a pattern list?",
-      "RQ2 — How do we let someone direct a whole Linux desktop in ordinary language?",
-      "RQ3 — What confirmation and recovery design lets a user undo a mistake, including one they approved themselves?",
-      "RQ4 — Does this narrow the gap for people fluent in neither the command line nor the GUI?",
-    ], { fontSize: 18 }),
+      "RQ1 — Predict a command's effects before it runs; capture enough to undo it; beat a pattern list",
+      "RQ2 — Direct a full Linux desktop in ordinary language",
+      "RQ3 — Confirm and recover from mistakes, including ones the user approved",
+      "RQ4 — Narrow the fluency gap between CLI and GUI non-experts",
+    ], { fontSize: 19 }),
     { placeholder: "body" }
   );
   s.addShape(pres.ShapeType.roundRect, {
@@ -306,12 +317,14 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   s.addText(
     [
       { text: "RQ1 leads on purpose ", options: { bold: true, color: C.accent1 } },
-      { text: "— the algorithm and the interface are two independent contributions, not one subordinate to the other.", options: { color: C.background2 } },
+      { text: "— two independent contributions, not one subordinate to the other.", options: { color: C.background2 } },
     ],
     { x: 0.9, y: 6.25, w: 11.5, h: 0.75, fontFace: THEME.bodyFontFace, fontSize: 15, valign: "middle", isTextBox: true, margin: 0 }
   );
   s.addNotes(
-    "RQ1 moved to the front after an earlier adviser review asked whether any contribution would survive without the interface — objectives mirror these four one-to-one."
+    "These four research questions were deliberately reordered following an earlier review, in which our adviser posed a pointed test: if the conversational interface were removed entirely, would any research contribution survive? For the manuscript as it then stood, the honest answer was no. " +
+    "In response, we restructured the proposal so that the recoverability algorithm now leads as RQ1, standing as an independent, corpus-evaluated contribution that requires no human participants at all. Research Questions 2 through 4 remain the interface questions, and these are what the 40-participant comparative study is designed to answer. " +
+    "Our four research objectives mirror these questions one-to-one, so satisfying each objective directly answers its corresponding question."
   );
 }
 
@@ -321,9 +334,9 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
   s.addText("Conceptual Framework", { placeholder: "title" });
-  s.addText("A four-layer pipeline, common to every language-mediated computing interface surveyed in Chapter 2:", {
+  s.addText("Four-layer pipeline, from Chapter 2's literature review:", {
     x: 0.6, y: 1.6, w: 12.1, h: 0.55,
-    fontFace: THEME.bodyFontFace, fontSize: 17, color: C.background2, isTextBox: true, margin: 0,
+    fontFace: THEME.bodyFontFace, fontSize: 18, color: C.background2, isTextBox: true, margin: 0,
   });
 
   const boxes = [
@@ -345,14 +358,16 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   });
 
   s.addText(
-    "SynapseOS instantiates this pipeline directly — the recoverability algorithm (RQ1) is the part of the Action layer that decides what's safe to run without asking.",
+    "SynapseOS instantiates this directly — the algorithm (RQ1) governs the Action layer.",
     {
       x: 0.7, y: 5.25, w: 11.9, h: 1.0,
-      fontFace: THEME.bodyFontFace, fontSize: 16, italic: true, color: C.background1, isTextBox: true, margin: 0,
+      fontFace: THEME.bodyFontFace, fontSize: 18, italic: true, color: C.background1, isTextBox: true, margin: 0,
     }
   );
   s.addNotes(
-    "SynapseOS instantiates this pipeline directly, and the recoverability algorithm lives at the Action layer."
+    "This four-layer pipeline — Input, Reasoning, Action, and Operating-System Integration — is the organizing framework developed in Chapter 2's review of the literature. It proved diagnostic in practice: nearly every surveyed system's principal limitation could be located at exactly one of these four layers, which is what makes the framework useful rather than merely descriptive. " +
+    "SynapseOS instantiates the pipeline directly — natural language enters at Input, a locally-hosted small language model reasons over it, the resulting shell commands execute at the Action layer, and the system spans the full graphical session rather than a single application at the Operating-System Integration layer. " +
+    "The recoverability algorithm that answers RQ1 lives specifically within the Action layer: it is the mechanism that decides, before anything executes, whether a command is safe to run outright or must first be confirmed."
   );
 }
 
@@ -367,7 +382,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     caption: "[ placeholder — terminal capture: a natural-language request,\nthe generated command, the confirmation gate, and the result ]",
   });
   s.addNotes(
-    "Placeholder for a real recorded exchange — this already runs today, on real hardware."
+    "This slide is a placeholder for a recorded, verified terminal session, which we will substitute once captured. What it will show, concretely, is a plain-English request typed by a user, the shell command SynapseOS generates in response, the confirmation gate intervening before anything irreversible occurs, and the resulting output. " +
+    "We include this here deliberately, ahead of the algorithm's technical details, to make one point plain before anything else: this system already runs, today, on real hardware, and is not merely a design on paper."
   );
 }
 
@@ -379,15 +395,18 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   s.addText("The Algorithm (RQ1) — The Problem", { placeholder: "title" });
   s.addText(
     bullets([
-      "A generated command can destroy data before its author ever reads it",
-      "Existing safeguards (an enumerated pattern list) judge a command by its name — not by what it actually does",
-      "A list either lets unfamiliar commands run (unsafe), or refuses everything it doesn't recognize (safe, but protects nothing and asks constantly)",
-      "We need a third option: understand the command well enough to know what it will change, before it runs",
+      "Generated commands can destroy data silently",
+      "Pattern lists judge a command by its name, not its effect",
+      "Binary choice today: unsafe (let it through) or useless (refuse everything)",
+      "Needed: know the command's actual effect before it runs",
     ]),
     { placeholder: "body" }
   );
   s.addNotes(
-    "A pattern list judges a command by its name, not its effect — the naive safe fix is safe but useless."
+    "Allowing a language model to act on a real filesystem introduces a risk the interface layer alone cannot resolve: a generated command may destroy data before its author has any opportunity to review it. " +
+    "The conventional safeguard — matching a command against an enumerated list of known-dangerous patterns — judges the command by its surface form, its name, rather than by what it will actually do, so a disguised or simply unfamiliar variant of a dangerous operation passes through undetected. " +
+    "The naive alternative, refusing every command the list does not recognize, is safe in the narrow sense but practically useless: it protects nothing and interrupts the user constantly. " +
+    "What this study proposes instead is a third approach — an algorithm that understands a command's effects well enough, before execution, to know specifically what it will change."
   );
 }
 
@@ -406,8 +425,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     x: 0.85, y: 1.8, w: 5.35, h: 0.55, fontFace: "Courier New", fontSize: 17, bold: true, color: C.accent1, isTextBox: true, margin: 0,
   });
   s.addText(
-    "Sees through find -exec, xargs, loops, command/process substitution, pipelines, redirects, sh -c, sudo and its relatives — earlier parts of a line are visible to later ones.",
-    { x: 0.85, y: 2.4, w: 5.35, h: 1.85, fontFace: THEME.bodyFontFace, fontSize: 15, color: C.background1, isTextBox: true, margin: 0 }
+    "find -exec, xargs, loops, substitution, pipelines, sudo — earlier segments visible to later ones",
+    { x: 0.85, y: 2.4, w: 5.35, h: 1.85, fontFace: THEME.bodyFontFace, fontSize: 16, color: C.background1, isTextBox: true, margin: 0 }
   );
 
   s.addShape(pres.ShapeType.roundRect, {
@@ -418,8 +437,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     x: 7.0, y: 1.8, w: 5.35, h: 0.55, fontFace: "Courier New", fontSize: 17, bold: true, color: C.accent1, isTextBox: true, margin: 0,
   });
   s.addText(
-    "Where a target is computed while the command runs (rm $(ls *.log), find -delete, xargs rm), a read-only dry run learns the concrete targets — so a capture plan can be built before anything executes.",
-    { x: 7.0, y: 2.4, w: 5.35, h: 1.85, fontFace: THEME.bodyFontFace, fontSize: 15, color: C.background1, isTextBox: true, margin: 0 }
+    "Targets computed at run time (rm $(ls *.log), find -delete, xargs rm) resolved via a read-only dry run before execution",
+    { x: 7.0, y: 2.4, w: 5.35, h: 1.85, fontFace: THEME.bodyFontFace, fontSize: 16, color: C.background1, isTextBox: true, margin: 0 }
   );
 
   s.addShape(pres.ShapeType.roundRect, {
@@ -429,9 +448,9 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   s.addText(
     [
       { text: "Deliberately narrow: ", options: { bold: true, color: C.accent2 } },
-      { text: "a command the analysis doesn't model is unknown — and unknown fails closed. It asks, and captures nothing. No broader claim is made.", options: { color: C.background1 } },
+      { text: "unmodeled commands are unknown → fail closed, ask, capture nothing.", options: { color: C.background1 } },
     ],
-    { x: 0.9, y: 4.55, w: 11.4, h: 0.85, fontFace: THEME.bodyFontFace, fontSize: 15, valign: "middle", isTextBox: true, margin: 0 }
+    { x: 0.9, y: 4.55, w: 11.4, h: 0.85, fontFace: THEME.bodyFontFace, fontSize: 16, valign: "middle", isTextBox: true, margin: 0 }
   );
 
   terminalPlaceholder(s, {
@@ -440,7 +459,9 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   });
 
   s.addNotes(
-    "Two abilities only, deliberately narrow — anything the analysis doesn't model is unknown and fails closed."
+    "The algorithm's claim is deliberately narrow, and that narrowness is itself a design decision rather than a limitation we are apologizing for. It claims exactly two abilities: composition through wrappers, meaning it sees through constructs such as find -exec, xargs, shell loops, command and process substitution, pipelines, and sudo, treating earlier segments of a line as visible context for later ones; and resolution of run-time targets, meaning that where a target is computed only at execution time, a read-only dry run establishes the concrete targets in advance, so a capture plan can be built before anything actually runs. " +
+    "Commands with explicit, statically-named targets remain the responsibility of the existing pattern list, which already handled them adequately in our pilot work. Anything the analysis does not model is simply treated as unknown, and unknown fails closed by design — the system asks for confirmation and captures nothing, rather than guessing. " +
+    "We want to be explicit that we are not claiming to have solved recoverability in general; we are claiming these two specific abilities, and measuring them against baselines."
   );
 }
 
@@ -454,11 +475,11 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   const cols = [
     {
       x: 0.6, title: "Algorithm study (RQ1)", color: THEME.colors.accent1,
-      lines: ["Corpus-based — no participants", "Held-out set of generated commands, ground truth from sandboxed execution", "Three baselines compared: pattern list, fail-closed list, the algorithm", "Answers RQ1 on its own"],
+      lines: ["Corpus-based — no participants", "Held-out commands, sandboxed ground truth", "Three baselines: pattern list, fail-closed list, algorithm", "Answers RQ1 independently"],
     },
     {
       x: 6.75, title: "User study (RQ2–4)", color: THEME.colors.accent3,
-      lines: ["40 participants, within-subjects", "Each person vs. their own daily OS (expert baseline)", "Task suite: OSWorld + custom cross-platform tasks", "Waits on IRB / ethics approval"],
+      lines: ["40 participants, within-subjects", "Each person vs. their own daily OS", "OSWorld + custom cross-platform task suite", "Pending IRB / ethics approval"],
     },
   ];
   cols.forEach((col) => {
@@ -476,7 +497,9 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   });
 
   s.addNotes(
-    "Two independent contributions, reported separately because they're established separately — no participants for RQ1, 40 for RQ2 through 4."
+    "We report the algorithm study and the user study as two genuinely independent contributions, because they are established through entirely separate evidence. The algorithm study requires no human participants at all: it is evaluated against a held-out corpus of generated commands, with ground truth established by sandboxed execution rather than human judgment, compared across the existing pattern list, that same list made to fail closed, and our algorithm. " +
+    "The user study, by contrast, follows a classical within-subjects design, comparing each of 40 participants against the operating system they already use daily, with task performance measured through OSWorld and a custom cross-platform suite, and subjective experience measured through the System Usability Scale and the NASA Task Load Index. " +
+    "That second study is the one still awaiting institutional ethics approval before it can proceed."
   );
 }
 
@@ -512,7 +535,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   );
 
   s.addNotes(
-    "The pattern list silently loses data 41% of the time; the fail-closed list and our algorithm are both exactly zero."
+    "Out of the 405 commands in our held-out corpus that touch something outside the filesystem or lose data outright, the existing pattern list allows silent data loss in 41.2 percent of cases — a figure that, in a real deployment, represents irreversible harm the user was never even asked to accept. " +
+    "Both the fail-closed list and our algorithm reduce that figure to exactly zero. This equivalence is itself an important, somewhat counterintuitive finding: on the silent-loss metric alone, the two safe approaches are statistically indistinguishable, which tells us directly that the verdict a system reaches is not, by itself, the contribution worth claiming."
   );
 }
 
@@ -548,7 +572,9 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   );
 
   s.addNotes(
-    "Our algorithm restores 89.5% of executable losses; the fail-closed list restores none, by construction — it only ever asks, never captures."
+    "Silent-loss safety is necessary but not sufficient — a system that simply refuses everything it does not recognize is equally safe by that measure, yet protects nothing. This second chart is where the approaches actually separate: of the 325 commands in our corpus that do lose something recoverable, the fail-closed list restores none of them, by construction, since it never attempts capture at all. " +
+    "Our algorithm, by contrast, restores 89.5 percent of those losses, with every restoration independently verified by executing the command in a sandbox and comparing the resulting filesystem tree. " +
+    "We want to be transparent that this result comes from a single held-out round with a single annotator; a second annotator and a larger corpus remain open work, tracked explicitly in our documentation rather than left implicit."
   );
 }
 
@@ -560,15 +586,17 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   s.addText("Interface Evaluation Plan (RQ2–4)", { placeholder: "title" });
   s.addText(
     bullets([
-      "Within-subjects: each of 40 participants against their own primary OS (Windows, macOS, or Linux)",
-      "Two populations: fluent in neither interface, and fluent in both — the gap between them is the primary outcome",
-      "Tasks: OSWorld benchmark + a custom cross-platform suite (file search, system monitoring, package management, text/data processing)",
-      "Measures: completion time, error rate, SUS, NASA-TLX, plus a semi-structured interview",
+      "Within-subjects: 40 participants vs. their own primary OS",
+      "Two populations: fluent in neither interface, fluent in both",
+      "Tasks: OSWorld benchmark + custom cross-platform suite",
+      "Measures: completion time, error rate, SUS, NASA-TLX, interview",
     ]),
     { placeholder: "body" }
   );
   s.addNotes(
-    "Within-subjects against each participant's own OS — the gap between fluent-in-neither and fluent-in-both participants is the primary outcome."
+    "The comparative study follows a within-subjects design, meaning every participant serves as their own control, evaluated against whichever operating system they already use daily — Windows, macOS, or Linux. We deliberately recruit two distinct populations: individuals fluent in neither the command line nor the graphical desktop, and individuals fluent in both. " +
+    "The gap between these two populations, rather than the raw performance of either group in isolation, is our primary outcome of interest, because it is the most direct test of our central hypothesis. " +
+    "Task performance is measured using the OSWorld benchmark together with a custom cross-platform task suite we developed, while subjective experience is captured through the System Usability Scale, the NASA Task Load Index, and a semi-structured post-study interview."
   );
 }
 
@@ -585,19 +613,21 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   });
   s.addText(
     [
-      { text: "Responding directly to “manage scope carefully”:\n\n", options: { bold: true, color: C.accent2, breakLine: true, fontSize: 18 } },
-      { text: "the algorithm and the GUI-mode session launch are the mandatory deliverable. Model fine-tuning and the full comparative study are real and still planned, but the first things to shrink if time runs out.", options: { color: C.background1, fontSize: 17 } },
+      { text: "Responding directly to “manage scope carefully”:\n\n", options: { bold: true, color: C.accent2, breakLine: true, fontSize: 19 } },
+      { text: "Algorithm + GUI-mode launch — mandatory. Model fine-tuning + full comparative study — real, but first to shrink.", options: { color: C.background1, fontSize: 18 } },
     ],
     { x: 0.95, y: 1.9, w: 11.4, h: 1.75, fontFace: THEME.bodyFontFace, isTextBox: true, margin: 0, valign: "middle" }
   );
 
   s.addText(
-    "That reorder of priority — not of ambition — is our written answer to the adviser's own scope concern from an earlier review.",
-    { x: 0.6, y: 4.1, w: 12.1, h: 0.8, fontFace: THEME.bodyFontFace, fontSize: 16, italic: true, color: C.background2, isTextBox: true, margin: 0 }
+    "A reorder of priority, not of ambition.",
+    { x: 0.6, y: 4.1, w: 12.1, h: 0.8, fontFace: THEME.bodyFontFace, fontSize: 18, italic: true, color: C.background2, isTextBox: true, margin: 0 }
   );
 
   s.addNotes(
-    "Our adviser's own written feedback said, verbatim, to manage scope carefully — this is our answer, in writing, not just a verbal reassurance."
+    "Our adviser's own written feedback on an earlier draft instructed us, in those exact words, to manage our scope carefully — a fair concern, given that this proposal combines algorithm development, corpus construction, interface engineering, and a controlled user study within a single undergraduate thesis. " +
+    "Our response is a written, explicit priority ordering rather than a vague reassurance: the recoverability algorithm and the GUI-mode session launch, which together constitute the distribution we intend to ship, are treated as the mandatory deliverable. Model fine-tuning details and the full forty-participant comparative study remain real, planned work, but they are explicitly the first components we would scale back if our timeline comes under pressure. " +
+    "This ordering reflects priority, not ambition — we are not abandoning either track, only stating plainly which one yields first."
   );
 }
 
@@ -626,7 +656,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   });
 
   s.addNotes(
-    "Ethics is the real bottleneck — instruments are drafted, but the application itself hasn't been submitted yet, so it's being prioritized now."
+    "As of today, the algorithm track is essentially complete, with round seven standing as our reported, frozen result. The build track — the runtime and the GUI-mode session launch — remains actively in progress. " +
+    "The genuine bottleneck is ethics: our study instruments are fully drafted, but the institutional review board application itself has not yet been submitted. Because IRB turnaround is the least controllable variable in our entire timeline, we are prioritizing its submission now, in parallel with remaining build work, rather than sequencing it afterward."
   );
 }
 
@@ -648,16 +679,18 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
 
   s.addText(
     bullets([
-      "This is a question our adviser already asked, in an earlier review",
-      "Current answer: a prose argument — the rule table is itself a list; composition and target resolution are what's built on top of it",
-      "Not yet a number — no ablation has isolated the rule table's own contribution",
-      "Plan to close it: an analyzer flag that routes composition/wrapper handling to “opaque”, run as a fourth comparison column against the same corpus",
+      "Already asked once, by our adviser",
+      "Current answer: a prose argument — the rule table is itself a list",
+      "Not yet a number — no ablation performed",
+      "Plan: analyzer flag → opaque fallback → fourth corpus column",
     ], { fontSize: 17 }),
     { x: 0.9, y: 3.65, w: 11.5, h: 3.2, isTextBox: true, margin: 0 }
   );
 
   s.addNotes(
-    "We're naming this ourselves rather than having it asked cold — we have a concrete plan to turn the prose answer into a measured number."
+    "We would rather raise this question ourselves than have it put to us cold, because our adviser has in fact already asked it, in an earlier review, and it deserves a direct answer rather than an evasive one. At present, our answer is a prose argument rather than a measured number: we contend that the per-command rule table underlying the algorithm is itself simply a list, comparable in kind to the baseline we compare against, and that what we actually claim credit for is what the algorithm builds on top of that table — composition through wrappers, and resolution of run-time targets. " +
+    "We have not yet isolated the rule table's own contribution as an explicit ablation, and we say so plainly rather than let the panel discover the gap on their own. " +
+    "Our concrete plan to close it: add a flag to the analyzer that routes all wrapper and composition handling to an opaque fallback instead of resolving through it, run that configuration as a fourth comparison column against the same held-out corpus, and report whatever delta results — a scoped, well-defined next step, not an open-ended promise."
   );
 }
 
@@ -669,9 +702,9 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   s.addText("Expected Contribution", { placeholder: "title" });
 
   const stats = [
-    { stat: "RQ1", label: "A composition- and resolution-aware recoverability algorithm, evaluated against two baselines on a held-out corpus", color: GOOD },
-    { stat: "RQ2-3", label: "A conversational interface layer with a reversibility-based confirmation gate and undo, over an unchanged Linux desktop", color: THEME.colors.accent3 },
-    { stat: "RQ4", label: "The first controlled evidence for whether conversation narrows the fluency gap between CLI and GUI users", color: THEME.colors.accent2 },
+    { stat: "RQ1", label: "Composition- and resolution-aware algorithm, evaluated against two baselines", color: GOOD },
+    { stat: "RQ2-3", label: "Interface layer with a reversibility-based confirmation gate and undo, over an unchanged desktop", color: THEME.colors.accent3 },
+    { stat: "RQ4", label: "First controlled evidence on narrowing the CLI/GUI fluency gap", color: THEME.colors.accent2 },
   ];
   const w = 3.9, gap = 0.2, startX = 0.6;
   stats.forEach((st, i) => {
@@ -684,12 +717,13 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
       x, y: 1.95, w, h: 1.05, fontFace: THEME.headFontFace, fontSize: 32, bold: true, color: st.color, align: "center", isTextBox: true, margin: 0,
     });
     s.addText(st.label, {
-      x: x + 0.3, y: 3.05, w: w - 0.6, h: 2.9, fontFace: THEME.bodyFontFace, fontSize: 16, color: C.background1, align: "center", valign: "top", isTextBox: true, margin: 0,
+      x: x + 0.3, y: 3.05, w: w - 0.6, h: 2.9, fontFace: THEME.bodyFontFace, fontSize: 17, color: C.background1, align: "center", valign: "top", isTextBox: true, margin: 0,
     });
   });
 
   s.addNotes(
-    "Either contribution stands on its own if the other slips — that independence was a deliberate scope decision, not an accident."
+    "Should both evaluations proceed as designed, SynapseOS will have produced two genuinely independent contributions. The first is a recoverability algorithm, measurably safer and more useful than the pattern-matching approach it extends, evaluated entirely without human participants. The second, pending institutional approval, is the first controlled empirical evidence addressing whether a conversational interface actually narrows the gap between users fluent in the command line and users fluent in neither existing interface. " +
+    "Critically, each contribution stands on its own merit even if the other is delayed or scaled back — that mutual independence was a deliberate decision made early in this project's design, not a fortunate accident discovered later."
   );
 }
 
@@ -700,7 +734,7 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   const s = pres.addSlide({ masterName: "TITLE" });
   s.addText("Questions", { placeholder: "title" });
   s.addText("Thank you.", { placeholder: "subtitle" });
-  s.addNotes("Open floor for questions.");
+  s.addNotes("We welcome the panel's questions, and thank you for your time and consideration.");
 }
 
 (async () => {
