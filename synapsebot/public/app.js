@@ -13,7 +13,6 @@ const askButton = document.getElementById("ask");
 const accessForm = document.getElementById("access");
 const accessInput = document.getElementById("access-code");
 const accessError = document.getElementById("access-error");
-const contents = document.querySelector(".contents");
 
 /** Completed exchanges sent back for follow-up questions: [{ role, text }]. */
 const history = [];
@@ -79,11 +78,6 @@ questionBox.addEventListener("keydown", (event) => {
   }
 });
 
-contents.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-question]");
-  if (button && !inFlight) ask(button.dataset.question);
-});
-
 function el(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -145,7 +139,6 @@ async function ask(question) {
     showAccess();
     return;
   }
-  contents.hidden = true;
   questionBox.value = "";
   const view = newEntry(question);
   view.entry.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -269,9 +262,17 @@ function currentTheme() {
   return document.documentElement.dataset.theme ?? (systemDark.matches ? "dark" : "light");
 }
 
+// Line icons in the current text color: the button shows the mode it switches to.
+const SUN_ICON =
+  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">' +
+  '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>';
+const MOON_ICON =
+  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true">' +
+  '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+
 function showThemeToggle() {
   const dark = currentTheme() === "dark";
-  themeToggle.textContent = dark ? "Light" : "Dark";
+  themeToggle.innerHTML = dark ? SUN_ICON : MOON_ICON;
   themeToggle.setAttribute("aria-pressed", String(dark));
   themeToggle.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
 }
