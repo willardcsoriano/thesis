@@ -3,9 +3,40 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SynapseBot</title>
+  <title>SynapseBot — A Thesis Companion</title>
   <meta name="description" content="Ask questions about the SynapseOS thesis. Answers cite the thesis documents.">
   <meta name="color-scheme" content="light dark">
+  <!-- Internal tool for the team: keep it out of search engines. -->
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#f5f0e6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1a1815" media="(prefers-color-scheme: dark)">
+  <meta name="application-name" content="SynapseBot">
+  <meta name="apple-mobile-web-app-title" content="SynapseBot">
+  <link rel="canonical" href="https://synapsebot-thesis.vercel.app/">
+
+  <!-- Icons: the browser tab, home screens, and installed-app launchers. -->
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+
+  <!-- Link previews (Messenger, Discord, Slack, X, LinkedIn). Image URLs must be absolute. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SynapseBot">
+  <meta property="og:title" content="SynapseBot — A Thesis Companion">
+  <meta property="og:description" content="Ask questions about the SynapseOS thesis. Answers cite the thesis documents.">
+  <meta property="og:url" content="https://synapsebot-thesis.vercel.app/">
+  <meta property="og:image" content="https://synapsebot-thesis.vercel.app/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="SynapseBot: questions answered from the thesis itself">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SynapseBot — A Thesis Companion">
+  <meta name="twitter:description" content="Ask questions about the SynapseOS thesis. Answers cite the thesis documents.">
+  <meta name="twitter:image" content="https://synapsebot-thesis.vercel.app/og-image.png">
+  <meta name="twitter:image:alt" content="SynapseBot: questions answered from the thesis itself">
+
   <link rel="preload" href="fonts/eb-garamond-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/courier-prime-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <script src="theme.js"></script>
@@ -18,16 +49,10 @@
     <header class="masthead">
       <p class="running-head">SynapseOS &middot; A Thesis Companion</p>
       <h1>SynapseBot</h1>
-      <p class="subtitle">Questions answered from the thesis itself</p>
     </header>
-
-    <section class="preface" aria-label="About">
-      <p class="dropcap">SynapseOS is an undergraduate thesis on operating a computer by conversation: you say what you want, and an agent carries it out on the Linux desktop underneath. This companion answers questions about it: the proposal, the design, the safety model, and the prototype. Every answer is drawn from the thesis documents and footnoted, so you can check the source yourself.</p>
-    </section>
 
     <nav class="contents" aria-labelledby="contents-title">
       <h2 id="contents-title">Contents</h2>
-      <p class="contents-note">Some places to begin.</p>
       <ol>
         <li><button type="button" data-question="What is SynapseOS, and what does the thesis set out to show?">What is SynapseOS?</button></li>
         <li><button type="button" data-question="What is the thesis hypothesis, and how will the study test it?">The hypothesis and the study</button></li>
@@ -42,7 +67,7 @@
 
     <form id="access" class="access" hidden>
       <label for="access-code">Access code</label>
-      <p class="hint">The author shares this with the class.</p>
+      <p class="hint">Ask a team member for the code.</p>
       <div class="row">
         <input id="access-code" name="code" type="password" autocomplete="off" spellcheck="false" required>
         <button type="submit">Enter</button>
@@ -60,10 +85,8 @@
     </form>
 
     <footer class="colophon">
-      <p id="provenance">Answers are drawn from the thesis repository.</p>
-      <p>Answers are written by a language model and can be wrong. Check the cited sources, and ask the author when it matters.</p>
-      <p>Your questions go to Anthropic's API to be answered. This site stores no questions and no personal data.</p>
-      <p class="set-in">Set in EB Garamond and Courier Prime.</p>
+      <p id="provenance">Answers come from the thesis repository.</p>
+      <p>AI-written and can be wrong: check the footnotes. Questions go to Anthropic's API and aren't stored here.</p>
     </footer>
   </main>
 </body>

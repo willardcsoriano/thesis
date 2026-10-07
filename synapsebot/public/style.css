@@ -103,14 +103,14 @@ a:hover { text-decoration-thickness: 2px; }
 }
 .theme-toggle:hover { color: var(--ink); border-color: var(--ink-soft); }
 
-.masthead { text-align: center; margin-bottom: 2.75rem; }
+.masthead { text-align: center; margin-bottom: 1.5rem; }
 .running-head {
   font-family: var(--mono);
   font-size: 0.72rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--ink-soft);
-  margin: 0 0 1.75rem;
+  margin: 0 0 1rem;
 }
 .masthead h1 {
   font-weight: 400;
@@ -119,37 +119,10 @@ a:hover { text-decoration-thickness: 2px; }
   line-height: 1.1;
   margin: 0;
 }
-.subtitle {
-  font-style: italic;
-  color: var(--ink-soft);
-  margin: 0.5rem 0 0;
-}
-.masthead::after {
-  content: "❦";
-  display: block;
-  margin-top: 1.5rem;
-  color: var(--ink-soft);
-  font-size: 1.1rem;
-}
-
-/* Preface ----------------------------------------------------------------- */
-
-.preface p {
-  margin: 0;
-  text-align: justify;
-  hyphens: auto;
-}
-.dropcap::first-letter {
-  float: left;
-  font-size: 3.6em;
-  line-height: 0.85;
-  padding: 0.08em 0.08em 0 0;
-  color: var(--accent);
-}
 
 /* Contents ---------------------------------------------------------------- */
 
-.contents { margin: 2.75rem 0 1rem; }
+.contents { margin: 1.5rem 0 1rem; }
 .contents h2, .composer label, .access label {
   font-family: var(--mono);
   font-weight: 400;
@@ -159,7 +132,6 @@ a:hover { text-decoration-thickness: 2px; }
   color: var(--ink-soft);
   margin: 0;
 }
-.contents-note { font-style: italic; color: var(--ink-soft); margin: 0.25rem 0 0.75rem; }
 .contents ol {
   list-style: upper-roman;
   margin: 0;
@@ -370,7 +342,7 @@ a:hover { text-decoration-thickness: 2px; }
 /* Colophon ---------------------------------------------------------------- */
 
 .colophon {
-  margin-top: 4rem;
+  margin-top: 3rem;
   text-align: center;
   font-size: 0.85rem;
   line-height: 1.5;
@@ -383,13 +355,12 @@ a:hover { text-decoration-thickness: 2px; }
   font-size: 1.1rem;
 }
 .colophon p { margin: 0 auto 0.4rem; max-width: 30rem; }
-.colophon .set-in { font-style: italic; margin-top: 1rem; }
 .colophon code { font-family: var(--mono); font-size: 0.9em; }
 
 @media (max-width: 30rem) {
   body { font-size: 1.0625rem; }
   .page { padding-top: 2.25rem; }
-  .answer, .preface p { text-align: left; }
+  .answer { text-align: left; }
   .row .hint { display: none; }
   .row { justify-content: flex-end; }
 }

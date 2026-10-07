@@ -251,11 +251,11 @@ async function loadProvenance() {
     const meta = await response.json();
     const line = document.getElementById("provenance");
     const date = new Date(meta.builtAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
-    line.textContent = `Answers are drawn from the thesis repository at commit `;
+    line.textContent = "From commit ";
     const commit = meta.repoUrl ? el("a") : el("code");
     commit.textContent = meta.commit.slice(0, 7);
     if (meta.repoUrl) commit.href = `${meta.repoUrl}/tree/${meta.commit}`;
-    line.append(commit, `${meta.dirty ? " (with uncommitted edits)" : ""}, as of ${date}.`);
+    line.append(commit, `${meta.dirty ? " (with uncommitted edits)" : ""} · ${date}`);
   } catch { /* the colophon keeps its generic line */ }
 }
 
