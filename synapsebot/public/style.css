@@ -90,15 +90,15 @@ a:hover { text-decoration-thickness: 2px; }
   position: absolute;
   top: 1rem;
   right: 1rem;
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
   color: var(--ink-soft);
   background: transparent;
   border: 1px solid var(--rule);
   border-radius: 0;
-  padding: 0.3rem 0.65rem;
   cursor: pointer;
 }
 .theme-toggle:hover { color: var(--ink); border-color: var(--ink-soft); }
