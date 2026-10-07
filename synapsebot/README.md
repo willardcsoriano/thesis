@@ -1,6 +1,6 @@
 ## Overview
 
-SynapseBot is a public web page where classmates and professors ask questions about the SynapseOS thesis and get answers drawn only from the thesis's own documents, each claim footnoted with a link to the file and section it came from. It is hosted on Vercel as a static, book-styled page plus one Node function: it searches a keyword index of the allowlisted repository files and sends the best-matching sections to Claude Sonnet 5.5 as citable search results. The bot reads only what `sources.txt` lists, and the build refuses to publish anything shaped like an email address or API key. Access is gated by a shared class passphrase, a per-visitor rate limit, and your Anthropic spend cap. This directory is self-contained: it has its own Node toolchain and its own CI job, and neither touches the Go prototype.
+SynapseBot is an internal web page where the thesis team asks questions about the SynapseOS thesis and get answers drawn only from the thesis's own documents, each claim footnoted with a link to the file and section it came from. It is hosted on Vercel as a static, book-styled page plus one Node function: it searches a keyword index of the allowlisted repository files and sends the best-matching sections to Claude Sonnet 5.5 as citable search results. The bot reads only what `sources.txt` lists, and the build refuses to publish anything shaped like an email address or API key. Access is gated by a shared team passphrase, search engines are told not to index it, a per-visitor rate limit, and your Anthropic spend cap. This directory is self-contained: it has its own Node toolchain and its own CI job, and neither touches the Go prototype.
 
 ## Table of Contents
 
@@ -66,17 +66,17 @@ The corpus is built from files outside `synapsebot/`, and a Vercel build can't r
 3. `npm run deploy`. Vercel prints the production URL.
 4. In the Claude Console, set a monthly spend limit on that workspace. This is the hard cap on what a leaked access code can cost you.
 
-To change the class passphrase, update `ACCESS_CODE` in the Vercel project settings (or `vercel env rm` then `add`) and redeploy. Existing visitors are asked for the new one on their next question.
+To change the team passphrase, update `ACCESS_CODE` in the Vercel project settings (or `vercel env rm` then `add`) and redeploy. Existing visitors are asked for the new one on their next question.
 
 ## Keeping it current
 
-The bot answers from the commit it was last deployed at, and the page's colophon names that commit. After the docs change, run `npm run deploy` again. To make a new file readable, add it to `sources.txt` on purpose. The build fails if a file contains an email address, an API key, or a private key.
+The bot answers from the commit it was last deployed at, and the page footer names that commit. After the docs change, run `npm run deploy` again. To make a new file readable, add it to `sources.txt` on purpose. The build fails if a file contains an email address, an API key, or a private key.
 
 When the bot misses a question it should answer, add the question to `eval/questions.json` along with the file that answers it. `npm run ci` then checks retrieval for that question on every change.
 
 ## Privacy and cost
 
-- **Visitor data.** No accounts. Questions are sent to the Anthropic API to be answered and are not stored by SynapseBot. Anthropic retains API data under its commercial terms, so the colophon tells visitors their questions go to Anthropic. The visitor's IP is used only as the rate-limit key, held in memory for at most a minute. The one log line per answer holds counts and cited section ids, never question text.
+- **Visitor data.** No accounts. Questions are sent to the Anthropic API to be answered and are not stored by SynapseBot. Anthropic retains API data under its commercial terms, so the page footer tells visitors their questions go to Anthropic. The visitor's IP is used only as the rate-limit key, held in memory for at most a minute. The one log line per answer holds counts and cited section ids, never question text.
 - **The page.** No analytics or third-party requests. Fonts are self-hosted, because loading Google Fonts would send every visitor's IP to Google, which is a GDPR problem. A strict Content-Security-Policy is set in `vercel.json`.
 - **What is published.** Only allowlisted files. Kept out on purpose: the GPL-3.0 NL2Bash data, other authors' papers under `research-methods/*/references`, `docs/notes`, `docs/retrospective.md`, and anything with study-participant data. Keep participant data out of `sources.txt` for good: it falls under the study's ethics approval and data-protection law.
 - **Cost.** A typical question sends about 8–10k input tokens and gets a few hundred output tokens: roughly $0.02–0.03 on Sonnet 5.5. The rate limit is 8 questions per minute per visitor. It is counted per function instance, so it's a brake rather than a guarantee, and the Anthropic spend limit is the hard cap.
@@ -89,6 +89,7 @@ The owner's standing preference: **the page reads like a book, because the subje
 - Courier Prime (typewriter) for the reader's own voice and for apparatus: questions, labels, running heads, file paths, footnote numbers.
 - Warm paper and a single ink, with one oxblood accent. A dark "night reading" variant follows the system setting until the reader picks one with the Light/Dark toggle; the choice is remembered in that browser only.
 - Answers as "In principle" (always visible) and "In practice" (folded, opened with "read more"), labelled in the typewriter apparatus voice. These terms replace "high level / low level" on purpose.
-- Book furniture instead of app chrome: a running head, a drop cap, a "Contents" list of starter questions, footnotes under each answer, a fleuron and a colophon. No chat bubbles, avatars, or cards.
+- Book furniture instead of app chrome: a running head, a "Contents" list of starter questions, and footnotes under each answer. No chat bubbles, avatars, or cards.
+- Straight to the point: the page is an internal tool for team members, so there is no introduction or preface, and the footer is two short lines. Search engines are asked not to index it (`robots` meta and `X-Robots-Tag`).
 
 Keep future UI changes within this direction.

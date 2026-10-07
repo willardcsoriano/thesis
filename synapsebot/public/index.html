@@ -6,6 +6,8 @@
   <title>SynapseBot — A Thesis Companion</title>
   <meta name="description" content="Ask questions about the SynapseOS thesis. Answers cite the thesis documents.">
   <meta name="color-scheme" content="light dark">
+  <!-- Internal tool for the team: keep it out of search engines. -->
+  <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#f5f0e6" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#1a1815" media="(prefers-color-scheme: dark)">
   <meta name="application-name" content="SynapseBot">
@@ -47,16 +49,10 @@
     <header class="masthead">
       <p class="running-head">SynapseOS &middot; A Thesis Companion</p>
       <h1>SynapseBot</h1>
-      <p class="subtitle">Questions answered from the thesis itself</p>
     </header>
-
-    <section class="preface" aria-label="About">
-      <p class="dropcap">SynapseOS is an undergraduate thesis on operating a computer by conversation: you say what you want, and an agent carries it out on the Linux desktop underneath. This companion answers questions about it: the proposal, the design, the safety model, and the prototype. Every answer is drawn from the thesis documents and footnoted, so you can check the source yourself.</p>
-    </section>
 
     <nav class="contents" aria-labelledby="contents-title">
       <h2 id="contents-title">Contents</h2>
-      <p class="contents-note">Some places to begin.</p>
       <ol>
         <li><button type="button" data-question="What is SynapseOS, and what does the thesis set out to show?">What is SynapseOS?</button></li>
         <li><button type="button" data-question="What is the thesis hypothesis, and how will the study test it?">The hypothesis and the study</button></li>
@@ -71,7 +67,7 @@
 
     <form id="access" class="access" hidden>
       <label for="access-code">Access code</label>
-      <p class="hint">The author shares this with the class.</p>
+      <p class="hint">Ask a team member for the code.</p>
       <div class="row">
         <input id="access-code" name="code" type="password" autocomplete="off" spellcheck="false" required>
         <button type="submit">Enter</button>
@@ -89,10 +85,8 @@
     </form>
 
     <footer class="colophon">
-      <p id="provenance">Answers are drawn from the thesis repository.</p>
-      <p>Answers are written by a language model and can be wrong. Check the cited sources, and ask the author when it matters.</p>
-      <p>Your questions go to Anthropic's API to be answered. This site stores no questions and no personal data.</p>
-      <p class="set-in">Set in EB Garamond and Courier Prime.</p>
+      <p id="provenance">Answers come from the thesis repository.</p>
+      <p>AI-written and can be wrong: check the footnotes. Questions go to Anthropic's API and aren't stored here.</p>
     </footer>
   </main>
 </body>
