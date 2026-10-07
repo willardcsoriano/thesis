@@ -1,7 +1,7 @@
 {
   "name": "SynapseBot — A Thesis Companion",
   "short_name": "SynapseBot",
-  "description": "Answers panel questions about the SynapseOS thesis on the spot, with sources.",
+  "description": "Quick, sourced answers about the SynapseOS thesis.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
