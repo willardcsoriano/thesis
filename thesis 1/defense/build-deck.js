@@ -352,10 +352,10 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   s.addText("What It Looks Like", { placeholder: "title" });
   s.addImage({
     path: "media/what-it-looks-like.gif",
-    x: 1.35, y: 2.0, w: 10.6, h: 4.47,
+    x: 1.35, y: 1.85, w: 10.6, h: 4.82,
   });
   s.addNotes(
-    "This is a real, recorded exchange — someone typing a plain request, the command SynapseOS generates, and the result. " +
+    "This is a real recording, three requests in a row — listing a folder, renaming a file, counting photos — plain English in, a real command and a real answer out each time. " +
     "We're showing this early to make one thing clear: this already works today, it isn't just a plan on paper."
   );
 }
