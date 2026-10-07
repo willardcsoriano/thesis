@@ -1,6 +1,6 @@
 ## Overview
 
-SynapseBot is an internal web page where the thesis team asks questions about the SynapseOS thesis and get answers drawn only from the thesis's own documents, each claim footnoted with a link to the file and section it came from. It is hosted on Vercel as a static, book-styled page plus one Node function: it searches a keyword index of the allowlisted repository files and sends the best-matching sections to Claude Sonnet 5.5 as citable search results. The bot reads only what `sources.txt` lists, and the build refuses to publish anything shaped like an email address or API key. Access is gated by a shared team passphrase, search engines are told not to index it, a per-visitor rate limit, and your Anthropic spend cap. This directory is self-contained: it has its own Node toolchain and its own CI job, and neither touches the Go prototype.
+SynapseBot is an internal web page the thesis team uses during the defense to answer panelists' questions on the spot, with answers drawn only from the thesis's own documents, each claim footnoted with a link to the file and section it came from. It is hosted on Vercel as a static, book-styled page plus one Node function: it searches a keyword index of the allowlisted repository files and sends the best-matching sections to Claude Sonnet 5.5 as citable search results. The bot reads only what `sources.txt` lists, and the build refuses to publish anything shaped like an email address or API key. Access is gated by a shared team passphrase, a per-visitor rate limit, and your Anthropic spend cap, and search engines are told not to index it. This directory is self-contained: it has its own Node toolchain and its own CI job, and neither touches the Go prototype.
 
 ## Table of Contents
 
@@ -89,7 +89,7 @@ The owner's standing preference: **the page reads like a book, because the subje
 - Courier Prime (typewriter) for the reader's own voice and for apparatus: questions, labels, running heads, file paths, footnote numbers.
 - Warm paper and a single ink, with one oxblood accent. A dark "night reading" variant follows the system setting until the reader picks one with the Light/Dark toggle; the choice is remembered in that browser only.
 - Answers as "In principle" (always visible) and "In practice" (folded, opened with "read more"), labelled in the typewriter apparatus voice. These terms replace "high level / low level" on purpose.
-- Book furniture instead of app chrome: a running head, a "Contents" list of starter questions, and footnotes under each answer. No chat bubbles, avatars, or cards.
-- Straight to the point: the page is an internal tool for team members, so there is no introduction or preface, and the footer is two short lines. Search engines are asked not to index it (`robots` meta and `X-Robots-Tag`).
+- Book furniture instead of app chrome: a running head, a one-line italic context note, and footnotes under each answer. No chat bubbles, avatars, or cards.
+- Straight to the point: the page is an internal tool for team members, so there is no introduction or starter-question list: one context line, the question box focused on load, and a two-line footer. Search engines are asked not to index it (`robots` meta and `X-Robots-Tag`).
 
 Keep future UI changes within this direction.

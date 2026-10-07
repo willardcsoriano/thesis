@@ -120,10 +120,16 @@ a:hover { text-decoration-thickness: 2px; }
   margin: 0;
 }
 
-/* Contents ---------------------------------------------------------------- */
+/* Context and labels ------------------------------------------------------ */
 
-.contents { margin: 1.5rem 0 1rem; }
-.contents h2, .composer label, .access label {
+.context {
+  margin: 0 auto 0.5rem;
+  max-width: 30rem;
+  text-align: center;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+.composer label, .access label {
   font-family: var(--mono);
   font-weight: 400;
   font-size: 0.78rem;
@@ -132,21 +138,6 @@ a:hover { text-decoration-thickness: 2px; }
   color: var(--ink-soft);
   margin: 0;
 }
-.contents ol {
-  list-style: upper-roman;
-  margin: 0;
-  padding-left: 2.25rem;
-}
-.contents li { padding-left: 0.35rem; }
-.contents li::marker { color: var(--ink-soft); font-size: 0.9em; }
-.contents button {
-  all: unset;
-  cursor: pointer;
-  border-bottom: 1px solid transparent;
-}
-.contents button:hover { border-bottom-color: var(--accent); color: var(--accent); }
-.contents button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.contents[hidden] { display: none; }
 
 /* Transcript -------------------------------------------------------------- */
 

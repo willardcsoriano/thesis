@@ -13,7 +13,6 @@ const askButton = document.getElementById("ask");
 const accessForm = document.getElementById("access");
 const accessInput = document.getElementById("access-code");
 const accessError = document.getElementById("access-error");
-const contents = document.querySelector(".contents");
 
 /** Completed exchanges sent back for follow-up questions: [{ role, text }]. */
 const history = [];
@@ -79,11 +78,6 @@ questionBox.addEventListener("keydown", (event) => {
   }
 });
 
-contents.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-question]");
-  if (button && !inFlight) ask(button.dataset.question);
-});
-
 function el(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -145,7 +139,6 @@ async function ask(question) {
     showAccess();
     return;
   }
-  contents.hidden = true;
   questionBox.value = "";
   const view = newEntry(question);
   view.entry.scrollIntoView({ behavior: "smooth", block: "start" });

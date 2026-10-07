@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SynapseBot — A Thesis Companion</title>
-  <meta name="description" content="Ask questions about the SynapseOS thesis. Answers cite the thesis documents.">
+  <meta name="description" content="Answers panel questions about the SynapseOS thesis on the spot, with sources.">
   <meta name="color-scheme" content="light dark">
   <!-- Internal tool for the team: keep it out of search engines. -->
   <meta name="robots" content="noindex, nofollow">
@@ -24,7 +24,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SynapseBot">
   <meta property="og:title" content="SynapseBot — A Thesis Companion">
-  <meta property="og:description" content="Ask questions about the SynapseOS thesis. Answers cite the thesis documents.">
+  <meta property="og:description" content="Answers panel questions about the SynapseOS thesis on the spot, with sources.">
   <meta property="og:url" content="https://synapsebot-thesis.vercel.app/">
   <meta property="og:image" content="https://synapsebot-thesis.vercel.app/og-image.png">
   <meta property="og:image:width" content="1200">
@@ -33,7 +33,7 @@
   <meta property="og:locale" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="SynapseBot — A Thesis Companion">
-  <meta name="twitter:description" content="Ask questions about the SynapseOS thesis. Answers cite the thesis documents.">
+  <meta name="twitter:description" content="Answers panel questions about the SynapseOS thesis on the spot, with sources.">
   <meta name="twitter:image" content="https://synapsebot-thesis.vercel.app/og-image.png">
   <meta name="twitter:image:alt" content="SynapseBot: questions answered from the thesis itself">
 
@@ -51,17 +51,7 @@
       <h1>SynapseBot</h1>
     </header>
 
-    <nav class="contents" aria-labelledby="contents-title">
-      <h2 id="contents-title">Contents</h2>
-      <ol>
-        <li><button type="button" data-question="What is SynapseOS, and what does the thesis set out to show?">What is SynapseOS?</button></li>
-        <li><button type="button" data-question="What is the thesis hypothesis, and how will the study test it?">The hypothesis and the study</button></li>
-        <li><button type="button" data-question="How does SynapseOS decide whether a generated command is safe to run?">The safety model</button></li>
-        <li><button type="button" data-question="Can every command SynapseOS runs be undone?">Undo and recoverability</button></li>
-        <li><button type="button" data-question="What has been built so far, and what is still planned?">What exists today</button></li>
-        <li><button type="button" data-question="Is SynapseOS a Linux distribution?">Where it sits in Linux</button></li>
-      </ol>
-    </nav>
+    <p class="context">Answers panel questions about the SynapseOS thesis on the spot, drawn only from the thesis documents and footnoted to their sources.</p>
 
     <section id="transcript" class="transcript" aria-live="polite" aria-label="Questions and answers"></section>
 
@@ -76,8 +66,8 @@
     </form>
 
     <form id="composer" class="composer">
-      <label for="question">Your question</label>
-      <textarea id="question" name="question" rows="2" maxlength="1000" placeholder="Ask anything about the thesis…" required></textarea>
+      <label for="question">Question</label>
+      <textarea id="question" name="question" rows="2" maxlength="1000" placeholder="Type the question…" required autofocus></textarea>
       <div class="row">
         <span class="hint">Enter to ask &middot; Shift+Enter for a new line</span>
         <button id="ask" type="submit">Ask</button>
