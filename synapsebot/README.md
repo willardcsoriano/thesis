@@ -22,7 +22,7 @@ synapsebot/
 ├── src/                   the API: request checks, BM25 search, prompt, streaming answers
 ├── api/                   the Vercel function that serves src/ at /api/*
 ├── dev/                   local server: the page and the same API on one port
-├── public/                the page: HTML, CSS, vanilla JS, self-hosted fonts
+├── public/                the page: HTML, CSS, vanilla JS, self-hosted fonts, icons, link-preview image
 ├── test/                  unit tests plus the retrieval eval over the real corpus
 ├── eval/                  professor-style questions; run.ts is the paid answer eval
 └── vercel.json            build command, function limits, security headers

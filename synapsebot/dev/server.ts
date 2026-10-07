@@ -18,6 +18,9 @@ const TYPES: Record<string, string> = {
   ".js": "text/javascript; charset=utf-8",
   ".woff2": "font/woff2",
   ".txt": "text/plain; charset=utf-8",
+  ".png": "image/png",
+  ".ico": "image/x-icon",
+  ".webmanifest": "application/manifest+json",
 };
 
 const api = getRequestListener((request) => app.fetch(request, process.env));
