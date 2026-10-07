@@ -259,13 +259,13 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
       "Command line — full capability, syntax barrier",
       "Graphical desktop — limited to what designers anticipated",
       "LLMs reopen the thread (Berkeley UNIX Consultant, 1988) with far greater capability",
-      "Missing: an implemented, evaluated system for the whole Linux desktop session",
+      "Missing: an implemented, evaluated system for the whole desktop session",
     ]),
     { placeholder: "body" }
   );
   s.addNotes(
     "The command line can do almost anything, but only if you know the right words to type. A graphical desktop is easier, but limits you to the buttons someone else thought to add. " +
-    "Nobody has yet built and tested a system that lets you control a whole Linux desktop just by talking to it normally — that's the gap we're filling."
+    "Nobody has yet built and tested a system that lets you control a whole desktop just by talking to it normally — that's the gap we're filling."
   );
 }
 
@@ -288,7 +288,7 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     }
   );
   s.addNotes(
-    "In one line: what a computer can actually do for you depends on which interface you already know how to use. " +
+    "This is our problem statement, on screen, in one line: what a computer can actually do for you depends on which interface you already know how to use. " +
     "Our goal is a third option, ordinary language, that closes that gap for people regardless of technical background."
   );
 }
@@ -302,7 +302,7 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   s.addText(
     bullets([
       "RQ1 — Predict a command's effects before it runs; capture enough to undo it; beat a pattern list",
-      "RQ2 — Direct a full Linux desktop in ordinary language",
+      "RQ2 — Direct a full desktop in ordinary language",
       "RQ3 — Confirm and recover from mistakes, including ones the user approved",
       "RQ4 — Narrow the fluency gap between CLI and GUI non-experts",
     ], { fontSize: 19 }),
@@ -615,7 +615,7 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   );
 
   s.addNotes(
-    "Our adviser told us, directly, to manage our scope carefully — fair, since this thesis covers a lot of ground. " +
+    "What's on screen is our adviser's own feedback, word for word: manage your scope carefully — fair, given how much ground this thesis covers. " +
     "Our answer: the safety algorithm and getting the interface running are non-negotiable; fine-tuning the AI model and the full user study are real plans, but the first things we'd trim if we run short on time."
   );
 }
@@ -677,8 +677,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   );
 
   s.addNotes(
-    "We're raising this ourselves because our adviser already asked it once: how much of our result comes from the algorithm, versus just the lookup table it's built on? " +
-    "Right now we can only answer that in words, not numbers — but we already have a concrete plan to measure it directly, and we're not hiding that gap."
+    "That's a question our adviser already put to us, in an earlier review, and we're putting it on screen ourselves rather than waiting for it to be asked again. " +
+    "Right now we can only answer it in words, not numbers — but we already have a concrete plan to measure it directly, and we're not hiding that gap."
   );
 }
 
@@ -716,7 +716,28 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
 }
 
 // ---------------------------------------------------------------------------
-// 17. Q&A
+// 17. What's next
+// ---------------------------------------------------------------------------
+{
+  const s = pres.addSlide({ masterName: "CONTENT" });
+  s.addText("What's Next", { placeholder: "title" });
+  s.addText(
+    bullets([
+      "Submit the ethics application",
+      "Finish the interface build",
+      "Run the study with real participants",
+      "Return with results, not just a plan",
+    ]),
+    { placeholder: "body" }
+  );
+  s.addNotes(
+    "Once this proposal is approved, three things happen next: we submit for ethics approval, finish building the interface, and run the full study with real participants. " +
+    "The next time we present, we'll be showing actual results instead of a plan."
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 18. Q&A
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "TITLE" });
