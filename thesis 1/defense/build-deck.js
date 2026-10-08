@@ -700,9 +700,9 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
   );
 
   s.addNotes(
-    "Before you ask — here's a question our adviser already raised in an earlier review, so we're putting it on screen and answering it ourselves. Please read the quote above. " +
-    "Our answer today is words, not a number yet: the table underneath the algorithm is itself just a list, and what we're actually claiming credit for is what's built on top of it. " +
-    "We already have a concrete plan to turn that into an actual measured number."
+    "Our adviser already raised this question in an earlier review, so we are presenting it ourselves. Please read the statement above. " +
+    "Our current answer is a prose argument, not a number: the rule table underneath the algorithm is itself a list, and what we claim credit for is what the algorithm builds on top of it. " +
+    "We have a concrete plan to turn this into a measured result."
   );
 }
 
