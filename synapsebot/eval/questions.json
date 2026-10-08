@@ -4,6 +4,7 @@
     "expect": [
       "README.md",
       "docs/vision.md",
+      "thesis 1/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html",
       "research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html"
     ]
   },
@@ -11,24 +12,28 @@
     "question": "What is the thesis hypothesis?",
     "expect": [
       "docs/vision.md",
+      "thesis 1/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html",
       "research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html"
     ]
   },
   {
     "question": "What problem does the research address?",
     "expect": [
+      "thesis 1/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html",
       "research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html"
     ]
   },
   {
     "question": "What are the objectives of the study?",
     "expect": [
+      "thesis 1/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html",
       "research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html"
     ]
   },
   {
     "question": "What are the scope and limitations of the study?",
     "expect": [
+      "thesis 1/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html",
       "research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html",
       "docs/scope.md"
     ]
@@ -81,6 +86,7 @@
   {
     "question": "What prior work on natural language to shell translation does the thesis build on?",
     "expect": [
+      "thesis 1/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html",
       "research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html",
       "docs/prior-art.md"
     ]
