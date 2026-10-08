@@ -39,9 +39,9 @@ const THEME = {
   headFontFace: "Courier New",
   bodyFontFace: "Calibri",
   colors: {
-    dk1: "FFFFFF", // page background (OOXML slot name only - holds our light color)
+    dk1: "F6F8FA", // page background (OOXML slot name only - holds our light color)
     lt1: "1A1F26", // primary text (OOXML slot name only - holds our dark color)
-    dk2: "F3F4F6", // card / panel background
+    dk2: "FFFFFF", // card / panel background - white, popping off the gray page
     lt2: "57606A", // muted secondary text
     accent1: "1A7F37", // green - primary accent
     accent2: "9A6700", // amber - caution / open-question accent
@@ -334,8 +334,8 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
     }
   );
   s.addNotes(
-    "On screen is the four-step flow every system like this follows: understand the request, decide what to do, act on the computer, then fit into the existing desktop. " +
-    "SynapseOS follows the same four steps, and the safety algorithm we'll cover next sits in the third step — right before anything actually runs."
+    "On screen is simply the four-step flow behind a system like this: understand what you asked, decide what to do, act on the computer, then fit into your existing desktop. " +
+    "SynapseOS follows this same flow, and the safety check we'll show next happens right before anything actually runs."
   );
 }
 
@@ -356,7 +356,35 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
 }
 
 // ---------------------------------------------------------------------------
-// 7. The algorithm - the problem
+// 7. What the algorithm sees
+// ---------------------------------------------------------------------------
+{
+  const s = pres.addSlide({ masterName: "CONTENT" });
+  s.addText("What The Algorithm Sees", { placeholder: "title" });
+  s.addText(
+    "Not the chat interface — a tool we built for the algorithm itself, reasoning about a real command:",
+    { x: 0.6, y: 1.6, w: 12.1, h: 0.55, fontFace: THEME.bodyFontFace, fontSize: 18, color: C.background2, isTextBox: true, margin: 0 }
+  );
+  s.addImage({
+    path: "media/algorithm-trace.png",
+    x: 1.35, y: 2.3, w: 10.6, h: 1.48,
+  });
+  s.addText(
+    [
+      { text: "Sees through find -exec ", options: { bold: true, color: C.accent1 } },
+      { text: "→ resolves the real files it would touch → labels it recoverable, with a capture plan.", options: { color: C.background1 } },
+    ],
+    { x: 0.6, y: 4.1, w: 12.1, h: 0.6, fontFace: THEME.bodyFontFace, fontSize: 16, valign: "middle", isTextBox: true, margin: 0 }
+  );
+  s.addNotes(
+    "This is the algorithm itself running, not the friendly chat interface you just saw — a debugging tool we built called effexplain. " +
+    "Give it a command, and it shows exactly how it reasons: it sees through the find-exec wrapper, works out the real files it would touch, and labels the result recoverable, with a plan to capture those files first. " +
+    "This is what's actually happening underneath the conversation from a moment ago."
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 8. The algorithm - the problem
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -382,7 +410,7 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
 }
 
 // ---------------------------------------------------------------------------
-// 8. The algorithm - what it claims
+// 9. The algorithm - what it claims
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -437,7 +465,7 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
 }
 
 // ---------------------------------------------------------------------------
-// 9. Evaluation design - two independent studies
+// 10. Evaluation design - two independent studies
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -475,7 +503,7 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
 }
 
 // ---------------------------------------------------------------------------
-// 10. Silent data loss - chart
+// 11. Silent data loss - chart
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CHART" });
@@ -513,7 +541,7 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
 }
 
 // ---------------------------------------------------------------------------
-// 11. Restoration coverage - chart
+// 12. Restoration coverage - chart
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CHART" });
@@ -551,7 +579,7 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
 }
 
 // ---------------------------------------------------------------------------
-// 12. Interface evaluation plan
+// 13. Interface evaluation plan
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -572,7 +600,7 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
 }
 
 // ---------------------------------------------------------------------------
-// 13. Scope & sequencing
+// 14. Scope & sequencing
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -595,6 +623,18 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
     { x: 0.6, y: 4.1, w: 12.1, h: 0.8, fontFace: THEME.bodyFontFace, fontSize: 18, italic: true, color: C.background2, isTextBox: true, margin: 0 }
   );
 
+  s.addShape(pres.ShapeType.roundRect, {
+    x: 0.6, y: 5.0, w: 12.1, h: 1.0, rectRadius: 0.08,
+    fill: { color: THEME.colors.dk2 }, line: { color: THEME.colors.accent1, width: 1 },
+  });
+  s.addText(
+    [
+      { text: "Also advised: ", options: { bold: true, color: C.accent1 } },
+      { text: "rent a cloud testing machine instead of buying new hardware — keeps costs down.", options: { color: C.background1 } },
+    ],
+    { x: 0.95, y: 5.0, w: 11.4, h: 1.0, fontFace: THEME.bodyFontFace, fontSize: 17, valign: "middle", isTextBox: true, margin: 0 }
+  );
+
   s.addNotes(
     "What's on screen is our adviser's own feedback, word for word: manage your scope carefully. " +
     "Fair — we are managing a research algorithm and an entirely new interface at the same time. Period. " +
@@ -604,7 +644,7 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
 }
 
 // ---------------------------------------------------------------------------
-// 14. Current status
+// 15. Current status
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -634,7 +674,7 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
 }
 
 // ---------------------------------------------------------------------------
-// 15. Known open question
+// 16. Known open question
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -667,7 +707,7 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
 }
 
 // ---------------------------------------------------------------------------
-// 16. Expected contribution
+// 17. Expected contribution
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -700,7 +740,7 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
 }
 
 // ---------------------------------------------------------------------------
-// 17. What's next
+// 18. What's next
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -721,7 +761,7 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
 }
 
 // ---------------------------------------------------------------------------
-// 18. Thank you / Q&A
+// 19. Thank you / Q&A
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "TITLE" });
