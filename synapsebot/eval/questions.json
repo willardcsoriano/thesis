@@ -141,5 +141,18 @@
     "expect": [
       "docs/layers.md"
     ]
+  },
+  {
+    "question": "can you explain to me the first graph in the ppt?",
+    "expect": [
+      "thesis 1/defense/SynapseOS_Proposal_Defense.pptx"
+    ]
+  },
+  {
+    "question": "what are the inputs and outputs of the corpus experiment behind the silent data loss chart?",
+    "expect": [
+      "docs/algorithms.md",
+      "prototype/pilot/stats_round7.txt"
+    ]
   }
 ]
