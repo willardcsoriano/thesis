@@ -41,6 +41,24 @@ export function tokenize(text: string): string[] {
   return tokens;
 }
 
+/**
+ * Question-side synonyms: words people say mapped to the words the thesis
+ * uses. Applied to the question only, so the index is unchanged. Keys and
+ * values are already-tokenized forms.
+ */
+const QUERY_EXPANSIONS: Record<string, string[]> = {
+  operat: ["os"], // "operating" (stemmed): "operating system" -> "OS"
+  os: ["operat"],
+  distro: ["distribution", "debian"],
+  distribution: ["distro"],
+};
+
+/** Tokenizes a question, folds misspellings of the project name, and adds synonyms. */
+export function tokenizeQuery(text: string): string[] {
+  const tokens = tokenize(text).map((t) => (/^synaps\w{0,3}os?$/.test(t) ? "synapseo" : t));
+  return [...new Set(tokens.flatMap((t) => [t, ...(QUERY_EXPANSIONS[t] ?? [])]))];
+}
+
 export interface Hit {
   chunk: Chunk;
   score: number;
@@ -71,8 +89,8 @@ export class SearchIndex {
    */
   search(query: string, limit: number, context = ""): Hit[] {
     const weights = new Map<string, number>();
-    for (const t of tokenize(context)) weights.set(t, Math.max(weights.get(t) ?? 0, 0.5));
-    for (const t of tokenize(query)) weights.set(t, 1);
+    for (const t of tokenizeQuery(context)) weights.set(t, Math.max(weights.get(t) ?? 0, 0.5));
+    for (const t of tokenizeQuery(query)) weights.set(t, 1);
     if (weights.size === 0) return [];
 
     const n = this.chunks.length;

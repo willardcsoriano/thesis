@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Chunk } from "../src/corpus.js";
-import { SearchIndex, tokenize } from "../src/search.js";
+import { SearchIndex, tokenize, tokenizeQuery } from "../src/search.js";
 
 const chunk = (id: string, title: string, text: string): Chunk => ({
   id, path: id, title, anchor: "", paragraphs: [text],
@@ -40,5 +40,13 @@ describe("SearchIndex", () => {
 
   it("respects the result limit", () => {
     expect(index.search("model design runtime participants", 2)).toHaveLength(2);
+  });
+});
+
+describe("tokenizeQuery", () => {
+  it("folds misspellings of the project name and adds the thesis's own words", () => {
+    expect(tokenizeQuery("Is synapsOS its own operating system")).toEqual(["synapseo", "own", "operat", "os", "system"]);
+    expect(tokenizeQuery("SynapseOS")).toEqual(["synapseo"]);
+    expect(tokenizeQuery("a distro?")).toEqual(["distro", "distribution", "debian"]);
   });
 });
