@@ -178,5 +178,5 @@ Once the study concludes, SynapseOS can run as a standard desktop overlay instea
 | Why does GUI have no escape hatch by default, and why was that reopened? | `decisions.md` D12, D20 |
 | What order are these built in, and what's each milestone's definition of done? | `build-order.md` M1 (CLI, done), M4 (interim loop, done)/M5 (rendering, next) (TUI), M8 (GUI) |
 | Why does a single CLI-mode invocation run more than one command sometimes? | `decisions.md` D21 (bounded, gated multi-step loop; full autonomy considered and rejected) |
-| What has the paper (Ch.3) committed to describing? | `research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html` Table 3.2 and Section 2.1 |
+| What has the paper (Ch.3) committed to describing? | `thesis 1/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html` Table 3.2 and Section 2.1 |
 | Where does each mode sit relative to the OS layers (kernel, userland, session layer)? | `layers.md` |

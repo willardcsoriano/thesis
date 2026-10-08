@@ -338,7 +338,6 @@
   <p class="toc-entry"><a href="#master-toc">TABLE OF CONTENTS</a><span class="toc-page">iv</span></p>
   <p class="toc-entry"><a href="#list-of-tables">LIST OF TABLES</a><span class="toc-page">vi</span></p>
   <p class="toc-entry"><a href="#list-of-figures">LIST OF FIGURES</a><span class="toc-page">vii</span></p>
-  <p class="toc-entry"><a href="#abstract-page">ABSTRACT</a><span class="toc-page">viii</span></p>
 
   <p class="toc-entry" style="font-weight: bold; margin-top: 0.8em;"><a href="#sec-chapter1">Chapter 1: INTRODUCTION</a><span class="toc-page">1</span></p>
 
@@ -384,13 +383,6 @@
 </div>
 
 </div>
-
-<div id="abstract-page" style="page-break-before: always; page-break-after: always;">
-  <h1 style="font-size: 12pt; font-weight: bold; line-height: 2.0; margin-bottom: 30pt; text-align: center;">ABSTRACT</h1>
-  <p style="line-height: 1.0; text-indent: 1.50cm;">The command line can express nearly any operation a computer supports, but only for someone who can write a scripting language.&nbsp; This study designs, implements, and evaluates SynapseOS, a conversational interface layer in which the user states an intention in ordinary language and the system carries it out through shell commands on Linux, with inference running locally.&nbsp; Letting a language model act on a real system raises a problem the interface cannot solve: a generated command may destroy data before its author can read it, and existing safeguards judge a command by its name rather than by what it does.&nbsp; The principal technical contribution is an algorithm that finds what a generated command will change before it runs.&nbsp; It sees through wrappers such as <em>find -exec</em>, <em>xargs</em>, loops, and command substitution, and resolves targets computed at run time with read-only dry runs, so that what would be lost can be captured and the command undone.&nbsp; On a held-out corpus of 776 commands labeled by sandboxed execution, a pattern list let 41% of the commands that lose something run silently, against 0.2% for the algorithm, which also captured and restored 88% of executable losses; a list that refuses everything it does not recognize was as safe but restored none.&nbsp; SynapseOS is also evaluated in a within-subjects study against each participant&rsquo;s own operating system; the two evaluations are independent.</p>
-  <p style="text-indent: 0; margin-top: 24pt; line-height: 2.0;"><strong>Keywords:</strong> conversational interface, human-computer interaction, local language model, Linux desktop, user study</p>
-</div>
-
 
 <div class="chapter-break"></div>
 <!-- ═══════════════ CHAPTER 1 ═══════════════ -->

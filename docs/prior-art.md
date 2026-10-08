@@ -158,4 +158,4 @@ Two constraints on what may be studied and cited here, both learned while survey
 - `vision.md` — the adopt-by-default principle this file operationalises.
 - `algorithms.md` — where a survey that concluded *build* graduates to a design record; its "why nothing existing does this" question is answered from here.
 - `decisions.md` — where the resulting choice is recorded once made.
-- `../research-methods/consolidated/` — Chapter 2, the academic counterpart to this file.
+- `../thesis 1/consolidated/` — Chapter 2, the academic counterpart to this file.

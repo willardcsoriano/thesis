@@ -23,9 +23,12 @@ Mapúa University – Makati
 ## Directory Structure
 
 ```
-├── thesis 1/                        # reserved for the Thesis 1 course (follows Research Methods)
+├── thesis 1/                        # the current course — Thesis 1 (follows Research Methods)
+│   └── consolidated/
+│       ├── SynapseOS_Proposal_Chapters_1_to_3.html  # the sole living document for Chapters 1-3 — edit this
+│       └── SynapseOS_Proposal_Chapters_1_to_3.pdf   # exported from the HTML above, never hand-edited
 ├── thesis 2/                        # reserved for the Thesis 2 course (follows Thesis 1)
-└── research-methods/
+└── research-methods/                # historical record of that course — no longer edited
     ├── module 2/
     │   ├── references/
     │   │   ├── chapter-1.pdf                   # Chapter 1 reference PDF
@@ -37,14 +40,14 @@ Mapúa University – Makati
     │       ├── formative-assessment-2.1.txt    # Chapter 1 draft (source)
     │       ├── formative-assessment-2.1.html   # Chapter 1 draft (HTML, A4 thesis format)
     │       ├── formative-assessment-2.1.pdf    # Chapter 1 draft (PDF export)
-    │       ├── summative-assessment-1.pdf      # Chapter 1 full, as submitted (HTML source retired, see consolidated/)
+    │       ├── summative-assessment-1.pdf      # Chapter 1 full, as submitted (HTML source retired, see thesis 1/consolidated/)
     │       └── receipt.txt                     # Submission receipt
     └── module 3/
         ├── MODULE-3-SPECIFICATIONS.txt         # Methodology chapter planning spec
         ├── references/
         │   ├── Methodology.pptx                # Methodology template (professor-provided)
         │   └── Revised_Thesis_Sonam.pdf        # Reference thesis (Sonam)
-        └── submissions/                        # empty — Ch.2/Ch.3 drafts retired, see consolidated/
+        └── submissions/                        # empty — Ch.2/Ch.3 drafts retired, see thesis 1/consolidated/
 ```
 
 ## Key References
@@ -70,9 +73,12 @@ Mapúa University – Makati
 
 ## HTML → PDF Export
 
+The proposal's `.pdf` is never hand-edited — it's generated from the paired `.html` via a self-contained toolchain (vendored Chromium, driven over the DevTools protocol by Playwright) that also settles the table-of-contents page numbers and stamps page numbers per the university writing guidelines (roman numerals for front matter, Arabic from Chapter 1). See `tools/TOOLING.md` for the full breakdown.
+
 ```bash
-chromium --headless --disable-gpu --no-pdf-header-footer \
-  --print-to-pdf=output.pdf input.html
+SYNAPSE_CHROMIUM=/usr/bin/chromium tools/venv/bin/python tools/build_paper.py \
+  "thesis 1/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html" \
+  "thesis 1/consolidated/SynapseOS_Proposal_Chapters_1_to_3.pdf"
 ```
 
-HTML files use A4 `@page` sizing, Times New Roman 12pt, 1-inch margins, and 1.5 line spacing — ready for thesis submission.
+Both arguments default to that same path, so `tools/build_paper.py` with no arguments rebuilds the live document in place. HTML files use A4 `@page` sizing, Times New Roman 12pt, 1-inch margins, and 1.5 line spacing — ready for thesis submission.
