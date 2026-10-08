@@ -2,9 +2,12 @@
 # repository root. Anything not matched here is invisible to the bot. A line
 # starting with "!" removes files an earlier line matched.
 #
+# "a | b" uses the first alternative that exists, for a file that has moved.
+#
 # Kept out on purpose: prototype/pilot/nl2bash_all.* (GPL-3.0, git-ignored),
-# research-methods/*/references (other authors' papers), docs/notes (private
-# brainstorming), docs/retrospective.md (session process log), .claude/, and
+# research-methods/*/references (other authors' papers), the rest of
+# docs/notes (private brainstorming), docs/retrospective.md (session process
+# log), "thesis 1/archive" (frozen past rounds, superseded), .claude/, and
 # anything holding study-participant data.
 
 README.md
@@ -14,5 +17,8 @@ prototype/README.md
 prototype/build-order.md
 prototype/setup.md
 prototype/testing-plan.md
+docs/notes/groupmate-faq.md
 distro/README.md
-research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html
+thesis 1/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html | research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html
+thesis 1/defense/*.pptx
+thesis 1/defense/outline.md
