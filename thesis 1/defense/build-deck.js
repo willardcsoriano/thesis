@@ -700,9 +700,9 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
   );
 
   s.addNotes(
-    "Our adviser already raised this question in an earlier review, so we are presenting it ourselves. Please read the statement above. " +
-    "Our current answer is a prose argument, not a number: the rule table underneath the algorithm is itself a list, and what we claim credit for is what the algorithm builds on top of it. " +
-    "We have a concrete plan to turn this into a measured result."
+    "Our adviser raised this question in an earlier review, and we address it directly here. Please read the statement above. " +
+    "At present, our answer is qualitative, not quantitative: we argue that the algorithm's contribution lies in what it adds beyond its underlying lookup table. " +
+    "Measuring this precisely is part of our planned next steps."
   );
 }
 
