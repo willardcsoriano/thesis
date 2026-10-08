@@ -15,7 +15,7 @@ This document answers the 53 questions Steve and Alex raised about SynapseOS, de
 ## 1. What SynapseOS actually is
 
 **Is SynapseOS an operating system or an interface layer?**
-An interface layer. It has no kernel — it runs on Debian's. It occupies one slot in the Linux stack: the session/interface layer, the same slot a shell (`bash`) or a desktop environment (XFCE, GNOME) occupies. It calls the existing userland (`coreutils`, `apt`, etc.) unchanged. "OS" in the name is the product vision, not an engineering claim (`docs/layers.md`).
+Today, an interface layer; the end goal is a Debian-based distribution. It has no kernel of its own — it runs on Debian's. It occupies one slot in the Linux stack: the session/interface layer, the same slot a shell (`bash`) or a desktop environment (XFCE, GNOME) occupies, and it calls the existing userland (`coreutils`, `apt`, etc.) unchanged. Until a bootable image exists it is an application installed on Debian. The destination is to ship it as its own distribution the way Ubuntu builds on Debian: SynapseOS as the default session, plus an installable image and an update channel, planned for M8+. "OS" in the name names that destination; even then the honest claim is "a Debian-based distribution," never "a from-scratch OS" (`docs/layers.md`).
 
 **How is this different from ChatGPT / AI terminal tools?**
 Three concrete differences, not a vibe:
