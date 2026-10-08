@@ -10,7 +10,7 @@ import { globSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Chunk, Corpus } from "../src/corpus.js";
-import { chunkHtml, chunkMarkdown } from "./chunk.js";
+import { chunkHtml, chunkMarkdown, chunkPptx } from "./chunk.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const botDir = join(here, "..");
@@ -40,7 +40,10 @@ function resolveSources(): string[] {
   const { include, exclude } = readAllowlist(readFileSync(join(botDir, "sources.txt"), "utf8"));
   const excluded = new Set(exclude.flatMap((g) => globSync(g, { cwd: repoRoot })));
   const files = new Set<string>();
-  for (const pattern of include) {
+  for (const line of include) {
+    // "a | b": use the first alternative that matches, so a file can move
+    // without the bot losing it or reading both copies in between.
+    const pattern = line.split("|").map((alt) => alt.trim()).find((alt) => globSync(alt, { cwd: repoRoot }).length) ?? line;
     const matches = globSync(pattern, { cwd: repoRoot });
     // A warning, not an error: branches differ in which files exist.
     if (matches.length === 0) console.warn(`warning: sources.txt: "${pattern}" matches no files`);
@@ -87,8 +90,10 @@ function checkPublishable(chunks: Chunk[]): void {
 function main(): void {
   const files = resolveSources();
   const chunks = files.flatMap((file) => {
-    const text = readFileSync(join(repoRoot, file), "utf8");
-    return file.endsWith(".html") ? chunkHtml(file, text) : chunkMarkdown(file, text);
+    const path = join(repoRoot, file);
+    if (/\.pptx$/i.test(file)) return chunkPptx(file, readFileSync(path));
+    const text = readFileSync(path, "utf8");
+    return /\.html?$/i.test(file) ? chunkHtml(file, text) : chunkMarkdown(file, text);
   });
   checkPublishable(chunks);
 

@@ -6,6 +6,7 @@
 // are split into numbered parts so one huge section can't crowd out the rest
 // of the retrieval budget.
 
+import { strFromU8, unzipSync } from "fflate";
 import { parse, type HTMLElement } from "node-html-parser";
 import type { Chunk } from "../src/corpus.js";
 
@@ -16,7 +17,10 @@ const SKIPPED_HEADINGS = new Set(["table of contents", "contents"]);
 
 interface Section {
   heading: string;
+  /** Deep-link anchor in the rendered file; empty when there is none. */
   anchor: string;
+  /** Unique id key when several sections share one anchor (FAQ questions, slides). */
+  key?: string;
   paragraphs: string[];
 }
 
@@ -38,9 +42,16 @@ function plainInline(text: string): string {
     .trim();
 }
 
+/** "docs/notes/groupmate-faq.md" -> "Groupmate faq": a readable fallback title. */
+export function titleFromPath(path: string): string {
+  const name = path.split("/").pop()!.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
 export function chunkMarkdown(path: string, source: string): Chunk[] {
   const lines = source.replace(/\r\n/g, "\n").split("\n");
-  let docTitle = path;
+  const fallbackTitle = titleFromPath(path);
+  let docTitle = fallbackTitle;
   const sections: Section[] = [{ heading: "", anchor: "", paragraphs: [] }];
   const slugCounts = new Map<string, number>();
   let paragraph: string[] = [];
@@ -81,7 +92,7 @@ export function chunkMarkdown(path: string, source: string): Chunk[] {
       flush();
       const level = heading[1]!.length;
       const text = plainInline(heading[2]!);
-      if (level === 1 && docTitle === path) {
+      if (level === 1 && docTitle === fallbackTitle) {
         docTitle = text;
         continue;
       }
@@ -90,6 +101,23 @@ export function chunkMarkdown(path: string, source: string): Chunk[] {
       const seen = slugCounts.get(base) ?? 0;
       slugCounts.set(base, seen + 1);
       sections.push({ heading: text, anchor: seen ? `${base}-${seen}` : base, paragraphs: [] });
+      continue;
+    }
+
+    // A line that is only a bold question (FAQ style) gets its own section, so
+    // retrieval can match one question and its answer. It links to the
+    // enclosing heading, since bold text has no anchor of its own.
+    const question = /^\*\*(.+\?)\*\*\s*$/.exec(line.trim());
+    if (question) {
+      flush();
+      const parent = sections.findLast((sec) => !sec.key)!;
+      const text = plainInline(question[1]!);
+      sections.push({
+        heading: parent.heading ? `${parent.heading} › ${text}` : text,
+        anchor: parent.anchor,
+        key: `${parent.anchor}/${slugify(text)}`,
+        paragraphs: [],
+      });
       continue;
     }
 
@@ -133,6 +161,62 @@ export function chunkHtml(path: string, source: string): Chunk[] {
   return toChunks(path, docTitle, sections);
 }
 
+const XML_ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
+
+function decodeXml(text: string): string {
+  return text.replace(/&(#x[0-9a-f]+|#\d+|\w+);/gi, (whole, ent: string) => {
+    if (ent[0] === "#") {
+      const code = ent[1]?.toLowerCase() === "x" ? parseInt(ent.slice(2), 16) : parseInt(ent.slice(1), 10);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : whole;
+    }
+    return XML_ENTITIES[ent] ?? whole;
+  });
+}
+
+/** The text of each <a:p> paragraph in a DrawingML part, in order. */
+function drawingParagraphs(xml: string): string[] {
+  const out: string[] = [];
+  for (const [, body] of xml.matchAll(/<a:p>([\s\S]*?)<\/a:p>/g)) {
+    const text = [...body!.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map((m) => decodeXml(m[1]!)).join("").trim();
+    if (text) out.push(text);
+  }
+  return out;
+}
+
+/**
+ * One chunk per slide: the slide's text, then its speaker notes. Notes are
+ * found through the slide's relationships; bare numbers (the slide-number
+ * placeholder in notes) are dropped.
+ */
+export function chunkPptx(path: string, data: Uint8Array): Chunk[] {
+  const files = unzipSync(data);
+  const read = (name: string) => (files[name] ? strFromU8(files[name]) : "");
+  // Generated decks carry the tool's default title, so the file name names the deck.
+  const docTitle = titleFromPath(path);
+
+  const slides = Object.keys(files)
+    .map((name) => /^ppt\/slides\/slide(\d+)\.xml$/.exec(name))
+    .filter((m): m is RegExpExecArray => m !== null)
+    .map((m) => Number(m[1]))
+    .sort((a, b) => a - b);
+
+  const sections: Section[] = [];
+  for (const n of slides) {
+    // Bare numbers are slide-number placeholders, on slides and in notes alike.
+    const lines = drawingParagraphs(read(`ppt/slides/slide${n}.xml`)).filter((p) => !/^\d+$/.test(p));
+    const rels = read(`ppt/slides/_rels/slide${n}.xml.rels`);
+    const notesTarget = /Target="\.\.\/notesSlides\/([^"]+)"/.exec(rels)?.[1];
+    const notes = notesTarget
+      ? drawingParagraphs(read(`ppt/notesSlides/${notesTarget}`)).filter((p) => !/^\d+$/.test(p))
+      : [];
+    const title = lines[0] ?? `Slide ${n}`;
+    const paragraphs = [...lines.slice(1)];
+    if (notes.length) paragraphs.push(`Speaker notes: ${notes.join(" ")}`);
+    sections.push({ heading: `Slide ${n}: ${title}`, anchor: "", key: `slide-${n}`, paragraphs });
+  }
+  return toChunks(path, docTitle, sections);
+}
+
 function toChunks(path: string, docTitle: string, sections: Section[]): Chunk[] {
   const chunks: Chunk[] = [];
   for (const section of sections) {
@@ -143,7 +227,7 @@ function toChunks(path: string, docTitle: string, sections: Section[]): Chunk[] 
     parts.forEach((paragraphs, i) => {
       const suffix = parts.length > 1 ? `~${i + 1}` : "";
       chunks.push({
-        id: `${path}#${section.anchor}${suffix}`,
+        id: `${path}#${section.key ?? section.anchor}${suffix}`,
         path,
         title: parts.length > 1 ? `${title} (part ${i + 1} of ${parts.length})` : title,
         anchor: section.anchor,
