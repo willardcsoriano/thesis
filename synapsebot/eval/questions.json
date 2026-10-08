@@ -121,7 +121,6 @@
     "question": "Is synapsOS its own operating system",
     "expect": [
       "docs/layers.md",
-      "docs/vision.md",
       "docs/notes/groupmate-faq.md"
     ]
   },
@@ -129,6 +128,12 @@
     "question": "What does the defense presentation say the gap is?",
     "expect": [
       "thesis 1/defense/SynapseOS_Proposal_Defense.pptx"
+    ]
+  },
+  {
+    "question": "is synapseos a distro",
+    "expect": [
+      "docs/layers.md"
     ]
   }
 ]
