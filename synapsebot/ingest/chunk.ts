@@ -183,8 +183,40 @@ function drawingParagraphs(xml: string): string[] {
   return out;
 }
 
+/** All text runs inside an XML fragment, joined with spaces. */
+function runs(xml: string): string {
+  return [...xml.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map((m) => decodeXml(m[1]!)).join(" ").replace(/\s+/g, " ").trim();
+}
+
+/** The cached values of a chart reference (<c:cat> or <c:val>), in point order. */
+function chartPoints(xml: string | undefined): string[] {
+  if (!xml) return [];
+  return [...xml.matchAll(/<c:pt idx="\d+">\s*<c:v>([^<]*)<\/c:v>/g)].map((m) => decodeXml(m[1]!));
+}
+
 /**
- * One chunk per slide: the slide's text, then its speaker notes. Notes are
+ * A chart's numbers as one sentence, e.g. "Chart: Lower is better… Silent
+ * data loss (%): Pattern list 41.2, Fail-closed list 0, Algorithm 0." Charts
+ * keep their data in their own part, so slide text alone never shows it.
+ */
+export function describeChart(xml: string): string {
+  const [head = "", plot = ""] = xml.split("<c:plotArea");
+  const parts: string[] = [];
+  const title = runs(head);
+  for (const [, ser] of plot.matchAll(/<c:ser>([\s\S]*?)<\/c:ser>/g)) {
+    const name = decodeXml(/<c:tx>[\s\S]*?<c:v>([^<]*)<\/c:v>/.exec(ser!)?.[1] ?? "").trim();
+    const cats = chartPoints(/<c:cat>([\s\S]*?)<\/c:cat>/.exec(ser!)?.[1]);
+    const vals = chartPoints(/<c:val>([\s\S]*?)<\/c:val>/.exec(ser!)?.[1]);
+    const points = vals.map((v, i) => (cats[i] ? `${cats[i]} ${v}` : v)).join(", ");
+    if (points) parts.push(name ? `${name}: ${points}` : points);
+  }
+  const axes = [...plot.matchAll(/<c:(?:valAx|catAx)>[\s\S]*?<c:title>([\s\S]*?)<\/c:title>/g)].map((m) => runs(m[1]!)).filter(Boolean);
+  if (!parts.length) return "";
+  return `Chart${title ? `: ${title}` : ""}. ${parts.join("; ")}.${axes.length ? ` Axes: ${axes.join(", ")}.` : ""}`;
+}
+
+/**
+ * One chunk per slide: the slide's text, then any chart data, then its speaker notes. Notes are
  * found through the slide's relationships; bare numbers (the slide-number
  * placeholder in notes) are dropped.
  */
@@ -205,14 +237,18 @@ export function chunkPptx(path: string, data: Uint8Array): Chunk[] {
     // Bare numbers are slide-number placeholders, on slides and in notes alike.
     const lines = drawingParagraphs(read(`ppt/slides/slide${n}.xml`)).filter((p) => !/^\d+$/.test(p));
     const rels = read(`ppt/slides/_rels/slide${n}.xml.rels`);
-    const notesTarget = /Target="\.\.\/notesSlides\/([^"]+)"/.exec(rels)?.[1];
+    // Relationship targets may be relative ("../charts/x") or package-absolute ("/ppt/charts/x").
+    const notesTarget = /Target="(?:\.\.|\/ppt)\/notesSlides\/([^"]+)"/.exec(rels)?.[1];
     const notes = notesTarget
       ? drawingParagraphs(read(`ppt/notesSlides/${notesTarget}`)).filter((p) => !/^\d+$/.test(p))
       : [];
+    const charts = [...rels.matchAll(/Target="(?:\.\.|\/ppt)\/charts\/([^"]+)"/g)]
+      .map((m) => describeChart(read(`ppt/charts/${m[1]}`)))
+      .filter(Boolean);
     const title = lines[0] ?? `Slide ${n}`;
-    const paragraphs = [...lines.slice(1)];
+    const paragraphs = [...lines.slice(1), ...charts];
     if (notes.length) paragraphs.push(`Speaker notes: ${notes.join(" ")}`);
-    sections.push({ heading: `Slide ${n}: ${title}`, anchor: "", key: `slide-${n}`, paragraphs });
+    sections.push({ heading: `Slide ${n}: ${title.trim()}`, anchor: "", key: `slide-${n}`, paragraphs });
   }
   return toChunks(path, docTitle, sections);
 }
