@@ -1,18 +1,134 @@
 [
-  { "question": "What is SynapseOS, in one paragraph?", "expect": ["README.md", "docs/vision.md", "research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html"] },
-  { "question": "What is the thesis hypothesis?", "expect": ["docs/vision.md", "research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html"] },
-  { "question": "What problem does the research address?", "expect": ["research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html"] },
-  { "question": "What are the objectives of the study?", "expect": ["research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html"] },
-  { "question": "What are the scope and limitations of the study?", "expect": ["research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html", "docs/scope.md"] },
-  { "question": "Why does the effect analysis fail closed when a command is unknown?", "expect": ["docs/safety-model.md", "docs/algorithms.md"] },
-  { "question": "Can every command SynapseOS runs be undone?", "expect": ["docs/safety-model.md"] },
-  { "question": "What is the recoverability analysis algorithm?", "expect": ["docs/algorithms.md", "docs/safety-model.md"] },
-  { "question": "Which language model does the prototype use, and how is it served?", "expect": ["docs/stack.md"] },
-  { "question": "Is SynapseOS a Linux distribution?", "expect": ["docs/layers.md"] },
-  { "question": "What is the difference between the CLI, TUI and GUI modes?", "expect": ["docs/interface-modes.md"] },
-  { "question": "What are the known gaps in the safety model?", "expect": ["docs/safety-model.md", "docs/open-problems.md"] },
-  { "question": "What prior work on natural language to shell translation does the thesis build on?", "expect": ["research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html", "docs/prior-art.md"] },
-  { "question": "What are the non-goals of the project?", "expect": ["docs/vision.md"] },
-  { "question": "In what order are the prototype milestones built?", "expect": ["prototype/build-order.md"] },
-  { "question": "How do I set up and run the prototype?", "expect": ["prototype/setup.md", "prototype/README.md"] }
+  {
+    "question": "What is SynapseOS, in one paragraph?",
+    "expect": [
+      "README.md",
+      "docs/vision.md",
+      "research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html"
+    ]
+  },
+  {
+    "question": "What is the thesis hypothesis?",
+    "expect": [
+      "docs/vision.md",
+      "research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html"
+    ]
+  },
+  {
+    "question": "What problem does the research address?",
+    "expect": [
+      "research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html"
+    ]
+  },
+  {
+    "question": "What are the objectives of the study?",
+    "expect": [
+      "research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html"
+    ]
+  },
+  {
+    "question": "What are the scope and limitations of the study?",
+    "expect": [
+      "research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html",
+      "docs/scope.md"
+    ]
+  },
+  {
+    "question": "Why does the effect analysis fail closed when a command is unknown?",
+    "expect": [
+      "docs/safety-model.md",
+      "docs/algorithms.md"
+    ]
+  },
+  {
+    "question": "Can every command SynapseOS runs be undone?",
+    "expect": [
+      "docs/safety-model.md"
+    ]
+  },
+  {
+    "question": "What is the recoverability analysis algorithm?",
+    "expect": [
+      "docs/algorithms.md",
+      "docs/safety-model.md"
+    ]
+  },
+  {
+    "question": "Which language model does the prototype use, and how is it served?",
+    "expect": [
+      "docs/stack.md"
+    ]
+  },
+  {
+    "question": "Is SynapseOS a Linux distribution?",
+    "expect": [
+      "docs/layers.md"
+    ]
+  },
+  {
+    "question": "What is the difference between the CLI, TUI and GUI modes?",
+    "expect": [
+      "docs/interface-modes.md"
+    ]
+  },
+  {
+    "question": "What are the known gaps in the safety model?",
+    "expect": [
+      "docs/safety-model.md",
+      "docs/open-problems.md"
+    ]
+  },
+  {
+    "question": "What prior work on natural language to shell translation does the thesis build on?",
+    "expect": [
+      "research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html",
+      "docs/prior-art.md"
+    ]
+  },
+  {
+    "question": "What are the non-goals of the project?",
+    "expect": [
+      "docs/vision.md"
+    ]
+  },
+  {
+    "question": "In what order are the prototype milestones built?",
+    "expect": [
+      "prototype/build-order.md"
+    ]
+  },
+  {
+    "question": "How do I set up and run the prototype?",
+    "expect": [
+      "prototype/setup.md",
+      "prototype/README.md"
+    ]
+  },
+  {
+    "question": "how do u prevent people from only clicking yes",
+    "expect": [
+      "docs/notes/groupmate-faq.md",
+      "docs/algorithms.md"
+    ]
+  },
+  {
+    "question": "Can the system handle ambiguous instructions",
+    "expect": [
+      "docs/notes/groupmate-faq.md"
+    ]
+  },
+  {
+    "question": "Is synapsOS its own operating system",
+    "expect": [
+      "docs/layers.md",
+      "docs/vision.md",
+      "docs/notes/groupmate-faq.md"
+    ]
+  },
+  {
+    "question": "What does the defense presentation say the gap is?",
+    "expect": [
+      "thesis 1/defense/SynapseOS_Proposal_Defense.pptx"
+    ]
+  }
 ]
