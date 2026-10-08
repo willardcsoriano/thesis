@@ -273,10 +273,10 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
   s.addText("Research Questions", { placeholder: "title" });
   s.addText(
     bullets([
-      "RQ1 — Predict a command's effects before it runs; capture enough to undo it; beat a pattern list",
-      "RQ2 — Direct a full desktop in ordinary language",
-      "RQ3 — Confirm and recover from mistakes, including ones the user approved",
-      "RQ4 — Narrow the fluency gap between CLI and GUI non-experts",
+      "RQ1 — Can we predict a command's effects before it runs — and undo it — better than a pattern list?",
+      "RQ2 — How do we let someone direct a whole desktop in ordinary language?",
+      "RQ3 — What confirmation and recovery design lets someone undo a mistake, even one they approved?",
+      "RQ4 — Does this close the fluency gap between people fluent in neither the command line nor a GUI?",
     ], { fontSize: 19 }),
     { placeholder: "body" }
   );
