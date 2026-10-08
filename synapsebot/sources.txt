@@ -4,7 +4,8 @@
 #
 # "a | b" uses the first alternative that exists, for a file that has moved.
 #
-# Kept out on purpose: prototype/pilot/nl2bash_all.* (GPL-3.0, git-ignored),
+# Kept out on purpose: prototype/pilot/nl2bash_all.* (GPL-3.0, git-ignored) and
+# the per-command pilot listings,
 # research-methods/*/references (other authors' papers), the rest of
 # docs/notes (private brainstorming), docs/retrospective.md (session process
 # log), "thesis 1/archive" (frozen past rounds, superseded), .claude/, and
@@ -22,3 +23,7 @@ distro/README.md
 thesis 1/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html | research-methods/consolidated/SynapseOS_Proposal_Chapters_1_to_3.html
 thesis 1/defense/*.pptx
 thesis 1/defense/outline.md
+# Headline numbers of the pilot round the defense charts use. The matching
+# results_round*.txt files are left out: they list individual commands,
+# including NL2Bash-derived ones, and would swamp retrieval.
+prototype/pilot/stats_round7.txt

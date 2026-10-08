@@ -51,6 +51,14 @@ const QUERY_EXPANSIONS: Record<string, string[]> = {
   os: ["operat"],
   distro: ["distribution", "debian"],
   distribution: ["distro"],
+  graph: ["chart"],
+  plot: ["chart"],
+  ppt: ["slide", "defense"],
+  pptx: ["slide", "defense"],
+  powerpoint: ["slide", "defense"],
+  deck: ["slide", "defense"],
+  presentation: ["slide", "defense"],
+  experiment: ["pilot", "corpu"], // "corpus" stems to "corpu"
 };
 
 /** Tokenizes a question, folds misspellings of the project name, and adds synonyms. */
@@ -83,12 +91,14 @@ export class SearchIndex {
   }
 
   /**
-   * Returns up to `limit` chunks ranked by BM25. `context` (for example the
-   * previous question, so "why?" follow-ups still find their topic) counts at
-   * half weight.
+   * Returns up to `limit` chunks ranked by BM25. `context` (the previous
+   * question, so "why?" follow-ups still find their topic) counts at half
+   * weight; `background` (the previous answer, which names what "that" refers
+   * to) at a fifth.
    */
-  search(query: string, limit: number, context = ""): Hit[] {
+  search(query: string, limit: number, context = "", background = ""): Hit[] {
     const weights = new Map<string, number>();
+    for (const t of tokenizeQuery(background)) weights.set(t, Math.max(weights.get(t) ?? 0, 0.2));
     for (const t of tokenizeQuery(context)) weights.set(t, Math.max(weights.get(t) ?? 0, 0.5));
     for (const t of tokenizeQuery(query)) weights.set(t, 1);
     if (weights.size === 0) return [];

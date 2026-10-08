@@ -50,3 +50,19 @@ describe("tokenizeQuery", () => {
     expect(tokenizeQuery("a distro?")).toEqual(["distro", "distribution", "debian"]);
   });
 });
+
+describe("follow-up context", () => {
+  const index = new SearchIndex([
+    { id: "a", path: "a", title: "Stack", anchor: "", paragraphs: ["Go runtime and Ollama."] },
+    { id: "b", path: "b", title: "Round 7", anchor: "", paragraphs: ["The pilot corpus has 777 commands with sandboxed labels."] },
+  ]);
+
+  it("lets the previous answer say what 'that' refers to", () => {
+    expect(index.search("what are its inputs", 2)).toEqual([]);
+    expect(index.search("what are its inputs", 2, "", "the round 7 pilot corpus")[0]!.chunk.id).toBe("b");
+  });
+
+  it("maps everyday names for slides and charts", () => {
+    expect(tokenizeQuery("first graph in the ppt")).toEqual(["first", "graph", "chart", "ppt", "slide", "defense"]);
+  });
+});

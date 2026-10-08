@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { strToU8, zipSync } from "fflate";
-import { chunkHtml, chunkMarkdown, chunkPptx, MAX_CHUNK_CHARS, slugify, splitLongParagraph, titleFromPath } from "../ingest/chunk.js";
+import { chunkHtml, chunkMarkdown, chunkPptx, describeChart, MAX_CHUNK_CHARS, slugify, splitLongParagraph, titleFromPath } from "../ingest/chunk.js";
 
 describe("chunkMarkdown", () => {
   it("makes one chunk per section, titled by document and heading", () => {
@@ -113,6 +113,32 @@ describe("chunkPptx", () => {
   it("makes one chunk per slide in order, with notes and without slide numbers", () => {
     expect(chunkPptx("d/My_Deck.pptx", deck).map((c) => [c.id, c.title, c.paragraphs])).toEqual([
       ["d/My_Deck.pptx#slide-2", "My Deck › Slide 2: The Gap", ["CLI & GUI both exclude", "Speaker notes: Nobody built this yet."]],
+    ]);
+  });
+});
+
+describe("slide charts", () => {
+  const chart = `<c:chartSpace><c:chart><c:title><a:p><a:r><a:t>Lower is better</a:t></a:r></a:p></c:title><c:plotArea>
+    <c:barChart><c:ser><c:tx><c:strRef><c:strCache><c:pt idx="0"><c:v>Silent loss (%)</c:v></c:pt></c:strCache></c:strRef></c:tx>
+    <c:cat><c:strRef><c:strCache><c:pt idx="0"><c:v>Pattern list</c:v></c:pt><c:pt idx="1"><c:v>Algorithm</c:v></c:pt></c:strCache></c:strRef></c:cat>
+    <c:val><c:numRef><c:numCache><c:pt idx="0"><c:v>41.2</c:v></c:pt><c:pt idx="1"><c:v>0</c:v></c:pt></c:numCache></c:numRef></c:val>
+    </c:ser></c:barChart></c:plotArea></c:chart></c:chartSpace>`;
+
+  it("describes a chart's title, series, and values", () => {
+    expect(describeChart(chart)).toBe("Chart: Lower is better. Silent loss (%): Pattern list 41.2, Algorithm 0.");
+  });
+
+  it("attaches charts to their slide through absolute or relative targets", () => {
+    const deck = zipSync({
+      "ppt/slides/slide1.xml": strToU8('<p:sld><a:p><a:r><a:t>Result</a:t></a:r></a:p><a:p><a:r><a:t>Out of 405</a:t></a:r></a:p></p:sld>'),
+      "ppt/slides/_rels/slide1.xml.rels": strToU8('<Relationships><Relationship Target="/ppt/charts/chart1.xml"/><Relationship Target="/ppt/notesSlides/notesSlide1.xml"/></Relationships>'),
+      "ppt/charts/chart1.xml": strToU8(chart),
+      "ppt/notesSlides/notesSlide1.xml": strToU8("<p:notes><a:p><a:r><a:t>Say this.</a:t></a:r></a:p></p:notes>"),
+    });
+    expect(chunkPptx("d.pptx", deck)[0]!.paragraphs).toEqual([
+      "Out of 405",
+      "Chart: Lower is better. Silent loss (%): Pattern list 41.2, Algorithm 0.",
+      "Speaker notes: Say this.",
     ]);
   });
 });

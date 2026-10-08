@@ -51,7 +51,8 @@ export const NOTHING_FOUND =
 
 export function retrieve(index: SearchIndex, corpus: Corpus, request: AskRequest): Chunk[] {
   const previousQuestion = request.history.findLast((t) => t.role === "user")?.text ?? "";
-  const hits = index.search(request.question, MAX_RESULTS, previousQuestion);
+  const previousAnswer = request.history.findLast((t) => t.role === "assistant")?.text ?? "";
+  const hits = index.search(request.question, MAX_RESULTS, previousQuestion, previousAnswer);
   if (hits.length === 0) return [];
 
   const chunks: Chunk[] = [];
