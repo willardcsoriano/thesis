@@ -10,46 +10,55 @@
 // if this one has moved after a skill update) — not vendored here, since it belongs
 // to that skill rather than to this repo.
 //
-// Sizing and notes policy (2026-10-07, revised a third time same day): body text
-// sized for reading from the back of a defense room — titles 34-44pt, body
-// 18-20pt, card text no smaller than 15pt. On-slide text is kept to short
-// phrases and fragments, not full sentences — nobody reads prose off a slide.
-// Speaker notes are 2-3 short, plain-language sentences per slide: enough to
-// orient a listener without boring them, written as if the audience is smart
-// but not a specialist in this subfield — plain words over jargon ("a safe
-// test run" over "a read-only dry run", "a lookup table" over "an enumerated
-// rule table"), technical terms introduced only where the slide itself can't
-// avoid them (RQ wording, baseline names). Not a one-line cue, not a paragraph
-// transcript. Where a slide's content genuinely split into two separate points
-// too large for one short note, it was split into two slides instead.
+// Sizing and notes policy (2026-10-08, light-mode + script revision): light
+// background per a colleague's defense-room feedback — dark text on white/light
+// card fills, not the other way around. `THEME.colors.dk1`/`lt1` are OOXML
+// theme-slot names (dk1 = "dark 1", lt1 = "light 1"), not literal shade
+// descriptions — dk1 holds our page background (white) and lt1 holds our
+// primary text color (near-black); the names are fixed by the pptxgenjs/OOXML
+// theme schema, not by what's actually light or dark. Titles 34-44pt, body
+// 18-20pt, card text no smaller than 15pt. On-slide text stays short phrases
+// and fragments — nobody reads prose off a slide.
+//
+// Speaker notes are the full literal script — presenters read them verbatim,
+// not as cues to paraphrase. That means: (1) every slide with a quote, a
+// table, a chart, or a set of bullets needs a bridging sentence that tells
+// the audience what to look at before explaining it ("On screen is...",
+// "Read the statement above:", "This chart shows..."), because nobody will
+// improvise that bridge live; (2) plain, concrete words over abstraction or
+// jargon, written for a listener who knows nothing about this codebase;
+// (3) still concise — 2-4 sentences depending on how much the slide needs
+// introduced, never a paragraph, never purely decorative transitions.
 const pptxgen = require("pptxgenjs");
 const { applyTheme } = require("/home/willard/.claude/skills/synced/52694aae-ba96-4669-9afa-6d301ea140af_9d0ddd6e-8877-4575-a3ce-ad3e2d35de48/pptx/scripts/apply_theme.js");
 
 const OUT = "/home/willard/projects/thesis/thesis 1/defense/SynapseOS_Proposal_Defense.pptx";
 
 const THEME = {
-  name: "SynapseOS Terminal",
+  name: "SynapseOS Light",
   headFontFace: "Courier New",
   bodyFontFace: "Calibri",
   colors: {
-    dk1: "0D1117", // near-black terminal background
-    lt1: "C9D1D9", // primary light text
-    dk2: "161B22", // card / panel background
-    lt2: "8B949E", // muted secondary text
-    accent1: "3FB950", // terminal green - primary accent
-    accent2: "F0A500", // amber - caution / open-question accent
-    accent3: "58A6FF", // muted blue - secondary data
-    accent4: "F85149", // red - danger / unsafe
-    accent5: "8B949E",
-    accent6: "C9D1D9",
-    hlink: "58A6FF",
-    folHlink: "8B949E",
+    dk1: "F6F8FA", // page background (OOXML slot name only - holds our light color)
+    lt1: "1A1F26", // primary text (OOXML slot name only - holds our dark color)
+    dk2: "FFFFFF", // card / panel background - white, popping off the gray page
+    lt2: "57606A", // muted secondary text
+    accent1: "1A7F37", // green - primary accent
+    accent2: "9A6700", // amber - caution / open-question accent
+    accent3: "0969DA", // blue - secondary data
+    accent4: "CF222E", // red - danger / unsafe
+    accent5: "57606A",
+    accent6: "1A1F26",
+    hlink: "0969DA",
+    folHlink: "57606A",
   },
 };
 
-const DANGER = "F85149";
-const NEUTRAL = "8B949E";
-const GOOD = "3FB950";
+const DANGER = "CF222E";
+const NEUTRAL = "6E7781";
+const GOOD = "1A7F37";
+const GRIDLINE = "D0D7DE";
+const BORDER = "D0D7DE";
 
 const pres = new pptxgen();
 pres.layout = "LAYOUT_WIDE"; // 13.3 x 7.5
@@ -186,24 +195,6 @@ function pipelineBox(slide, { x, y, w, h, label, sub, color }) {
   });
 }
 
-function statCallout(slide, { x, y, w, h, stat, label, color }) {
-  slide.addShape(pres.ShapeType.roundRect, {
-    x, y, w, h, rectRadius: 0.08,
-    fill: { color: THEME.colors.dk2 },
-    line: { type: "none" },
-  });
-  slide.addText(stat, {
-    x, y: y + 0.15, w, h: h - 0.75,
-    fontFace: THEME.headFontFace, fontSize: 44, bold: true, color,
-    align: "center", valign: "bottom", isTextBox: true, margin: 0,
-  });
-  slide.addText(label, {
-    x: x + 0.15, y: y + h - 0.6, w: w - 0.3, h: 0.55,
-    fontFace: THEME.bodyFontFace, fontSize: 13, color: C.background2,
-    align: "center", valign: "top", isTextBox: true, margin: 0,
-  });
-}
-
 // ---------------------------------------------------------------------------
 // 1. Title
 // ---------------------------------------------------------------------------
@@ -220,8 +211,10 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     { placeholder: "subtitle" }
   );
   s.addNotes(
-    "Good [morning/afternoon]. We're presenting our Thesis 1 proposal for SynapseOS — software that lets someone control a computer by typing plain English instead of memorized commands. " +
-    "This is a proposal defense, so we're presenting our plan, not final results — the comparison study with real users hasn't run yet."
+    "Good [morning/afternoon]. We're presenting our Thesis 1 proposal for SynapseOS, software that lets someone control a computer by typing plain English instead of memorized commands. " +
+    "Right now, we've built and tested the core safety technology behind it, and we already have a working prototype people can try. " +
+    "What's ahead is finishing the full interface, clearing ethics review, and running a study comparing it against the computer people already use. " +
+    "Today we're presenting that plan for your approval — not final results, since that comparison study hasn't happened yet."
   );
 }
 
@@ -234,14 +227,15 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   s.addText(
     bullets([
       "Command line — full capability, syntax barrier",
-      "Graphical desktop — limited to what designers anticipated",
+      "Graphical desktop — bound to what its creator thought to include",
       "LLMs reopen the thread (Berkeley UNIX Consultant, 1988) with far greater capability",
       "Missing: an implemented, evaluated system for the whole desktop session",
     ]),
     { placeholder: "body" }
   );
   s.addNotes(
-    "The command line can do almost anything, but only if you know the right words to type. A graphical desktop is easier, but limits you to the buttons someone else thought to add. " +
+    "The command line can do almost anything on a computer, but only if you know the exact words to type. " +
+    "A graphical interface is easier, but it only lets you do what its creator thought to build in — nothing more. " +
     "Nobody has yet built and tested a system that lets you control a whole desktop just by talking to it normally — that's the gap we're filling."
   );
 }
@@ -253,20 +247,21 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   const s = pres.addSlide({ masterName: "CONTENT" });
   s.addText("Problem Statement", { placeholder: "title" });
   s.addShape(pres.ShapeType.roundRect, {
-    x: 1.3, y: 2.6, w: 10.7, h: 2.0, rectRadius: 0.1,
+    x: 1.1, y: 2.5, w: 11.1, h: 2.2, rectRadius: 0.1,
     fill: { color: THEME.colors.dk2 }, line: { color: THEME.colors.accent1, width: 1 },
   });
   s.addText(
-    "Computer capability is unevenly reachable — gated by which interface a person is fluent in.",
+    "Not everyone can get a computer to do what it's capable of — it depends on which interface you already know.",
     {
-      x: 1.7, y: 2.6, w: 9.9, h: 2.0,
-      fontFace: THEME.bodyFontFace, fontSize: 24, color: C.background1,
+      x: 1.5, y: 2.5, w: 10.3, h: 2.2,
+      fontFace: THEME.bodyFontFace, fontSize: 23, color: C.background1,
       align: "left", valign: "middle", isTextBox: true, margin: 0, italic: true,
     }
   );
   s.addNotes(
-    "This is our problem statement, on screen, in one line: what a computer can actually do for you depends on which interface you already know how to use. " +
-    "Our goal is a third option, ordinary language, that closes that gap for people regardless of technical background."
+    "Here's the core problem we're solving — please read the statement on screen. " +
+    "In plain terms: a computer can do almost anything, but only people who already know the command line, or a particular app's menus, can actually reach that power. " +
+    "Everyone else is stuck with less than the machine can really do."
   );
 }
 
@@ -278,16 +273,16 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   s.addText("Research Questions", { placeholder: "title" });
   s.addText(
     bullets([
-      "RQ1 — Predict a command's effects before it runs; capture enough to undo it; beat a pattern list",
-      "RQ2 — Direct a full desktop in ordinary language",
-      "RQ3 — Confirm and recover from mistakes, including ones the user approved",
-      "RQ4 — Narrow the fluency gap between CLI and GUI non-experts",
+      "RQ1 — Can we predict a command's effects before it runs — and undo it — better than a pattern list?",
+      "RQ2 — How do we let someone direct a whole desktop in ordinary language?",
+      "RQ3 — What confirmation and recovery design lets someone undo a mistake, even one they approved?",
+      "RQ4 — Does this close the fluency gap between people fluent in neither the command line nor a GUI?",
     ], { fontSize: 19 }),
     { placeholder: "body" }
   );
   s.addShape(pres.ShapeType.roundRect, {
     x: 0.6, y: 6.25, w: 12.1, h: 0.75, rectRadius: 0.06,
-    fill: { color: THEME.colors.dk2 }, line: { type: "none" },
+    fill: { color: THEME.colors.dk2 }, line: { color: BORDER, width: 1 },
   });
   s.addText(
     [
@@ -297,8 +292,8 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     { x: 0.9, y: 6.25, w: 11.5, h: 0.75, fontFace: THEME.bodyFontFace, fontSize: 15, valign: "middle", isTextBox: true, margin: 0 }
   );
   s.addNotes(
-    "We reordered these after an earlier review — our adviser asked whether anything would be left if we removed the chat interface entirely. " +
-    "So we made the safety algorithm its own standalone contribution, listed first; the other three questions are about the interface itself, and our user study answers those."
+    "On screen are the four questions guiding this research. " +
+    "We reordered them after an earlier review, when our adviser asked whether anything would survive if we removed the chat interface entirely — so the safety algorithm now leads as its own question, and the other three, about the interface itself, come after."
   );
 }
 
@@ -339,13 +334,13 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     }
   );
   s.addNotes(
-    "This four-stage flow — understand the request, decide what to do, act on the computer, fit into the existing desktop — comes from our literature review in Chapter 2. " +
-    "SynapseOS follows this same flow, and the safety algorithm we'll discuss next lives in the 'acting' stage, right before anything actually runs."
+    "On screen is simply the four-step flow behind a system like this: understand what you asked, decide what to do, act on the computer, then fit into your existing desktop. " +
+    "SynapseOS follows this same flow, and the safety check we'll show next happens right before anything actually runs."
   );
 }
 
 // ---------------------------------------------------------------------------
-// 6. What it looks like (placeholder capture)
+// 6. What it looks like
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -355,13 +350,41 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     x: 1.35, y: 1.85, w: 10.6, h: 4.82,
   });
   s.addNotes(
-    "This is a real recording, three requests in a row — listing a folder, renaming a file, counting photos — plain English in, a real command and a real answer out each time. " +
-    "We're showing this early to make one thing clear: this already works today, it isn't just a plan on paper."
+    "This is a real recording, three requests in a row, on this laptop — a demo folder in our Documents called SynapseOS-Demo, which we can open and show you directly if you'd like. " +
+    "Plain English in, a real command and a real answer out, each time: listing the folder, renaming a file, counting photos."
   );
 }
 
 // ---------------------------------------------------------------------------
-// 7. The algorithm - the problem
+// 7. What the algorithm sees
+// ---------------------------------------------------------------------------
+{
+  const s = pres.addSlide({ masterName: "CONTENT" });
+  s.addText("What The Algorithm Sees", { placeholder: "title" });
+  s.addText(
+    "Not the chat interface — a tool we built for the algorithm itself, reasoning about a real command:",
+    { x: 0.6, y: 1.6, w: 12.1, h: 0.55, fontFace: THEME.bodyFontFace, fontSize: 18, color: C.background2, isTextBox: true, margin: 0 }
+  );
+  s.addImage({
+    path: "media/algorithm-trace.png",
+    x: 1.35, y: 2.3, w: 10.6, h: 1.48,
+  });
+  s.addText(
+    [
+      { text: "Sees through find -exec ", options: { bold: true, color: C.accent1 } },
+      { text: "→ resolves the real files it would touch → labels it recoverable, with a capture plan.", options: { color: C.background1 } },
+    ],
+    { x: 0.6, y: 4.1, w: 12.1, h: 0.6, fontFace: THEME.bodyFontFace, fontSize: 16, valign: "middle", isTextBox: true, margin: 0 }
+  );
+  s.addNotes(
+    "This is the algorithm itself running, not the friendly chat interface you just saw — a debugging tool we built called effexplain. " +
+    "Give it a command, and it shows exactly how it reasons: it sees through the find-exec wrapper, works out the real files it would touch, and labels the result recoverable, with a plan to capture those files first. " +
+    "This is what's actually happening underneath the conversation from a moment ago."
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 8. The algorithm - the problem
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -375,14 +398,19 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     ]),
     { placeholder: "body" }
   );
+  s.addText(
+    "The algorithm itself is real code in our repository, not a formula on paper — prototype/internal/effects.",
+    { x: 0.6, y: 5.6, w: 12.1, h: 0.6, fontFace: THEME.bodyFontFace, fontSize: 14, italic: true, color: C.background2, isTextBox: true, margin: 0 }
+  );
   s.addNotes(
-    "If an AI types commands for you, it might accidentally delete something important before anyone notices. Today's safety check just looks at whether a command looks familiar, not at what it actually does. " +
-    "That leaves two bad options: let unfamiliar commands through and risk damage, or block everything unfamiliar and interrupt the user constantly. We want a third option."
+    "If an AI types commands for you, it might delete something important before you even notice. " +
+    "Today's safety checks only look at whether a command looks familiar, not at what it actually does — so you either let unfamiliar commands through and risk damage, or block everything and get interrupted constantly. " +
+    "Our algorithm lives in real code, not a formula — in our repository, under internal/effects — and it actually reads what a command would do before deciding."
   );
 }
 
 // ---------------------------------------------------------------------------
-// 8. The algorithm - what it claims
+// 9. The algorithm - what it claims
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -426,17 +454,18 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
 
   s.addImage({
     path: "media/safety-gate.png",
-    x: 2.45, y: 4.4, w: 8.4, h: 2.7,
+    x: 2.75, y: 4.35, w: 7.8, h: 2.29,
   });
 
   s.addNotes(
-    "Our algorithm does two things, deliberately, and nothing more. First, it can see through common tricks for hiding what a command really does — loops, shortcuts, chaining several commands together. Second, when it can't know a command's target until the moment it runs, it does a safe test run first to find out exactly what would be affected. " +
-    "If a command is too unusual for it to understand, it simply stops and asks — it never guesses."
+    "Our algorithm does two things. It sees through tricks that hide what a command really does, like chaining several commands together. " +
+    "And when it can't know a command's target in advance, it does a safe test run first to find out. " +
+    "Anything it doesn't understand, it simply stops and asks — it never guesses."
   );
 }
 
 // ---------------------------------------------------------------------------
-// 9. Evaluation design - two independent studies
+// 10. Evaluation design - two independent studies
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -449,7 +478,7 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     },
     {
       x: 6.75, title: "User study (RQ2–4)", color: THEME.colors.accent3,
-      lines: ["40 participants, within-subjects", "Each person vs. their own daily OS", "OSWorld + custom cross-platform task suite", "Pending IRB / ethics approval"],
+      lines: ["40 participants, within-subjects", "Each person vs. their own daily OS", "OSWorld + custom cross-platform task suite", "Awaiting clearance to begin"],
     },
   ];
   cols.forEach((col) => {
@@ -467,13 +496,14 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   });
 
   s.addNotes(
-    "We're proving these two halves of our thesis in two separate ways. The safety algorithm is tested against hundreds of sample commands, with no human volunteers needed at all. " +
-    "The interface itself will be tested with 40 real users, once we have ethics approval to run that study."
+    "This research has two separate parts: the safety algorithm, and the chat interface. " +
+    "We test the algorithm against hundreds of sample commands, with no human volunteers needed at all. " +
+    "We test the interface with 40 real users, comparing it to the computer they already use — once that study is cleared to run."
   );
 }
 
 // ---------------------------------------------------------------------------
-// 10. Silent data loss - chart
+// 11. Silent data loss - chart
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CHART" });
@@ -492,7 +522,7 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
       catAxisLabelColor: THEME.colors.lt2, catAxisLabelFontSize: 13, catAxisLabelFontFace: "+mn-lt",
       valAxisLabelColor: THEME.colors.lt2, valAxisLabelFontSize: 13, valAxisLabelFontFace: "+mn-lt",
       valAxisMaxVal: 50,
-      valGridLine: { color: THEME.colors.dk2, size: 1 },
+      valGridLine: { color: GRIDLINE, size: 1 },
       catGridLine: { style: "none" },
       showLegend: false,
     }
@@ -504,13 +534,14 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   );
 
   s.addNotes(
-    "Out of several hundred risky commands we tested, today's safety list let data get silently destroyed over 40 percent of the time — damage the user never agreed to. " +
-    "Our algorithm, and a much stricter 'block everything unfamiliar' approach, both brought that down to essentially zero."
+    "This chart shows how often each approach silently destroys data the user never agreed to lose. " +
+    "The method most tools use today — a list of known-dangerous commands — fails over 40 percent of the time. " +
+    "Our algorithm brings that down to essentially zero, matching the safest possible approach."
   );
 }
 
 // ---------------------------------------------------------------------------
-// 11. Restoration coverage - chart
+// 12. Restoration coverage - chart
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CHART" });
@@ -529,7 +560,7 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
       catAxisLabelColor: THEME.colors.lt2, catAxisLabelFontSize: 13, catAxisLabelFontFace: "+mn-lt",
       valAxisLabelColor: THEME.colors.lt2, valAxisLabelFontSize: 13, valAxisLabelFontFace: "+mn-lt",
       valAxisMaxVal: 100,
-      valGridLine: { color: THEME.colors.dk2, size: 1 },
+      valGridLine: { color: GRIDLINE, size: 1 },
       catGridLine: { style: "none" },
       showLegend: false,
     }
@@ -541,13 +572,14 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   );
 
   s.addNotes(
-    "Being safe isn't enough on its own — a system that blocks everything is also 'safe', but useless, because it never actually saves anything. " +
-    "Our algorithm actually recovers the lost data about 9 times out of 10; the overly-cautious approach recovers none of it, because it never even tries."
+    "This chart shows how often each approach actually recovers data after something is deleted. " +
+    "Being safe isn't enough by itself — a system that blocks everything is 'safe' too, but saves nothing. " +
+    "Our algorithm recovers the lost data about 9 times out of 10; the overly-cautious approach recovers none of it, because it never tries to."
   );
 }
 
 // ---------------------------------------------------------------------------
-// 12. Interface evaluation plan
+// 13. Interface evaluation plan
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -562,13 +594,13 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     { placeholder: "body" }
   );
   s.addNotes(
-    "We'll compare SynapseOS against whatever operating system each participant already uses every day. " +
-    "We're deliberately recruiting two kinds of users — people comfortable with neither the command line nor a typical desktop, and people comfortable with both — because the gap between those two groups is what we actually care about measuring."
+    "On screen is how we'll test the interface with real people: comparing SynapseOS against whatever computer and operating system each person already uses every day. " +
+    "We're recruiting two kinds of users on purpose — people who struggle with both existing options, and people fluent in both — because the gap between those two groups is what we actually care about measuring."
   );
 }
 
 // ---------------------------------------------------------------------------
-// 13. Scope & sequencing
+// 14. Scope & sequencing
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -581,24 +613,38 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   s.addText(
     [
       { text: "Responding directly to “manage scope carefully”:\n\n", options: { bold: true, color: C.accent2, breakLine: true, fontSize: 19 } },
-      { text: "Algorithm + GUI-mode launch — mandatory. Model fine-tuning + full comparative study — real, but first to shrink.", options: { color: C.background1, fontSize: 18 } },
+      { text: "Algorithm + interface launch — mandatory. Model fine-tuning + full comparative study — real, but first to shrink.", options: { color: C.background1, fontSize: 18 } },
     ],
     { x: 0.95, y: 1.9, w: 11.4, h: 1.75, fontFace: THEME.bodyFontFace, isTextBox: true, margin: 0, valign: "middle" }
   );
 
   s.addText(
-    "A reorder of priority, not of ambition.",
+    "We are managing a research algorithm and an entirely new interface at the same time. Period.",
     { x: 0.6, y: 4.1, w: 12.1, h: 0.8, fontFace: THEME.bodyFontFace, fontSize: 18, italic: true, color: C.background2, isTextBox: true, margin: 0 }
   );
 
+  s.addShape(pres.ShapeType.roundRect, {
+    x: 0.6, y: 5.0, w: 12.1, h: 1.0, rectRadius: 0.08,
+    fill: { color: THEME.colors.dk2 }, line: { color: THEME.colors.accent1, width: 1 },
+  });
+  s.addText(
+    [
+      { text: "Also advised: ", options: { bold: true, color: C.accent1 } },
+      { text: "rent a cloud testing machine instead of buying new hardware — keeps costs down.", options: { color: C.background1 } },
+    ],
+    { x: 0.95, y: 5.0, w: 11.4, h: 1.0, fontFace: THEME.bodyFontFace, fontSize: 17, valign: "middle", isTextBox: true, margin: 0 }
+  );
+
   s.addNotes(
-    "What's on screen is our adviser's own feedback, word for word: manage your scope carefully — fair, given how much ground this thesis covers. " +
-    "Our answer: the safety algorithm and getting the interface running are non-negotiable; fine-tuning the AI model and the full user study are real plans, but the first things we'd trim if we run short on time."
+    "What's on screen is our adviser's own feedback, word for word: manage your scope carefully. " +
+    "Fair — we are managing a research algorithm and an entirely new interface at the same time. Period. " +
+    "Our answer: the algorithm and getting the interface running are non-negotiable; fine-tuning the model and the full user study are real plans, but the first things we'd trim if time runs short. " +
+    "Our adviser also advised renting a cloud machine for testing instead of buying new hardware, which keeps our costs down."
   );
 }
 
 // ---------------------------------------------------------------------------
-// 14. Current status
+// 15. Current status
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -606,14 +652,14 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
 
   const rows = [
     { label: "Algorithm (RQ1)", status: "Essentially done — round 7 reported", color: GOOD },
-    { label: "Build — runtime & GUI session launch", status: "In progress", color: THEME.colors.accent2 },
-    { label: "Ethics / IRB", status: "Instruments drafted; application not yet submitted", color: DANGER },
+    { label: "Interface build", status: "In progress", color: THEME.colors.accent2 },
+    { label: "Testing machine", status: "Solved — renting a cloud VM instead of buying hardware", color: GOOD },
   ];
   let y = 1.9;
   rows.forEach((r) => {
     s.addShape(pres.ShapeType.roundRect, {
       x: 0.6, y, w: 12.1, h: 1.3, rectRadius: 0.06,
-      fill: { color: THEME.colors.dk2 }, line: { type: "none" },
+      fill: { color: THEME.colors.dk2 }, line: { color: BORDER, width: 1 },
     });
     s.addShape(pres.ShapeType.ellipse, { x: 0.95, y: y + 0.54, w: 0.26, h: 0.26, fill: { color: r.color }, line: { type: "none" } });
     s.addText(r.label, { x: 1.4, y: y + 0.15, w: 4.9, h: 1.0, fontFace: "Courier New", fontSize: 18, bold: true, color: C.background1, valign: "middle", isTextBox: true, margin: 0 });
@@ -622,13 +668,13 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   });
 
   s.addNotes(
-    "The algorithm work is basically finished. The interface build is underway. " +
-    "The real bottleneck is ethics approval — our paperwork is ready, but not yet submitted, so that's our top priority right now."
+    "Here's where we actually stand. The algorithm is essentially done — round seven is our reported result. The interface build is underway. " +
+    "Testing used to be a real bottleneck, since destructive testing needs a disposable machine we're willing to break — but thanks to our adviser's advice, we're renting a cloud machine instead of buying new hardware, so that's solved, not blocking us."
   );
 }
 
 // ---------------------------------------------------------------------------
-// 15. Known open question
+// 16. Known open question
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -654,13 +700,14 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   );
 
   s.addNotes(
-    "That's a question our adviser already put to us, in an earlier review, and we're putting it on screen ourselves rather than waiting for it to be asked again. " +
-    "Right now we can only answer it in words, not numbers — but we already have a concrete plan to measure it directly, and we're not hiding that gap."
+    "Our adviser raised this question in an earlier review, and we address it directly here. Please read the statement above. " +
+    "At present, our answer is qualitative, not quantitative: we argue that the algorithm's contribution lies in what it adds beyond its underlying lookup table. " +
+    "Measuring this precisely is part of our planned next steps."
   );
 }
 
 // ---------------------------------------------------------------------------
-// 16. Expected contribution
+// 17. Expected contribution
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
@@ -676,7 +723,7 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     const x = startX + i * (w + gap);
     s.addShape(pres.ShapeType.roundRect, {
       x, y: 1.75, w, h: 4.4, rectRadius: 0.08,
-      fill: { color: THEME.colors.dk2 }, line: { type: "none" },
+      fill: { color: THEME.colors.dk2 }, line: { color: BORDER, width: 1 },
     });
     s.addText(st.stat, {
       x, y: 1.95, w, h: 1.05, fontFace: THEME.headFontFace, fontSize: 32, bold: true, color: st.color, align: "center", isTextBox: true, margin: 0,
@@ -687,20 +734,20 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
   });
 
   s.addNotes(
-    "If both halves of this project succeed, we'll have two separate wins: a safer, more useful way to catch dangerous commands, and, pending approval, the first real evidence on whether talking to a computer actually helps people who struggle with existing interfaces. " +
-    "Each one holds up on its own even if the other gets delayed."
+    "As soon as this project succeeds, it delivers two separate results: a safer, more useful way to catch dangerous commands, and the first real evidence on whether talking to a computer actually helps people who struggle with existing interfaces. " +
+    "Each result stands on its own, even if the other is delayed."
   );
 }
 
 // ---------------------------------------------------------------------------
-// 17. What's next
+// 18. What's next
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
   s.addText("What's Next", { placeholder: "title" });
   s.addText(
     bullets([
-      "Submit the ethics application",
+      "Spin up the rented testing machine",
       "Finish the interface build",
       "Run the study with real participants",
       "Return with results, not just a plan",
@@ -708,19 +755,29 @@ function statCallout(slide, { x, y, w, h, stat, label, color }) {
     { placeholder: "body" }
   );
   s.addNotes(
-    "Once this proposal is approved, three things happen next: we submit for ethics approval, finish building the interface, and run the full study with real participants. " +
+    "Once this proposal is approved, here's what happens next: we set up our rented testing machine, finish building the interface, and run the full study with real participants. " +
     "The next time we present, we'll be showing actual results instead of a plan."
   );
 }
 
 // ---------------------------------------------------------------------------
-// 18. Q&A
+// 19. Thank you / Q&A
 // ---------------------------------------------------------------------------
 {
   const s = pres.addSlide({ masterName: "TITLE" });
-  s.addText("Questions", { placeholder: "title" });
-  s.addText("Thank you.", { placeholder: "subtitle" });
-  s.addNotes("Thank you — we're happy to take your questions.");
+  s.addText("Thank You", { placeholder: "title" });
+  s.addText(
+    [
+      { text: "SynapseOS — Thesis 1 Proposal Defense\n\n", options: { breakLine: true, fontSize: 18, color: C.background2 } },
+      { text: "Alexandra Sulit · Willard Soriano · Steven Evian Lozano\n", options: { breakLine: true, fontSize: 16, color: C.background2 } },
+      { text: "Department of Computer Science, Mapúa University – Makati\n\n", options: { breakLine: true, fontSize: 16, color: C.background2 } },
+      { text: "We welcome your questions.", options: { fontSize: 20, color: C.background1 } },
+    ],
+    { placeholder: "subtitle" }
+  );
+  s.addNotes(
+    "Thank you for your time and consideration today. We're glad to take any questions you have about the plan, the algorithm, or anything else we've covered."
+  );
 }
 
 (async () => {
