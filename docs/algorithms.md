@@ -13,6 +13,8 @@ This file is the design record for everything SynapseOS **builds** rather than a
 - [The formal model — an effect semantics for generated shell commands](#the-formal-model-an-effect-semantics-for-generated-shell-commands)
   - [The object](#the-object)
   - [Soundness, which is one-sided on purpose](#soundness-which-is-one-sided-on-purpose)
+  - [Verdict and plan](#verdict-and-plan)
+  - [Limits of the model, and they are part of the claim](#limits-of-the-model-and-they-are-part-of-the-claim)
   - [What this model does not cover](#what-this-model-does-not-cover)
 - [Entry 1 — Recoverability analysis of generated shell commands](#entry-1-recoverability-analysis-of-generated-shell-commands)
   - [Problem statement](#problem-statement)
@@ -20,6 +22,7 @@ This file is the design record for everything SynapseOS **builds** rather than a
   - [Approach](#approach)
   - [Failure modes](#failure-modes)
   - [Evaluation](#evaluation)
+  - [Original specification, kept as written (D29, 2026-09-12; formal model added 2026-09-14)](#original-specification-kept-as-written-d29-2026-09-12-formal-model-added-2026-09-14)
 - [Pilot — is a list already enough?](#pilot-is-a-list-already-enough)
   - [Why this exists](#why-this-exists)
   - [Question](#question)
@@ -32,6 +35,12 @@ This file is the design record for everything SynapseOS **builds** rather than a
   - [Round 2 results, as run (2026-09-20)](#round-2-results-as-run-2026-09-20)
   - [Round 2b — the same labels, with the targets present](#round-2b-the-same-labels-with-the-targets-present)
   - [Round 2b results (2026-09-20)](#round-2b-results-2026-09-20)
+  - [Round 3 — held-out (2026-09-20)](#round-3-held-out-2026-09-20)
+  - [Round 3 results (2026-09-20)](#round-3-results-2026-09-20)
+  - [Recovery verification (2026-09-20)](#recovery-verification-2026-09-20)
+  - [Round 7 — final confirmatory run, supersedes round 6 (2026-09-22)](#round-7-final-confirmatory-run-supersedes-round-6-2026-09-22)
+  - [Snapshot-before-every-command, measured (2026-09-22)](#snapshot-before-every-command-measured-2026-09-22)
+  - [Rounds 4 and 5 — automated ground truth (2026-09-20)](#rounds-4-and-5-automated-ground-truth-2026-09-20)
 - [Cross-references](#cross-references)
 - [Candidates not taken](#candidates-not-taken)
   - [Briefly promoted, then pulled back — 2026-09-14](#briefly-promoted-then-pulled-back-2026-09-14)
@@ -80,6 +89,8 @@ Kept current because it is half the argument: a short contribution list is only 
 ## The formal model — an effect semantics for generated shell commands
 
 **Status:** implemented as `internal/effects` (Go) with unit tests. Wired into the runtime's confirmation gate through `internal/gate`, **opt-in** behind `SYNAPSE_ANALYSIS` (`strict` or `capture`); off by default, so the product still behaves as before until the gate-policy decision is made. Evaluated in the pilot below and in the sandboxed recovery harness (`prototype/pilot/recovery_results.txt`). Decisions: `decisions.md` D29, narrowed by D34. Milestones A1–A3 in `../prototype/build-order.md`.
+
+> **Amended 2026-10-09.** The status above is superseded: D35 made the analysis on by default (`strict`). The current specification, rule map, guarantees, tests, and results are in `recoverability-analysis.md`; this section and Entry 1 remain the design record of how the model was arrived at.
 
 This is the model underlying Entry 1, not a separate contribution. It is recorded as its own section because "what formal model supports your algorithm" is a question the entry has to answer, and answering it inside the entry buried it.
 
