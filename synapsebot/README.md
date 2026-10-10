@@ -40,6 +40,8 @@ If nothing in the corpus matches, the bot answers with a fixed message and makes
 
 **Quick and Study modes.** A switch by the question box picks the answer style, remembered per browser. **Quick** (the default) is for the live defense: two plain sentences, then a folded two-to-four-sentence In practice, at low effort with up to 2,000 output tokens. **Study** is for teammates learning the work, often the algorithm, and is free form: no In principle / In practice split and no fixed sections. It opens with a plain sentence or two, then goes as deep as the question asks, usually 80–250 words, on the principle that less is more. It uses a numbered list, a small table, a heading, or a text diagram in a code block only when that explains better than prose, or when the reader asks for a visual. It runs at medium effort, with up to 6,000 output tokens and more retrieved context (12 sections, about 40,000 characters). Both prompts share the voice and accuracy rules in `src/prompt.ts`, so the modes can't drift apart on what they're allowed to claim. The page renders headings and tables in the book style.
 
+**Copy Q&A.** Each finished answer has a Copy Q&A button that puts the question, the answer and its sources on the clipboard in two forms at once. Plain text, for chat apps, has footnotes as `[1]` and the source links listed at the end. HTML, for Docs or Word, has a bold question and real links. Both end with the mode and the thesis commit the answer came from. Copying is client-side only (`public/share.js`), so nothing is stored or sent anywhere. Shareable links are deliberately not offered, because they would require storing questions server-side.
+
 ## Running it
 
 Everything runs from this directory with Node 24.
