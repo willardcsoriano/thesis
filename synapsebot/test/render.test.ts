@@ -37,3 +37,26 @@ describe("renderAnswer", () => {
     );
   });
 });
+
+describe("study-mode structure", () => {
+  it("renders small headings", () => {
+    expect(renderAnswer("## How it works\nStep one.", "e")).toBe("<h3>How it works</h3><p>Step one.</p>");
+  });
+
+  it("renders a table with a header row, escaping cells", () => {
+    expect(renderAnswer("| Approach | Silent loss |\n|---|---:|\n| Pattern list | 41.2% |\n| <b>x</b> | 0% |", "e")).toBe(
+      "<table><thead><tr><th>Approach</th><th>Silent loss</th></tr></thead>" +
+        "<tbody><tr><td>Pattern list</td><td>41.2%</td></tr><tr><td>&lt;b&gt;x&lt;/b&gt;</td><td>0%</td></tr></tbody></table>",
+    );
+  });
+
+  it("keeps a text diagram verbatim in a code block", () => {
+    expect(renderAnswer("```\n[command] --> [analysis] --> backup | ask\n```", "e")).toBe(
+      "<pre><code>[command] --&gt; [analysis] --&gt; backup | ask</code></pre>",
+    );
+  });
+
+  it("ends a table at the first non-table line", () => {
+    expect(renderAnswer("| a |\n| b |\nAfter.", "e")).toBe("<table><tbody><tr><td>a</td></tr><tr><td>b</td></tr></tbody></table><p>After.</p>");
+  });
+});

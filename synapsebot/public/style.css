@@ -164,7 +164,44 @@ a:hover { text-decoration-thickness: 2px; }
 }
 
 .answer { text-align: justify; hyphens: auto; overflow-wrap: break-word; }
-.answer p, .answer ul, .answer ol, .answer pre { margin: 0 0 0.85rem; }
+.answer p, .answer ul, .answer ol, /* Study answers may carry small headings and tables; both stay in the book's voice. */
+.answer h3 {
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 1.25rem 0 0.4rem;
+}
+.answer h3:first-child { margin-top: 0; }
+.answer h3 + p { text-indent: 0; margin-top: 0; }
+.answer table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0 1rem;
+  font-size: 0.92em;
+  line-height: 1.4;
+  text-align: left;
+  display: block;
+  overflow-x: auto;
+}
+.answer th {
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--ink-soft);
+  padding: 0.3rem 0.75rem 0.3rem 0;
+}
+.answer td {
+  border-bottom: 1px solid var(--rule);
+  padding: 0.35rem 0.75rem 0.35rem 0;
+  vertical-align: top;
+}
+.answer pre { margin: 0 0 0.85rem; }
 .answer p + p { text-indent: 1.5em; margin-top: -0.85rem; }
 .answer ul, .answer ol { padding-left: 1.5rem; text-align: left; }
 .answer code {
@@ -174,6 +211,43 @@ a:hover { text-decoration-thickness: 2px; }
   border: 1px solid var(--rule);
   padding: 0 0.2em;
   border-radius: 2px;
+}
+/* Study answers may carry small headings and tables; both stay in the book's voice. */
+.answer h3 {
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 1.25rem 0 0.4rem;
+}
+.answer h3:first-child { margin-top: 0; }
+.answer h3 + p { text-indent: 0; margin-top: 0; }
+.answer table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0 1rem;
+  font-size: 0.92em;
+  line-height: 1.4;
+  text-align: left;
+  display: block;
+  overflow-x: auto;
+}
+.answer th {
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--ink-soft);
+  padding: 0.3rem 0.75rem 0.3rem 0;
+}
+.answer td {
+  border-bottom: 1px solid var(--rule);
+  padding: 0.35rem 0.75rem 0.35rem 0;
+  vertical-align: top;
 }
 .answer pre {
   font-family: var(--mono);

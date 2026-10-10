@@ -33,16 +33,37 @@ function inline(text, entryId) {
     .join("");
 }
 
+/** "| a | b |" -> ["a", "b"] */
+function splitRow(line) {
+  return line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+}
+
 export function renderAnswer(markdown, entryId) {
   const lines = markdown.replace(/\r\n/g, "\n").split("\n");
   const out = [];
   let paragraph = [];
   let list = null; // { ordered, items }
   let fence = null; // lines inside ``` ... ```
+  let table = null; // rows of a Markdown table being collected
 
   const flushParagraph = () => {
     if (paragraph.length) out.push(`<p>${inline(paragraph.join(" "), entryId)}</p>`);
     paragraph = [];
+  };
+  const flushTable = () => {
+    if (!table) return;
+    const rows = table.map(splitRow);
+    // A separator row (|---|:--:|) marks the line above it as the header.
+    const sep = rows.findIndex((cells) => cells.length && cells.every((c) => /^:?-{2,}:?$/.test(c)));
+    const head = sep === 1 ? rows[0] : null;
+    const body = rows.filter((_, i) => i !== sep && !(head && i === 0));
+    const cells = (row, tag) => row.map((c) => `<${tag}>${inline(c, entryId)}</${tag}>`).join("");
+    out.push(
+      "<table>" +
+        (head ? `<thead><tr>${cells(head, "th")}</tr></thead>` : "") +
+        `<tbody>${body.map((row) => `<tr>${cells(row, "td")}</tr>`).join("")}</tbody></table>`,
+    );
+    table = null;
   };
   const flushList = () => {
     if (!list) return;
@@ -64,9 +85,17 @@ export function renderAnswer(markdown, entryId) {
     if (/^\s*```/.test(line)) {
       flushParagraph();
       flushList();
+      flushTable();
       fence = [];
       continue;
     }
+    if (/^\s*\|.*\|\s*$/.test(line)) {
+      flushParagraph();
+      flushList();
+      (table ??= []).push(line);
+      continue;
+    }
+    flushTable();
     const bullet = /^\s*[-*]\s+(.*)$/.exec(line);
     const numbered = /^\s*\d+[.)]\s+(.*)$/.exec(line);
     if (bullet || numbered) {
@@ -81,7 +110,7 @@ export function renderAnswer(markdown, entryId) {
     if (heading) {
       flushParagraph();
       flushList();
-      out.push(`<p><strong>${inline(heading[1], entryId)}</strong></p>`);
+      out.push(`<h3>${inline(heading[1], entryId)}</h3>`);
       continue;
     }
     if (line.trim() === "") {
@@ -96,6 +125,7 @@ export function renderAnswer(markdown, entryId) {
     }
     paragraph.push(line.trim());
   }
+  flushTable();
   // An unclosed fence mid-stream still shows its contents.
   if (fence) out.push(`<pre><code>${escapeHtml(fence.join("\n")).replace(CITE, "")}</code></pre>`);
   flushParagraph();
