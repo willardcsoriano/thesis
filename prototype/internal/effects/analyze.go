@@ -36,10 +36,18 @@ type Analyzer struct {
 	MaxLoop int
 	// MaxDepth caps nesting of substitutions, sh -c strings, and wrappers.
 	MaxDepth int
+	// Compose controls whether transparent wrappers, find -exec/-execdir/-ok/-okdir,
+	// xargs, eval, sh/bash/zsh/dash/ksh/ash -c strings, and for-loops are resolved
+	// through. False routes each straight to opaque instead of analysing what they
+	// run, with every other dispatch path (the per-command rule table, readOnlyForm,
+	// &&/pipe/subshell/if/case traversal) left untouched. This isolates how much of
+	// the analysis's result comes from composition versus the underlying per-command
+	// rule table alone (docs/open-problems.md row 38, the adviser's own question).
+	Compose bool
 }
 
 func New(wd string) *Analyzer {
-	return &Analyzer{WD: wd, Env: os.Environ(), MaxItems: 5000, MaxLoop: 300, MaxDepth: 8}
+	return &Analyzer{WD: wd, Env: os.Environ(), MaxItems: 5000, MaxLoop: 300, MaxDepth: 8, Compose: true}
 }
 
 // unknownWD stands in for a working directory that cannot be determined (after a
@@ -193,6 +201,10 @@ func (st *state) stmt(s *syntax.Stmt, sc *scope, pc *pipeCtx) {
 		st.stmts(x.Cond, sc.clone())
 		st.stmts(x.Do, sc.clone())
 	case *syntax.ForClause:
+		if !st.a.Compose {
+			st.issue(IssueOpaque, st.text(s), "composition disabled (ablation): loop body not expanded")
+			return
+		}
 		st.forLoop(x, sc)
 	case *syntax.CaseClause:
 		st.collectNode(x.Word, sc)
@@ -770,20 +782,40 @@ func (st *state) dispatch(c *call) {
 		return // handled as a DeclClause when it parses as one; harmless otherwise
 	}
 	if w, ok := wrappers[name]; ok {
+		if !st.a.Compose {
+			st.opaque(c, "composition disabled (ablation): wrapper not resolved through")
+			return
+		}
 		st.wrapper(c, w)
 		return
 	}
 	switch name {
 	case "find":
+		if !st.a.Compose {
+			st.opaque(c, "composition disabled (ablation): find not resolved through")
+			return
+		}
 		st.find(c)
 		return
 	case "xargs":
+		if !st.a.Compose {
+			st.opaque(c, "composition disabled (ablation): xargs not resolved through")
+			return
+		}
 		st.xargs(c)
 		return
 	case "sh", "bash", "zsh", "dash", "ksh", "ash":
+		if !st.a.Compose {
+			st.opaque(c, "composition disabled (ablation): shell -c string not resolved through")
+			return
+		}
 		st.shell(c)
 		return
 	case "eval":
+		if !st.a.Compose {
+			st.opaque(c, "composition disabled (ablation): eval not resolved through")
+			return
+		}
 		// eval runs its arguments, joined by spaces, as shell: analyse that text.
 		if !st.needArgs(c) {
 			return
