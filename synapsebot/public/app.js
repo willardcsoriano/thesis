@@ -2,6 +2,7 @@
 // footnoted answers. No framework and no build step.
 
 import { citeMarker, renderAnswer, stripCiteMarkers } from "./render.js";
+import { copyQa } from "./share.js";
 
 const CODE_KEY = "synapsebot.access-code";
 const MODE_KEY = "synapsebot.mode";
@@ -18,6 +19,7 @@ const accessError = document.getElementById("access-error");
 /** Completed exchanges sent back for follow-up questions: [{ role, text }]. */
 const history = [];
 let entryCount = 0;
+let thesisCommit = ""; // from /api/meta, stamped on copied Q&As
 let inFlight = null; // AbortController of the answer being streamed
 let queuedQuestion = null; // asked before an access code was entered
 
@@ -128,9 +130,12 @@ function newEntry(question) {
   notes.hidden = true;
   const status = el("p", "notice");
   status.hidden = true;
-  entry.append(answer, status, notes);
+  const copy = el("button", "copy", "Copy Q&A");
+  copy.type = "button";
+  copy.hidden = true;
+  entry.append(answer, status, notes, copy);
   transcript.append(entry);
-  return { id, entry, answer, principleLabel, principle, practice, practiceBody, notes, status };
+  return { id, entry, answer, principleLabel, principle, practice, practiceBody, notes, status, copy, sources: [] };
 }
 
 function addFootnote(view, source) {
@@ -148,6 +153,7 @@ function addFootnote(view, source) {
   item.append(body);
   view.notes.append(item);
   view.notes.hidden = false;
+  view.sources.push(source);
 }
 
 function setBusy(busy) {
@@ -193,6 +199,7 @@ async function ask(question) {
     view.practice.hidden = true;
     view.notes.replaceChildren();
     view.notes.hidden = true;
+    view.sources.length = 0;
   };
   const say = (message) => {
     view.status.textContent = message;
@@ -256,10 +263,29 @@ async function ask(question) {
     const answerText = stripCiteMarkers(
       parts.practice ? `${parts.principle.trim()}\n[[practice]]\n${parts.practice.trim()}` : parts.principle,
     ).trim();
-    if (!failed && answerText) history.push({ role: "user", text: question }, { role: "assistant", text: answerText });
+    if (!failed && answerText) {
+      history.push({ role: "user", text: question }, { role: "assistant", text: answerText });
+      enableCopy(view, { question, mode: askedMode, principle: parts.principle, practice: parts.practice });
+    }
     if (!accessForm.hidden) return;
     questionBox.focus();
   }
+}
+
+/** Shows the entry's Copy button once its answer is complete. */
+function enableCopy(view, qa) {
+  view.copy.hidden = false;
+  let reset;
+  view.copy.addEventListener("click", async () => {
+    try {
+      await copyQa({ ...qa, sources: view.sources, commit: thesisCommit });
+      view.copy.textContent = "Copied";
+    } catch {
+      view.copy.textContent = "Couldn't copy";
+    }
+    clearTimeout(reset);
+    reset = setTimeout(() => { view.copy.textContent = "Copy Q&A"; }, 2000);
+  });
 }
 
 async function loadProvenance() {
@@ -267,6 +293,7 @@ async function loadProvenance() {
     const response = await fetch("/api/meta");
     if (!response.ok) return;
     const meta = await response.json();
+    thesisCommit = meta.commit;
     const line = document.getElementById("provenance");
     const date = new Date(meta.builtAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
     line.textContent = "From commit ";
