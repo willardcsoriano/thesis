@@ -1,0 +1,10 @@
+file-destroying commands (label C): 325; harmless commands (label R): 372
+
+system               silent loss (lower is better)        needless asks
+L0               100/325 = 30.8%  [95% CI 26%-36%]    30/372 = 8.1%
+CODEX            314/325 = 96.6%  [95% CI 94%-98%]     1/372 = 0.3%
+CCSN-standard    262/325 = 80.6%  [95% CI 76%-85%]     7/372 = 1.9%
+CCSN-strict      257/325 = 79.1%  [95% CI 74%-83%]    12/372 = 3.2%
+CCSN-paranoid    236/325 = 72.6%  [95% CI 68%-77%]    15/372 = 4.0%
+L1                 0/325 =  0.0%  [95% CI 0%-1%]   101/372 = 27.2%
+ALG-capture        0/325 =  0.0%  [95% CI 0%-1%]    32/372 = 8.6%

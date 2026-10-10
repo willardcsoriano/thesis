@@ -1,9 +1,14 @@
-// Command listpilot runs three systems over pilot/corpus.jsonl and emits one JSON
+// Command listpilot runs five systems over pilot/corpus.jsonl and emits one JSON
 // object per command per system: L0 (the current pattern-list classifier), L1 (a
-// list flipped to fail closed), and ALG (the effect analysis). It reports what each
-// system would do and never executes a corpus command. The only commands ever run
-// are ALG's read-only resolvers, which it proves read-only first and runs under a
-// read-only sandbox where one is available.
+// list flipped to fail closed), ALG-strict and ALG-capture (two readings of the
+// full effect analysis), and ALG-nocompose (the same analysis with wrapper,
+// find -exec, xargs, eval, shell -c, and loop composition disabled, falling back
+// to the per-command rule table alone). ALG-nocompose exists to answer
+// docs/open-problems.md row 38 — the adviser's own question of how much of the
+// algorithm's result comes from composition versus the table it extends. It
+// reports what each system would do and never executes a corpus command. The
+// only commands ever run are ALG's read-only resolvers, which it proves
+// read-only first and runs under a read-only sandbox where one is available.
 package main
 
 import (
@@ -66,23 +71,6 @@ func fixture() (string, error) {
 	return wd, os.MkdirAll(filepath.Join(wd, "tmp"), 0o755)
 }
 
-// isProtected mirrors which capture mechanisms backupBeforeIrreversible in
-// cmd/synapse would engage, using the classifier's own target extractors.
-func isProtected(cmd, wd string) bool {
-	if len(classifier.ContentMutationTargets(cmd, wd)) > 0 {
-		return true
-	}
-	if _, ok := classifier.CpOverwriteTarget(cmd, wd); ok {
-		return true
-	}
-	if _, ok := classifier.RawWriteOverwriteTarget(cmd, wd); ok {
-		return true
-	}
-	return len(classifier.TrashTargets(cmd, wd)) > 0 ||
-		len(classifier.RecursivePermissionTargets(cmd, wd)) > 0 ||
-		classifier.IsGitResetHard(cmd) || classifier.IsGitCleanForce(cmd)
-}
-
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Fprintln(os.Stderr, "usage: listpilot corpus.jsonl")
@@ -132,7 +120,7 @@ func main() {
 		}
 		v, why := classifier.ClassifyForDir(r.Command, wd)
 		enc.Encode(result{ID: r.ID, System: "L0", Prompted: v == classifier.Irreversible,
-			Protected: isProtected(r.Command, wd), Reason: why})
+			Protected: classifier.Protected(r.Command, wd), Reason: why})
 
 		asks, reasons := effects.FailClosed(r.Command)
 		enc.Encode(result{ID: r.ID, System: "L1", Prompted: asks, Reason: first(reasons)})
@@ -153,6 +141,14 @@ func main() {
 			Protected: protected, Reason: first(vd.Reasons), Class: vd.Class.String()})
 		enc.Encode(result{ID: r.ID, System: "ALG-capture", Prompted: vd.Class == effects.Unrecoverable,
 			Protected: protected, Reason: first(vd.Reasons), Class: vd.Class.String()})
+
+		nc := *an
+		nc.Compose = false
+		ncRes := nc.Analyze(context.Background(), r.Command)
+		ncVd := ncRes.Verdict()
+		ncProtected := ncVd.Class == effects.RecoverableWithCapture
+		enc.Encode(result{ID: r.ID, System: "ALG-nocompose", Prompted: ncVd.Class == effects.Unrecoverable,
+			Protected: ncProtected, Reason: first(ncVd.Reasons), Class: ncVd.Class.String()})
 		os.RemoveAll(wd)
 	}
 }

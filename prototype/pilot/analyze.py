@@ -3,7 +3,7 @@
 system) and reports silent losses, consent without undo, and friction per system.
 Stdlib only.
 
-Usage: analyze.py corpus.jsonl classifier_out.jsonl
+Usage: analyze.py corpus.jsonl classifier_out.jsonl [more_system_outputs.jsonl ...]
 """
 import collections
 import hashlib
@@ -12,7 +12,7 @@ import math
 import pathlib
 import sys
 
-SYSTEMS = ["L0", "L1", "ALG-strict", "ALG-capture"]
+SYSTEMS = ["L0", "CODEX", "CCSN-standard", "CCSN-strict", "CCSN-paranoid", "L1", "ALG-strict", "ALG-capture", "ALG-nocompose"]
 
 
 def wilson(k, n, z=1.96):
@@ -33,15 +33,17 @@ def fmt(k, n):
 
 
 corpus_path, out_path = sys.argv[1], sys.argv[2]
+extra_paths = sys.argv[3:]  # optional further system outputs, e.g. external baselines
 print("corpus sha256:", hashlib.sha256(pathlib.Path(corpus_path).read_bytes()).hexdigest())
 truth = {}
 for line in open(corpus_path, encoding="utf-8"):
     r = json.loads(line)
     truth[r["id"]] = r
 res = collections.defaultdict(dict)  # system -> id -> record
-for line in open(out_path, encoding="utf-8"):
-    r = json.loads(line)
-    res[r["system"]][r["id"]] = r
+for path in [out_path, *extra_paths]:
+    for line in open(path, encoding="utf-8"):
+        r = json.loads(line)
+        res[r["system"]][r["id"]] = r
 
 
 def dangerous(r):
