@@ -1169,22 +1169,66 @@ func ruleWget(st *state, c *call) {
 	if !st.needArgs(c) {
 		return
 	}
-	o := parseOpts(c.args, "OPoaeUTtwl", "output-document", "directory-prefix", "output-file", "append-output")
+	o := parseOpts(c.args, "OPoaeUTtwlQ", "output-document", "directory-prefix", "output-file", "append-output", "quota")
 	dir := c.sc.wd
 	if v, ok := o.val("P", "directory-prefix"); ok {
 		dir = c.abs(v)
 	}
 	if v, ok := o.val("O", "output-document"); ok {
 		if v != "-" {
-			st.writeTo(c, filepath.Join(dir, v))
+			st.writeTo(c, c.abs(v)) // -O is relative to the working directory, not -P
 		}
 		return
 	}
-	for _, u := range o.operands {
-		base := filepath.Base(strings.SplitN(strings.SplitN(u, "?", 2)[0], "#", 2)[0])
-		if base == "." || base == "/" || base == "" {
-			base = "index.html"
+	for _, f := range []string{"o", "output-file", "a", "append-output"} {
+		if v, ok := o.val(f); ok && v != "" {
+			st.writeTo(c, c.abs(v)) // wget's own log
 		}
-		st.add(c, Effect{Kind: Create, Path: filepath.Join(dir, base)})
 	}
+	if o.has("r", "recursive", "m", "mirror", "p", "page-requisites", "i", "input-file") || hasAny(c.args, "--content-disposition", "--trust-server-names") {
+		st.unresolved(c, "wget takes its file names from the server or another file")
+		return
+	}
+	noClobber := hasAny(c.args, "-nc", "--no-clobber")
+	overwrites := o.has("N", "timestamping", "c", "continue") && !noClobber
+	for _, u := range o.operands {
+		target := filepath.Join(dir, wgetName(u))
+		if !st.exists(target) {
+			st.add(c, Effect{Kind: Create, Path: target})
+			continue
+		}
+		switch {
+		case noClobber:
+		case overwrites:
+			st.add(c, Effect{Kind: Write, Path: target}) // -N replaces a newer copy, -c appends to it
+		default:
+			// wget never replaces an existing file by default: it saves to NAME.1, NAME.2,
+			// and so on. Recording a creation of NAME here would make undo delete the
+			// file that was already there.
+			for n := 1; ; n++ {
+				if p := fmt.Sprintf("%s.%d", target, n); !st.exists(p) {
+					st.add(c, Effect{Kind: Create, Path: p})
+					break
+				}
+			}
+		}
+	}
+}
+
+// wgetName is the file name wget saves a URL to: the last path segment, or index.html
+// when the path is empty or ends in a slash.
+func wgetName(u string) string {
+	p := strings.SplitN(strings.SplitN(u, "?", 2)[0], "#", 2)[0]
+	if i := strings.Index(p, "://"); i >= 0 {
+		p = p[i+3:]
+		if j := strings.IndexByte(p, '/'); j >= 0 {
+			p = p[j:]
+		} else {
+			p = ""
+		}
+	}
+	if p == "" || strings.HasSuffix(p, "/") {
+		return "index.html"
+	}
+	return filepath.Base(p)
 }
