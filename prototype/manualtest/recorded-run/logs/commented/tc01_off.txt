@@ -1,0 +1,47 @@
+# Initial state: which files are there?
+$ ls Screenshot*
+'Screenshot 2026-09-14 101211.png'  'Screenshot 2026-09-20 184502.png'
+
+# Ask SynapseOS, algorithm OFF: the AI writes the command, then it runs
+$ SYNAPSE_ANALYSIS=off synapse "use find with -delete to remove the file
+s whose names start with Screenshot"
+model: qwen2.5-coder:3b   endpoint: http://localhost:11434
+
+Each step may run for up to 2m0s before it's automatically stopped.
+
+step 1: find . -name 'Screenshot*' -delete
+  stats: 25 tokens in 11.415s
+blocked: find . -name 'Screenshot*' -delete is irreversible — find -dele
+te (find -delete removes every matching file with no built-in undo, and
+the matches are only known while it runs)
+  WARNING: This command decides what to delete while it runs, so I canno
+t
+  copy anything first. Undo will NOT be able to bring it back.
+  If you want the safety net, name the files or folders directly instead
+.
+run it anyway? [y/N] y
+exit code: 0
+
+step 2: DONE
+  stats: 14 tokens in 5.619s
+All files starting with "Screenshot" have been deleted.
+Task complete in 1 step(s).
+
+# After the command: what changed?
+$ ls Screenshot*
+ls: cannot access 'Screenshot*': No such file or directory
+
+# Undo: ask SynapseOS to reverse the last change
+$ synapse undo
+Undoing: find . -name 'Screenshot*' -delete
+  (ran in /tmp/synapse-demo/Documents/SynapseOS-Playground at 2026-10-08
+T20:09:47+08:00)
+  note: 2 change(s) from this command could not be safely reconstructed
+and are not part of this undo: [Screenshot 2026-09-14 101211.png Screens
+hot 2026-09-20 184502.png]
+apply this undo? [y/N] y
+Undo complete.
+
+# After undo: did anything come back?
+$ ls Screenshot*
+ls: cannot access 'Screenshot*': No such file or directory

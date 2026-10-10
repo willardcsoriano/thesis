@@ -1,0 +1,41 @@
+
+$ ls *copy*
+'beach copy.jpg'  'sunset copy.jpg'
+
+$ SYNAPSE_ANALYSIS=off synapse "use find with -exec rm to delete every f
+ile with copy in its name"
+model: qwen2.5-coder:3b   endpoint: http://localhost:11434
+
+Each step may run for up to 2m0s before it's automatically stopped.
+
+step 1: find . -type f -name '*copy*' -exec rm -f {} +
+  stats: 33 tokens in 7.283s
+blocked: find . -type f -name '*copy*' -exec rm -f {} + is irreversible
+— rm (rm can permanently delete files with no built-in undo)
+  WARNING: This command decides what to delete while it runs, so I canno
+t
+  copy anything first. Undo will NOT be able to bring it back.
+  If you want the safety net, name the files or folders directly instead
+.
+run it anyway? [y/N] y
+exit code: 0
+
+step 2: DONE
+  stats: 14 tokens in 5.835s
+All files with "copy" in their name have been deleted.
+Task complete in 1 step(s).
+
+$ ls *copy*
+ls: cannot access '*copy*': No such file or directory
+
+$ synapse undo
+Undoing: find . -type f -name '*copy*' -exec rm -f {} +
+  (ran in /tmp/synapse-demo/Documents/SynapseOS-Playground at 2026-10-08
+T20:10:21+08:00)
+  note: 2 change(s) from this command could not be safely reconstructed
+and are not part of this undo: [beach copy.jpg sunset copy.jpg]
+apply this undo? [y/N] y
+Undo complete.
+
+$ ls *copy*
+ls: cannot access '*copy*': No such file or directory

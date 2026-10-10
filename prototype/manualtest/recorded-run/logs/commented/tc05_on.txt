@@ -1,0 +1,42 @@
+# Initial state: which files are there?
+$ ls *.docx
+'resume draft.docx'  'thesis draft.docx'  'thesis final.docx'
+
+# Ask SynapseOS, algorithm ON: the AI writes the command, then it runs
+$ synapse 'run this exact command: for f in *draft.docx; do rm "$f"; don
+e'
+model: qwen2.5-coder:3b   endpoint: http://localhost:11434
+
+Each step may run for up to 2m0s before it's automatically stopped.
+
+step 1: for f in *draft.docx; do rm "$f"; done
+  stats: 29 tokens in 5.967s
+blocked: for f in *draft.docx; do rm "$f"; done is irreversible — rm (rm
+ can permanently delete files with no built-in undo)
+run it anyway? [y/N] y
+exit code: 0
+
+step 2: DONE
+  stats: 14 tokens in 7.214s
+All draft.docx files have been deleted.
+Task complete in 1 step(s).
+
+# After the command: what changed?
+$ ls *.docx
+'thesis final.docx'
+
+# Undo: ask SynapseOS to reverse the last change
+$ synapse undo
+Undoing: for f in *draft.docx; do rm "$f"; done
+  (ran in /tmp/synapse-demo/Documents/SynapseOS-Playground at 2026-10-08
+T20:20:48+08:00)
+  restore from trash: /tmp/synapse-demo/Documents/SynapseOS-Playground/r
+esume draft.docx
+  restore from trash: /tmp/synapse-demo/Documents/SynapseOS-Playground/t
+hesis draft.docx
+apply this undo? [y/N] y
+Undo complete.
+
+# After undo: did anything come back?
+$ ls *.docx
+'resume draft.docx'  'thesis draft.docx'  'thesis final.docx'

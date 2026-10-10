@@ -1,0 +1,35 @@
+
+$ ls *.zip
+installer.zip  photos-backup.zip
+
+$ synapse "delete the file named installer.zip"
+model: qwen2.5-coder:3b   endpoint: http://localhost:11434
+
+Each step may run for up to 2m0s before it's automatically stopped.
+
+step 1: rm installer.zip
+  stats: 19 tokens in 3.895s
+blocked: rm installer.zip is irreversible — rm (rm can permanently delet
+e files with no built-in undo)
+run it anyway? [y/N] y
+exit code: 0
+
+step 2: DONE
+  stats: 14 tokens in 5.109s
+installer.zip has been deleted.
+Task complete in 1 step(s).
+
+$ ls *.zip
+photos-backup.zip
+
+$ synapse undo
+Undoing: rm installer.zip
+  (ran in /tmp/synapse-demo/Documents/SynapseOS-Playground at 2026-10-08
+T20:22:41+08:00)
+  restore from trash: /tmp/synapse-demo/Documents/SynapseOS-Playground/i
+nstaller.zip
+apply this undo? [y/N] y
+Undo complete.
+
+$ ls *.zip
+installer.zip  photos-backup.zip

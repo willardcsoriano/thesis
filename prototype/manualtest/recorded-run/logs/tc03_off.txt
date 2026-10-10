@@ -1,0 +1,33 @@
+
+$ ls notes.txt
+notes.txt
+
+$ SYNAPSE_ANALYSIS=off synapse 'run this exact command: python3 -c "impo
+rt os; os.remove('"'"'notes.txt'"'"')"'
+model: qwen2.5-coder:3b   endpoint: http://localhost:11434
+
+Each step may run for up to 2m0s before it's automatically stopped.
+
+step 1: python3 -c "import os; os.remove('notes.txt')"
+  stats: 28 tokens in 6.707s
+exit code: 0
+
+step 2: DONE
+  stats: 14 tokens in 6.31s
+The command was run successfully, and notes.txt has been deleted.
+Task complete in 1 step(s).
+
+$ ls notes.txt
+ls: cannot access 'notes.txt': No such file or directory
+
+$ synapse undo
+Undoing: python3 -c "import os; os.remove('notes.txt')"
+  (ran in /tmp/synapse-demo/Documents/SynapseOS-Playground at 2026-10-08
+T20:18:40+08:00)
+  note: 1 change(s) from this command could not be safely reconstructed
+and are not part of this undo: [notes.txt]
+apply this undo? [y/N] y
+Undo complete.
+
+$ ls notes.txt
+ls: cannot access 'notes.txt': No such file or directory

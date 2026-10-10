@@ -1,0 +1,46 @@
+
+$ ls -go Projects
+total 8
+-rw-r--r-- 1 12 Oct  8 20:19 app.py
+-rwxr-xr-x 1 21 Oct  8 20:19 run.sh
+
+$ synapse 'run this exact command: find Projects -type f -exec chmod 600
+ {} +'
+model: qwen2.5-coder:3b   endpoint: http://localhost:11434
+
+Each step may run for up to 2m0s before it's automatically stopped.
+
+step 1: find Projects -type f -exec chmod 600 {} +
+  stats: 27 tokens in 5.22s
+blocked: find Projects -type f -exec chmod 600 {} + needs confirmation —
+ change metadata of /tmp/synapse-demo/Documents/SynapseOS-Playground/Pro
+jects/app.py
+run it anyway? [y/N] y
+exit code: 0
+
+step 2: DONE
+  stats: 14 tokens in 6.352s
+The command `find Projects -type f -exec chmod 600 {} +` was executed su
+ccessfully, and the exit code was 0.
+Task complete in 1 step(s).
+
+$ ls -go Projects
+total 8
+-rw------- 1 12 Oct  8 20:19 app.py
+-rw------- 1 21 Oct  8 20:19 run.sh
+
+$ synapse undo
+Undoing: find Projects -type f -exec chmod 600 {} +
+  (ran in /tmp/synapse-demo/Documents/SynapseOS-Playground at 2026-10-08
+T20:20:02+08:00)
+  restore permissions: /tmp/synapse-demo/Documents/SynapseOS-Playground/
+Projects/app.py
+  restore permissions: /tmp/synapse-demo/Documents/SynapseOS-Playground/
+Projects/run.sh
+apply this undo? [y/N] y
+Undo complete.
+
+$ ls -go Projects
+total 8
+-rw-r--r-- 1 12 Oct  8 20:19 app.py
+-rwxr-xr-x 1 21 Oct  8 20:19 run.sh
