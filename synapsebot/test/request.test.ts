@@ -9,7 +9,11 @@ describe("parseAskRequest", () => {
     });
     expect(r).toEqual({
       ok: true,
-      value: { question: "Why?", history: [{ role: "user", text: "What is it?" }, { role: "assistant", text: "A thesis." }] },
+      value: {
+        question: "Why?",
+        history: [{ role: "user", text: "What is it?" }, { role: "assistant", text: "A thesis." }],
+        mode: "quick",
+      },
     });
   });
 
@@ -21,6 +25,7 @@ describe("parseAskRequest", () => {
     [{ question: "q", history: "no" }, "array"],
     [{ question: "q", history: [{ role: "assistant", text: "a" }, { role: "user", text: "b" }] }, "alternate"],
     [{ question: "q", history: [{ role: "user", text: "" }, { role: "assistant", text: "b" }] }, "non-empty"],
+    [{ question: "q", mode: "essay" }, "mode"],
   ])("rejects %j", (body, message) => {
     const r = parseAskRequest(body);
     expect(r.ok).toBe(false);
@@ -41,5 +46,12 @@ describe("parseAskRequest", () => {
     expect(r.ok && r.value.history[0]!.role).toBe("user");
     expect(r.ok && r.value.history.length).toBeLessThanOrEqual(MAX_HISTORY_TURNS);
     expect(r.ok && r.value.history.at(-1)!.text).toBe(`t${MAX_HISTORY_TURNS + 3}`);
+  });
+});
+
+describe("mode", () => {
+  it("defaults to quick and accepts study", () => {
+    expect(parseAskRequest({ question: "q" })).toMatchObject({ ok: true, value: { mode: "quick" } });
+    expect(parseAskRequest({ question: "q", mode: "study" })).toMatchObject({ ok: true, value: { mode: "study" } });
   });
 });

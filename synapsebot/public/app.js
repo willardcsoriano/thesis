@@ -4,6 +4,7 @@
 import { citeMarker, renderAnswer, stripCiteMarkers } from "./render.js";
 
 const CODE_KEY = "synapsebot.access-code";
+const MODE_KEY = "synapsebot.mode";
 const MAX_HISTORY_PAIRS = 3;
 
 const transcript = document.getElementById("transcript");
@@ -32,6 +33,27 @@ function saveCode(code) {
   } catch { /* storage unavailable */ }
 }
 let accessCode = loadCode();
+
+// Answer style: "quick" for live questions, "study" for learning. Remembered
+// per browser; storage failures just mean it resets to quick next visit.
+const modeButtons = [...document.querySelectorAll(".mode [data-mode]")];
+let mode = "quick";
+try { if (localStorage.getItem(MODE_KEY) === "study") mode = "study"; } catch { /* storage unavailable */ }
+
+function showMode() {
+  for (const button of modeButtons) button.setAttribute("aria-checked", String(button.dataset.mode === mode));
+  questionBox.placeholder = mode === "study" ? "What do you want to understand?" : "Type the question…";
+}
+
+for (const button of modeButtons) {
+  button.addEventListener("click", () => {
+    mode = button.dataset.mode;
+    try { localStorage.setItem(MODE_KEY, mode); } catch { /* storage unavailable */ }
+    showMode();
+    questionBox.focus();
+  });
+}
+showMode();
 
 function showAccess(message = "") {
   accessForm.hidden = false;
@@ -140,6 +162,7 @@ async function ask(question) {
     return;
   }
   questionBox.value = "";
+  const askedMode = mode;
   const view = newEntry(question);
   view.entry.scrollIntoView({ behavior: "smooth", block: "start" });
 
@@ -158,6 +181,8 @@ async function ask(question) {
     part = "practice";
     view.principleLabel.hidden = false;
     view.practice.hidden = false;
+    // Study answers are the point of asking, so they arrive unfolded.
+    if (askedMode === "study") view.practice.open = true;
   };
   const clearAnswer = () => {
     parts.principle = parts.practice = "";
@@ -178,7 +203,7 @@ async function ask(question) {
     const response = await fetch("/api/ask", {
       method: "POST",
       headers: { "content-type": "application/json", "x-access-code": accessCode },
-      body: JSON.stringify({ question, history: history.slice(-MAX_HISTORY_PAIRS * 2) }),
+      body: JSON.stringify({ question, mode: askedMode, history: history.slice(-MAX_HISTORY_PAIRS * 2) }),
       signal: controller.signal,
     });
 

@@ -5,6 +5,7 @@
 //
 //   npm run eval -- --yes            all questions
 //   npm run eval -- --yes --only 3   one question, by 1-based number
+//   npm run eval -- --yes --mode study   study-mode answers (default: quick)
 //
 // Answers are written to eval/results/ (git-ignored) for reading.
 
@@ -16,10 +17,18 @@ import { parseArgs } from "node:util";
 import { answer, type AnswerLog } from "../src/answer.js";
 import type { Corpus } from "../src/corpus.js";
 import corpusJson from "../src/generated/corpus.json" with { type: "json" };
+import { MODES, type Mode } from "../src/prompt.js";
 import { SearchIndex } from "../src/search.js";
 import questions from "./questions.json" with { type: "json" };
 
-const { values } = parseArgs({ options: { yes: { type: "boolean" }, only: { type: "string" } } });
+const { values } = parseArgs({
+  options: { yes: { type: "boolean" }, only: { type: "string" }, mode: { type: "string", default: "quick" } },
+});
+if (!MODES.includes(values.mode as Mode)) {
+  console.error(`--mode must be one of: ${MODES.join(", ")}`);
+  process.exit(2);
+}
+const mode = values.mode as Mode;
 if (!values.yes) {
   console.error(`This calls the Claude API for ${questions.length} questions and costs money. Re-run with --yes.`);
   process.exit(2);
@@ -39,7 +48,7 @@ let outputTokens = 0;
 for (const { question, expect } of selected) {
   const log: AnswerLog = { retrieved: 0, cited: [], stopReason: null, inputTokens: 0, outputTokens: 0 };
   let text = "";
-  for await (const event of answer(open, index, corpus, { question, history: [] }, log)) {
+  for await (const event of answer(open, index, corpus, { question, history: [], mode }, log)) {
     if (event.type === "text") text += event.text;
     if (event.type === "cite") text += `[${event.ref}]`;
     if (event.type === "error" || event.type === "notice") text += `\n(${event.type}: ${event.text})`;

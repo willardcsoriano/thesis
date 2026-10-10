@@ -19,7 +19,7 @@ describe("retrieval", () => {
     const present = paths.filter((p) => available.has(p));
     // A file missing on this branch can't be retrieved; skip rather than fail.
     if (present.length === 0) return;
-    const got = retrieve(index, corpus, { question, history: [] }).map((c) => c.path);
+    const got = retrieve(index, corpus, { question, history: [], mode: "quick" }).map((c) => c.path);
     expect(got.some((p) => present.includes(p)), `retrieved: ${[...new Set(got)].join(", ")}`).toBe(true);
   });
 });

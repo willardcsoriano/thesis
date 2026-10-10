@@ -38,6 +38,8 @@ synapsebot/
 
 If nothing in the corpus matches, the bot answers with a fixed message and makes no API call.
 
+**Quick and Study modes.** A switch by the question box picks the answer style, remembered per browser. **Quick** (the default) is for the live defense: two plain sentences, then a folded two-to-four-sentence In practice, at low effort with up to 2,000 output tokens. **Study** is for teammates learning the work, often the algorithm: the same plain In principle, then an unfolded In practice of usually 150–400 words, built up as what it is, how it works step by step, a worked example from the thesis, and its limits. It runs at medium effort, with up to 6,000 output tokens and more retrieved context (12 sections, about 40,000 characters). Both prompts share the voice and accuracy rules in `src/prompt.ts`, so the modes can't drift apart on what they're allowed to claim.
+
 ## Running it
 
 Everything runs from this directory with Node 24.

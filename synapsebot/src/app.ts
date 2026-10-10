@@ -64,7 +64,7 @@ export function createApp({ corpus, openStream, rateLimiter }: Deps) {
     const parsed = parseAskRequest(body);
     if (!parsed.ok) return json({ error: parsed.error }, 400);
 
-    const log: AnswerLog = { retrieved: 0, cited: [], stopReason: null, inputTokens: 0, outputTokens: 0 };
+    const log: AnswerLog = { mode: parsed.value.mode, retrieved: 0, cited: [], stopReason: null, inputTokens: 0, outputTokens: 0 };
     const events = answer(openStream(env), index, corpus, parsed.value, log);
     return sse(events, () => console.log(JSON.stringify({ event: "answer", ...log })));
   }
