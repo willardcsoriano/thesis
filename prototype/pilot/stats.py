@@ -146,9 +146,40 @@ print("ALG wins: items where ALG-strict is right and the baseline is wrong; ALG 
 # Each system on its own, with Wilson intervals.
 print()
 for measure, items, fn in (("silent loss", dangerous, silent), ("capture coverage", losses, covered)):
-    for s in ("L0", "L1", "ALG-strict", "ALG-capture"):
+    for s in ("L0", "L1", "ALG-strict", "ALG-capture", "ALG-nocompose"):
         if s not in res:
             continue
         k = sum(fn(s, r) for r in items)
         lo, hi = wilson(k, len(items))
         print(f"{measure:17} {s:12} {k:>4}/{len(items):<4} = {k / len(items):6.1%}  [Wilson {lo:.1%}, {hi:.1%}]")
+
+# Composition ablation (docs/open-problems.md row 38): ALG-capture (the full analysis)
+# against ALG-nocompose (the same per-command rule table with wrapper, find -exec,
+# xargs, eval, shell -c, and loop composition disabled). A single comparison, not part
+# of the four-test family above, so it is reported at nominal significance with no Holm
+# correction; it answers a separate question (how much of ALG's result is composition
+# versus the table it extends), not "is ALG better than a list."
+if "ALG-nocompose" in res:
+    print()
+    print("composition ablation: ALG-capture vs ALG-nocompose (docs/open-problems.md row 38)")
+    for measure, items, fn in (("silent loss", dangerous, silent), ("capture coverage", losses, covered)):
+        a = b = c = d = 0
+        for r in items:
+            x, y = fn("ALG-capture", r), fn("ALG-nocompose", r)
+            if x and y:
+                a += 1
+            elif x and not y:
+                b += 1
+            elif not x and y:
+                c += 1
+            else:
+                d += 1
+        diff, lo, hi = newcombe_paired(a, b, c, d)  # full covered minus nocompose covered
+        wins, losses_ = b, c
+        if wins + losses_ == 0:
+            print(f"  {measure:17} n={len(items):<4} no discordant pairs (both systems agree on every item)")
+            continue
+        p = mcnemar_exact(wins, losses_)
+        orr = (wins / losses_) if losses_ else float("inf")
+        print(f"  {measure:17} n={len(items):<4} full wins={wins:>3} nocompose wins={losses_:>3}  "
+              f"p={p:.2g}  risk diff={diff:+.3f} [{lo:+.3f}, {hi:+.3f}]  odds ratio={orr:.1f}")

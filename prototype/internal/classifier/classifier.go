@@ -804,3 +804,22 @@ func tokenizeShellWords(s string) []string {
 	}
 	return words
 }
+
+// Protected reports whether any capture mechanism that backupBeforeIrreversible in
+// cmd/synapse engages for an irreversible command applies to cmd: content backup,
+// overwrite backup, trash, recursive-permission backup, or a git restore point. It
+// says nothing about whether that capture would actually restore the prior state.
+func Protected(cmd, wd string) bool {
+	if len(ContentMutationTargets(cmd, wd)) > 0 {
+		return true
+	}
+	if _, ok := CpOverwriteTarget(cmd, wd); ok {
+		return true
+	}
+	if _, ok := RawWriteOverwriteTarget(cmd, wd); ok {
+		return true
+	}
+	return len(TrashTargets(cmd, wd)) > 0 ||
+		len(RecursivePermissionTargets(cmd, wd)) > 0 ||
+		IsGitResetHard(cmd) || IsGitCleanForce(cmd)
+}

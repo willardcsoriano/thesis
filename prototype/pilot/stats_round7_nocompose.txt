@@ -1,0 +1,26 @@
+corpus: 777 items; 405 lose something or are external; 325 executable losses
+recovery check applied to ALG-strict coverage (631 items with a restore result)
+
+measure           vs     n ALG wins ALG loses  p (exact)  p (Holm)  risk diff    95% CI (Newcombe) odds ratio
+silent loss       L0   405      167         0    1.1e-50   3.2e-50     +0.412     [+0.365, +0.461]        inf
+silent loss       L1   405        0         0          1         1     +0.000     [-0.009, +0.009]        inf
+capture coverage  L0   325      170        14    3.1e-35   6.3e-35     +0.480     [+0.414, +0.540]       12.1
+capture coverage  L1   325      291         0      5e-88     2e-87     +0.895     [+0.856, +0.924]        inf
+
+risk difference is positive when ALG-strict is better (less silent loss, or more coverage).
+ALG wins: items where ALG-strict is right and the baseline is wrong; ALG loses: the reverse.
+
+silent loss       L0            167/405  =  41.2%  [Wilson 36.5%, 46.1%]
+silent loss       L1              0/405  =   0.0%  [Wilson 0.0%, 0.9%]
+silent loss       ALG-strict      0/405  =   0.0%  [Wilson 0.0%, 0.9%]
+silent loss       ALG-capture     0/405  =   0.0%  [Wilson 0.0%, 0.9%]
+silent loss       ALG-nocompose    0/405  =   0.0%  [Wilson 0.0%, 0.9%]
+capture coverage  L0            135/325  =  41.5%  [Wilson 36.3%, 47.0%]
+capture coverage  L1              0/325  =   0.0%  [Wilson 0.0%, 1.2%]
+capture coverage  ALG-strict    291/325  =  89.5%  [Wilson 85.7%, 92.4%]
+capture coverage  ALG-capture   291/325  =  89.5%  [Wilson 85.7%, 92.4%]
+capture coverage  ALG-nocompose  115/325  =  35.4%  [Wilson 30.4%, 40.7%]
+
+composition ablation: ALG-capture vs ALG-nocompose (docs/open-problems.md row 38)
+  silent loss       n=405  no discordant pairs (both systems agree on every item)
+  capture coverage  n=325  full wins=176 nocompose wins=  0  p=2.1e-53  risk diff=+0.542 [+0.484, +0.593]  odds ratio=inf
