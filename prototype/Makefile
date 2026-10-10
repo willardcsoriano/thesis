@@ -109,7 +109,19 @@ fmt-check:
 vet:
 	$(GO) vet ./...
 
-ci: fmt-check vet test
+ci: fmt-check vet test cover-check
+
+# The analysis's statement coverage (by the effects and gate tests) may not fall
+# below COVER_FLOOR. It was 59% before anyone measured it; see
+# docs/recoverability-analysis.md, "Coverage, per part of the algorithm".
+COVER_FLOOR ?= 80
+.PHONY: cover-check
+cover-check:
+	@mkdir -p bin
+	@$(GO) test -count=1 -coverpkg=./internal/effects -coverprofile=bin/effects.cov ./internal/effects ./internal/gate >/dev/null
+	@$(GO) tool cover -func=bin/effects.cov | awk -v floor=$(COVER_FLOOR) '/^total:/ { sub("%", "", $$3); \
+		if ($$3 + 0 < floor) { printf "analysis coverage %s%% is below the %s%% floor\n", $$3, floor; exit 1 } \
+		printf "analysis coverage %s%% (floor %s%%)\n", $$3, floor }'
 
 # Dependencies. deps-check prints the one install line for anything missing;
 # deps-hoard collects the debs, Go modules, toolchain, and models for the image build.
@@ -137,6 +149,21 @@ round4:
 recovery5:
 	RC_NO_CURATED=1 $(GO) run ./cmd/recoverycheck pilot/corpus5.jsonl > pilot/recovery_results5.txt
 	@sed -n "/^SUMMARY/,/^FAILURES/p" pilot/recovery_results5.txt
+
+# The algorithm reference (docs/recoverability-analysis.md): rulemap rewrites its generated
+# rule map from the code; algocov prints per-function test coverage of the analysis;
+# fuzz runs the read-only-resolver property for FUZZTIME.
+FUZZTIME ?= 60s
+.PHONY: rulemap algocov fuzz
+rulemap:
+	UPDATE_DOCS=1 $(GO) test ./internal/effects -run TestCatalogDocIsCurrent -count=1
+
+algocov:
+	$(GO) test -count=1 -coverpkg=./internal/effects -coverprofile=bin/effects.cov ./internal/effects ./internal/gate >/dev/null
+	$(GO) tool cover -func=bin/effects.cov | sed 's#synapseos/internal/effects/##'
+
+fuzz:
+	$(GO) test ./internal/effects -run '^$$' -fuzz FuzzResolversAreReadOnly -fuzztime $(FUZZTIME)
 
 # Hands-on test suite (manualtest/STORIES.md): builds both binaries and resets the
 # playground folder the stories clean up and restore. Rerun between stories.
