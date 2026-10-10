@@ -112,6 +112,17 @@ describe("POST /api/ask", () => {
     ]);
   });
 
+  it("uses each mode's settings for the Claude call", async () => {
+    const { app, spy } = setup(() => fakeStream([text("ok"), stop]));
+    await (await app.fetch(ask({ question: "how does undo work?" }), env)).text();
+    await (await app.fetch(ask({ question: "how does undo work?", mode: "study" }), env)).text();
+    const [quick, study] = spy.mock.calls.map((c) => c[0] as StreamParams);
+    expect([quick!.max_tokens, quick!.output_config?.effort]).toEqual([2000, "low"]);
+    expect([study!.max_tokens, study!.output_config?.effort]).toEqual([6000, "medium"]);
+    expect(String(study!.system)).toContain("study mode");
+    expect(String(quick!.system)).not.toContain("study mode");
+  });
+
   it("answers without calling Claude when nothing in the corpus matches", async () => {
     const { app, spy } = setup(() => fakeStream([]));
     const res = await app.fetch(ask({ question: "hello there" }), env);

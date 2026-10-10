@@ -3,14 +3,11 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { chunkUrl, type Chunk, type Corpus } from "./corpus.js";
-import { buildMessages, MAX_TOKENS, MODEL, SYSTEM_PROMPT } from "./prompt.js";
+import { buildMessages, MODE_SETTINGS, MODEL } from "./prompt.js";
 import type { AskRequest } from "./request.js";
 import type { SearchIndex } from "./search.js";
 import { SectionSplitter } from "./sections.js";
 
-/** Most sections sent per question, and the character budget they share. */
-export const MAX_RESULTS = 8;
-export const RESULT_CHAR_BUDGET = 24_000;
 /** Sent with every answered question so broad questions get the project summary. First match wins. */
 export const ORIENTATION_IDS = ["docs/vision.md#overview", "README.md#overview"];
 
@@ -36,6 +33,7 @@ export type AnswerEvent =
 
 /** Summary for the operator log: no question text, no visitor data. */
 export interface AnswerLog {
+  mode?: string;
   retrieved: number;
   cited: string[];
   stopReason: string | null;
@@ -52,11 +50,12 @@ export const NOTHING_FOUND =
 export function retrieve(index: SearchIndex, corpus: Corpus, request: AskRequest): Chunk[] {
   const previousQuestion = request.history.findLast((t) => t.role === "user")?.text ?? "";
   const previousAnswer = request.history.findLast((t) => t.role === "assistant")?.text ?? "";
-  const hits = index.search(request.question, MAX_RESULTS, previousQuestion, previousAnswer);
+  const { maxResults, resultCharBudget } = MODE_SETTINGS[request.mode];
+  const hits = index.search(request.question, maxResults, previousQuestion, previousAnswer);
   if (hits.length === 0) return [];
 
   const chunks: Chunk[] = [];
-  let budget = RESULT_CHAR_BUDGET;
+  let budget = resultCharBudget;
   const orientation = ORIENTATION_IDS.map((id) => corpus.chunks.find((c) => c.id === id)).find(Boolean);
   for (const chunk of [orientation, ...hits.map((h) => h.chunk)]) {
     if (!chunk || chunks.includes(chunk)) continue;
@@ -88,12 +87,13 @@ export async function* answer(
   const splitter = new SectionSplitter();
 
   try {
+    const settings = MODE_SETTINGS[request.mode];
     const stream = openStream({
       model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
+      max_tokens: settings.maxTokens,
+      system: settings.system,
       thinking: { type: "adaptive" },
-      output_config: { effort: "low" },
+      output_config: { effort: settings.effort },
       // On a safety-classifier decline, retry server-side on the model
       // Anthropic recommends for that refusal category.
       betas: ["server-side-fallback-2026-07-01"],
