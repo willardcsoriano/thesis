@@ -827,6 +827,14 @@ func (st *state) dispatch(c *call) {
 	if readOnlyForm(name, c.args, c.aerr == nil) {
 		return
 	}
+	if c.sc.wd == unknownWD {
+		// Every rule checks whether its targets exist before recording an effect, and
+		// nothing exists under a directory that is unknown, so a rule run here would
+		// report "no effect" and the line would pass silently. It is unresolved instead,
+		// even for an absolute path the rule could have placed: that costs a question.
+		st.unresolved(c, errUnknownWD.Error())
+		return
+	}
 	if r, ok := rules[name]; ok {
 		r(st, c)
 		return
