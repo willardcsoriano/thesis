@@ -1,0 +1,8 @@
+# Ask the algorithm alone, with composition switched off (nothing runs)
+$ $E -nocompose 'find . -name "* copy.jpg" -exec rm {} \;'
+pattern list (today):  asks first, with no backup (rm (rm can permanently delete files with no built
+-in undo))
+command:    find . -name "* copy.jpg" -exec rm {} \;
+composition: disabled (table alone, ablation)
+class:      unrecoverable
+  issue    opaque: composition disabled (ablation): find not resolved through

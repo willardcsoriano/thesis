@@ -1,0 +1,42 @@
+# Initial state: which files are there?
+$ ls *copy*
+'beach copy.jpg'  'sunset copy.jpg'
+
+# Ask SynapseOS, algorithm ON: the AI writes the command, then it runs
+$ synapse "use find with -exec rm to delete every file with copy in its
+name"
+model: qwen2.5-coder:3b   endpoint: http://localhost:11434
+
+Each step may run for up to 2m0s before it's automatically stopped.
+
+step 1: find . -type f -name '*copy*' -exec rm -f {} +
+  stats: 33 tokens in 5.96s
+blocked: find . -type f -name '*copy*' -exec rm -f {} + is irreversible
+— rm (rm can permanently delete files with no built-in undo)
+run it anyway? [y/N] y
+exit code: 0
+
+step 2: DONE
+  stats: 14 tokens in 5.832s
+All files with "copy" in their name have been deleted.
+Task complete in 1 step(s).
+
+# After the command: what changed?
+$ ls *copy*
+ls: cannot access '*copy*': No such file or directory
+
+# Undo: ask SynapseOS to reverse the last change
+$ synapse undo
+Undoing: find . -type f -name '*copy*' -exec rm -f {} +
+  (ran in /tmp/synapse-demo/Documents/SynapseOS-Playground at 2026-10-08
+T20:10:40+08:00)
+  restore from trash: /tmp/synapse-demo/Documents/SynapseOS-Playground/b
+each copy.jpg
+  restore from trash: /tmp/synapse-demo/Documents/SynapseOS-Playground/s
+unset copy.jpg
+apply this undo? [y/N] y
+Undo complete.
+
+# After undo: did anything come back?
+$ ls *copy*
+'beach copy.jpg'  'sunset copy.jpg'

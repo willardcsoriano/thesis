@@ -1,0 +1,39 @@
+
+$ ls Screenshot*
+'Screenshot 2026-09-14 101211.png'  'Screenshot 2026-09-20 184502.png'
+
+$ synapse "use find with -delete to remove the files whose names start w
+ith Screenshot"
+model: qwen2.5-coder:3b   endpoint: http://localhost:11434
+
+Each step may run for up to 2m0s before it's automatically stopped.
+
+step 1: find . -name 'Screenshot*' -delete
+  stats: 25 tokens in 4.829s
+blocked: find . -name 'Screenshot*' -delete is irreversible — find -dele
+te (find -delete removes every matching file with no built-in undo, and
+the matches are only known while it runs)
+run it anyway? [y/N] y
+exit code: 0
+
+step 2: DONE
+  stats: 14 tokens in 5.533s
+All files starting with "Screenshot" have been deleted.
+Task complete in 1 step(s).
+
+$ ls Screenshot*
+ls: cannot access 'Screenshot*': No such file or directory
+
+$ synapse undo
+Undoing: find . -name 'Screenshot*' -delete
+  (ran in /tmp/synapse-demo/Documents/SynapseOS-Playground at 2026-10-08
+T20:10:05+08:00)
+  restore from trash: /tmp/synapse-demo/Documents/SynapseOS-Playground/S
+creenshot 2026-09-14 101211.png
+  restore from trash: /tmp/synapse-demo/Documents/SynapseOS-Playground/S
+creenshot 2026-09-20 184502.png
+apply this undo? [y/N] y
+Undo complete.
+
+$ ls Screenshot*
+'Screenshot 2026-09-14 101211.png'  'Screenshot 2026-09-20 184502.png'
