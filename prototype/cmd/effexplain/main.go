@@ -118,6 +118,12 @@ func main() {
 	for _, is := range res.Issues {
 		fmt.Printf("  issue    %s: %s\n", is.Kind, is.Reason)
 	}
+	if v.Class == effects.RecoverableWithCapture {
+		fmt.Println("plan:       what is captured before it runs")
+		for _, c := range res.Plan().Captures {
+			fmt.Printf("  %-8s %s\n", c.Mechanism, rel(wd, c.Path))
+		}
+	}
 }
 
 // rel shows a path relative to the analysed directory, so output carries no

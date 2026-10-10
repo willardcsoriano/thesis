@@ -259,3 +259,40 @@ func TestLiveDebian(t *testing.T) {
 		t.Fatalf("removing an essential package must not be recoverable: %+v", res)
 	}
 }
+
+// Found by mutation testing (docs/recoverability-analysis.md, section 9): the service
+// model's handling of unreadable state, restart, and enable --now had no test.
+func TestSystemctlStateEdges(t *testing.T) {
+	// Neither query answers: nothing is known about the unit, so it must ask.
+	if v := analyzeWith("systemctl stop cron", map[string]string{}).Verdict(); v.Class != Unrecoverable {
+		t.Errorf("unreadable unit state must fail closed, got %v", v.Class)
+	}
+	// Only is-active answers: stopping a running unit is still undone by starting it.
+	a := analyzeWith("systemctl stop cron", map[string]string{"systemctl is-active cron": "active\n"})
+	if got := inverses(a); len(a.Issues) != 0 || strings.Join(got, ";") != "systemctl start cron" {
+		t.Errorf("stop with only is-active readable: inverse %v issues %+v", got, a.Issues)
+	}
+	cases := []struct {
+		cmd, active, enabled string
+		want                 []string
+	}{
+		// restart starts a stopped unit, so its undo stops it again; a running one is left running.
+		{"systemctl restart cron", "inactive", "enabled", []string{"systemctl stop cron"}},
+		{"systemctl restart cron", "active", "enabled", nil},
+		{"systemctl reload-or-restart cron", "inactive", "enabled", []string{"systemctl stop cron"}},
+		{"systemctl try-restart cron", "inactive", "enabled", nil}, // try-restart does nothing to a stopped unit
+		// enable --now on a running unit does not start it, so the undo only disables.
+		{"systemctl enable --now cron", "active", "disabled", []string{"systemctl disable cron"}},
+		{"systemctl disable --now cron", "active", "enabled", []string{"systemctl enable cron", "systemctl start cron"}},
+	}
+	for _, c := range cases {
+		a := analyzeWith(c.cmd, unitAnswers("cron", c.active, c.enabled))
+		if got := inverses(a); len(a.Issues) != 0 || strings.Join(got, ";") != strings.Join(c.want, ";") {
+			t.Errorf("%s (%s/%s): inverse %v, want %v, issues %+v", c.cmd, c.active, c.enabled, got, c.want, a.Issues)
+		}
+	}
+	// Enabling a masked unit fails in systemd; the model must not record a reversible change.
+	if v := analyzeWith("systemctl enable cron", unitAnswers("cron", "inactive", "masked")).Verdict(); v.Class != Unrecoverable {
+		t.Errorf("enable from masked: %v", v.Class)
+	}
+}

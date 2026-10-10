@@ -211,6 +211,9 @@ func ruleTar(st *state, c *call) {
 			st.unresolved(c, "the archive comes from standard input")
 			return
 		}
+		if !st.archiveReadable(c, c.abs(file)) {
+			return
+		}
 		out, ok := st.dry(c, append([]string{"tar", "-tf", c.abs(file)}, rest...))
 		if !ok {
 			return
@@ -233,11 +236,32 @@ func ruleUnzip(st *state, c *call) {
 	if d, ok := o.val("d"); ok && d != "" {
 		base = c.abs(d)
 	}
+	if !st.archiveReadable(c, c.abs(o.operands[0])) {
+		return
+	}
 	out, ok := st.dry(c, []string{"unzip", "-Z1", c.abs(o.operands[0])})
 	if !ok {
 		return
 	}
 	st.extractInto(c, base, lines(out), 0, o.has("j"), o.has("n"))
+}
+
+// archiveReadable reports whether an archive can be listed now as it will be when the
+// command runs. Listing one that does not exist yet, or that an earlier part of the
+// line creates or replaces, fails with no output, which would read as "extracts
+// nothing" and let the extraction overwrite files unprotected.
+func (st *state) archiveReadable(c *call, p string) bool {
+	if _, made := st.virt.created[p]; made || !st.exists(p) {
+		st.unresolved(c, "the archive does not exist yet, so what it would extract cannot be listed")
+		return false
+	}
+	for _, e := range st.an.Effects {
+		if e.Path == p && e.Kind == Write {
+			st.unresolved(c, "an earlier part of the line rewrites the archive, so what it would extract cannot be listed")
+			return false
+		}
+	}
+	return true
 }
 
 // ---- rsync ----
@@ -253,6 +277,12 @@ func ruleRsync(st *state, c *call) {
 	}
 	if hasAny(c.args, "--remove-source-files") || hasPrefixAny(c.args, "-e", "--rsh", "--rsync-path") {
 		st.unresolved(c, "rsync option that changes the source or runs a remote command")
+		return
+	}
+	// These write their file even under --dry-run, so the dry run that resolves the
+	// targets would not be read-only.
+	if hasPrefixAny(c.args, "--log-file", "--write-batch", "--only-write-batch") {
+		st.unresolved(c, "rsync option that writes a file even in a dry run")
 		return
 	}
 	o := parseOpts(c.args, "ehfBT", "rsh", "exclude", "include", "filter", "files-from", "backup-dir", "log-file", "port",
