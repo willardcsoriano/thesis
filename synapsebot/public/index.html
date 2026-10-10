@@ -69,6 +69,10 @@
       <label for="question">Question</label>
       <textarea id="question" name="question" rows="2" maxlength="1000" placeholder="Type the question…" required autofocus></textarea>
       <div class="row">
+        <div class="mode" role="radiogroup" aria-label="Answer style">
+          <button type="button" role="radio" data-mode="quick" aria-checked="true" title="Short answers for live questions">Quick</button>
+          <button type="button" role="radio" data-mode="study" aria-checked="false" title="Fuller explanations for learning">Study</button>
+        </div>
         <span class="hint">Enter to ask &middot; Shift+Enter for a new line</span>
         <button id="ask" type="submit">Ask</button>
       </div>

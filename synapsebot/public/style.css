@@ -311,6 +311,24 @@ a:hover { text-decoration-thickness: 2px; }
 }
 .access .row { margin-top: 0; }
 .access .row input { margin-top: 0; }
+/* Quick / Study: typewriter labels; the active one is underlined in the accent. */
+.mode { display: flex; gap: 0.15rem; flex-shrink: 0; }
+.composer .mode button {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  padding: 0.35rem 0.45rem;
+  cursor: pointer;
+}
+.composer .mode button:hover { color: var(--ink); background: transparent; }
+.composer .mode button[aria-checked="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+
 .hint { font-style: italic; color: var(--ink-soft); font-size: 0.9rem; margin: 0.25rem 0 0; }
 .row .hint { margin: 0; }
 .composer button, .access button {
