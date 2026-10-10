@@ -39,6 +39,9 @@
   .toc-entry.level-2 {
     margin-left: 1.27cm;
   }
+  .toc-entry.level-3 {
+    margin-left: 2.54cm;
+  }
 
   /* ── Base Typography ── */
   body {
@@ -341,6 +344,7 @@
 
   <p class="toc-entry" style="font-weight: bold; margin-top: 0.8em;"><a href="#sec-chapter1">Chapter 1: INTRODUCTION</a><span class="toc-page">1</span></p>
   <p class="toc-entry level-2"><a href="#sec1-1">1.1 Background of the Study</a><span class="toc-page">1</span></p>
+  <p class="toc-entry level-3"><a href="#sec1-1-gap">Gap and Opportunity</a><span class="toc-page">3</span></p>
   <p class="toc-entry level-2"><a href="#sec1-2">1.2 Statement of the Problem</a><span class="toc-page">5</span></p>
   <p class="toc-entry level-2"><a href="#sec1-3">1.3 Objectives of the Study</a><span class="toc-page">6</span></p>
   <p class="toc-entry level-2"><a href="#sec1-4">1.4 Contributions of the Study</a><span class="toc-page">8</span></p>
@@ -411,6 +415,7 @@
 <p>This rapid progress has been uneven across platforms.&nbsp; Windows is heavily represented in the desktop agent literature (Hui et al., 2025; Zhang et al., 2025), Android in the mobile agent literature (Rawles et al., 2023; Zhang et al., 2023; Wang et al., 2024), and the browser in the web agent literature (Deng et al., 2023; Zhou et al., 2024; Zheng et al., 2024).&nbsp; Linux desktop coverage, by contrast, is conspicuously absent: existing work either addresses Linux only at the shell level (Gyawali et al., 2025) or treats it as one of several evaluation platforms rather than a primary target (Xie et al., 2024).&nbsp; No surveyed system implements a working conversational session layer<sup class="fn"><a href="#ch1-fn3">3</a></sup> for the Linux desktop, despite Linux serving as the substrate for most developer and server-side workflows.</p>
 
 <!-- ── Gap / Opportunity ── -->
+<h3 class="italic" id="sec1-1-gap">Gap and Opportunity</h3>
 <p class="no-indent">Capability brings a risk the field has not addressed.&nbsp; A system that turns a request into a shell command and runs it acts on the user&rsquo;s own files, and a command generated from a misunderstood request, or one simply broader than intended, can delete or overwrite them with no way back.&nbsp; Every surveyed system guards against this by <em>permission</em>: the generated command is matched against a list of patterns judged dangerous and is then allowed, refused, or put to the user (Gyawali et al., 2025).&nbsp; A list of this kind cannot see what a command will actually touch when its targets are hidden inside another command, such as <code>find -exec</code> or <code>xargs</code>, or are computed while it runs, and it cannot back up what it does not know will be lost.&nbsp; Whether a generated command can be undone, and what must be saved beforehand so that it can be, is a question of program analysis rather than of interface design, and no surveyed system answers it.</p>
 
 <p class="no-indent">Four compounding gaps in the existing literature therefore motivate the present research.&nbsp; First, no surveyed system determines, before a generated command runs, what it would destroy, or captures exactly that so that the command can be undone; this is the gap the study&rsquo;s algorithmic contribution addresses.&nbsp; Second, no <em>implemented and empirically evaluated</em> system places a conversational layer over the conventional desktop session as a whole.&nbsp; The idea is no longer unclaimed — AgentOS (Liu et al., 2026) proposes a natural-language portal in place of the graphical desktop — but it is offered as a research direction, without a built system or an evaluation.&nbsp; The systems that are built automate on top of the desktop rather than replacing it: UFO², for instance, positions itself as a &ldquo;Desktop AgentOS&rdquo; but operates as an automation layer atop the existing Windows shell, deliberately confining itself to a separate desktop so that agent and user do not interfere (Zhang et al., 2025).&nbsp; Third, the Linux work that exists serves servers and agents rather than the desktop session of an end user.&nbsp; NaSh addresses Linux at the shell level as a design proposal without evaluation (Gyawali et al., 2025); shipping natural-language shells such as Alibaba Cloud&rsquo;s ANOLISA pair intent translation with approval gating and rollback, but scope themselves explicitly to server and DevOps workloads; and OSWorld includes Ubuntu as an evaluation platform rather than a deployment target (Xie et al., 2024).&nbsp; Fourth, controlled comparison against the conventional graphical workflow exists only for narrow slices of the problem.&nbsp; AXIS evaluates an API-first agent against manual operation within a single application, Microsoft Word, using a cloud-hosted frontier model (Lu et al., 2024), and the accessibility literature evaluates assistance for specific populations (Padmanabha et al., 2024).&nbsp; No study compares a conversational interface against the conventional workflow across operating-system-level tasks, on a Linux desktop, driven by a locally-hosted small model, under an explicit safety gate.</p>
