@@ -255,6 +255,12 @@ func ruleRsync(st *state, c *call) {
 		st.unresolved(c, "rsync option that changes the source or runs a remote command")
 		return
 	}
+	// These write their file even under --dry-run, so the dry run that resolves the
+	// targets would not be read-only.
+	if hasPrefixAny(c.args, "--log-file", "--write-batch", "--only-write-batch") {
+		st.unresolved(c, "rsync option that writes a file even in a dry run")
+		return
+	}
 	o := parseOpts(c.args, "ehfBT", "rsh", "exclude", "include", "filter", "files-from", "backup-dir", "log-file", "port",
 		"bwlimit", "partial-dir", "temp-dir", "link-dest", "compare-dest", "copy-dest", "timeout", "chmod", "chown", "exclude-from", "include-from")
 	ops := o.operands
