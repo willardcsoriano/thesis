@@ -1,4 +1,4 @@
-.PHONY: build test run task cli repl scratch tui tui-scratch undo ollama-serve ollama-serve-bg ollama-pull ollama-status pilot pilot3 clean ci fmt-check vet corpus4 round4 deps-check deps-hoard
+.PHONY: build test run task cli repl scratch tui tui-scratch undo ollama-serve ollama-serve-bg ollama-pull ollama-status pilot pilot3 clean ci fmt-check vet corpus4 round4 deps-check deps-hoard manualtest
 
 # Falls back to the user-local toolchain (no sudo required) if `go` isn't
 # already on PATH — see ../setup.md.
@@ -137,3 +137,10 @@ round4:
 recovery5:
 	RC_NO_CURATED=1 $(GO) run ./cmd/recoverycheck pilot/corpus5.jsonl > pilot/recovery_results5.txt
 	@sed -n "/^SUMMARY/,/^FAILURES/p" pilot/recovery_results5.txt
+
+# Hands-on test suite (manualtest/STORIES.md): builds both binaries and resets the
+# playground folder the stories clean up and restore. Rerun between stories.
+manualtest:
+	$(GO) build -o bin/synapse ./cmd/synapse
+	$(GO) build -o bin/effexplain ./cmd/effexplain
+	bash manualtest/reset-playground.sh
