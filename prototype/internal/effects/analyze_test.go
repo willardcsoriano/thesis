@@ -36,6 +36,8 @@ func fixture(t *testing.T) string {
 	return wd
 }
 
+const defaultTestTimeout = 10 * time.Second
+
 func analyze(t *testing.T, wd, cmd string, resolve bool) *Analysis {
 	t.Helper()
 	a := New(wd)
