@@ -12,3 +12,4 @@ This directory holds the **Thesis 1** course, the course following Research Meth
 - `consolidated/SynapseOS_Proposal_Chapters_1_to_3.html` — the sole living document for Chapters 1–3. Edit this, then rebuild the paired PDF with `tools/build_paper.py` (see `tools/TOOLING.md`); never edit the PDF directly.
 - `consolidated/SynapseOS_Proposal_Chapters_1_to_3.pdf` — the exported, submission-ready PDF. Regenerated from the HTML above; not hand-edited.
 - `archive/submitted-<date>/` — a frozen, dated snapshot of `consolidated/` taken each time a round goes to the adviser, so a specific round stays reachable by date rather than depending on git history alone. Never edited; see each one's own README for the git tag that corresponds to it.
+- `correspondence/` — material prepared for a specific message to the adviser or course faculty (e.g., a defense follow-up), not part of the proposal itself. See its own README.
