@@ -18,9 +18,11 @@ FONT = ("Times-Roman", 12)
 
 def stamp(src: Path, dst: Path) -> None:
     info = classify(src)
-    reader = PdfReader(str(src))
-    writer = PdfWriter()
-    for page, meta in zip(reader.pages, info):
+    # Clone the whole document, not page by page: copying pages into a fresh writer keeps
+    # each page's link annotations but drops the catalog's named destinations, outline,
+    # and structure tree, which leaves every table-of-contents link pointing nowhere.
+    writer = PdfWriter(clone_from=str(src))
+    for page, meta in zip(writer.pages, info):
         w, h = float(page.mediabox.width), float(page.mediabox.height)
         if meta["printed"]:
             buf = io.BytesIO()
@@ -33,7 +35,6 @@ def stamp(src: Path, dst: Path) -> None:
             c.save()
             buf.seek(0)
             page.merge_page(PdfReader(buf).pages[0])
-        writer.add_page(page)
     writer.add_metadata({"/Title": "SynapseOS: Designing and Evaluating a Conversational Interface Layer for Personal Computing"})
     with open(dst, "wb") as f:
         writer.write(f)
