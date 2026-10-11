@@ -781,6 +781,10 @@ func (st *state) dispatch(c *call) {
 	if name == "export" || name == "declare" || name == "local" || name == "readonly" || name == "typeset" {
 		return // handled as a DeclClause when it parses as one; harmless otherwise
 	}
+	if name == "unset" || name == "read" || name == "mapfile" || name == "readarray" {
+		st.forgetVars(c)
+		return
+	}
 	if w, ok := wrappers[name]; ok {
 		if !st.a.Compose {
 			st.opaque(c, "composition disabled (ablation): wrapper not resolved through")
@@ -859,6 +863,36 @@ func (st *state) dispatch(c *call) {
 		return
 	}
 	st.opaque(c, "unknown command "+name)
+}
+
+var identifier = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+// forgetVars handles the builtins that unset or assign variables without an
+// assignment word: unset, read, mapfile, readarray. Each variable they name is marked
+// unset in the scope, so a later expansion of it fails and the command using it asks.
+// Otherwise the variable keeps the value it had in the environment, which is not what
+// bash expands: after `unset HOME`, "$HOME/x" is /x, not the home directory's x. Every
+// argument shaped like a name is dropped, option values included, which can only make
+// the analysis ask more. Names computed at run time cannot be known, so they ask.
+func (st *state) forgetVars(c *call) {
+	if c.aerr != nil {
+		st.unresolved(c, "the variables "+c.name+" changes could not be determined")
+		return
+	}
+	if c.name == "unset" && hasAny(c.args, "-f") {
+		return // functions, which the analysis does not track
+	}
+	switch c.name {
+	case "read":
+		c.sc.drop("REPLY")
+	case "mapfile", "readarray":
+		c.sc.drop("MAPFILE")
+	}
+	for _, a := range c.args {
+		if identifier.MatchString(a) {
+			c.sc.drop(a)
+		}
+	}
 }
 
 func (st *state) cd(c *call) {
