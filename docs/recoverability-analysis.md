@@ -23,7 +23,18 @@ This is the single reference for SynapseOS's algorithmic contribution: a static 
   - [Step 5: decide](#step-5-decide)
   - [Step 6: plan the capture](#step-6-plan-the-capture)
   - [Step 7: gate, capture, run, undo](#step-7-gate-capture-run-undo)
-- [5. A worked example](#5-a-worked-example)
+- [5. Worked examples](#5-worked-examples)
+  - [Step by step: deleting old screenshots](#step-by-step-deleting-old-screenshots)
+  - [The folder the cases run in](#the-folder-the-cases-run-in)
+  - [Everyday requests](#everyday-requests)
+  - [Edge cases](#edge-cases)
+    - [The same command, a different verdict](#the-same-command-a-different-verdict)
+    - [Quoting and word splitting](#quoting-and-word-splitting)
+    - [Targets known only at run time](#targets-known-only-at-run-time)
+    - [The line's own history (the overlay)](#the-lines-own-history-the-overlay)
+    - [Fail closed: when it cannot know, it asks](#fail-closed-when-it-cannot-know-it-asks)
+    - [Truly unrecoverable](#truly-unrecoverable)
+    - [Two honest over-approximations](#two-honest-over-approximations)
 - [6. Guarantees, and the test behind each](#6-guarantees-and-the-test-behind-each)
 - [7. Cost](#7-cost)
 - [8. The rule map](#8-the-rule-map)
@@ -226,7 +237,11 @@ The plan function of section 3 is applied (`Analysis.Plan`).
 
 `internal/gate` is the only package that knows both the analysis and the undo mechanisms. `Decide` sets whether to confirm, by policy. Immediately before the command runs, `Decision.Capture` takes every capture in the plan through `internal/undo` (hardlink to trash, content copy, metadata record, git commit id, stored inverses) and builds a journal entry recording moves to reverse and created paths to remove. `synapse undo` applies the entry in a fixed order: moves back, then trash, then `git reset`, then content, then metadata, then created paths. A capture that fails is reported beside whatever succeeded, because a partial safety net is better than none.
 
-## 5. A worked example
+## 5. Worked examples
+
+This section shows the algorithm on real uses. The first part traces one request through every step. The second shows everyday requests (the happy paths), and the third the edge cases: the inputs that make the problem hard, each named by what makes it hard.
+
+### Step by step: deleting old screenshots
 
 A folder of pictures, three screenshots older than 30 days (one inside a subfolder), and one recent. The request "delete screenshots older than a month" becomes:
 
@@ -264,6 +279,344 @@ What happened, step by step:
 The pattern list asks the same question but protects nothing: if the user says yes, the files are gone. With composition switched off (`-nocompose`), the analysis reports `unrecoverable — composition disabled: find not resolved through`, which is exactly the list's behaviour. That difference, measured over 325 commands, is the ablation in section 10.
 
 A counter-example, showing the guarantee: `cd - && rm 'Screenshot 2026-10-07.png'` gets `unrecoverable — working directory is unknown`, because after `cd -` the analysis cannot know which file that name refers to, so it asks.
+
+### The folder the cases run in
+
+Every output below is real: `bin/effexplain -dir . '<command>'` run against this folder, which it reads and never changes. The commands are what a model plausibly produces for the request shown.
+
+```
+.
+├── Documents/      draft.docx  final.docx  notes.txt
+├── Downloads/      receipt.pdf  syllabus.pdf  setup.tar.gz
+│                   notes-backup.tar.gz   (holds an older Documents/notes.txt)
+├── Pictures/       Screenshot 2026-06-30.png  Screenshot 2026-07-15.png
+│                   Screenshot 2026-10-09.png  (recent)
+│   └── Trips/      Screenshot 2026-06-01.png
+├── empty/          (an empty folder)
+├── old-drafts/     a.txt
+├── proj/           a git repository; app.py has unsaved changes
+├── index.html
+└── my notes.txt    (a name with a space)
+```
+
+How to read an output: `class` is the verdict. Each line under it is one effect (`create`, `write`, `remove`, `metadata`, `state`) or one `issue`. `a -> b` on a removal means the same bytes survive at `b`, so undo moves them back. Under `plan` is what is saved before the command runs: `trash` is a free hardlink, `content` a copy of the bytes, `metadata` a record of permissions, `git-head` the commit id, `inverse` the commands that reverse a package or service change.
+
+### Everyday requests
+
+These are the common case, and most of them pass without a question: only creates and moves, which undo reverses without saving anything.
+
+**1. "Make a folder for my thesis."** Nothing existed, so nothing can be lost.
+
+```
+$ mkdir Thesis
+class:      recoverable
+  create   ./Thesis
+```
+
+**2. "Rename my draft to chapter1."** A move onto a new name: the bytes survive, and undo moves them back.
+
+```
+$ mv Documents/draft.docx Documents/chapter1.docx
+class:      recoverable
+  create   ./Documents/chapter1.docx
+  remove   ./Documents/draft.docx -> ./Documents/chapter1.docx
+```
+
+**3. "Move my PDFs from Downloads to Documents."** The glob is expanded against the real folder, so each file is known.
+
+```
+$ mv Downloads/*.pdf Documents/
+class:      recoverable
+  create   ./Documents/receipt.pdf
+  remove   ./Downloads/receipt.pdf -> ./Documents/receipt.pdf
+  create   ./Documents/syllabus.pdf
+  remove   ./Downloads/syllabus.pdf -> ./Documents/syllabus.pdf
+```
+
+**4. "Back up my notes."** and **"Compress my pictures."** Both only create new files.
+
+```
+$ cp Documents/notes.txt Documents/notes.txt.bak
+class:      recoverable
+  create   ./Documents/notes.txt.bak
+
+$ tar -czf pictures-backup.tar.gz Pictures
+class:      recoverable
+  create   ./pictures-backup.tar.gz
+```
+
+**5. "What is taking up space?"** Read-only commands have no effects at all.
+
+```
+$ du -sh *
+class:      recoverable
+```
+
+**6. "Delete the old drafts folder."** A removal: it asks under the default policy, and saves the whole folder with one free hardlink before it runs, whatever its size.
+
+```
+$ rm -r old-drafts
+class:      recoverable-with-capture
+  remove   ./old-drafts
+plan:       what is captured before it runs
+  trash    ./old-drafts
+```
+
+**7. "Delete screenshots older than a month."** The worked example above: `find` is resolved, and exactly the three old screenshots, one in a subfolder, are saved first. The recent one is not touched.
+
+```
+$ find Pictures -name 'Screenshot*.png' -mtime +30 -delete
+class:      recoverable-with-capture
+  remove   ./Pictures/Screenshot 2026-07-15.png
+  remove   ./Pictures/Screenshot 2026-06-30.png
+  remove   ./Pictures/Trips/Screenshot 2026-06-01.png
+plan:       what is captured before it runs
+  trash    ./Pictures/Screenshot 2026-06-30.png
+  trash    ./Pictures/Screenshot 2026-07-15.png
+  trash    ./Pictures/Trips/Screenshot 2026-06-01.png
+```
+
+**8. "Install cowsay."** and **"Stop the cron service."** Not files, so the change is recorded with the command that reverses it, found by asking the tool what it would do (`apt-get -s`, `systemctl is-active`).
+
+```
+$ sudo apt install -y cowsay
+class:      recoverable-with-capture
+  state    install cowsay (undo: [[apt-get purge -y cowsay]])
+plan:       what is captured before it runs
+  inverse  pkg:cowsay
+
+$ sudo systemctl stop cron
+class:      recoverable-with-capture
+  state    stop cron (undo: [[systemctl start cron]])
+plan:       what is captured before it runs
+  inverse  unit:cron
+```
+
+### Edge cases
+
+Each case below is something a pattern list either misses or can only refuse wholesale.
+
+#### The same command, a different verdict
+
+**9. Moving onto a name that exists.** Case 2 again, but `final.docx` already exists. The words are the same shape; the folder is not. `final.docx`'s old contents would be lost, so they are copied first.
+
+```
+$ mv Documents/draft.docx Documents/final.docx
+class:      recoverable-with-capture
+  write    ./Documents/final.docx
+  remove   ./Documents/draft.docx -> ./Documents/final.docx
+plan:       what is captured before it runs
+  content  ./Documents/final.docx
+```
+
+**10. A file changed in place.** `>`, `sed -i`, and `chmod` change a file without deleting it. A write takes a copy of the bytes, not a hardlink, because a hardlink shares the very data the write changes.
+
+```
+$ echo "new notes" > Documents/notes.txt
+class:      recoverable-with-capture
+  write    ./Documents/notes.txt
+plan:       what is captured before it runs
+  content  ./Documents/notes.txt
+
+$ sed -i 's/notes/NOTES/' Documents/notes.txt
+class:      recoverable-with-capture
+  write    ./Documents/notes.txt
+plan:       what is captured before it runs
+  content  ./Documents/notes.txt
+
+$ chmod 600 Documents/notes.txt
+class:      recoverable-with-capture
+  metadata ./Documents/notes.txt
+plan:       what is captured before it runs
+  metadata ./Documents/notes.txt
+```
+
+**11. An archive unpacked over newer files.** `notes-backup.tar.gz` holds an older `Documents/notes.txt`. The archive is listed (`tar -tf`), the member found to exist, and the current version saved before the old one replaces it.
+
+```
+$ tar -xzf Downloads/notes-backup.tar.gz
+class:      recoverable-with-capture
+  write    ./Documents/notes.txt
+plan:       what is captured before it runs
+  content  ./Documents/notes.txt
+```
+
+**12. Downloading a file whose name exists.** `wget` never replaces by default; it saves as `index.html.1`. Recording a creation of `index.html` instead would make undo delete the user's original, which is the defect fixed in section 11.
+
+```
+$ wget https://example.com/index.html
+class:      recoverable
+  create   ./index.html.1
+```
+
+#### Quoting and word splitting
+
+**13. A name with a space.** Unquoted, `rm` receives two names, `my` and `notes.txt`, neither of which exists here, so it deletes nothing. Quoted, it deletes the file. The analysis splits words exactly as bash does.
+
+```
+$ rm my notes.txt
+class:      recoverable
+
+$ rm "my notes.txt"
+class:      recoverable-with-capture
+  remove   ./my notes.txt
+plan:       what is captured before it runs
+  trash    ./my notes.txt
+```
+
+**14. A glob, and the same glob quoted.** Unquoted, `*` matches the three screenshots (not the one in `Trips/`). Quoted, it is a literal file name `*.png`, which does not exist.
+
+```
+$ rm Pictures/*.png
+class:      recoverable-with-capture
+  remove   ./Pictures/Screenshot 2026-06-30.png
+  remove   ./Pictures/Screenshot 2026-07-15.png
+  remove   ./Pictures/Screenshot 2026-10-09.png
+plan:       what is captured before it runs
+  trash    ./Pictures/Screenshot 2026-06-30.png
+  trash    ./Pictures/Screenshot 2026-07-15.png
+  trash    ./Pictures/Screenshot 2026-10-09.png
+
+$ rm 'Pictures/*.png'
+class:      recoverable
+```
+
+**15. A substitution whose output has spaces.** `find` prints `Pictures/Screenshot 2026-06-30.png`, and the unquoted `$( )` splits it at the space into `Pictures/Screenshot` and `2026-06-30.png`, which do not exist. Real bash agrees: it reports four "No such file" errors and deletes nothing (checked). A pattern list judges the line by its words; the analysis knows this command fails without deleting anything.
+
+```
+$ rm $(find Pictures -name 'Screenshot 2026-06*')
+class:      recoverable
+```
+
+#### Targets known only at run time
+
+**16. A pipe into `xargs`.** The producer (`find`) is proven read-only, run, and its output split the way `xargs` splits it.
+
+```
+$ find . -name '*.pdf' | xargs rm
+class:      recoverable-with-capture
+  remove   ./Downloads/receipt.pdf
+  remove   ./Downloads/syllabus.pdf
+plan:       what is captured before it runs
+  trash    ./Downloads/receipt.pdf
+  trash    ./Downloads/syllabus.pdf
+```
+
+**17. A loop.** The item list is expanded and the body analysed once per item.
+
+```
+$ for f in Documents/*.docx; do mv "$f" "$f.old"; done
+class:      recoverable
+  create   ./Documents/draft.docx.old
+  remove   ./Documents/draft.docx -> ./Documents/draft.docx.old
+  create   ./Documents/final.docx.old
+  remove   ./Documents/final.docx -> ./Documents/final.docx.old
+```
+
+**18. Uncommitted work in a repository.** `git reset --hard` would discard the unsaved change to `app.py`. The dirty file is found (`git diff --name-only HEAD`) and copied, and the current commit is recorded.
+
+```
+$ git -C proj reset --hard
+class:      recoverable-with-capture
+  metadata ./proj
+  write    ./proj/app.py
+plan:       what is captured before it runs
+  content  ./proj/app.py
+  git-head ./proj
+```
+
+#### The line's own history (the overlay)
+
+**19. A folder the line makes and then deletes.** Everything removed was created by the same line, so nothing that existed before is lost and nothing needs saving.
+
+```
+$ mkdir tmp && cp Documents/*.docx tmp/ && rm -rf tmp
+class:      recoverable
+  create   ./tmp
+  create   ./tmp/draft.docx
+  create   ./tmp/final.docx
+```
+
+**20. A move followed by an overwrite of its destination.** On its own, the move would be undone by moving back. But the next command overwrites `old.txt`, so moving back would return `fresh`, not the notes. The analysis sees this and saves `notes.txt` before the move instead.
+
+```
+$ mv Documents/notes.txt Documents/old.txt && echo fresh > Documents/old.txt
+class:      recoverable-with-capture
+  create   ./Documents/old.txt
+  remove   ./Documents/notes.txt
+plan:       what is captured before it runs
+  trash    ./Documents/notes.txt
+```
+
+#### Fail closed: when it cannot know, it asks
+
+**21. An unset variable.** Bash would expand `$PROJECT_DIR` to nothing and run `rm -r /build`. The analysis treats it as unknown.
+
+```
+$ rm -r "$PROJECT_DIR/build"
+class:      unrecoverable
+  issue    unresolved: arguments could not be determined: PROJECT_DIR: unbound variable
+```
+
+**22. An unknown working directory.** After `cd -`, which `notes.txt` is meant depends on the terminal's history, not on the line.
+
+```
+$ cd - && rm notes.txt
+class:      unrecoverable
+  issue    unresolved: working directory is unknown
+```
+
+**23. Code the analysis cannot see into.** A script's contents are not on the command line, and another language is not modelled, so both ask, even when, as here, the Python is plainly destructive and could in principle be read.
+
+```
+$ ./cleanup.sh
+class:      unrecoverable
+  issue    opaque: runs ./cleanup.sh by path, which is not modelled
+
+$ python3 -c "import shutil; shutil.rmtree('Pictures')"
+class:      unrecoverable
+  issue    opaque: python3 runs arbitrary code; its effects are not modelled
+```
+
+#### Truly unrecoverable
+
+**24. Effects nothing on this machine can save.** A stopped process's memory, content destroyed on purpose, and data sent to another machine.
+
+```
+$ kill 4242
+class:      unrecoverable
+  issue    unrecoverable: ends processes; process state cannot be captured
+
+$ shred Documents/notes.txt
+class:      unrecoverable
+  issue    unrecoverable: shred destroys content on purpose
+
+$ curl -X POST -d @Documents/notes.txt https://example.com/upload
+class:      unrecoverable
+  issue    unrecoverable: curl sends data to or changes state on a remote system
+```
+
+#### Two honest over-approximations
+
+**25. Removing an empty folder.** `rmdir empty` loses nothing, but it is a removal, so it is saved (a free hardlink) and asks under the default policy. Asking about something harmless costs one confirmation; the rule is deliberately one-sided.
+
+```
+$ rmdir empty
+class:      recoverable-with-capture
+  remove   ./empty
+plan:       what is captured before it runs
+  trash    ./empty
+```
+
+**26. `sudo` with a plain file name.** `sudo` marks the command privileged, which stops the analysis from *resolving* targets as the user (a `find` under `sudo` asks, because root may see files the user cannot). A literal name needs no resolving, so `sudo rm Documents/notes.txt` is analysed like `rm`; the capture itself runs as the user and is reported if it fails (section 4, step 7).
+
+```
+$ sudo rm Documents/notes.txt
+class:      recoverable-with-capture
+  remove   ./Documents/notes.txt
+plan:       what is captured before it runs
+  trash    ./Documents/notes.txt
+```
 
 ## 6. Guarantees, and the test behind each
 
