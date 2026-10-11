@@ -60,3 +60,23 @@ describe("study-mode structure", () => {
     expect(renderAnswer("| a |\n| b |\nAfter.", "e")).toBe("<table><tbody><tr><td>a</td></tr><tr><td>b</td></tr></tbody></table><p>After.</p>");
   });
 });
+
+describe("emphasis around code", () => {
+  it("bolds a code span wrapped in **", () => {
+    expect(renderAnswer("**`internal/effects/`** holds the analysis.", "e")).toBe(
+      "<p><strong><code>internal/effects/</code></strong> holds the analysis.</p>",
+    );
+  });
+
+  it("italicises a code span and still leaves asterisks inside code alone", () => {
+    expect(renderAnswer("*`rm -rf *~`* is risky; `a**b**c` stays literal.", "e")).toBe(
+      "<p><em><code>rm -rf *~</code></em> is risky; <code>a**b**c</code> stays literal.</p>",
+    );
+  });
+
+  it("bolds a phrase that mixes text and code", () => {
+    expect(renderAnswer("**the `gate` package** wires it in", "e")).toBe(
+      "<p><strong>the <code>gate</code> package</strong> wires it in</p>",
+    );
+  });
+});

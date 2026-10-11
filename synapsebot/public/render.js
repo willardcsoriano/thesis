@@ -19,18 +19,19 @@ function escapeHtml(text) {
 }
 
 function inline(text, entryId) {
-  // Split out code spans first so emphasis rules don't touch their contents.
-  return text
-    .split(/(`[^`\n]+`)/)
-    .map((part) => {
-      if (/^`[^`\n]+`$/.test(part)) return `<code>${escapeHtml(part.slice(1, -1)).replace(CITE, "")}</code>`;
-      return escapeHtml(part)
-        .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
-        .replace(/(^|[^*\w])\*([^*\n]+)\*(?!\w)/g, "$1<em>$2</em>")
-        .replace(/(^|[^_\w])_([^_\n]+)_(?!\w)/g, "$1<em>$2</em>")
-        .replace(CITE, (_, n) => `<sup><a href="#${entryId}-fn-${n}" aria-label="Source ${n}">${n}</a></sup>`);
-    })
-    .join("");
+  // Code spans are swapped for placeholders before emphasis runs, so emphasis
+  // can wrap them (**`file.go`**) but never reach inside them.
+  const codes = [];
+  const held = text.replace(/`([^`\n]+)`/g, (_, code) => {
+    codes.push(`<code>${escapeHtml(code).replace(CITE, "")}</code>`);
+    return `\uE100${codes.length - 1}\uE101`;
+  });
+  return escapeHtml(held)
+    .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*\w])\*([^*\n]+)\*(?!\w)/g, "$1<em>$2</em>")
+    .replace(/(^|[^_\w])_([^_\n]+)_(?!\w)/g, "$1<em>$2</em>")
+    .replace(CITE, (_, n) => `<sup><a href="#${entryId}-fn-${n}" aria-label="Source ${n}">${n}</a></sup>`)
+    .replace(/\uE100(\d+)\uE101/g, (_, i) => codes[Number(i)]);
 }
 
 /** "| a | b |" -> ["a", "b"] */
