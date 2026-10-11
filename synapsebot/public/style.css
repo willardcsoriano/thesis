@@ -37,7 +37,7 @@
   --field: #fbf8f2;
   --serif: "EB Garamond", "Garamond", "Georgia", serif;
   --mono: "Courier Prime", "Courier New", monospace;
-  --measure: 36rem;
+  --measure: 40rem;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -426,6 +426,13 @@ a:hover { text-decoration-thickness: 2px; }
   .answer { text-align: left; }
   .row .hint { display: none; }
   .row { justify-content: flex-end; }
+}
+
+/* On wide screens, diagrams and tables break out past the text column, the
+   way a book sets figures wider than its prose. */
+@media (min-width: 60rem) {
+  .answer pre, .answer table { margin-left: -4rem; margin-right: -4rem; }
+  .answer table { width: calc(100% + 8rem); }
 }
 
 @media (prefers-reduced-motion: reduce) {
