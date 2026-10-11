@@ -170,10 +170,13 @@ a:hover { text-decoration-thickness: 2px; }
 .answer code {
   font-family: var(--mono);
   font-size: 0.84em;
+  /* Tight line box so a code span never pushes its line away from the next. */
+  line-height: 1;
   background: var(--field);
   border: 1px solid var(--rule);
-  padding: 0 0.2em;
+  padding: 0.05em 0.2em;
   border-radius: 2px;
+  overflow-wrap: anywhere;
 }
 /* Study answers may carry small headings and tables; both stay in the book's voice. */
 .answer h3 {
