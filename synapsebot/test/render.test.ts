@@ -45,8 +45,8 @@ describe("study-mode structure", () => {
 
   it("renders a table with a header row, escaping cells", () => {
     expect(renderAnswer("| Approach | Silent loss |\n|---|---:|\n| Pattern list | 41.2% |\n| <b>x</b> | 0% |", "e")).toBe(
-      "<table><thead><tr><th>Approach</th><th>Silent loss</th></tr></thead>" +
-        "<tbody><tr><td>Pattern list</td><td>41.2%</td></tr><tr><td>&lt;b&gt;x&lt;/b&gt;</td><td>0%</td></tr></tbody></table>",
+      '<div class="table-wrap"><table><thead><tr><th>Approach</th><th>Silent loss</th></tr></thead>' +
+        "<tbody><tr><td>Pattern list</td><td>41.2%</td></tr><tr><td>&lt;b&gt;x&lt;/b&gt;</td><td>0%</td></tr></tbody></table></div>",
     );
   });
 
@@ -57,7 +57,9 @@ describe("study-mode structure", () => {
   });
 
   it("ends a table at the first non-table line", () => {
-    expect(renderAnswer("| a |\n| b |\nAfter.", "e")).toBe("<table><tbody><tr><td>a</td></tr><tr><td>b</td></tr></tbody></table><p>After.</p>");
+    expect(renderAnswer("| a |\n| b |\nAfter.", "e")).toBe(
+      '<div class="table-wrap"><table><tbody><tr><td>a</td></tr><tr><td>b</td></tr></tbody></table></div><p>After.</p>',
+    );
   });
 });
 
@@ -78,5 +80,20 @@ describe("emphasis around code", () => {
     expect(renderAnswer("**the `gate` package** wires it in", "e")).toBe(
       "<p><strong>the <code>gate</code> package</strong> wires it in</p>",
     );
+  });
+});
+
+describe("bold lines used as headings", () => {
+  it("renders a bold-only line as a heading, alone or leading a paragraph", () => {
+    expect(renderAnswer("**How the sorting works**\n\nThe analysis turns it into effects.", "e")).toBe(
+      "<h3>How the sorting works</h3><p>The analysis turns it into effects.</p>",
+    );
+    expect(renderAnswer("**Don't oversell the verdict:**\nA simple list reaches the same verdict.", "e")).toBe(
+      "<h3>Don&#39;t oversell the verdict</h3><p>A simple list reaches the same verdict.</p>",
+    );
+  });
+
+  it("leaves bold inside a sentence alone", () => {
+    expect(renderAnswer("**Bold start** of a sentence.", "e")).toBe("<p><strong>Bold start</strong> of a sentence.</p>");
   });
 });

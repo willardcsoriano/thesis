@@ -48,6 +48,13 @@ export function renderAnswer(markdown, entryId) {
   let table = null; // rows of a Markdown table being collected
 
   const flushParagraph = () => {
+    // A first line that is bold and nothing else ("**How it works**") is a
+    // sub-heading written as bold; render it as one so it isn't indented.
+    const lead = paragraph.length ? /^\*\*([^*]+?)\*\*:?$/.exec(paragraph[0].trim()) : null;
+    if (lead) {
+      out.push(`<h3>${inline(lead[1].replace(/:$/, ""), entryId)}</h3>`);
+      paragraph = paragraph.slice(1);
+    }
     if (paragraph.length) out.push(`<p>${inline(paragraph.join(" "), entryId)}</p>`);
     paragraph = [];
   };
@@ -59,10 +66,12 @@ export function renderAnswer(markdown, entryId) {
     const head = sep === 1 ? rows[0] : null;
     const body = rows.filter((_, i) => i !== sep && !(head && i === 0));
     const cells = (row, tag) => row.map((c) => `<${tag}>${inline(c, entryId)}</${tag}>`).join("");
+    // The wrapper scrolls a wide table sideways on a phone; the table itself
+    // stays a real table at the column's full width.
     out.push(
-      "<table>" +
+      '<div class="table-wrap"><table>' +
         (head ? `<thead><tr>${cells(head, "th")}</tr></thead>` : "") +
-        `<tbody>${body.map((row) => `<tr>${cells(row, "td")}</tr>`).join("")}</tbody></table>`,
+        `<tbody>${body.map((row) => `<tr>${cells(row, "td")}</tr>`).join("")}</tbody></table></div>`,
     );
     table = null;
   };
