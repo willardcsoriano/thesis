@@ -21,7 +21,7 @@ This is the log of every soundness defect found in the recoverability analysis (
 | 4 | 2026-10-10 | Mutation testing, first sample | `curl -o x.tar URL && tar xf x.tar` | The archive did not exist yet, the listing came back empty, and that read as "extracts nothing", so extraction could overwrite files unprotected | Extraction asks when the archive does not exist yet or the line creates it (`1148a6d`) |
 | 5 | 2026-10-11 | Mutation testing, second sample | `unset HOME; rm -r "$HOME/x"`, `read f; rm "$f"` | A variable changed by a builtin kept its environment value, so the analysis captured the wrong path | Variables named by `unset`, `read`, `mapfile` become unknown and ask (`10f9c24`) |
 | 6 | 2026-10-12 | Chapter 3 review (round 4 pass/fail) | `mv a.txt logs/ && find logs -delete`, `mv a.txt logs/ && rm -r logs` | `find` listed the tree as it was before the line, missing the moved file; the move stayed "undo moves it back" though the file was deleted | `find` refuses a tree the line changed; the move becomes a captured removal (PR #87) |
-| 7 | 2026-10-12 | Chapter 3 review (round 9 pass/fail) | `cd logs \|\| rm a.txt`, `mv a.txt tmp/ \|\| echo x > a.txt`, `cd logs; rm *`, `x=a; if c; then x=b; fi; rm $x`, a `cd` inside a loop | The line was read as if every part succeeded and as if branches left no trace; each shape lost a file with nothing captured | Failure points and joins (below) (PR #88) |
+| 7 | 2026-10-12 | Chapter 3 review (round 9 pass/fail), extended by round 10 | `cd logs \|\| rm a.txt`, `mv a.txt tmp/ \|\| echo x > a.txt`, `cd logs; rm *`, `x=a; if c; then x=b; fi; rm $x`, a `cd` inside a loop; then `rm a.txt && touch a.txt; echo x > a.txt` | The line was read as if every part succeeded and as if branches left no trace; each shape lost a file with nothing captured | Failure points and joins (below) (PR #88) |
 
 ### Defect 7 in detail
 
@@ -29,8 +29,9 @@ Bash runs the right side of `||` only when the left side failed, runs what follo
 
 - **Failure points.** After `;`, a newline, `||`, a pipe stage, `!`, an else branch, or a loop pass, a removal earlier on the line is only a possibility, so the path is read from disk again and a later write to it is captured; and a `cd` earlier on the line leaves the working directory unknown, which asks. `cd dir || exit` is recognized as certain.
 - **Joins.** After an `if`, `case`, loop, or `&&`/`||`, a variable or directory on which the paths that may have run disagree is unknown. Each part of an `&&` chain still sees the state the parts before it leave.
+- **Re-creations.** The round-10 review found the first version of the fix incomplete: a path removed and then made again (`rm a.txt && touch a.txt; echo x > a.txt`) counted as created by the line, so the last write was not captured, although if `rm` failed it overwrites the original. A creation over a path the line removed is now doubted at a failure point like the removal itself.
 
-Probing found the shapes; the regression test `TestEarlierPartMayHaveFailed` holds 15 of them, and three curated cases in `cmd/recoverycheck` (S38 to S40) execute the new captures in the sandbox and check that undo restores them.
+Probing found the shapes; the regression test `TestEarlierPartMayHaveFailed` holds 19 of them, and three curated cases in `cmd/recoverycheck` (S38 to S40) execute the new captures in the sandbox and check that undo restores them.
 
 ## Effect on the reported results
 
