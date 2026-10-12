@@ -80,8 +80,8 @@ Chapter 2: REVIEW OF RELATED LITERATURE                          14
      2.1 Introduction to the Review                              14
 
      2.2 Theoretical Framework                                   16
-     2.3 Historical Foundations of Natural-Language Interfaces   19
-     2.4 Natural-Language-to-Shell Translation                   22
+     2.3 Historical Foundations of Natural-Language Interfaces   20
+     2.4 Natural-Language-to-Shell Translation                   23
      2.5 Command Safety, Static Analysis, and Recovery           24
 
      2.6 Graphical and Computer-Using Agents                     31

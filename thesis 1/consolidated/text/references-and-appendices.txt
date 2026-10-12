@@ -21,25 +21,27 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
 [3]   V. Braun and V. Clarke. 2006. Using thematic analysis in psychology. Qualitative
       Research in Psychology 3, 2 (2006), 77–101.
 
-[4]   J. Brooke. 1996. SUS: A “quick and dirty” usability scale. In Usability Evaluation
+[4]   C. Bravo-Lillo, L. Cranor, S. Komanduri, S. Schechter, and M. Sleeper. 2014.
+
+      Harder to Ignore? Revisiting Pop-Up Fatigue and Approaches to Prevent It. In
+      Proceedings of the Tenth Symposium on Usable Privacy and Security (SOUPS
+
+      2014).               USENIX                   Association,               105–111.
+
+      https://www.usenix.org/conference/soups2014/proceedings/presentation/bravo-
+      lillo
+
+[5]   J. Brooke. 1996. SUS: A “quick and dirty” usability scale. In Usability Evaluation
 
       in Industry, P. W. Jordan, B. Thomas, I. L. McClelland, and B. Weerdmeester
       (Eds.). Taylor & Francis, 189–194.
 
-[5]   A. B. Brown and D. A. Patterson. 2003. Undo for operators: Building an undoable
-
+[6]   A. B. Brown and D. A. Patterson. 2003. Undo for operators: Building an undoable
       e-mail store. In Proceedings of the 2003 USENIX Annual Technical Conference.
+
       USENIX Association. https://www.usenix.org/conference/2003-usenix-annual-
 
       technical-conference/undo-operators-building-undoable-e-mail-store
-
-[6]   L. Clark, N. Pantidi, O. Cooney, P. R. Doyle, D. Garaialde, J. Edwards, B.
-      Spillane, E. Gilmartin, C. Murad, C. Munteanu, V. Wade, and B. R. Cowan. 2019.
-
-      What makes a good conversation? Challenges in designing truly conversational
-      agents. In Proceedings of the 2019 CHI Conference on Human Factors in
-
-      Computing Systems (CHI ’19). ACM, Article 475, 12 pages.
 
 
 
@@ -50,219 +52,227 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
                                                                                        105
 
 
-[7]    P. Cousot and R. Cousot. 1977. Abstract interpretation: A unified lattice model for
+[7]    L. Clark, N. Pantidi, O. Cooney, P. R. Doyle, D. Garaialde, J. Edwards, B.
 
+       Spillane, E. Gilmartin, C. Murad, C. Munteanu, V. Wade, and B. R. Cowan. 2019.
+
+       What makes a good conversation? Challenges in designing truly conversational
+       agents. In Proceedings of the 2019 CHI Conference on Human Factors in
+
+       Computing Systems (CHI ’19). ACM, Article 475, 12 pages.
+
+[8]    P. Cousot and R. Cousot. 1977. Abstract interpretation: A unified lattice model for
        static analysis of programs by construction or approximation of fixpoints. In
 
        Conference Record of the Sixth Annual ACM SIGPLAN-SIGACT Symposium on
        Principles of Programming Languages (POPL ’77). ACM, 238–252.
 
-[8]    J. W. Creswell and V. L. Plano Clark. 2018. Designing and Conducting Mixed
+[9]    J. W. Creswell and V. L. Plano Clark. 2018. Designing and Conducting Mixed
 
        Methods Research (3rd ed.). SAGE Publications.
-[9]    X. Deng, Y. Gu, B. Zheng, S. Chen, S. Stevens, B. Wang, H. Sun, and Y. Su.
+[10]   X. Deng, Y. Gu, B. Zheng, S. Chen, S. Stevens, B. Wang, H. Sun, and Y. Su.
 
        2023. Mind2Web: Towards a Generalist Agent for the Web. In Advances in
-       Neural Information Processing Systems 36 (NeurIPS 2023).
 
-[10]   A. Goel, K. Po, K. Farhadi, Z. Li, and E. de Lara. 2005. The Taser intrusion
+       Neural Information Processing Systems 36 (NeurIPS 2023).
+[11]   A. Goel, K. Po, K. Farhadi, Z. Li, and E. de Lara. 2005. The Taser intrusion
 
        recovery system. In Proceedings of the Twentieth ACM Symposium on Operating
-       Systems Principles (SOSP ’05). ACM, 163–176.
 
-[11]   M. Greenberg and A. J. Blatt. 2020. Executable formal semantics for the POSIX
+       Systems Principles (SOSP ’05). ACM, 163–176.
+[12]   M. Greenberg and A. J. Blatt. 2020. Executable formal semantics for the POSIX
 
        shell. Proceedings of the ACM on Programming Languages 4, POPL, Article 43
        (2020).
 
-[12]   B. R. Gyawali, S. Achalla, K. Kallas, and S. Kumar. 2025. NaSh: Guardrails for
+[13]   B. R. Gyawali, S. Achalla, K. Kallas, and S. Kumar. 2025. NaSh: Guardrails for
 
        an LLM-Powered Natural Language Shell. arXiv:2506.13028
-[13]   W. Han, Z. Zeng, J. Huang, S. Jiang, et al. 2025. GUIRoboTron-Speech: Towards
+[14]   W. Han, Z. Zeng, J. Huang, S. Jiang, et al. 2025. GUIRoboTron-Speech: Towards
 
        Automated GUI Agents Based on Speech Instructions. arXiv:2506.11127v1
-[14]   S. G. Hart and L. E. Staveland. 1988. Development of NASA-TLX (Task Load
 
+[15]   S. G. Hart and L. E. Staveland. 1988. Development of NASA-TLX (Task Load
        Index): Results of empirical and theoretical research. In Human Mental Workload,
 
        P. A. Hancock and N. Meshkati (Eds.). Advances in Psychology, Vol. 52. North-
+
        Holland, 139–183.
-
-[15]   W. Hong, W. Wang, Q. Lv, J. Xu, W. Yu, J. Ji, Y. Wang, Z. Wang, Y. Dong, M.
-
-       Ding, and J. Tang. 2024. CogAgent: A Visual Language Model for GUI Agents.
-       In Proceedings of CVPR 2024.
-
-[16]   Z. Hui, Y. Li, D. Zhao, T. Chen, C. Banbury, and K. Koishida. 2025. WinClick:
-
-       GUI Grounding with Multimodal Large Language Models. arXiv:2503.04730
 
 ──────── p. 106 ────────
                                                                                        106
 
 
-[17]   E. L. Hutchins, J. D. Hollan, and D. A. Norman. 1985. Direct manipulation
+[16]   W. Hong, W. Wang, Q. Lv, J. Xu, W. Yu, J. Ji, Y. Wang, Z. Wang, Y. Dong, M.
+       Ding, and J. Tang. 2024. CogAgent: A Visual Language Model for GUI Agents.
+
+       In Proceedings of CVPR 2024.
+[17]   Z. Hui, Y. Li, D. Zhao, T. Chen, C. Banbury, and K. Koishida. 2025. WinClick:
+
+       GUI Grounding with Multimodal Large Language Models. arXiv:2503.04730
+
+[18]   E. L. Hutchins, J. D. Hollan, and D. A. Norman. 1985. Direct manipulation
        interfaces. Human–Computer Interaction 1, 4 (1985), 311–338.
 
-[18]   J. Jacobs, J. Lapon, and V. Naessens. 2026. Local LLMs for NL2Bash: A Large-
-       Scale Open-Source Model Evaluation for Bash Command Generation. In NDSS
+[19]   J. Jacobs, J. Lapon, and V. Naessens. 2026. Local LLMs for NL2Bash: A Large-
 
+       Scale Open-Source Model Evaluation for Bash Command Generation. In NDSS
        Workshop on LLM Assisted Security and Trust Exploration (LAST-X 2026).
 
-[19]   P. Jouvelot and D. K. Gifford. 1991. Algebraic reconstruction of types and effects.
-       In Proceedings of the 18th ACM SIGPLAN-SIGACT Symposium on Principles of
+[20]   P. Jouvelot and D. K. Gifford. 1991. Algebraic reconstruction of types and effects.
 
+       In Proceedings of the 18th ACM SIGPLAN-SIGACT Symposium on Principles of
        Programming Languages (POPL ’91). ACM, 303–310.
 
-[20]   kenryu42. 2026. cc-safety-net. https://github.com/kenryu42/cc-safety-net Version
+[21]   kenryu42. 2026. cc-safety-net. https://github.com/kenryu42/cc-safety-net Version
        2.6.1.
 
-[21]   E. Lamprou, T. Zhu, D. Jin, G. Ntousakis, G. Liargkovas, C. Eng, K. Kallas, M.
+[22]   E. Lamprou, T. Zhu, D. Jin, G. Ntousakis, G. Liargkovas, C. Eng, K. Kallas, M.
 
        Greenberg, and N. Vasilakis. 2026. Controlling opaque-component effects with
        semisolates and try. In Proceedings of the 20th USENIX Symposium on Operating
 
        Systems Design and Implementation (OSDI ’26). USENIX Association.
-       https://www.usenix.org/conference/osdi26/presentation/lamprou
 
-[22]   Y. Li, J. He, X. Zhou, Y. Zhang, and J. Baldridge. 2020. Mapping Natural
+       https://www.usenix.org/conference/osdi26/presentation/lamprou
+[23]   Y. Li, J. He, X. Zhou, Y. Zhang, and J. Baldridge. 2020. Mapping Natural
 
        Language Instructions to Mobile UI Action Sequences. In Proceedings of ACL
        2020. 8198–8210.
 
-[23]   X. V. Lin, C. Wang, L. Zettlemoyer, and M. D. Ernst. 2018. NL2Bash: A corpus
+[24]   X. V. Lin, C. Wang, L. Zettlemoyer, and M. D. Ernst. 2018. NL2Bash: A corpus
 
        and semantic parser for natural language interface to the Linux operating system.
        In Proceedings of the Eleventh International Conference on Language Resources
 
        and Evaluation (LREC 2018). European Language Resources Association.
-[24]   R. Liu, T. Zhe, D. Wang, Z. Yao, K. Liu, Y. Fu, H. Liu, and J. Pei. 2026. AgentOS:
 
+──────── p. 107 ────────
+                                                                                      107
+
+
+[25]   R. Liu, T. Zhe, D. Wang, Z. Yao, K. Liu, Y. Fu, H. Liu, and J. Pei. 2026. AgentOS:
        From Application Silos to a Natural Language-Driven Data Ecosystem.
 
        arXiv:2603.08938
-[25]   J. Lu, Z. Zhang, F. Yang, J. Zhang, L. Wang, C. Du, Q. Lin, S. Rajmohan, D.
 
+[26]   J. Lu, Z. Zhang, F. Yang, J. Zhang, L. Wang, C. Du, Q. Lin, S. Rajmohan, D.
        Zhang, and Q. Zhang. 2024. AXIS: Efficient Human-Agent-Computer Interaction
 
        with API-First LLM-Based Agents. arXiv:2409.17140
 
-──────── p. 107 ────────
-                                                                                     107
-
-
-[26]   E. Luger and A. Sellen. 2016. “Like having a really bad PA”: The gulf between
+[27]   E. Luger and A. Sellen. 2016. “Like having a really bad PA”: The gulf between
        user expectation and experience of conversational agents. In Proceedings of the
 
        2016 CHI Conference on Human Factors in Computing Systems (CHI ’16). ACM,
-
        5286–5297.
-[27]   K. Mazurak and S. Zdancewic. 2007. ABASH: Finding bugs in bash scripts. In
+
+[28]   K. Mazurak and S. Zdancewic. 2007. ABASH: Finding bugs in bash scripts. In
 
        Proceedings of the 2007 Workshop on Programming Languages and Analysis for
-
        Security (PLAS ’07). ACM.
-[28]   S. Mehendale and A. Walishetti. 2024. DexAssist: A Voice-Enabled Dual-LLM
+
+[29]   S. Mehendale and A. Walishetti. 2024. DexAssist: A Voice-Enabled Dual-LLM
 
        Framework for Accessible Web Navigation. arXiv:2411.12214
-[29]   R. Niu, J. Li, S. Wang, Y. Fu, X. Hu, X. Leng, H. Kong, Y. Chang, and Q. Wang.
+[30]   R. Niu, J. Li, S. Wang, Y. Fu, X. Hu, X. Leng, H. Kong, Y. Chang, and Q. Wang.
 
        2024. ScreenAgent: A Vision Language Model-driven Computer Control Agent.
-
        arXiv:2402.07945
-[30]   D. A. Norman. 1986. Cognitive engineering. In User Centered System Design:
+
+[31]   D. A. Norman. 1986. Cognitive engineering. In User Centered System Design:
 
        New Perspectives on Human-Computer Interaction, D. A. Norman and S. W.
-
        Draper (Eds.). Lawrence Erlbaum Associates, 31–61.
-[31]   OpenAI. 2026. Codex CLI. https://github.com/openai/codex Commit 1f4c473.
 
-[32]   A. Padmanabha, J. Yuan, J. Gupta, Z. Karachiwalla, C. Majidi, H. Admoni, and Z.
+[32]   OpenAI. 2026. Codex CLI. https://github.com/openai/codex Commit 1f4c473.
+
+[33]   A. Padmanabha, J. Yuan, J. Gupta, Z. Karachiwalla, C. Majidi, H. Admoni, and Z.
        Erickson. 2024. VoicePilot: Harnessing LLMs as Speech Interfaces for Physically
 
        Assistive Robots. In Proceedings of the 37th Annual ACM Symposium on User
 
        Interface Software and Technology (UIST ’24). ACM.
-[33]   J. Park, P. Tang, S. Das, S. Appalaraju, K. Y. Singh, R. Manmatha, and S. Ghadar.
+[34]   J. Park, P. Tang, S. Das, S. Appalaraju, K. Y. Singh, R. Manmatha, and S. Ghadar.
 
        2025. R-VLM: Region-aware Vision Language Model for Precise GUI
-
        Grounding. In Findings of the Association for Computational Linguistics: ACL
-       2025. 9669–9685.
-
-[34]   D. E. Porter, O. S. Hofmann, C. J. Rossbach, A. Benn, and E. Witchel. 2009.
-
-       Operating system transactions. In Proceedings of the ACM SIGOPS 22nd
-       Symposium on Operating Systems Principles (SOSP ’09). ACM, 161–176.
 
 ──────── p. 108 ────────
                                                                                        108
 
 
-[35]   C. Rawles, A. Li, D. Rodriguez, O. Riva, and T. Lillicrap. 2023. Android in the
+       2025. 9669–9685.
+
+[35]   D. E. Porter, O. S. Hofmann, C. J. Rossbach, A. Benn, and E. Witchel. 2009.
+       Operating system transactions. In Proceedings of the ACM SIGOPS 22nd
+
+       Symposium on Operating Systems Principles (SOSP ’09). ACM, 161–176.
+[36]   C. Rawles, A. Li, D. Rodriguez, O. Riva, and T. Lillicrap. 2023. Android in the
 
        Wild: A Large-Scale Dataset for Android Device Control. In Advances in Neural
-       Information Processing Systems 36 (NeurIPS 2023).
 
-[36]   O. Rodeh, J. Bacik, and C. Mason. 2013. BTRFS: The Linux B-tree filesystem.
+       Information Processing Systems 36 (NeurIPS 2023).
+[37]   O. Rodeh, J. Bacik, and C. Mason. 2013. BTRFS: The Linux B-tree filesystem.
+
        ACM Transactions on Storage 9, 3, Article 9 (2013), 32 pages.
 
-[37]   Y. Ruan, H. Dong, A. Wang, S. Pitis, Y. Zhou, J. Ba, Y. Dubois, C. J. Maddison,
-
+[38]   Y. Ruan, H. Dong, A. Wang, S. Pitis, Y. Zhou, J. Ba, Y. Dubois, C. J. Maddison,
        and T. Hashimoto. 2024. Identifying the risks of LM agents with an LM-emulated
-       sandbox. In Proceedings of ICLR 2024.
 
-[38]   D. S. Santry, M. J. Feeley, N. C. Hutchinson, A. C. Veitch, R. W. Carton, and J.
+       sandbox. In Proceedings of ICLR 2024.
+[39]   D. S. Santry, M. J. Feeley, N. C. Hutchinson, A. C. Veitch, R. W. Carton, and J.
 
        Ofir. 1999. Deciding when to forget in the Elephant file system. In Proceedings of
-       the Seventeenth ACM Symposium on Operating Systems Principles (SOSP ’99).
 
+       the Seventeenth ACM Symposium on Operating Systems Principles (SOSP ’99).
        ACM, 110–123.
-[39]   J. Sauro and J. R. Lewis. 2016. Quantifying the User Experience: Practical
+
+[40]   J. Sauro and J. R. Lewis. 2016. Quantifying the User Experience: Practical
 
        Statistics for User Research (2nd ed.). Morgan Kaufmann.
+[41]   B. Shneiderman. 1983. Direct manipulation: A step beyond programming
 
-[40]   B. Shneiderman. 1983. Direct manipulation: A step beyond programming
        languages. Computer 16, 8 (1983), 57–69.
 
-[41]   B. Shneiderman. 2000. The limits of speech recognition. Commun. ACM 43, 9
-
+[42]   B. Shneiderman. 2000. The limits of speech recognition. Commun. ACM 43, 9
        (2000), 63–65.
-[42]   B. Shneiderman and P. Maes. 1997. Direct manipulation vs. interface agents.
 
+[43]   B. Shneiderman and P. Maes. 1997. Direct manipulation vs. interface agents.
        interactions 4, 6 (1997), 42–61.
 
-[43]   J.-P. Talpin and P. Jouvelot. 1994. The type and effect discipline. Information and
+[44]   J.-P. Talpin and P. Jouvelot. 1994. The type and effect discipline. Information and
+
        Computation 111, 2 (1994), 245–296.
+[45]   H. G. W. van Dam. 2025. A Multimodal GUI Architecture for Interfacing with
 
-[44]   H. G. W. van Dam. 2025. A Multimodal GUI Architecture for Interfacing with
        LLM-Based Conversational Assistants. arXiv:2510.06223
-
-[45]   J. Wang, H. Xu, J. Ye, M. Yan, W. Shen, J. Zhang, F. Huang, and J. Sang. 2024.
-
-       Mobile-Agent: Autonomous Multi-Modal Mobile Device Agent with Visual
-       Perception. arXiv:2401.16158
 
 ──────── p. 109 ────────
                                                                                        109
 
 
-[46]   F. Westenfelder, E. Hemberg, M. Tulla, S. Moskal, U.-M. O’Reilly, and S.
+[46]   J. Wang, H. Xu, J. Ye, M. Yan, W. Shen, J. Zhang, F. Huang, and J. Sang. 2024.
+
+       Mobile-Agent: Autonomous Multi-Modal Mobile Device Agent with Visual
+       Perception. arXiv:2401.16158
+
+[47]   F. Westenfelder, E. Hemberg, M. Tulla, S. Moskal, U.-M. O’Reilly, and S.
 
        Chiricescu. 2025. LLM-Supported Natural Language to Bash Translation.
        arXiv:2502.06858
 
-[47]   J. Whiteside, S. Jones, P. S. Levy, and D. Wixon. 1985. User performance with
-
+[48]   J. Whiteside, S. Jones, P. S. Levy, and D. Wixon. 1985. User performance with
        command, menu, and iconic interfaces. In Proceedings of the SIGCHI Conference
+
        on Human Factors in Computing Systems (CHI ’85). ACM, 185–191.
 
-[48]   R. Wilensky, D. N. Chin, M. Luria, J. Martin, J. Mayfield, and D. Wu. 1988. The
+[49]   R. Wilensky, D. N. Chin, M. Luria, J. Martin, J. Mayfield, and D. Wu. 1988. The
        Berkeley Unix Consultant Project. Computational Linguistics 14, 4 (1988), 35–
 
        84.
 
-[49]   T. Xie, D. Zhang, J. Chen, X. Li, S. Zhao, R. Cao, T. J. Hua, Z. Cheng, D. Shin, F.
+[50]   T. Xie, D. Zhang, J. Chen, X. Li, S. Zhao, R. Cao, T. J. Hua, Z. Cheng, D. Shin, F.
        Lei, Y. Liu, Y. Xu, S. Zhou, S. Savarese, C. Xiong, V. Zhong, and T. Yu. 2024.
 
        OSWorld: Benchmarking Multimodal Agents for Open-Ended Tasks in Real
@@ -270,44 +280,43 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
        Computer Environments. In Advances in Neural Information Processing Systems
        37 (NeurIPS 2024).
 
-[50]   S. Yao, J. Zhao, D. Yu, N. Du, I. Shafran, K. Narasimhan, and Y. Cao. 2023.
-
+[51]   S. Yao, J. Zhao, D. Yu, N. Du, I. Shafran, K. Narasimhan, and Y. Cao. 2023.
        ReAct: Synergizing Reasoning and Acting in Language Models. In Proceedings
+
        of ICLR 2023.
 
-[51]   M. Yuan, Z. Zhou, X. Xiong, et al. 2026. OSWorld 2.0: Benchmarking Computer
+[52]   M. Yuan, Z. Zhou, X. Xiong, et al. 2026. OSWorld 2.0: Benchmarking Computer
        Use Agents on Long-Horizon Real-World Tasks. arXiv:2606.29537
 
-[52]   C. Zhang, S. He, J. Qian, B. Li, L. Li, S. Qin, Y. Kang, M. Ma, G. Liu, Q. Lin, S.
+[53]   C. Zhang, S. He, J. Qian, B. Li, L. Li, S. Qin, Y. Kang, M. Ma, G. Liu, Q. Lin, S.
 
        Rajmohan, D. Zhang, and Q. Zhang. 2024. Large Language Model-Brained GUI
        Agents: A Survey. arXiv:2411.18279
 
-[53]   C. Zhang, H. Huang, C. Ni, J. Mu, S. Qin, S. He, L. Wang, F. Yang, P. Zhao, C.
+[54]   C. Zhang, H. Huang, C. Ni, J. Mu, S. Qin, S. He, L. Wang, F. Yang, P. Zhao, C.
 
        Du, L. Li, Y. Kang, Z. Jiang, S. Zheng, R. Wang, J. Qian, M. Ma, J. Lou, Q. Lin,
 
        S. Rajmohan, and D. Zhang. 2025. UFO2: The Desktop AgentOS.
        arXiv:2504.14603
 
-[54]   C. Zhang, Z. Yang, J. Liu, Y. Li, Y. Han, X. Chen, Z. Huang, B. Fu, and G. Yu.
-
-       2023. AppAgent: Multimodal Agents as Smartphone Users. arXiv:2312.13771
-
 ──────── p. 110 ────────
                                                                                     110
 
 
-[55]   B. Zheng, B. Gou, J. Kil, H. Sun, and Y. Su. 2024. GPT-4V(ision) is a Generalist
+[55]   C. Zhang, Z. Yang, J. Liu, Y. Li, Y. Han, X. Chen, Z. Huang, B. Fu, and G. Yu.
+
+       2023. AppAgent: Multimodal Agents as Smartphone Users. arXiv:2312.13771
+[56]   B. Zheng, B. Gou, J. Kil, H. Sun, and Y. Su. 2024. GPT-4V(ision) is a Generalist
 
        Web Agent, if Grounded. In Proceedings of ICML 2024.
-[56]   S. Zhou, F. F. Xu, H. Zhu, X. Zhou, R. Lo, A. Sridhar, X. Cheng, T. Ou, Y. Bisk,
 
+[57]   S. Zhou, F. F. Xu, H. Zhu, X. Zhou, R. Lo, A. Sridhar, X. Cheng, T. Ou, Y. Bisk,
        D. Fried, U. Alon, and G. Neubig. 2024. WebArena: A Realistic Web
 
        Environment for Building Autonomous Agents. In Proceedings of ICLR 2024.
-[57]   X. Zhou, S. Zhang, Y. Zhao, J. Wei, T. Song, A. Cohan, and C. Zhao. 2026. GUI
 
+[58]   X. Zhou, S. Zhang, Y. Zhao, J. Wei, T. Song, A. Cohan, and C. Zhao. 2026. GUI
        vs. CLI: Execution Bottlenecks in Screen-Only and Skill-Mediated Computer-
 
        Use Agents. arXiv:2606.24551
@@ -330,7 +339,7 @@ for ethics review.
                                 System Usability Scale (SUS)
          Administered immediately after each condition, referring to the interface just
 
-used. Items are the standard ten-item instrument of Brooke [4], with the word “system”
+used. Items are the standard ten-item instrument of Brooke [5], with the word “system”
 
 replaced throughout by “interface” so that participants rate the interaction surface rather
 than the machine. Each item is answered on a five-point scale from 1 (strongly disagree)
@@ -380,7 +389,7 @@ the response. For even-numbered items, subtract the response from 5. Sum the ten
 
 adjusted scores and multiply by 2.5, giving a value from 0 to 100. This value is not a
 
-percentage; interpretation follows Sauro and Lewis [39].
+percentage; interpretation follows Sauro and Lewis [40].
 
 
 
@@ -393,7 +402,7 @@ completed. Six subscales are rated on a twenty-one-point scale presented as a li
 divided into equal intervals and scored 0 to 100 in steps of five. This study uses the
 
 unweighted variant (Raw TLX): the pairwise weighting procedure of the original
-instrument [14] is omitted, and the composite workload score is the arithmetic mean of
+instrument [15] is omitted, and the composite workload score is the arithmetic mean of
 
 the six subscale ratings. All six subscales, including Performance (anchored from Perfect
 
