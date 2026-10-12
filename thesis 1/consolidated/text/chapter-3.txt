@@ -1764,7 +1764,7 @@ after fixing what the recovery check on the one before it exposed: development (
 778 commands, seed 20260922), a round that drove the recovery check and led to fixing
 
 ──────── p. 88 ────────
-                                                                                           88
+                                                                                          88
 
 
 two undo defects (round 5: 772 commands, seed 20260923), a round whose recovery
@@ -1791,22 +1791,41 @@ line read as if every part succeeded, so that a part that runs only after an ear
 failed, as on the right of ||, was analyzed as if it had not. No command in this corpus met
 
 the conditions that trigger them; all have been fixed, and re-running the corpus with the
-fixed analyzer changed none of its decisions under any configuration compared.
+fixed analyzer changed none of its decisions under any configuration compared. Because
 
+those defects lay where parts of one line interact, a shape the corpus barely samples, a
+differential test was then built for it: compound lines join the fixture’s commands with
+
+operators, conditionals, and loops, some on a read-only directory so that parts fail, and
+
+every line the analysis lets run is executed in the sandbox, undone, and compared. It
+found an eighth defect, in undo rather than in the analysis: when part of a line failed or
+
+did not run, undo could replay an effect that had not happened, and itself lose a file. With
+
+undo fixed to restore by each file’s identity, every compound line the analysis let run,
+23,054 across six draws, was restored exactly, the last draw restoring 6,150 of 6,151
+
+before its one failure was fixed; the corpus results above are unchanged.
          On it the enumerated-pattern classifier let 167 of the 405 commands that lose
+
 something or act outside the filesystem run with no confirmation and no capture (41.2%,
 
 95% Wilson interval 36.5–46.1%). Neither the fail-closed list nor the effect analysis let
-
 any through (0.0%, interval 0.0–0.9%). The fail-closed list asked on every one of the 325
-executable losses and captured nothing for any of them, and asked on 101 of the 372
 
+──────── p. 89 ────────
+                                                                                           89
+
+
+executable losses and captured nothing for any of them, and asked on 101 of the 372
 commands that lose nothing (27%). The analysis asked on 45 of those 372 under the
 
 strict policy (12%) and 32 under the capture policy (9%); the pattern list asked on 30
-(8%). Capture coverage below is the same under both policies, which differ only in
 
+(8%). Capture coverage below is the same under both policies, which differ only in
 whether the user is asked; the ablations in Section 3.2 are read under the capture policy.
+
 On needless confirmation the analysis asks far less than the fail-closed list under either
 
 policy (McNemar’s exact test, Holm-adjusted p = 2.3×10−18 under the capture policy and
@@ -1815,24 +1834,20 @@ policy (McNemar’s exact test, Holm-adjusted p = 2.3×10−18 under the capture
 
 it asks about 32 commands to the list’s 30 (adjusted p = 0.89), and under the strict policy
 
-──────── p. 89 ────────
-                                                                                         89
-
-
 45 (adjusted p = 0.13). RQ4’s third part is therefore answered yes against the fail-closed
 list and no against the pattern list: the analysis is not shown to ask more often than the
 
 list, and in exchange lets nothing run silently that the list lets through. These figures
-
 score the analysis alone. The deployed gate also consults the pattern list and asks when
+
 either does (Section 2.1(e)); scored that way, it asks about 58 of the 372 harmless
 
 commands under the capture policy (15.6%) and 67 under the strict policy (18.0%), still
-
 well below the fail-closed list’s 101, and still lets no destructive command run silently.
+
 The analysis-in-use measures of Section 3.5(e) score the deployed gate.
 
-        The two open-source checks were scored on the 325 commands that destroy
+         The two open-source checks were scored on the 325 commands that destroy
 files and the 372 that lose nothing. Codex CLI’s check let 314 of the 325 run without
 
 asking (96.6%, Wilson interval 94.0–98.1%) and asked about 1 of the 372 harmless
@@ -1841,15 +1856,19 @@ commands (0.3%); cc-safety-net let 262 through under its standard preset (80.6%,
 84.5%), 257 under its strict preset (79.1%, 74.3–83.1%), and 236 under its paranoid
 
 preset (72.6%, 67.5–77.2%), asking about 7, 12, and 15 harmless commands (1.9%,
-
 3.2%, and 4.0%). Neither makes any capture, so their capture coverage is zero. Against
+
 each, the analysis’s advantage on silent loss is significant beyond any reasonable
 
 correction (McNemar’s exact test, p < 10−70, since every discordant command favors the
 analysis). On needless confirmation the answer to RQ4 against these checks is no: the
-
 analysis asks about 32 to 45 harmless commands to their 1 to 15, which is the cost of
+
 letting no destructive command through where they let 73% to 97% through.
+
+──────── p. 90 ────────
+                                                                                         90
+
 
         Capture coverage, the second primary measure, counts a command as covered
 
@@ -1866,62 +1885,47 @@ in Table 3.4 conservative toward the list. The 34 losses the analysis did not co
 
 asked about: 9 run code in an interpreter or through awk’s system(), 8 run a program it
 
-──────── p. 90 ────────
-                                                                                             90
-
-
 does not model, 5 depend on a variable with no value, 4 are shred, 4 feed xargs from a
-
 here-string, 2 are a find -exec gzip writing inside the tree it searches, 1 removes its own
+
 working directory, and 1 is rsync over ssh. Across all 631 commands that were executed
 
 and that the analysis did not refuse, the undo restored 630 exactly (99.8%). The one that
 failed is rsync -ur dir_a dir_b && rsync -ur dir_b dir_a: the second call copies a
 
 directory the first call’s own output had just nested inside it, one level deeper than the
-
 analysis re-resolves; it is reported, not fixed (docs/open-problems.md).
-           The pooled figures hold within each partition. On the 150 losses among the
+
+        The pooled figures hold within each partition. On the 150 losses among the
 
 human-written NL2Bash commands the analysis let none through silently and covered
-
 133 (88.7%); on the 175 among the templates, written by the same team as its rule table,
+
 it let none through and covered 158 (90.3%). The pattern list let 40% of the NL2Bash
 
 losses, 23% of the template losses, and 84% of the 80 external commands run silently.
-
 Under the capture policy the analysis asked needlessly on 8% of the harmless NL2Bash
-commands and 10% of the harmless templates.               By command shape, of the 405
+
+commands and 10% of the harmless templates.            By command shape, of the 405
 
 commands that lose something or act outside the filesystem, the pattern list let through
 silently 4 of the 34 compound lines, 5 of the 29 hidden effects, 53 of the 164 commands
 
 with run-time targets, 37 of the 85 plain commands, 1 of the 13 redirections, and 67 of
-
 the 80 external commands; the analysis let none through in any shape, and the 34 file-
+
+──────── p. 91 ────────
+                                                                                                 91
+
+
 destroying commands it asked about without a capture are 6 compound lines, 8 hidden
 
 effects, 15 with run-time targets, and 5 plain commands. The same figures for every
-
 system are provided as supplementary material.
+
 Table 3.4. Paired comparisons of the effect analysis against each list on the held-out
 
 corpus, with Holm-corrected significance.
-
- Comparison      Discordant    p, exact       p, Holm          Risk          Odds ratio
- (analysis       items                                         difference
- against)        (analysis                                     (95%
-                 right /                                       Newcombe)
-                 analysis
-                 wrong)
-
- Silent loss,    167 / 0       1.1×10−50      3.2×10−50        +0.412        undefined (no
- pattern list                                                  [+0.365,      discordant
-                                                               +0.461]       losses)
-
-──────── p. 91 ────────
-                                                                                               91
-
 
  Comparison         Discordant   p, exact       p, Holm         Risk             Odds ratio
  (analysis          items                                       difference
@@ -1929,6 +1933,10 @@ corpus, with Holm-corrected significance.
                     right /                                     Newcombe)
                     analysis
                     wrong)
+
+ Silent loss,       167 / 0      1.1×10−50      3.2×10−50       +0.412           undefined (no
+ pattern list                                                   [+0.365,         discordant
+                                                                +0.461]          losses)
  Silent loss,       0/0          1              1               0.000 [−0.009,   undefined
  fail-closed list                                               +0.009]
  Capture            170 / 14     3.1×10−35      6.3×10−35       +0.480           12.1
@@ -1940,49 +1948,48 @@ corpus, with Holm-corrected significance.
 
 
            The pattern is the one the design predicted. The analysis differs from the pattern
-list in silent loss and in capture, and differs from the fail-closed list only in capture: on
 
+list in silent loss and in capture, and differs from the fail-closed list only in capture: on
 silent loss the two are indistinguishable at zero, which is the finding that the verdict is not
 
 the contribution and that what the analysis adds is a capture that works. It does this at a
 cost in friction, asking on 12% of harmless commands under the strict policy and 9%
 
 under the capture policy, where the pattern list asked on 8% and the fail-closed list on
-27%.
 
+27%.
            On the model-generated partition the results have the same shape but rest on few
 
 losses. Its commands were generated during round 6, the third corpus above; they were
-scored then with that round’s analyzer and undo, and scored again with the final analyzer,
 
+scored then with that round’s analyzer and undo, and scored again with the final analyzer,
 after the seven defects found after round 7 were fixed, and its undo, which changed none
 
 of its 720 decisions (180 commands under each of the four systems scored) and none of
 the figures below. The deployed 3B model was asked for a command for each of 350
 
+──────── p. 92 ────────
+                                                                                          92
+
+
 randomly drawn NL2Bash descriptions. Of the commands it returned, 165 ran cleanly
+
 and were labeled, 15 were external, and the rest were excluded because they exited non-
 
 zero, timed out, needed a program that is not installed, or wrote outside the fixture. Only
-
 19 of the 165 lost anything: the model’s commands are mostly read-only. On those, and
-the 15 external ones (34 in all), the pattern list let 20 through silently (58.8%, interval
 
+the 15 external ones (34 in all), the pattern list let 20 through silently (58.8%, interval
 42.2–73.6%) and the fail-closed list and the analysis one each (2.9%, 0.5–14.9%), a
 
-listing this partition’s own external-partition rule mislabeled as device access.             The
-
-──────── p. 92 ────────
-                                                                                           92
-
+listing this partition’s own external-partition rule mislabeled as device access.       The
 
 analysis planned a capture that the undo then restored exactly for 17 of the 19 losses
-
 (89.5%, 68.6–97.1%), against 10 for the pattern list (52.6%, 31.7–72.7%) and none for
 
 the fail-closed list; the undo restored all 149 executed commands. With 19 losses the
-intervals are wide, and the comparison of coverage against the pattern list is not
 
+intervals are wide, and the comparison of coverage against the pattern list is not
 significant after correction (Holm-adjusted p = 0.13); the other three comparisons agree
 
 with the larger corpus (adjusted p = 1.5×10−5 for silent loss against the pattern list,
@@ -1990,29 +1997,34 @@ with the larger corpus (adjusted p = 1.5×10−5 for silent loss against the pat
 4.6×10−5 for coverage against the fail-closed list, and no difference on silent loss against
 
 the fail-closed list).
-          Four limits apply. The remaining commands the analysis asked on without
 
+          Four limits apply. The remaining commands the analysis asked on without
 capturing are mostly ones it cannot see into — an interpreter or an unknown program, a
 
 variable with no value in the fixture, a privileged command whose targets it declines to
-resolve, and shred — and it asks on these by construction. A large share of NL2Bash
 
+resolve, and shred — and it asks on these by construction. A large share of NL2Bash
 candidates are excluded because they name paths or programs the fixture cannot supply,
 
 which biases that partition toward commands that run on a small tree. The external
-partition is assigned by a table of state-changing tools and not observed, so its labels are
 
+partition is assigned by a table of state-changing tools and not observed, so its labels are
 only as good as the table, as the model-generated partition’s one error shows. And the
+
 model-generated partition’s commands were generated in round 6, before the analyzer
 
 was frozen; re-scoring them with the final analyzer changed no decision, but they were
-
 not drawn after the freeze.
 
 
 
 e) Threats Specific to This Evaluation
-          The following are anticipated. First, corpus bias is addressed by partitioning, as
+
+──────── p. 93 ────────
+                                                                                           93
+
+
+         The following are anticipated. First, corpus bias is addressed by partitioning, as
 
 described in Section 1.2(a). Second, oracle validity replaces label subjectivity: the labels
 
@@ -2020,18 +2032,13 @@ are observed, so they cannot be argued with, but they are facts about one comman
 one small fixture, run for a few seconds, seeing the working tree and not repository
 
 internals. A loss that appears only on a differently shaped tree, or after the time limit, is
-labeled by what happened here. The oracle’s own behavior is pinned by unit tests over
 
+labeled by what happened here. The oracle’s own behavior is pinned by unit tests over
 commands whose outcome is known, its exclusions are reported, and the bias they
 
 introduce — toward commands that run on a small fixture, which excludes most
 
-──────── p. 93 ────────
-                                                                                            93
-
-
 NL2Bash candidates that name paths or hosts the fixture cannot supply — is stated and
-
 not corrected. Third, the algorithm and the labels are produced by the same research
 
 team, which creates a risk that the labels reflect the algorithm’s assumptions; the
@@ -2061,8 +2068,12 @@ under observation, and the inverse plans for such changes are checked by the pro
 unit tests rather than by execution. Last, a command that exits non-zero is excluded from
 
 the corpus (Section 1.2(b)), so a command that destroys part of a tree and then fails is
-under-represented, and with it the paths on which a later part of a line runs after an earlier
 
+──────── p. 94 ────────
+                                                                                            94
+
+
+under-represented, and with it the paths on which a later part of a line runs after an earlier
 part failed, where the seventh analyzer defect lay; the analysis’s handling of those paths
 
 rests on its unit tests, and the validation study keeps such commands (Section 3.5(e)).
@@ -2079,16 +2090,12 @@ and how much from that table? The algorithm adds two things a table cannot do, a
 
 RQ5 asks for the contribution of each. Composition analyses through the commands that
 
-──────── p. 94 ────────
-                                                                                          94
-
-
 hide another command’s targets: wrappers (sudo, env, nohup, timeout, and similarly
 transparent commands), find -exec/-execdir/-ok/-okdir, xargs, eval, shell -c strings, and
 
 for-loops. Runtime-target resolution learns targets that exist only while a command runs,
-by running a form of it first proven read-only: command substitution and the producer
 
+by running a form of it first proven read-only: command substitution and the producer
 feeding xargs, the rewritten find expression, and the dry runs of tar, unzip, rsync, rename,
 
 git, and the package and service tools. Three further configurations of the analyzer are
@@ -2114,6 +2121,10 @@ equality overwhelmingly in each case, and not one discordant item favors an abla
 
 configuration over the full one: 176 items without composition, 143 without resolution,
 
+──────── p. 95 ────────
+                                                                                         95
+
+
 and 187 without both. Silent loss is unchanged at 0.0% in every configuration, because
 the fail-closed default that the analysis falls back to for anything it cannot resolve
 
@@ -2123,91 +2134,89 @@ longer learn, is treated exactly as an unknown command already is, which asks ra
 than runs silently. Composition and resolution are therefore not what keep the analysis
 
 safe; the table and the fail-closed default already do that, which is why Table 3.4 found
-the analysis indistinguishable from the fail-closed list on silent loss. They are what make
 
+the analysis indistinguishable from the fail-closed list on silent loss. They are what make
 the analysis useful — the difference between asking about nearly everything and actually
 
 recovering what was lost — and that is the part a table, however complete, cannot supply
 on its own.
 
-──────── p. 95 ────────
-                                                                                               95
+        The two depend on each other. Neither alone recovers much more than the
 
-
-           The two depend on each other. Neither alone recovers much more than the
 table: composition without resolution reaches 45.5% and resolution without composition
-
 35.4%, against 32.0% for the table, while the two together reach 89.5%. Of the 143
 
 items lost when resolution is disabled, 126 involve find (58 with -exec, 47 feeding xargs,
-12 with -delete, and 9 in substitutions or archive commands), 6 are other xargs pipelines,
 
+12 with -delete, and 9 in substitutions or archive commands), 6 are other xargs pipelines,
 5 are rsync, 4 are git, and 2 are plain command substitutions: composition can see that
 
 find -exec rm removes each match, but only resolution can say which files match. The
-two also differ in what they cost the user.           Without composition the analysis asks
 
+two also differ in what they cost the user.      Without composition the analysis asks
 needlessly about 246 of the 372 commands that lose nothing (66%), because every
-wrapper and find becomes an unknown command; without resolution it asks about 70
 
+wrapper and find becomes an unknown command; without resolution it asks about 70
 (19%), because it still sees what kind of command it faces and only the targets are
 
 unknown; the full analysis asks about 32 (9%).
+
+──────── p. 96 ────────
+                                                                                             96
+
+
 Table 3.5. Composition and resolution ablation: the full analysis against the same rule
 
 table with composition, runtime-target resolution, or both disabled, on the held-out
-
 corpus.
 
- Disabled        Coverage   Silent loss   Needless       Discordant   p, exact    Risk diff.
-                 (of 325)   (of 405)      asks (of       (full /                  [95% CI]
-                                          372)           ablated)
+ Disabled        Coverage   Silent loss   Needless     Discordant   p, exact    Risk diff.
+                 (of 325)   (of 405)      asks (of     (full /                  [95% CI]
+                                          372)         ablated)
 
- Nothing         291 =      0 = 0.0%      32 = 8.6%      —            —           —
+ Nothing         291 =      0 = 0.0%      32 = 8.6%    —            —           —
  (full)          89.5%
- Composition 115 =          0 = 0.0%      246 =          176 / 0      2.1×10−53   +0.542
-             35.4%                        66.1%                                   [+0.484,
-                                                                                  +0.593]
- Resolution      148 =      0 = 0.0%      70 = 18.8%     143 / 0      1.8×10−43   +0.440
-                 45.5%                                                            [+0.384,
-                                                                                  +0.492]
- Both            104 =      0 = 0.0%      251 =          187 / 0      1.0×10−56   +0.575
- (table alone)   32.0%                    67.5%                                   [+0.518,
-                                                                                  +0.626]
+ Composition 115 =          0 = 0.0%      246 =        176 / 0      2.1×10−53   +0.542
+             35.4%                        66.1%                                 [+0.484,
+                                                                                +0.593]
+ Resolution      148 =      0 = 0.0%      70 = 18.8%   143 / 0      1.8×10−43   +0.440
+                 45.5%                                                          [+0.384,
+                                                                                +0.492]
+ Both            104 =      0 = 0.0%      251 =        187 / 0      1.0×10−56   +0.575
+ (table alone)   32.0%                    67.5%                                 [+0.518,
+                                                                                +0.626]
 
 
            These comparisons answer a different question from the four-test family in
-Table 3.4 — how much of the result each part of the algorithm contributes, not whether
 
+Table 3.4 — how much of the result each part of the algorithm contributes, not whether
 the analysis beats a list — and are treated as a family of their own; with a Holm
 
 correction across the three, each p-value remains below 10−42. On silent loss there are no
 discordant pairs in any comparison. The gap concentrates where the design predicts it
 
-──────── p. 96 ────────
-                                                                                         96
-
-
 should: commands whose real target is hidden behind a wrapper argument or is not
-
 known until the command runs are exactly the cases composition and resolution exist for,
+
 while commands whose effects are visible without them — a literal path, a redirect, a
 
 chain joined by && — cost the ablated configurations little or nothing, because the table
-already covers them.       The capture-coverage result in Section 3.1(d) is therefore
+already covers them.        The capture-coverage result in Section 3.1(d) is therefore
 
 attributable to composition and resolution together, and not to the table they are
-
 sometimes mistaken for; the zero silent loss of Section 3.1(d) is owed to the table and the
+
 fail-closed default beneath it.
 
+──────── p. 97 ────────
+                                                                                        97
 
 
 3.3 Validation study: evaluation dataset
 
-         Sections 3.3 to 3.7 define the validation study, in which the analysis is deployed
-
+        Sections 3.3 to 3.7 define the validation study, in which the analysis is deployed
 in SynapseOS and exercised by participants. It exercises the platform on two task
+
 datasets: the OSWorld benchmark task suite [50], as a secondary check related to, but not
 
 comparable with, published agent scores, since its tasks are adapted, attended, and gated,
@@ -2222,52 +2231,52 @@ Linux with GNOME desktop — on a dedicated baseline machine.
 
 3.4 Validation study: evaluation profile
 
-         The study employs a within-subjects design with two conditions:
+        The study employs a within-subjects design with two conditions:
+        Condition A: SynapseOS (conversational interface layer on the Debian 13
 
-         Condition A: SynapseOS (conversational interface layer on the Debian 13
-         evaluation machine)
+        evaluation machine)
 
-         Condition B: Participant’s primary operating system (Windows 11, macOS, or
-         Linux with GNOME desktop, as determined by pre-study screening, on the
+        Condition B: Participant’s primary operating system (Windows 11, macOS, or
+        Linux with GNOME desktop, as determined by pre-study screening, on the
 
-         dedicated baseline machine)
+        dedicated baseline machine)
 
-         All 40 participants complete both conditions.              Condition order is
+        All 40 participants complete both conditions.               Condition order is
 counterbalanced: 20 participants complete Condition A first, and 20 participants complete
 
 Condition B first. Condition order is crossed with the two task forms in a 2×2 design,
-
-──────── p. 97 ────────
-                                                                                          97
-
-
 four groups of ten (Section 1.2(d)). This distributes order effects across conditions;
 
 residual asymmetric transfer is tested through the condition × order term of the model in
-Section 3.6 and discussed in Section 3.7.
 
-         The two participant groups — novice users and power users — are analyzed
+Section 3.6 and discussed in Section 3.7.
+        The two participant groups — novice users and power users — are analyzed
 
 both in aggregate and separately to determine whether the effect of the interface
-condition differs across experience levels. Additionally, primary OS (Windows, macOS,
 
+condition differs across experience levels. Additionally, primary OS (Windows, macOS,
 Linux) is recorded as a secondary grouping variable to determine whether results vary
 
 across participant backgrounds, and prior conversational AI exposure (frequency of use)
+
 is recorded as a covariate to determine whether familiarity with LLM-based tools
 
+──────── p. 98 ────────
+                                                                                          98
+
+
 correlates with SynapseOS performance independent of OS proficiency. For the platform
+
 measures, the main analysis is the pooled within-subjects comparison across all 40
 
 participants; per-OS subgroup analyses and AI-exposure correlations are treated as
-
 exploratory given the smaller per-group sample sizes they entail.
 
 
 
 3.5 Validation study: criteria and formula
-         The following metrics and formulas are used in the validation study. Items (a)
 
+         The following metrics and formulas are used in the validation study. Items (a)
 to (d) characterize the platform against each participant’s baseline; item (e) validates the
 
 analysis in use.
@@ -2277,51 +2286,50 @@ analysis in use.
 a) Task Completion Time
 
          Mean task completion time is computed per condition per participant group.
-
 Inferential testing and effect size reporting follow the procedures described in Section
+
 3.6.
 
 
 
 b) Error Rate
-
          Error rate is computed as the proportion of tasks presented that end in failure or
 
 an incorrect outcome:
 
            Error Rate = (Failed Tasks + Incorrect Outcomes) / Tasks Presented
 
-──────── p. 98 ────────
-                                                                                            98
-
-
          Error events are further categorized by type: intent parsing errors (incorrect bash
-
 command generated), execution errors (bash subprocess failure), and recovery failures
 
 (an undo that does not restore the prior state). Retries are recorded separately as attempts
-and do not change the rate, whose denominator is the number of tasks presented, not
 
+and do not change the rate, whose denominator is the number of tasks presented, not
 attempted (Section 2.2). Its difference between conditions is tested by the logistic mixed
+
 model of Section 3.6.
 
 
 
 c) User Satisfaction
 
+──────── p. 99 ────────
+                                                                                            99
+
+
          SUS scores are computed per the standard scoring procedure [5] to produce a
 
 score on a 0–100 scale; a score above 68 is conventionally treated as above-average
-usability, a benchmark drawn from scores across a large sample of studies [40]. NASA-
 
+usability, a benchmark drawn from scores across a large sample of studies [40]. NASA-
 TLX scores are computed as the unweighted mean of the six subscale ratings [15] to
 
 produce a composite workload score per participant per condition.                 Because a
+
 conversational interface is meant to widen access rather than only to save time, workload
-
 and task success are weighted alongside completion time among the platform measures,
-not treated as secondary to it.
 
+not treated as secondary to it.
          Qualitative interview data is analyzed using thematic analysis to identify
 
 recurring themes in participant perceptions of both conditions.
@@ -2329,26 +2337,22 @@ recurring themes in participant perceptions of both conditions.
 
 
 d) Statistical Significance and Effect Size
-         All platform comparisons between conditions are tested at a familywise α =
 
+         All platform comparisons between conditions are tested at a familywise α =
 0.05, Holm-corrected across the four measures. Effect size is reported using Cohen’s d,
 
 with thresholds of 0.2 (small), 0.5 (medium), and 0.8 (large). Sample size is justified by
+
 an a priori power analysis for a paired-samples comparison, two-tailed, computed against
-
 the noncentral t distribution at the level Holm’s procedure uses for its first test across the
-four measures, α/4 = 0.0125. At that level the 40-participant sample has 80% power for
 
+four measures, α/4 = 0.0125. At that level the 40-participant sample has 80% power for
 effects of d = 0.55 or larger and about 70% power at a medium effect (d = 0.5), for which
 
 48 participants would be needed; each 20-participant subgroup, analyzed alone, detects
+
 effects of d = 0.82 or larger. The measures Holm tests later in the sequence are tested at a
-
-──────── p. 99 ────────
-                                                                                           99
-
-
-higher level, so these figures are the conservative bound.         The condition × group
+higher level, so these figures are the conservative bound.          The condition × group
 
 interaction, which characterizes whether the platform serves the two groups differently,
 
@@ -2362,19 +2366,21 @@ these platform comparisons; the analysis-in-use measures of (e) are descriptive 
 
 no power analysis.
 
+──────── p. 100 ────────
+                                                                                         100
 
 
 e) Analysis Decisions in Use
          Every command executed during the SynapseOS condition is logged with the
 
 analysis’s verdict and capture plan and with a snapshot of the task directory taken
-
 immediately before it ran (Section 1.1(d)), replayed on a copy of that snapshot in the
+
 sandbox, and labeled as the corpus is (Section 1.2(b)), with one difference: a command
 
 that exits non-zero is kept, not excluded, and labeled from its before-and-after difference,
-
 since in use a failed command’s partial effects are real. It is then scored with the corpus
+
 measures: silent loss in use, the proportion of data-losing commands that ran without
 
 confirmation and without a capture; restoration in use, the proportion of data-losing
@@ -2386,40 +2392,40 @@ participant was nonetheless asked. Each undo a participant invokes is also check
 against the state before the command it reverts. A command that changes installed
 
 packages or running services, which a directory snapshot cannot hold, is scored instead
-
 by recording the affected packages’ versions and the services’ active and enabled states
+
 before it runs and checking them after undo. These are the measures by which the
 
 platform validates the analysis: a silent loss here would be a failure of the analysis on a
-
 command people actually cause, which the corpus could not reveal.
 
 
 
 f) Benchmark Task Success
 
-──────── p. 100 ────────
-                                                                                           100
-
-
          For the adapted OSWorld tasks, the platform’s task success rate is the proportion
-of tasks whose resulting system state matches the benchmark’s expected outcome, of the
 
+of tasks whose resulting system state matches the benchmark’s expected outcome, of the
 tasks attempted. The adapted subset, the OSWorld tasks expressible as shell commands,
+
 is fixed before data collection and its size reported with the result.
 
 
 
 3.6 Validation study: data analysis plan
-
          The analysis-in-use measures of Section 3.5(e) are reported descriptively, as
 
 proportions with Wilson 95% intervals over the commands executed, and set beside the
+
 corpus results of Section 3.1; they are not tested for significance, because the number and
 
-kind of commands participants cause cannot be fixed in advance. Quantitative analysis
+──────── p. 101 ────────
+                                                                                           101
 
+
+kind of commands participants cause cannot be fixed in advance. Quantitative analysis
 of the platform measures proceeds in three stages. First, descriptive statistics — means,
+
 standard deviations, and 95% confidence intervals — are computed for all platform
 
 measures (task completion time, error rate, SUS score, NASA-TLX score) per condition
@@ -2431,13 +2437,13 @@ for normally distributed data, or the Wilcoxon signed-rank test for non-normally
 distributed data. Third, effect size is computed for all primary comparisons regardless of
 
 statistical significance: Cohen’s d where the paired-samples t-test is applied, and the
-
 matched-pairs rank-biserial correlation where the Wilcoxon signed-rank test is applied.
+
          Subgroup analysis is conducted separately for the novice and power user groups
 
 to determine whether the effect of the interface condition differs across populations. The
-
 interaction between interface condition and user group is examined to assess whether
+
 SynapseOS produces differential effects depending on technical background. Because
 
 condition order and task form are crossed between subjects (Section 1.2(d)), each
@@ -2449,27 +2455,27 @@ a logistic mixed model; completion time by a linear mixed model on its logarithm
 the SUS and NASA-TLX scores, which are taken once per condition, by a linear mixed
 
 model with a random intercept for participant, from which the condition × group and
-
-──────── p. 101 ────────
-                                                                                          101
-
-
 condition × order interactions are read. The condition term of each of these models is the
+
 confirmatory test for its measure, with Holm’s correction across the four; the paired tests
 
 above are sensitivity checks, and the power analysis, computed for a paired t-test,
-
 approximates the power of the condition term.
+
          The benchmark task success rate of Section 3.5(f) is reported descriptively, as a
 
 proportion with its Wilson interval, as are the telemetry measures of Section 1.1(d) that
-
 are not otherwise analyzed (command latency and conversational turns per task), as
+
 means with confidence intervals per participant group.
 
-         Qualitative data from post-study interviews is analyzed using reflexive thematic
-analysis following the six-phase procedure described by Braun and Clarke [3]:
+──────── p. 102 ────────
+                                                                                          102
 
+
+         Qualitative data from post-study interviews is analyzed using reflexive thematic
+
+analysis following the six-phase procedure described by Braun and Clarke [3]:
 familiarization with the data, initial code generation, theme search, theme review, theme
 
 definition, and write-up.     In keeping with the reflexive approach, which treats the
@@ -2485,8 +2491,8 @@ are reported alongside representative participant quotations.
 3.7 Validation study: threats to validity
 
          The following threats to validity are identified and the mitigations applied in this
-study are described.
 
+study are described.
          Internal validity:
 
          Learning effect and asymmetric transfer: Participants may perform better on
@@ -2502,22 +2508,22 @@ study are described.
          are crossed with condition order in a 2×2 design, so no participant meets the
          same task twice; task order within a form is randomized; and condition order is
 
-──────── p. 102 ────────
-                                                                                 102
+         entered as a between-subjects factor in the analysis, with the condition × order
 
+         interaction inspected so that residual transfer is measured rather than presumed
+         absent.
 
-entered as a between-subjects factor in the analysis, with the condition × order
+         Demand characteristics: Participants may behave differently from natural use
+         because they know they are being observed. Mitigation: participants are
 
-interaction inspected so that residual transfer is measured rather than presumed
-absent.
+         instructed to complete tasks as they naturally would; the specific hypotheses of
 
-Demand characteristics: Participants may behave differently from natural use
-because they know they are being observed. Mitigation: participants are
+         the study are withheld until the post-study debrief to reduce social desirability
+         bias.
 
-instructed to complete tasks as they naturally would; the specific hypotheses of
+──────── p. 103 ────────
+                                                                                   103
 
-the study are withheld until the post-study debrief to reduce social desirability
-bias.
 
 Fatigue: Completing the full task set twice in a single session may degrade
 
@@ -2543,16 +2549,12 @@ reported separately as an exploratory reliability metric.
 Single scorer and analyst: task outcomes on the native-OS condition, and the
 
 qualitative themes, are judged by one team member, so their reliability cannot be
-checked against a second judgment. The rubric is fixed before data collection
 
+checked against a second judgment. The rubric is fixed before data collection
 and applied identically to both conditions, the SynapseOS condition is
 
 additionally checked by script, and the codebook and supporting excerpts are
 retained for audit, but a residual scorer effect remains and is not estimated.
-
-──────── p. 103 ────────
-                                                                                103
-
 
 Too few data-losing commands: participants may cause few commands that
 
@@ -2565,47 +2567,47 @@ overwrite files, and every analysis-in-use proportion is reported with its
 denominator and Wilson interval, however small.
 
 Unscoped undo: the undo command reverts the most recent entry in the undo
-log, even one recorded in another directory or an earlier session. The manual
 
+log, even one recorded in another directory or an earlier session. The manual
 verification (Section 2.3) showed that after a task whose only destructive step
 
-was declined, undo proposed reverting an unrelated earlier change.           Undo
-previews what it will revert and requires confirmation, but a participant who
-
-confirms without reading the preview could revert the wrong change, which
-
-would confound the undo measures the validation study reports. Mitigation:
-before data collection, undo will either be restricted to the current directory and
-
-session or the log will be reset at the start of each session; every undo
-
-invocation, and the entry it reverted, is logged.
-External validity:
-
-Sample generalizability: The study uses a university-recruited sample of 40
-participants across three primary OS backgrounds (Windows, macOS, Linux),
-
-which limits direct generalization to the broader population of computer users.
-
-Findings should be interpreted as indicative rather than definitive; replication
-with larger and more diverse samples is recommended as a direction for future
-
-work.
-
-Task generalizability: The evaluation is bounded by OSWorld coverage and the
-custom task suite developed for this study. Computing workflows outside this
-
-coverage are not evaluated, and results may not extend to all possible use cases.
-
-Platform specificity: SynapseOS is evaluated on a single hardware and
-software configuration — a dedicated machine running SynapseOS in GUI
-
-mode (XFCE desktop environment, X11 session) on a Debian 13 (Trixie) base.
+was declined, undo proposed reverting an unrelated earlier change.               Undo
 
 ──────── p. 104 ────────
                                                                                                           104
 
 
+          previews what it will revert and requires confirmation, but a participant who
+
+          confirms without reading the preview could revert the wrong change, which
+          would confound the undo measures the validation study reports. Mitigation:
+
+          before data collection, undo will either be restricted to the current directory and
+
+          session or the log will be reset at the start of each session; every undo
+          invocation, and the entry it reverted, is logged.
+
+          External validity:
+
+          Sample generalizability: The study uses a university-recruited sample of 40
+          participants across three primary OS backgrounds (Windows, macOS, Linux),
+
+          which limits direct generalization to the broader population of computer users.
+
+          Findings should be interpreted as indicative rather than definitive; replication
+          with larger and more diverse samples is recommended as a direction for future
+
+          work.
+          Task generalizability: The evaluation is bounded by OSWorld coverage and the
+
+          custom task suite developed for this study. Computing workflows outside this
+
+          coverage are not evaluated, and results may not extend to all possible use cases.
+          Platform specificity: SynapseOS is evaluated on a single hardware and
+
+          software configuration — a dedicated machine running SynapseOS in GUI
+
+          mode (XFCE desktop environment, X11 session) on a Debian 13 (Trixie) base.
           Performance characteristics on different hardware, display configurations, or
 
           Linux distributions may differ from the reported results.
@@ -2621,24 +2623,29 @@ Notes
            the model can propose the next step or signal completion — up to a fixed step limit, before the
            invocation exits. Distinct from TUI mode’s persistent interactive chat session; intended for
            scripting, automation, and one-off remote commands.
-        2. Terminal User Interface: a text-based interactive interface that runs in a command-line terminal.
-           TUI mode requires no graphical display server or desktop environment and can be accessed
-           remotely over SSH.
-        3. The SynapseOS prototype uses Qwen2.5-Coder-3B-Instruct, a code-specialized open-weights
-           model selected for its NL2Bash accuracy. See Section 2.1(d) for selection rationale and
-           benchmark evidence.
-        4. An inference server loads a language model into memory and processes query requests from the
-           application layer. Ollama is an open-source tool for running language models locally on
-           consumer hardware without cloud connectivity.
-        5. Open-weights models make their trained parameters publicly available for local download and
-           use; users run inference on their own hardware without routing queries to an external service
-           provider.
-        6. Quantization reduces the numerical precision of model weights to lower memory requirements.
-           At 4-bit precision, a model that would otherwise require dedicated GPU memory can run on a
-           standard CPU with modest RAM.
-        7. Low-Rank Adaptation (LoRA) is a parameter-efficient fine-tuning method that introduces a
-           small number of trainable weight matrices while keeping the base model frozen, enabling task-
-           specific adaptation on consumer hardware without full retraining.
-        8. NL2Bash is a benchmark dataset pairing natural language command descriptions with their
-           corresponding bash shell commands, used to evaluate a model’s accuracy in translating natural
-           language into executable commands.
+
+──────── p. 105 ────────
+                                                                                                105
+
+
+2. Terminal User Interface: a text-based interactive interface that runs in a command-line terminal.
+   TUI mode requires no graphical display server or desktop environment and can be accessed
+   remotely over SSH.
+3. The SynapseOS prototype uses Qwen2.5-Coder-3B-Instruct, a code-specialized open-weights
+   model selected for its NL2Bash accuracy. See Section 2.1(d) for selection rationale and
+   benchmark evidence.
+4. An inference server loads a language model into memory and processes query requests from the
+   application layer. Ollama is an open-source tool for running language models locally on
+   consumer hardware without cloud connectivity.
+5. Open-weights models make their trained parameters publicly available for local download and
+   use; users run inference on their own hardware without routing queries to an external service
+   provider.
+6. Quantization reduces the numerical precision of model weights to lower memory requirements.
+   At 4-bit precision, a model that would otherwise require dedicated GPU memory can run on a
+   standard CPU with modest RAM.
+7. Low-Rank Adaptation (LoRA) is a parameter-efficient fine-tuning method that introduces a
+   small number of trainable weight matrices while keeping the base model frozen, enabling task-
+   specific adaptation on consumer hardware without full retraining.
+8. NL2Bash is a benchmark dataset pairing natural language command descriptions with their
+   corresponding bash shell commands, used to evaluate a model’s accuracy in translating natural
+   language into executable commands.
