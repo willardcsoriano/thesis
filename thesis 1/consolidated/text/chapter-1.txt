@@ -29,7 +29,7 @@ lineage. Despite its longevity, a parallel research tradition has long explored 
 users should instead be able to describe what they want in natural language and have
 the computer carry it out. The earliest serious system in this tradition, the Berkeley
 
-UNIX Consultant, was already operational by the late 1980s [45]. Decades later, the
+UNIX Consultant, was already operational by the late 1980s [48]. Decades later, the
 rise of large language models (LLMs) and multimodal foundation models1 has
 reopened this thread with substantially greater technical capability.
 
@@ -48,18 +48,18 @@ program analysis. On the shell side, recent work has demonstrated that LLMs can
 
 
 translate natural language into Bash commands with usable accuracy and can be
-embedded as a Unix primitive with appropriate safety guardrails [11, 43]. On the
+embedded as a Unix primitive with appropriate safety guardrails [12, 46]. On the
 graphical side, so-called computer-using agents2 now operate desktop and mobile
 
-applications by combining native APIs with vision-based grounding [49, 50]. On the
+applications by combining native APIs with vision-based grounding [52, 53]. On the
 web, language-guided agents complete tasks across realistic websites with measurable
 
-but limited reliability [52, 53]. A converging research thread approaches the same
+but limited reliability [55, 56]. A converging research thread approaches the same
 technical problem from an accessibility perspective: speech-driven GUI command
 mapping for users with motor and speech impairments has progressed from voice-to-
 
 text dictation toward voice-to-action agents, with recent work on speech-instructed
-GUI agents [12] and region-aware visual grounding [31] demonstrating that the
+GUI agents [13] and region-aware visual grounding [33] demonstrating that the
 underlying components are maturing rapidly. Yet the gap between demonstration and
 
 deployable replacement remains substantial. Capability on short, self-contained tasks
@@ -67,18 +67,18 @@ has advanced quickly, but sustained computer work has not: on OSWorld 2.0, a
 
 benchmark of long-horizon tasks whose median item takes a skilled human roughly an
 hour and a half, the best frontier configuration completes only 20.6% of tasks outright
-[48].
+[51].
 
         This rapid progress has been uneven across platforms. Windows is heavily
-represented in the desktop agent literature [15, 50], Android in the mobile agent
+represented in the desktop agent literature [16, 53], Android in the mobile agent
 
-literature [33, 42, 51], and the browser in the web agent literature [8, 52, 53]. Linux
+literature [35, 45, 54], and the browser in the web agent literature [9, 55, 56]. Linux
 desktop coverage, by contrast, is conspicuously absent: existing work either addresses
-Linux only at the shell level [11] or treats it as one of several evaluation platforms
+Linux only at the shell level [12] or treats it as one of several evaluation platforms
 
-rather than a primary target [46].      No surveyed system implements a working
-conversational session layer3 for the Linux desktop, despite Linux serving as the
-substrate for most developer and server-side workflows.
+rather than a primary target [49].      No surveyed system implements a working
+conversational session layer3 for the Linux desktop, despite Linux’s wide use for
+development and server work.
 
         Capability raises a question of safety, and it is the question this study takes as
 its subject. A system that writes a shell command from a request and runs it acts on the
@@ -88,7 +88,7 @@ lost data. Shell commands are programs: their targets may be hidden inside other
 commands or computed only while they run, so what a command will change cannot
 
 ──────── p. 3 ────────
-                                                                                     3
+                                                                                      3
 
 
 be read from its name. Determining that before it runs, and saving beforehand exactly
@@ -106,14 +106,21 @@ the setting in which the analysis is deployed and validated.
 request into a shell command and runs it acts on the user’s own files, and a command
 
 generated from a misunderstood request, or one simply broader than intended, can
-delete or overwrite them with no way back. Every surveyed system guards against this
+delete or overwrite them with no way back. The surveyed systems guard against this in
+one of two ways, and neither looks at what a particular command will do. Most guard
+
 by permission: the generated command is matched against a list of patterns judged
+dangerous and is then allowed, refused, or put to the user [12]. A few that ship add
+coarse recovery: Alibaba Cloud’s ANOLISA, a Linux distribution for AI agents,
 
-dangerous and is then allowed, refused, or put to the user [11]. A list of this kind
-cannot see what a command will actually touch when its targets are hidden inside
-another command, such as find -exec or xargs, or are computed while it runs,
+snapshots an agent’s workspace before key operations or after each round of
+conversation and can roll back to any snapshot [1], which restores everything since the
 
-and it cannot back up what it does not know will be lost. Whether a generated
+snapshot rather than what one command destroyed. A list cannot see what a command
+will actually touch when its targets are hidden inside another command, such as find
+-exec or xargs, or are computed while it runs, and neither a list nor a snapshot can
+
+say, before a command runs, whether it will lose anything. Whether a generated
 command can be undone, and what must be saved beforehand so that it can be, is a
 
 question of program analysis rather than of interface design, and no surveyed system
@@ -122,66 +129,64 @@ answers it.
 
 present research. First, no surveyed system determines, before a generated command
 runs, what it would destroy, or captures exactly that so that the command can be
-
 undone; this is the gap the study’s algorithmic contribution addresses. Second, no
-implemented and empirically evaluated system places a conversational layer over the
-conventional desktop session as a whole. The idea is no longer unclaimed — AgentOS
 
-[22] proposes a natural-language portal in place of the graphical desktop — but it is
-offered as a research direction, without a built system or an evaluation. The systems
-that are built automate on top of the desktop rather than replacing it: UFO², for
-
-instance, positions itself as a “Desktop AgentOS” but operates as an automation layer
+implemented and empirically evaluated system places a conversational layer over a
 
 ──────── p. 4 ────────
-                                                                                         4
+                                                                                            4
 
 
-atop the existing Windows shell, deliberately confining itself to a separate desktop so
+desktop session as a whole, addressed to the person using the machine. AgentOS [24]
 
-that agent and user do not interfere [50]. Third, the Linux work that exists serves
-servers and agents rather than the desktop session of an end user. NaSh addresses
-Linux at the shell level as a design proposal without evaluation [11]; shipping natural-
+proposes a natural-language portal in place of the graphical desktop, but as a research
+direction, without a built system or an evaluation, and the systems that are built
+automate the desktop on the user’s behalf: UFO², for instance, positions itself as a
 
-language shells such as Alibaba Cloud’s ANOLISA pair intent translation with
-approval gating and rollback, but scope themselves explicitly to server and DevOps
+“Desktop AgentOS” but runs as an automation layer beside the user’s own Windows
+session, deliberately confining itself to a separate desktop so that agent and user do not
 
-workloads; and OSWorld includes Ubuntu as an evaluation platform rather than a
-deployment target [46].      Fourth, controlled comparison against the conventional
-graphical workflow exists only for narrow slices of the problem. AXIS evaluates an
+interfere [53]. Third, the Linux work that exists serves servers and agents rather than
+the desktop session of an end user. NaSh addresses Linux at the shell level as a design
+proposal without evaluation [12]; shipping natural-language shells such as ANOLISA
 
-API-first agent against manual operation within a single application, Microsoft Word,
-using a cloud-hosted frontier model [23], and the accessibility literature evaluates
-assistance for specific populations [30]. No study compares a conversational interface
+pair intent translation with approval gating and snapshot rollback, but are built to run
+AI agents on cloud servers [1]; and OSWorld includes Ubuntu as an evaluation
+platform rather than a deployment target [49]. Fourth, controlled comparison against
 
-against the conventional workflow across operating-system-level tasks, on a Linux
-desktop, driven by a locally-hosted small model, under an explicit safety gate. The first
+the conventional graphical workflow exists only for narrow slices of the problem.
+AXIS evaluates an API-first agent against manual operation within a single application,
 
-of these gaps is the one this study’s research addresses. The other three describe the
-setting in which it arises, and they are why the analysis is deployed and validated in a
-conversational interface layer rather than studied on a corpus alone.
+Microsoft Word, using a cloud-hosted frontier model [25], and the accessibility
+literature evaluates assistance for specific populations [32]. No study compares a
+conversational interface against the conventional workflow across operating-system-
+
+level tasks, on a Linux desktop, driven by a locally-hosted small model, under an
+explicit safety gate. The first of these gaps is the one this study’s research addresses.
+The other three describe the setting in which it arises, and they are why the analysis is
+
+deployed and validated in a conversational interface layer rather than studied on a
+corpus alone.
 
          Notably, the accessibility-focused thread of the field exhibits the inverse
 limitation. Speech-to-GUI mapping research targets specific user populations — users
 with motor impairments, speech disorders, or cognitive disabilities — with specialized
 
-techniques such as speech-instructed GUI agents and resilient visual grounding [12,
-31], but operates at the level of individual applications or interaction techniques rather
-
+techniques such as speech-instructed GUI agents and resilient visual grounding [13,
+33], but operates at the level of individual applications or interaction techniques rather
 than at the level of the session layer itself. These approaches presuppose an underlying
-conversational system surface on which to run, yet no such surface exists. This
-complementarity sharpens the opportunity: a general-purpose conversational interface
-
-layer would serve not only mainstream users but also provide the substrate that
-accessibility-specific configurations require.
 
 ──────── p. 5 ────────
                                                                                           5
 
 
-         These gaps present an opportunity that is algorithmic first.          Whether a
-generated command can be undone, and what must be saved beforehand so that it can
+conversational surface on which to run. A conversational interface layer over the
+whole session could provide one, which makes accessibility a possible later use of the
 
+platform built for this study, though it is outside the study’s scope.
+         These gaps present an opportunity that is algorithmic first.          Whether a
+
+generated command can be undone, and what must be saved beforehand so that it can
 be, can be decided by analysing the command itself: deriving what it would change
 from its syntactic structure, resolving the targets it computes while it runs before it
 
@@ -191,78 +196,79 @@ contribution. It needs a setting in which generated commands act on a real user�
 
 and the remaining gaps supply one.           SynapseOS, built for this study, adds a
 conversational interface layer to a Linux desktop that continues running underneath it,
-in the way a new interactive shell such as zsh sits over an unchanged kernel and core
 
+in the way a new interactive shell such as zsh sits over an unchanged kernel and core
 utilities: the desktop shell, window manager, and application launcher are left in place,
 as are the kernel, the core system utilities, and the existing application ecosystem, and a
 
 user retains every route to the machine they already had and gains a third. It serves as
 the experimental platform on which the analysis is deployed, demonstrated, and
-validated in use, with people of differing technical fluency and with the conventional
+validated in use, with people of differing technical fluency and with each participant’s
 
-desktop workflow as the baseline.
+own primary operating system as the baseline.
 
 
 
 1.3 Statement of the Problem
+
          A system that turns a request in ordinary language into a shell command and
 runs it acts directly on the user’s own files and system state. Language models have
-
 made such systems practical: a person who cannot write a shell command can now
-
 have one written for them, and conversational interfaces, coding assistants, and agentic
 tools increasingly execute what a model writes. A generated command can be wrong,
 or broader than the request intended, and whether what it destroys can be restored
-depends entirely on what was saved before it ran. The tools that execute generated
-commands today decide only whether to run them, by matching the command against a
-list of patterns judged dangerous; they cannot determine what a command will touch
 
-when its targets are hidden inside another command or computed while it runs, and
+depends entirely on what was saved before it ran. The tools that execute generated
 
 ──────── p. 6 ────────
-                                                                                          6
+                                                                                         6
 
 
-they save nothing. This study addresses that problem: determining, before a generated
+commands today decide only whether to run them, by matching the command against a
 
-shell command runs, what it would change, whether the change can be undone, and the
-least that must be captured beforehand so that it can be. It is a problem of program
-analysis rather than of interface design, and the surveyed systems leave it open. It is
-studied in the setting where it is most acute — a conversational interface layer through
-which a person who does not read shell syntax operates a Linux desktop — but the
+list of patterns judged dangerous; they cannot determine what a command will touch
+when its targets are hidden inside another command or computed while it runs, and
+those that offer recovery at all snapshot a workspace wholesale, without knowing what
+any one command will destroy [1]. This study addresses that problem: determining,
+before a generated shell command runs, what it would change, whether the change can
 
-analysis takes a command as a string and is independent of the interface and the model
-that produced it.
-         Specifically, the study seeks to answer the following questions:
+be undone, and the least that must be captured beforehand so that it can be. It is a
+problem of program analysis rather than of interface design, and the surveyed systems
+leave it open. It is studied in the setting where it is most acute — a conversational
+interface layer through which a person who does not read shell syntax operates a Linux
+desktop — but the analysis takes a command as a string and is independent of the
+interface and the model that produced it.
+
+        Specifically, the study seeks to answer the following questions:
       1. How can the effect of a shell command on a system be represented formally,
-         so that whether the command can be undone is a predicate over that
-         representation, and so that anything the representation cannot determine is
+        so that whether the command can be undone is a predicate over that
+        representation, and so that anything the representation cannot determine is
+        treated as unrecoverable rather than safe?
 
-         treated as unrecoverable rather than safe?
       2. Can a command’s effects be derived from its syntactic structure before it runs
-         — composed through the wrappers, find -exec, xargs, loops, and
-         substitutions that hide its targets, with targets known only at run time resolved
-         by commands first proven read-only — without executing anything that
+        — composed through the wrappers, find -exec, xargs, loops, and
+        substitutions that hide its targets, with targets known only at run time resolved
+        by commands first proven read-only — without executing anything that
+        changes the system?
 
-         changes the system?
       3. Given those effects, can a minimum-cost set of pre-images be computed
-         whose capture is sufficient to restore the prior state, and does restoring from it
-         return the system to that state?
+        whose capture is sufficient to restore the prior state, and does restoring from it
+        return the system to that state?
       4. Against an enumerated list of destructive patterns and a list that refuses every
+        command it does not recognize, does the analysis lose less data silently,
 
-         command it does not recognize, does the analysis lose less data silently,
-         restore more of what is lost, and ask the user less often?
-      5. How much of that result do composition and runtime-target resolution each
-         contribute, beyond the per-command rule table on which both rest?
-         A further question is answered by validation rather than posed as a research
-
-question: whether the analysis’s decisions hold when it is deployed in a working
-interface and exercised by people, whose commands the evaluation corpus does not
+        restore more of what is lost, and ask the user less often?
 
 ──────── p. 7 ────────
                                                                                      7
 
 
+      5. How much of that result do composition and runtime-target resolution each
+        contribute, beyond the per-command rule table on which both rest?
+
+        A further question is answered by validation rather than posed as a research
+question: whether the analysis’s decisions hold when it is deployed in a working
+interface and exercised by people, whose commands the evaluation corpus does not
 contain (Chapter 3, Section 3.3 onward).
 
 
@@ -284,34 +290,34 @@ algorithm is demonstrated and validated in use.
         be determined is treated as unrecoverable (RQ1).
       2. To develop an effect-composition algorithm that derives a command’s effects
         from its syntactic structure rather than its name, composing them through
-
         wrappers, find -exec, xargs, loops, and substitutions, and resolving
+
         targets known only at run time through dry runs it first proves read-only
         (RQ2).
       3. To develop a minimum-cost recovery-plan generation algorithm that
         computes, from a command’s effects, the cheapest set of captures sufficient to
         restore the prior state, and to verify by sandboxed execution that restoring
 
-        from that plan does so (RQ3).
-      4. To evaluate the recoverability analysis against pattern-based and fail-closed
-        baselines, and against the command-safety checks of open-source AI agents,
-        on a held-out command corpus whose ground truth is obtained by sandboxed
-
 ──────── p. 8 ────────
-                                                                                             8
+                                                                                         8
 
 
+         from that plan does so (RQ3).
+      4. To evaluate the recoverability analysis against pattern-based and fail-closed
+
+         baselines, and against the command-safety checks of open-source AI agents,
+         on a held-out command corpus whose ground truth is obtained by sandboxed
          execution, measuring silent data loss, verified restoration, and needless
          confirmation, with statistical testing (RQ4).
-
       5. To quantify the contribution of composition and of runtime-target resolution
          through ablation studies that disable each, and both, while leaving the per-
+
          command rule table unchanged (RQ5).
          Each objective is algorithmic and measurable, and each would stand if the
 interface were removed, because the analysis takes a shell command as a string.
 SynapseOS is the means by which the algorithm is deployed, demonstrated, and
-
 validated in use, not an objective in itself: the validation study (Chapter 3,
+
 Sections 3.3–3.7) measures how the analysis’s decisions hold on commands
 participants cause, and characterizes the platform through task success, time, error rate,
 and workload against each participant’s own primary operating system.
@@ -319,12 +325,13 @@ and workload against each participant’s own primary operating system.
 
 
 1.5 Contributions of the Study
+
          This study’s design principle is to adopt existing software wherever it will
 serve and to build only what cannot be adopted. The principle is stated here because it
 is what makes the contribution identifiable: if everything that can be taken off the shelf
 is taken off the shelf, then whatever remains is the original work by construction rather
-
 than by assertion. Table 1.1 states what is adopted, so that what follows it can be read
+
 against a complete account of what is not.
 Table 1.1. Components adopted rather than built, and why.
 
@@ -334,24 +341,24 @@ Table 1.1. Components adopted rather than built, and why.
   services, userland     (Trixie)            development in the strict sense and is
                                              explicitly outside this study
 
-  Desktop                XFCE on             The interface layer runs over the desktop and
-  environment,           X11                 leaves it working; reimplementing it would
-  window manager,                            remove capability from the user
-  display server
-
 ──────── p. 9 ────────
-                                                                                           9
+                                                                                          9
 
 
 Concern                Adopted           Why it is not built here
+
+Desktop                XFCE on           The interface layer runs over the desktop and
+environment,           X11               leaves it working; reimplementing it would
+window manager,                          remove capability from the user
+display server
 
 Model inference        Ollama            Model lifecycle, quantized loading, and
 and serving                              request serving are solved and are not the
                                          research question
 
-Language model         Qwen2.5-          Training a model is a different study; this one
-                       Coder-3B-         evaluates an interface built on an existing one
-                       Instruct
+Language model         Qwen2.5-          Training a model is a different study; the
+                       Coder-3B-         analysis this study contributes is independent
+                       Instruct          of the model that produced the command
 
 Command                The Linux         Driving the existing toolchain is the system’s
 execution              shell and         premise, not a limitation of it
@@ -373,223 +380,236 @@ resolving targets                        Debian; it runs the analysis’s read-o
 
 
        Against that, the study contributes the following.
+
     1. An algorithm for recoverability analysis of generated shell commands.
        Given a command produced by a language model, the algorithm finds what it
        would change and, where that can be reversed only with preparation,
-
        computes the minimal set of pre-images sufficient to restore the prior state. It
        makes two claims and no others: it sees through the wrappers a line hides its
        effects behind, and it resolves targets computed at run time before the
+
        command runs. Deciding whether a command is dangerous is not among
        them: a list that refuses every command it does not recognize reaches the same
-
        verdict on the commands studied here, and the contribution is the capture that
-       follows. Its formal basis is an effect semantics: a command is represented not
-       by its name but by the set of system effects its syntactic structure implies —
-       which paths it would read, create, write, remove, or alter in metadata —
 
 ──────── p. 10 ────────
                                                                                  10
 
 
+follows. Its formal basis is an effect semantics: a command is represented not
+by its name but by the set of system effects its syntactic structure implies —
+which paths it would read, create, write, remove, or alter in metadata —
+
 resolved against a working directory and propagated through the operators that
 join commands into one line. The recovery plan is a minimum-cost cover of
 that effect set, and the verdict a predicate over it. This is the study’s principal
+technical contribution and the subject of RQ1 through RQ5. It is distinguished
+from the permission models used by existing agentic tools, which decide
+whether a command is allowed by matching it against enumerated patterns,
 
-technical contribution and the subject of RQ1. It is distinguished from the
-permission models used by existing agentic tools, which decide whether a
-command is allowed by matching it against enumerated patterns, and which
-take no pre-images: a permission model can refuse a command, but it cannot
-restore what an approved command destroyed. It is equally distinguished
-from privilege mechanisms such as sudo and polkit, which gate on who is
+and which take no pre-images: a permission model can refuse a command, but
+it cannot restore what an approved command destroyed.               It is equally
+distinguished from privilege mechanisms such as sudo and polkit, which gate
+on who is acting rather than on what is about to happen. The algorithmic
+difficulty lies in composition and in targets that exist only while the command
 
-acting rather than on what is about to happen. The algorithmic difficulty lies
-in composition and in targets that exist only while the command runs — a
-single generated line may chain several operations through &&, pipelines,
-subshells, and redirects, and rm $(ls *.log) or find -delete names nothing until
-it executes — which is what an enumerated pattern list cannot express.
+runs — a single generated line may chain several operations through &&,
+pipelines, subshells, and redirects, and rm $(ls *.log) or find -delete names
+nothing until it executes — which is what an enumerated pattern list cannot
+express. Soundness is deliberately one-sided: anything the analysis cannot
+resolve   is   treated    as   unrecoverable,     because     over-approximating
 
-Soundness is deliberately one-sided: anything the analysis cannot resolve is
-treated as unrecoverable, because over-approximating destructiveness costs a
-confirmation prompt whereas under-approximating it destroys data.             The
-analysis is not free of lists: it rests on a table of what each known command
-does, and a command absent from that table is unknown and asks. Its claim is
+destructiveness costs a confirmation prompt whereas under-approximating it
+destroys data. The analysis is not free of lists: it rests on a table of what each
+known command does, and a command absent from that table is unknown and
+asks. Its claim is what it adds on top of a table, not that it has none. That
+claim is measured directly in Chapter 3, Section 3.2, by ablations that leave
+the same per-command table in place.          Disabling composition — seeing
 
-what it adds on top of a table, not that it has none. That claim is measured
-directly in Chapter 3, Section 3.2, by ablations that leave the same per-
-command table in place. Disabling composition — seeing through wrappers,
-find -exec, xargs, eval, shell -c strings, and loops — drops capture coverage on
-the held-out corpus from 89.5% to 35.4% (McNemar’s exact test, p =
+through wrappers, find -exec, xargs, eval, shell -c strings, and loops — drops
+capture coverage on the held-out corpus from 89.5% to 35.4% (McNemar’s
 
-2.1×10−53); disabling runtime-target resolution drops it to 45.5% (p =
-
-1.8×10−43); and disabling both leaves the table alone at 32.0%. Silent loss is
-
-0% in every configuration, so what composition and resolution add is
-coverage, not safety.
+exact test, p = 2.1×10−53); disabling runtime-target resolution drops it to
 
 ──────── p. 11 ────────
                                                                                         11
 
 
+          45.5% (p = 1.8×10−43); and disabling both leaves the table alone at 32.0%.
+          Silent loss is 0% in every configuration, so what composition and resolution
+          add is coverage, not safety.
+
         2. SynapseOS, the experimental platform. A working conversational interface
           layer for a Linux desktop in which the analysis is deployed: it grounds natural-
           language intent in shell commands, gates each command on the analysis’s
           verdict, captures what the analysis’s plan names before the command runs, and
-
           records a recovery journal from which the command can be undone,
+
           implemented as a single binary running over an unmodified desktop session.
         3. A validation of the analysis in use. A controlled study in which participants
           operate the platform on matched tasks, measuring how the analysis’s decisions
           hold on commands people cause — silent loss, verified restoration, and
-
           needless confirmation in live use — and, as characterizations of the platform,
+
           task success, time, error rate, and workload against each participant’s own
           primary operating system, with users fluent in neither existing interface and
           users fluent in both compared.
           The first contribution is the study’s research contribution and is evaluated
 against a labeled command corpus, independently of any participant; the second and
-
 third are the platform on which it is deployed and its validation in use. They are
+
 reported separately for that reason, and a negative result on any of them is reported as
 such.
 
 
 
 1.6 Significance of the Study
-
           The findings of this study are expected to benefit the following groups:
+
         1. Developers of AI agents that run shell commands. Coding assistants and
           other agents that execute generated commands guard them with lists of
           dangerous patterns, which the evaluation in Section 3.1(a) of Chapter 3 shows
           let most file-destroying commands in its corpus run without confirmation.
 
-          The recoverability analysis is independent of the interface and of the language
-          model, and can be placed in front of any system that executes generated shell
-          commands.
-
 ──────── p. 12 ────────
                                                                                  12
 
 
+  The recoverability analysis is independent of the interface and of the language
+  model, and can be placed in front of any system that executes generated shell
+  commands.
 2. The research community. The study contributes a static analysis of shell
   commands for recoverability, a property that existing analyses of shell do not
+
   address (§2.5), together with an evaluation against ground truth obtained by
   sandboxed execution rather than by human labeling. Its ablations separate
   what composition and runtime-target resolution each contribute from the rule
-
   table beneath them, and its validation study shows how such an analysis
   behaves when deployed in an interface people use.
-3. Novice and non-technical computer users. The conventional graphical
-  desktop imposes a steep learning curve rooted in its icon-and-menu paradigm.
-  A person who cannot read a shell command cannot judge one a model wrote
 
-  for them, so letting a model act on their behalf is safe only if what it destroys
-  can be restored; the recoverability analysis supplies that, and a conversational
-  interface layer that accepts natural language intent lowers the threshold for
-  productive computer use, particularly for users with limited prior computing
-  experience, including elderly users encountering desktop computing late or
+3. Novice and non-technical computer users. Much of what a computer can do
+  is reachable only through its command line, which most people do not read. A
+  person who cannot read a shell command cannot judge one a model wrote for
+  them, so letting a model act on their behalf is safe only if what it destroys can
+  be restored; the recoverability analysis supplies that, and a conversational
 
-  infrequently.
-4. Developers and power users on Linux. A conversational interface layer
-  reduces the cognitive load of recalling and composing shell commands by
-  exposing system operations through a unified natural-language interface.
+  interface layer that accepts natural language intent is expected to lower the
+  threshold for productive computer use for users with limited prior computing
+  experience, which the validation study examines.
+4. Developers and power users on Linux. A conversational interface layer is
+  expected to reduce the cognitive load of recalling and composing shell
+
+  commands by exposing system operations through a unified natural-language
+  interface, which the validation study measures through the NASA Task Load
+  Index.
 5. Users with motor accessibility needs. Although this population is scoped out
+  of the initial evaluation for ethical and recruitment reasons, SynapseOS could
+  serve as a platform on which accessibility-specific configurations operate.
 
-  of the initial evaluation for ethical and recruitment reasons, SynapseOS is
-  positioned to serve as the session-level substrate on which accessibility-
-  specific configurations can operate.      Prior work has established design
-  guidelines for LLM-based speech interfaces for users with motor impairments
-  [30] and has demonstrated specialized techniques — speech-instructed GUI
-  agents and resilient visual grounding — at the application and interaction-
-
-  technique level [12, 31].     These techniques presuppose a conversational
+  Prior work has established design guidelines for LLM-based speech interfaces
+  for users with motor impairments [32] and has demonstrated specialized
+  techniques — speech-instructed GUI agents and resilient visual grounding —
 
 ──────── p. 13 ────────
-                                                                                        13
+                                                                                         13
 
 
-         system surface that does not yet exist at the session level; SynapseOS provides
-         that surface, making accessibility-specific extensions a natural and well-
-         grounded future direction rather than a speculative one.
+         at the application and interaction-technique level [13, 33]. These techniques
+         presuppose a conversational surface over the whole session, which the
+         platform built for this study provides, so accessibility-specific extensions are a
+         possible future direction; they are outside the scope of this study.
 
 
 
 1.7 Scope and Limitations of the Study
-
          Two terms are used deliberately throughout and are not interchangeable.
 Conversational interface layer names what the user experiences: the surface through
 which intent is expressed and results are returned. Session layer names where that
 surface sits in the system: the software a user meets immediately after login. The first
-is where this study’s algorithmic contribution is deployed and evaluated; the second is
 
-its architectural position, and the phrase “session layer” is used only when
+is where this study’s algorithmic contribution is deployed and validated in use; the
+second is its architectural position, and the phrase “session layer” is used only when
 SynapseOS’s position relative to it is specifically at issue. This study covers the design
 and evaluation of a recoverability analysis for generated shell commands, which is its
 research contribution, and the implementation of SynapseOS, the conversational
 interface layer for the Linux desktop4 in which the analysis is deployed and validated.
-SynapseOS runs as an agentic layer over an ordinary desktop session rather than in
 
+SynapseOS runs as an agentic layer over an ordinary desktop session rather than in
 place of one: the desktop shell, session manager, and application launcher continue to
 run and remain available to the user, as do the kernel and the core system utilities
 beneath them. The Linux kernel, the core system utilities, and the existing ecosystem
 of Linux applications are not modified by this study; SynapseOS interacts with the
-system by translating natural language into shell commands executed through the
 
+system by translating natural language into shell commands executed through the
 standard command-line toolchain, rather than by rewriting applications or the utilities
 they depend on.      The subject matter spans program analysis, natural language
-processing,   LLM-based     reasoning,    command-line     automation,    Linux   system
+processing,   LLM-based      reasoning,   command-line      automation,    Linux   system
 integration, and human-computer interaction.
-         The study examines cross-application desktop workflows on Linux, including
-
-shell operations, file management, and application-level tasks representable in the
-OSWorld benchmark task suite [46]. The validation study recruits novice computer
 
 ──────── p. 14 ────────
                                                                                         14
 
 
-users and power users for a controlled study on the platform. The study is conducted in
+         The study examines cross-application desktop workflows on Linux, including
 
+shell operations, file management, and application-level tasks representable in the
+OSWorld benchmark task suite [49]. The validation study recruits novice computer
+users and power users for a controlled study on the platform. The study is conducted in
 a Linux desktop environment and is bounded by the duration of the thesis project. The
 recoverability analysis covers commands in the bash dialect on a Debian system: their
+
 effects on the filesystem, and the changes to package and service state they make
 through apt, dpkg, and systemd. It is evaluated on a corpus of 777 commands drawn
 from NL2Bash, from templates covering each composition operator, and from tools
-
 whose effects lie outside the filesystem, and the contributions of composition and of
 runtime-target resolution are measured by ablation on the same corpus.
+
          The following limitations are acknowledged. First, SynapseOS commits to a
 locally-hosted, code-specialized small language model (Qwen2.5-Coder-3B-Instruct)
 rather than a hosted frontier model, prioritizing privacy and offline operation over the
-
 potentially higher capability of larger hosted alternatives5; this tradeoff may affect the
 ceiling on intent parsing accuracy achievable within the study. Second, users with
+
 motor accessibility needs — a highly relevant population — are excluded from the
 initial evaluation due to ethics-review and recruitment constraints; accessibility-
 specific configurations such as speech-instructed agent operation for atypical speech
-
-patterns [12] are likewise out of scope for the initial implementation but represent a
+patterns [13] are likewise out of scope for the initial implementation but represent a
 natural extension of the SynapseOS substrate. Third, SynapseOS targets the Linux
 desktop specifically, and the findings may not generalize directly to Windows or
-macOS desktop environments. Fourth, the safety confirmation policy for irreversible
-system operations is defined in principle but requires empirical calibration during
-implementation. Fifth, evaluation is bounded by the task coverage of the OSWorld
 
-benchmark and the custom task suite developed for this study; tasks outside this
-coverage are not evaluated. Sixth, the recoverability analysis treats anything it cannot
-determine as unrecoverable, and so protects such commands only by asking first: code
-run by an interpreter, programs it does not model, and variables with no value are of
-this kind.    Its per-command rules are a hand-written enumeration, which its
+macOS desktop environments. Fourth, the platform offers two confirmation policies
+over the analysis’s verdict, a strict one that is the default and a capture-only one
+(Chapter 3, Section 2.1(e)); which serves users better is a question the validation study
+informs rather than settles.    Fifth, the analysis is evaluated on a corpus of 777
+commands: human-written commands from NL2Bash, templates written by the same
+
+team that wrote the analysis’s rule table and the pattern-list baseline, and commands
+whose effects lie outside the filesystem. Each label describes what a command did on
 
 ──────── p. 15 ────────
-                                                                                                           15
+                                                                                                          15
 
 
+the fixture it ran on, not on every possible filesystem; these threats and their
+
+mitigations are stated in Chapter 3, Section 3.1(e). The validation study is separately
+bounded by the task coverage of the OSWorld benchmark and the custom task suite
+developed for this study. Sixth, the recoverability analysis treats anything it cannot
+determine as unrecoverable, and so protects such commands only by asking first: code
+run by an interpreter, programs it does not model, and variables with no value are of
+
+this kind.      Its per-command rules are a hand-written enumeration, which its
 composition builds on rather than replaces, and it resolves a command’s targets shortly
-
 before the command runs, so a file changed by another process in the interval is
-captured as it was when resolved.
+captured as it was when resolved. Of the 325 file-destroying commands in the corpus,
+34 (10.5%) are protected only by asking, because the analysis could not determine
+them; on silent loss it is indistinguishable from a list that refuses every command it
+
+does not recognize, both at zero, so its advantage lies in what it restores; and undo
+restored 630 of the 631 commands executed in the recovery check, the one failure
+being reported in Chapter 3. Seventh, the recovery plan is minimal relative to the
+capture mechanisms and cost model stated in Chapter 3, Section 2.1(c), not over every
+conceivable way of restoring a system.
 
 
 
@@ -606,14 +626,19 @@ Notes
            immediately after login — the desktop shell, window manager, session manager, and
            application launcher on a graphical system, or the login shell on a text terminal. It is distinct
            from the userland (or user space): the core system libraries and command-line tools (e.g.,
-           glibc, coreutils, bash, apt) that run outside the kernel and that the session layer itself depends
-           on and invokes. SynapseOS sits above the session layer and does not replace it; the
-           underlying userland is unchanged.
-        4. A Linux session manager is the program that starts after user login and establishes the
-           graphical environment — launching the window manager, desktop shell, and background
-           services. SynapseOS does not replace this component: it launches over the session that the
-           component establishes and becomes the surface the user works in.
-        5. Open-weights models make their trained parameters publicly available for local download and
-           use. Users run inference on their own hardware without routing queries to an external service
-           provider, enabling offline operation and preventing user data from being transmitted to third
-           parties.
+
+──────── p. 16 ────────
+                                                                                                  16
+
+
+  glibc, coreutils, bash, apt) that run outside the kernel and that the session layer itself depends
+  on and invokes. SynapseOS sits above the session layer and does not replace it; the
+  underlying userland is unchanged.
+4. A Linux session manager is the program that starts after user login and establishes the
+   graphical environment — launching the window manager, desktop shell, and background
+   services. SynapseOS does not replace this component: it launches over the session that the
+   component establishes and becomes the surface the user works in.
+5. Open-weights models make their trained parameters publicly available for local download and
+   use. Users run inference on their own hardware without routing queries to an external service
+   provider, enabling offline operation and preventing user data from being transmitted to third
+   parties.
