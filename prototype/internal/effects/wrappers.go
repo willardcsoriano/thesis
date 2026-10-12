@@ -265,6 +265,18 @@ func (st *state) find(c *call) {
 		st.unresolved(c, "runs with elevated privilege, so its targets cannot be resolved as the current user")
 		return
 	}
+	roots := paths
+	if len(roots) == 0 {
+		roots = []string{"."}
+	}
+	absRoots := make([]string, len(roots))
+	for i, r := range roots {
+		absRoots[i] = c.abs(r)
+	}
+	if st.lineChangesUnder(absRoots) {
+		st.unresolved(c, "an earlier part of the line changes the tree it searches, so its matches cannot be listed beforehand")
+		return
+	}
 	out, err := st.a.Run(st.ctx, c.sc.wd, argv)
 	if err != nil {
 		st.unresolved(c, "could not resolve find's targets: "+err.Error())
@@ -302,16 +314,12 @@ func (st *state) find(c *call) {
 	// An action that creates files inside the tree find is searching feeds itself: find
 	// visits what it has just made, so the matches it resolved beforehand are not the
 	// matches it will act on.
-	roots := paths
-	if len(roots) == 0 {
-		roots = []string{"."}
-	}
 	for _, e := range st.an.Effects[before:] {
 		if e.Kind != Create {
 			continue
 		}
-		for _, r := range roots {
-			if root := c.abs(r); e.Path == root || strings.HasPrefix(e.Path, root+"/") {
+		for _, root := range absRoots {
+			if e.Path == root || strings.HasPrefix(e.Path, root+"/") {
 				st.unresolved(c, "creates files inside the tree it is searching, so the set of matches changes while it runs")
 				return
 			}
