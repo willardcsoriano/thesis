@@ -19,20 +19,20 @@ syntax. Language models now do that translation: they write the command for a pe
 who could not. That moves the risk. The person no longer has to know the command,
 but neither can they check it, and when a command they did not write and cannot read is
 wrong, it is their files that are lost.
-          The aspiration to instruct a computer in ordinary language is old; its earliest
-serious system, the Berkeley UNIX Consultant, was operational by the late 1980s [48].
+          The aspiration to instruct a computer in ordinary language is old; an early
+system for conversing with an operating system, the Berkeley UNIX Consultant, was
 
-Large language models (LLMs) and multimodal foundation models1 have reopened it
-with far greater capability. They translate natural language into Bash commands with
-usable accuracy [12, 46], and computer-using agents2 built on them operate desktop,
-mobile, and web applications [52, 53, 55, 56]. More and more of these systems act by
-running commands on a real machine, and so on a person’s own files.
+operational by the late 1980s [48]. Large language models (LLMs) and multimodal
+foundation models1 have reopened it with far greater capability. They translate natural
+language into Bash commands with usable accuracy [12, 46], and computer-using agents2
+built on them operate desktop, mobile, and web applications [52, 53, 55, 56]. More and
+more of these systems act by running commands on a real machine, and so on a person’s
+own files.
           A command can delete or overwrite files, and whether that can be undone
-depends on what was saved before it ran. Shell commands are programs: their targets
 
+depends on what was saved before it ran. Shell commands are programs: their targets
 may be hidden inside other commands, as in sudo rm, find -exec, or xargs, or
 computed only while they run, as in rm $(ls *.log), so what a command will
-change cannot be read from its name. Determining that before it runs, and saving
 
 
 
@@ -42,8 +42,9 @@ change cannot be read from its name. Determining that before it runs, and saving
                                                                                            2
 
 
-beforehand exactly what it would destroy, is a problem of program analysis rather than of
+change cannot be read from its name. Determining that before it runs, and saving
 
+beforehand exactly what it would destroy, is a problem of program analysis rather than of
 interface design. This study addresses it, and uses a conversational interface layer for the
 Linux desktop as the setting in which the analysis is deployed and validated.
 
@@ -53,25 +54,25 @@ Linux desktop as the setting in which the analysis is deployed and validated.
          The systems surveyed in Chapter 2 that run generated commands guard them in
 one of two ways, and neither looks at what a particular command will do. Most guard by
 permission: the command is matched against a list of patterns judged dangerous and is
-then allowed, refused, or put to the user [12], as in the dangerous-command check of
+then allowed, refused, or put to the user, as in the dangerous-command check of
 OpenAI’s Codex CLI [31] and cc-safety-net, a guard used with several AI coding agents
-[20].   A few that ship add coarse recovery: Alibaba Cloud’s ANOLISA, a Linux
 
+[20].   A few that ship add coarse recovery: Alibaba Cloud’s ANOLISA, a Linux
 distribution for AI agents, snapshots an agent’s workspace before key operations or after
 each round of conversation and can roll back to any snapshot [1], which restores
 everything since the snapshot rather than what one command destroyed. A list judges a
 command by its name and arguments, so it misses what the command touches through
 another command or a target computed at run time, and neither a list nor a snapshot can
-say, before a command runs, whether it will lose anything. NaSh, a design for a natural-
 
+say, before a command runs, whether it will lose anything. NaSh, a design for a natural-
 language shell, proposes summaries of what a command would affect and selective undo,
 but leaves their mechanism open [12], and no system in the surveyed literature, nor any
 shipping tool examined, determines before a generated command runs what it would
 destroy, or captures exactly that so that the command can be undone. That is the gap this
 study’s research addresses.
          The setting in which the gap arises has gaps of its own, surveyed in Chapter 2,
-Section 2.9: no surveyed system, implemented and evaluated, places a conversational
 
+Section 2.9: no surveyed system, implemented and evaluated, places a conversational
 layer over a whole desktop session for the person using the machine [24, 53], the Linux
 work that exists serves servers and agents rather than an end user’s desktop [1, 12], and
 controlled comparisons with the conventional graphical workflow cover narrow slices
@@ -423,35 +424,41 @@ pattern-list baseline, and commands whose effects lie outside the filesystem; ea
 describes what a command did on its fixture, the files and directories prepared for it to
 
 ──────── p. 12 ────────
-                                                                                                      12
+                                                                                            12
 
 
-run on, not on every possible filesystem. Nor does it ask less often than the pattern list,
-which it does not significantly exceed (32 to 45 against 30 of 372), or than the coding-
-agent checks (1 to 15); and the deployed gate, which also consults the pattern list, asks
-about 58 to 67 (16% to 18%), still well below the fail-closed list’s 27%. Its corpus was
+run on, not on every possible filesystem, and the labels of the 80 external commands, a
+fifth of the 405 behind the silent-loss result, are assigned from a table rather than
+observed, so they are weaker evidence than the 697 observed in the sandbox. Nor does it
+ask less often than the pattern list, which it does not significantly exceed (32 to 45 against
 
-written by people, not by the model: a smaller partition of commands the deployed model
-wrote showed the same pattern, but rests on 19 losses and an earlier build of the analysis
-(Chapter 3, Section 3.1(d)). These threats and their mitigations are stated in Chapter 3,
-Section 3.1(e).      Fourth, the recovery plan is minimum-cost relative to the capture
-mechanisms and cost model stated in Chapter 3, Section 2.1(c), not over every
-conceivable way of restoring a system. Fifth, the platform offers two confirmation
-policies over the analysis’s verdict, a strict policy, the default, which asks before every
-command that is not plainly recoverable, and a capture policy, which asks only before
-unrecoverable commands (Chapter 3, Section 2.1(e)); which serves users better is a
-question the validation study informs rather than settles. Sixth, the platform commits to a
-locally hosted, open-weights, code-specialized small language model (Qwen2.5-Coder-
-3B-Instruct) rather than a hosted frontier model, prioritizing privacy and offline operation
-over the potentially higher capability of larger hosted alternatives5; this may limit how
-often a request is translated correctly, which bounds the validation study but not the
+30 of 372), or than the coding-agent checks (1 to 15); and the deployed gate, which also
+consults the pattern list, asks about 58 to 67 (16% to 18%), still well below the fail-closed
+list’s 27%. Its corpus was written by people, not by the model: a smaller partition of
+commands the deployed model wrote showed the same pattern, but rests on 19 losses and
+an earlier build of the analysis (Chapter 3, Section 3.1(d)). These threats and their
+mitigations are stated in Chapter 3, Section 3.1(e).         Fourth, the recovery plan is
+minimum-cost relative to the capture mechanisms and cost model stated in Chapter 3,
+Section 2.1(c), not over every conceivable way of restoring a system. Fifth, the platform
+offers two confirmation policies over the analysis’s verdict, a strict policy, the default,
+which asks before every command that is not plainly recoverable, and a capture policy,
+which asks only before unrecoverable commands (Chapter 3, Section 2.1(e)); which
+serves users better is a question the validation study informs rather than settles. Sixth,
+the platform commits to a locally hosted, open-weights, code-specialized small language
+model (Qwen2.5-Coder-3B-Instruct) rather than a hosted frontier model, prioritizing
 
-analysis, which takes whatever command it is given. Seventh, the platform targets the
-Linux desktop, and the validation study’s findings may not generalize to Windows or
-macOS; it is bounded by the task coverage of the OSWorld benchmark and the custom
-task suite, and users with motor accessibility needs are excluded from it for ethics-review
-and recruitment reasons, so accessibility-specific configurations such as speech-
-instructed operation for atypical speech [13] are out of scope.
+privacy and offline operation over the potentially higher capability of larger hosted
+alternatives5; this may limit how often a request is translated correctly, which bounds the
+validation study but not the analysis, which takes whatever command it is given.
+Seventh, the platform targets the Linux desktop, and the validation study’s findings may
+not generalize to Windows or macOS; it is bounded by the task coverage of the OSWorld
+benchmark and the custom task suite, and users with motor accessibility needs are
+excluded from it for ethics-review and recruitment reasons, so accessibility-specific
+configurations such as speech-instructed operation for atypical speech [13] are out of
+scope.
+
+──────── p. 13 ────────
+                                                                                                            13
 
 
 
@@ -460,27 +467,22 @@ Notes
         1. Foundation models are large neural networks trained on broad, general-purpose data and
            adaptable to many tasks. Multimodal variants accept multiple input types — typically text and
            images — enabling the model to interpret visual interfaces and screenshots alongside natural
-
-──────── p. 13 ────────
-                                                                                                    13
-
-
-  language.
-2. Computer-using agents are AI systems that interact with a computer’s graphical environment —
-   clicking, typing, reading the screen — to complete tasks on behalf of a user. Unlike shell-level
-   automation, they operate through the same visual interface a human would use.
-3. The session layer (or simply, the session) is the software the user directly interacts with
-   immediately after login — the desktop shell, window manager, session manager, and application
-   launcher on a graphical system, or the login shell on a text terminal. It is distinct from the
-   userland (or user space): the core system libraries and command-line tools (e.g., glibc, coreutils,
-   bash, apt) that run outside the kernel and that the session layer itself depends on and invokes.
-   SynapseOS sits above the session layer and does not replace it; the underlying userland is
-   unchanged.
-4. A Linux session manager is the program that starts after user login and establishes the graphical
-   environment — launching the window manager, desktop shell, and background services.
-   SynapseOS does not replace this component: it launches over the session that the component
-   establishes and becomes the surface the user works in.
-5. Open-weights models make their trained parameters publicly available for local download and
-   use. Users run inference on their own hardware without routing queries to an external service
-   provider, enabling offline operation and preventing user data from being transmitted to third
-   parties.
+           language.
+        2. Computer-using agents are AI systems that interact with a computer’s graphical environment —
+           clicking, typing, reading the screen — to complete tasks on behalf of a user. Unlike shell-level
+           automation, they operate through the same visual interface a human would use.
+        3. The session layer (or simply, the session) is the software the user directly interacts with
+           immediately after login — the desktop shell, window manager, session manager, and application
+           launcher on a graphical system, or the login shell on a text terminal. It is distinct from the
+           userland (or user space): the core system libraries and command-line tools (e.g., glibc, coreutils,
+           bash, apt) that run outside the kernel and that the session layer itself depends on and invokes.
+           SynapseOS sits above the session layer and does not replace it; the underlying userland is
+           unchanged.
+        4. A Linux session manager is the program that starts after user login and establishes the graphical
+           environment — launching the window manager, desktop shell, and background services.
+           SynapseOS does not replace this component: it launches over the session that the component
+           establishes and becomes the surface the user works in.
+        5. Open-weights models make their trained parameters publicly available for local download and
+           use. Users run inference on their own hardware without routing queries to an external service
+           provider, enabling offline operation and preventing user data from being transmitted to third
+           parties.

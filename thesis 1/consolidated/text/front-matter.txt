@@ -90,9 +90,9 @@ Chapter 2: REVIEW OF RELATED LITERATURE                          14
 
      2.9 Synthesis: Comparative Analysis and Research Gap        36
      2.10 Review of the Methodological Literature                43
-     2.11 Summary                                                44
+     2.11 Summary                                                45
 
-Chapter 3: METHODOLOGY                                           47
+Chapter 3: METHODOLOGY                                           48
 
 
 
@@ -102,16 +102,16 @@ Chapter 3: METHODOLOGY                                           47
                                           v
 
 
-    Conceptual Framework                 48
-    System Environment Specifications    50
+    Conceptual Framework                 49
+    System Environment Specifications    51
 
-    Section 1: Dataset                   53
+    Section 1: Dataset                   54
     Section 2: Procedure / Experiment    65
-    Section 3: System Testing            81
+    Section 3: System Testing            82
 
-REFERENCES                              102
+REFERENCES                              104
 
-APPENDICES                              109
+APPENDICES                              111
 
 ──────── p. vi ────────
                                         LIST OF TABLES
@@ -122,17 +122,17 @@ Table 2.1: Approaches to the safety of shell commands, compared on the propertie
 the study’s algorithm combines
 
 Table 2.2: Comparative analysis of surveyed systems along the four-layer pipeline        37
-Table 3.1: Study evaluation machines                                                     51
-Table 3.2: SynapseOS minimum deployment requirements                                     51
+Table 3.1: Study evaluation machines                                                     52
+Table 3.2: SynapseOS minimum deployment requirements                                     52
 
-Table 3.3: Metrics for the recoverability algorithm, and what each is for                83
-Table 3.4: Paired comparisons of the effect analysis against each list on the held-out   88
+Table 3.3: Metrics for the recoverability algorithm, and what each is for                84
+Table 3.4: Paired comparisons of the effect analysis against each list on the held-out   89
 corpus, with Holm-corrected significance
-Table 3.5: Composition and resolution ablation — the full analysis against the same      93
+Table 3.5: Composition and resolution ablation — the full analysis against the same      94
 
 rule table with composition, resolution, or both disabled
-Table C.1: Custom cross-platform task suite — core tasks                                 112
-Table C.2: Boundary tasks — outside shell expressibility                                 114
+Table C.1: Custom cross-platform task suite — core tasks                                 114
+Table C.2: Boundary tasks — outside shell expressibility                                 116
 
 
 
@@ -145,7 +145,7 @@ Table C.2: Boundary tasks — outside shell expressibility                      
 Figure 2.1: The four-layer interaction pipeline for language-mediated computing       18
 
 interfaces
-Figure 3.1: Conceptual framework: the recoverability analysis and the platform that   49
+Figure 3.1: Conceptual framework: the recoverability analysis and the platform that   50
 deploys it
 
 
