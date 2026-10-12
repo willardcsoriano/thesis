@@ -15,12 +15,24 @@ silent loss       L1              0/405  =   0.0%  [Wilson 0.0%, 0.9%]
 silent loss       ALG-strict      0/405  =   0.0%  [Wilson 0.0%, 0.9%]
 silent loss       ALG-capture     0/405  =   0.0%  [Wilson 0.0%, 0.9%]
 silent loss       ALG-nocompose    0/405  =   0.0%  [Wilson 0.0%, 0.9%]
+silent loss       ALG-noresolve    0/405  =   0.0%  [Wilson 0.0%, 0.9%]
+silent loss       ALG-tableonly    0/405  =   0.0%  [Wilson 0.0%, 0.9%]
 capture coverage  L0            135/325  =  41.5%  [Wilson 36.3%, 47.0%]
 capture coverage  L1              0/325  =   0.0%  [Wilson 0.0%, 1.2%]
 capture coverage  ALG-strict    291/325  =  89.5%  [Wilson 85.7%, 92.4%]
 capture coverage  ALG-capture   291/325  =  89.5%  [Wilson 85.7%, 92.4%]
 capture coverage  ALG-nocompose  115/325  =  35.4%  [Wilson 30.4%, 40.7%]
+capture coverage  ALG-noresolve  148/325  =  45.5%  [Wilson 40.2%, 51.0%]
+capture coverage  ALG-tableonly  104/325  =  32.0%  [Wilson 27.2%, 37.3%]
 
 composition ablation: ALG-capture vs ALG-nocompose (docs/open-problems.md row 38)
   silent loss       n=405  no discordant pairs (both systems agree on every item)
   capture coverage  n=325  full wins=176 nocompose wins=  0  p=2.1e-53  risk diff=+0.542 [+0.484, +0.593]  odds ratio=inf
+
+resolution ablation: ALG-capture vs ALG-noresolve (runtime-target resolution off)
+  silent loss       n=405  no discordant pairs (both systems agree on every item)
+  capture coverage  n=325  full wins=143 noresolve wins=  0  p=1.8e-43  risk diff=+0.440 [+0.384, +0.492]  odds ratio=inf
+
+both off: ALG-capture vs ALG-tableonly (composition and resolution off: the rule table alone)
+  silent loss       n=405  no discordant pairs (both systems agree on every item)
+  capture coverage  n=325  full wins=187 tableonly wins=  0  p=1e-56  risk diff=+0.575 [+0.518, +0.626]  odds ratio=inf
