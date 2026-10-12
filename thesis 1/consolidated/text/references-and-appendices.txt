@@ -466,13 +466,13 @@ would make any favourable result difficult to defend.
 
 number of required steps, and differing only in target. No participant encounters the
 
-same form twice; form and condition order are crossed as described in Section 2.4. All
-prompts are phrased as human goals in plain language, containing no shell syntax, no
+same form twice; form and condition order are crossed as described in Chapter 3,
+Section 1.2(d). All prompts are phrased as human goals in plain language, containing no
 
-command names, and no interface-specific vocabulary, so that they are equally
+shell syntax, no command names, and no interface-specific vocabulary, so that they are
 
-answerable through natural language on SynapseOS and through native tools on the
-baseline machine.
+equally answerable through natural language on SynapseOS and through native tools on
+the baseline machine.
 
 ──────── p. 115 ────────
                                                                                               115

@@ -423,7 +423,7 @@ Section 3.1(d), lists them by cause), and undo restored 630 of the 631 commands
 executed in the recovery check, the one failure being reported in Chapter 3. Second, its
 model of package and service changes is checked by unit tests rather than by execution,
 since no command in the corpus changes installed packages or running services under
-observation (Chapter 3, Section 3.1(d)); and its per-command rules are a hand-written
+observation (Chapter 3, Section 3.1(e)); and its per-command rules are a hand-written
 enumeration, which its composition builds on rather than replaces, and it resolves a
 command’s targets shortly before the command runs, so a file changed by another
 
