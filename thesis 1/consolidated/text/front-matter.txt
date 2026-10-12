@@ -1,0 +1,173 @@
+Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. Do not edit: change the HTML and rebuild.
+
+──────── p. i ────────
+Recoverability Analysis of Language-Model-
+Generated Shell Commands, Deployed in the
+   SynapseOS Conversational Interface
+
+
+
+
+                                by
+
+                       Alexandra Sulit
+                       Willard Soriano
+                    Steven Evian Lozano
+
+
+
+
+A Thesis Proposal Submitted to the Department of Computer Science
+     in Partial Fulfillment of the Requirements for the Degree
+            Bachelor of Science in Computer Science
+
+
+
+
+                   Mapúa University – Makati
+                       September 2026
+
+──────── p. ii ────────
+     APPROVAL PAGE
+
+
+
+
+[To be inserted upon approval.]
+
+
+
+
+            ii
+
+──────── p. iii ────────
+       ACKNOWLEDGEMENT
+
+
+
+
+[To be inserted prior to final submission.]
+
+
+
+
+                  iii
+
+──────── p. iv ────────
+                                   TABLE OF CONTENTS
+
+TITLE PAGE                                                         i
+
+APPROVAL PAGE                                                     ii
+ACKNOWLEDGEMENT                                                  iii
+
+TABLE OF CONTENTS                                                iv
+
+LIST OF TABLES                                                   vi
+
+LIST OF FIGURES                                                  vii
+
+Chapter 1: INTRODUCTION                                           1
+
+     1.1 Background of the Study                                  1
+
+     1.2 Gap and Opportunity                                      3
+     1.3 Statement of the Problem                                 5
+
+     1.4 Objectives of the Study                                  7
+
+     1.5 Contributions of the Study                               8
+
+     1.6 Significance of the Study                               11
+     1.7 Scope and Limitations of the Study                      13
+
+Chapter 2: REVIEW OF RELATED LITERATURE                          16
+
+     2.1 Introduction to the Review                              16
+
+     2.2 Theoretical Framework                                   16
+     2.3 Historical Foundations of Natural-Language Interfaces   21
+
+     2.4 Natural-Language-to-Shell Translation                   24
+
+     2.5 Command Safety, Static Analysis, and Recovery           25
+
+     2.6 Graphical and Computer-Using Agents                     30
+     2.7 Accessibility and Speech-Driven Interaction             34
+
+     2.8 Evaluation Environments and Benchmarks                  36
+
+     2.9 Synthesis: Comparative Analysis and Research Gap        37
+
+     2.10 Review of the Methodological Literature                44
+     2.11 Summary                                                45
+
+
+
+
+                                      iv
+
+──────── p. v ────────
+                                           v
+
+
+Chapter 3: METHODOLOGY                    48
+
+     Conceptual Framework                 49
+
+     System Environment Specifications    52
+     Section 1: Dataset                   54
+
+     Section 2: Procedure / Experiment    67
+
+     Section 3: System Testing            82
+
+REFERENCES                               101
+
+APPENDICES                               107
+
+──────── p. vi ────────
+                                       LIST OF TABLES
+
+Table 1.1: Components adopted rather than built, and why                               8
+
+Table 2.1: Approaches to the safety of shell commands, compared on the                30
+properties the study’s algorithm combines
+
+Table 2.2: Comparative analysis of surveyed systems along the four-layer pipeline     37
+
+Table 3.1: Study evaluation machines                                                  52
+
+Table 3.2: SynapseOS minimum deployment requirements                                  52
+Table 3.3: Metrics for the recoverability algorithm, and what each is for             84
+
+Table 3.4: Paired comparisons of the effect analysis against each list on the held-   88
+
+out corpus, with Holm-corrected significance
+
+Table 3.5: Composition and resolution ablation — the full analysis against the        92
+same rule table with composition, resolution, or both disabled
+
+Table C.1: Custom cross-platform task suite — core tasks                              110
+
+Table C.2: Boundary tasks — outside shell expressibility                              112
+
+
+
+
+                                         vi
+
+──────── p. vii ────────
+                                    LIST OF FIGURES
+
+
+Figure 2.1: The four-layer interaction pipeline for language-mediated computing   18
+interfaces
+Figure 3.1: Conceptual framework: the recoverability analysis and the platform    50
+
+that deploys it
+
+
+
+
+                                      vii
