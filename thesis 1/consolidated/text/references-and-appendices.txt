@@ -639,24 +639,24 @@ Table C.2. Boundary tasks — outside shell expressibility, reported separately.
                                                            blurred.
 
 ──────── p. 119 ────────
-                                                                                        119
+                                                                                          119
 
 
-  ID      Category        Level         Form A            Form B         Success
-                                        prompt            prompt         criterion
+  ID     Category         Level        Form A              Form B          Success
+                                       prompt              prompt          criterion
 
-  C3      Document        Moderate      Make the          Change the     Formatting
-          formatting                    heading of the    supplied       applied
-                                        supplied          document’s     correctly,
-                                        document bold     body font      verified in
-                                        and centred.      to 14 point.   the saved
-                                                                         file.
+  C3     Document         Moderate     Make the            Change the      Formatting
+         formatting                    heading of the      supplied        applied
+                                       supplied            document’s      correctly,
+                                       document bold       body font       verified in
+                                       and centred.        to 14 point.    the saved
+                                                                           file.
 
-  C4      Window          Simple        Arrange the       Minimize       End state
-          management                    four open         every open     matches the
-                                        windows so all    window         requested
-                                        are visible       except the     arrangement.
-                                        simultaneously.   text editor.
+  C4     Window           Simple       Arrange the         Minimize        End state
+         management                    four open           every open      matches the
+                                       windows so all      window          requested
+                                       are visible         except the      arrangement.
+                                       simultaneously.     text editor.
 
 
 
@@ -664,27 +664,44 @@ Table C.2. Boundary tasks — outside shell expressibility, reported separately.
                                      APPENDIX D
                           Pre-Study Screening Questionnaire
 
-         Completed before enrolment and used to classify each volunteer as a novice or a
+        Completed at sign-up, before any session is scheduled, and used to compute
 
-power user, and to record the covariates described in Chapter 3, Section 1.4. The form
-records a participant ID code only; the volunteer’s name appears solely on the consent
+each volunteer’s proficiency score and to record the covariates described in Chapter 3,
+Section 1.4. The form records a participant ID code only; the volunteer’s name appears
 
-form (Appendix F), which is stored separately from all study data. Screening data
-belonging to volunteers who are not enrolled is destroyed within seven days of the
+solely on the consent form (Appendix F), which is stored separately from all study data.
+Screening data belonging to volunteers who are not enrolled is destroyed within seven
 
-screening session.
+days of screening.
 
-         Participant ID: ____________ Date: ____________
-         Part 1 — Background (self-report)
+        Screening consent (read to the volunteer before Part 1). This short
+questionnaire and three small tasks on your own computer tell us how familiar you are
+
+with it; every answer is useful to the study. Taking part is voluntary and you may stop at
+
+any time. Your answers are kept under a code, not your name. We also ask for one way
+to contact you, used only to arrange the screening call and your session; it is kept apart
+
+from your answers and destroyed within seven days if you are not enrolled, or once your
+
+session is booked if you are. Your answers are destroyed within seven days if you are not
+enrolled. Nothing on your screen is recorded during the tasks. □ I agree to be screened
+
+        Participant ID: ____________ Date: ____________
+        Part 1 — Background (self-report)
+
+──────── p. 120 ────────
+                                                                                        120
+
 
        1. Are you 18 years of age or older? □ Yes □ No (a “No” response ends the
-
          screening; the study enrols adults only)
+
        2. Approximately how many years have you used a computer regularly?
 
          ____________
-
        3. Which operating system do you use most? □ Windows □ macOS □ Linux
+
        4. Roughly how many hours per day do you use that operating system?
 
          ____________ (four or more hours is required for enrolment)
@@ -692,92 +709,81 @@ screening session.
 
           □ Intermediate □ Advanced
 
-──────── p. 120 ────────
-                                                                                         120
-
-
        6. How would you describe your familiarity with a command line or terminal on
          any platform? □ None □ Basic □ Intermediate □ Advanced
 
        7. How often do you use conversational AI tools such as chat assistants or AI
-
          coding assistants? □ Never □ Occasionally □ Regularly □ Daily
+
        8. If you use such tools, which ones? ______________________________
 
          Part 2 — Behavioural screener
-
          Three short tasks performed unaided on the volunteer’s own primary operating
+
 system using its native tools, one from each of three of the four system-task categories
 
 used in the main study. The screener exists because self-reported proficiency is an
-
 unreliable classifier: fluency with an operating system’s own tools is the property being
+
 measured, not confidence about it. Each task is scored pass or fail by the facilitator
 
 against the stated time limit and completion criterion. The volunteer is told that the
-screener determines which group they join and that neither outcome affects eligibility for
+screener measures familiarity with their own computer, that every result is useful to the
 
-payment or participation.
+study, and that no outcome affects their participation.
 
-  #      Task                                 Time        Pass criterion        Result
-                                              limit
+  #      Task                                  Time       Pass criterion       Result
+                                               limit
 
-  S1     Locate the files most recently       3           Correct files         □ Pass
-         modified in your home or user        minutes     identified and        □ Fail
+  S1     Locate the files most recently        3          Correct files        □ Pass
+         modified in your home or user         minutes    identified and       □ Fail
          folder and move them into a new                  relocated unaided.
          folder.
 
-  S2     Using your operating system’s        3           Correct               □ Pass
-         own system monitor, identify the     minutes     application named     □ Fail
-         application currently consuming                  unaided.
-         the most memory.
-
-  S3     Determine whether a named            3           Correct status and    □ Pass
-         application is installed on this     minutes     version reported      □ Fail
-         machine and report its version.                  unaided.
-
-
-         Classification (facilitator use). A volunteer is classified power user if they
-
-report advanced proficiency on their primary operating system — file management,
-
-process monitoring, and system administration with that system’s own tools —
-whichever system it is, and pass all three screener tasks. A volunteer is classified novice
-
-if they report basic proficiency, computing use limited to web browsing and document
-
 ──────── p. 121 ────────
-                                                                                       121
+                                                                                           121
 
 
-editing, and no command-line experience on any platform, and fail all three screener
+  #        Task                                 Time        Pass criterion        Result
+                                                limit
 
-tasks. These are the rules of Chapter 3, Section 1.4. Any volunteer whose self-report and
-screener results disagree, or who falls between these definitions, is not enrolled. This
+  S2       Using your operating system’s        3           Correct               □ Pass
+           own system monitor, identify the     minutes     application named     □ Fail
+           application currently consuming                  unaided.
+           the most memory.
 
-rule retains only unambiguous cases and therefore samples the extremes of the
-
-proficiency range deliberately; the consequence for generalization is stated in Chapter 3,
-Section 3.7.
-
-           Classification: □ Novice □ Power user □ Not enrolled Assigned task form:
-□ A first □ B first Assigned condition order: □ SynapseOS first □ Own OS first
-
+  S3       Determine whether a named            3           Correct status and    □ Pass
+           application is installed on this     minutes     version reported      □ Fail
+           machine and report its version.                  unaided.
 
 
-                                      APPENDIX E
+           Proficiency score (facilitator use). Screener tasks passed (0–3), plus Question 5
 
-                             Participant Information Sheet
+(Basic 0, Intermediate 1, Advanced 2), plus Question 6 (None 0, Basic 1, Intermediate 2,
 
+Advanced 3), for a score from 0 to 8, as defined in Chapter 3, Section 1.4. A volunteer
+who meets the eligibility rules (Questions 1 and 4) is enrolled whatever the score; no
+
+volunteer is turned away for falling between groups.
+
+           Proficiency score: ______ / 8 Eligible: □ Yes □ No Assigned task form: □
+A first □ B first Assigned condition order: □ SynapseOS first □ Own OS first
+
+
+
+                                          APPENDIX E
+
+                                Participant Information Sheet
            Study title. Recoverability Analysis of Language-Model-Generated Shell
+
 Commands, Deployed in the SynapseOS Conversational Interface
 
            Who is running this study. This research is conducted by undergraduate
-
 researchers in the Department of Computer Science, Mapúa University – Makati, in
+
 partial fulfilment of the requirements for the degree of Bachelor of Science in Computer
 
-Science.    It will be carried out only after review and approval by the University’s
+Science.     It will be carried out only after review and approval by the University’s
 Institutional Review Board. Contact details for the research team and for the ethics
 
 committee are given at the end of this sheet.
@@ -787,76 +793,77 @@ people who know how to write commands for it. We have built a system that lets a
 
 person say what they want in ordinary language — for example, “find the files I changed
 
-last week and put them in one folder” — and carries it out. We want to find out whether
-that is genuinely easier to use than the desktop you already use, and whether it makes
-
-more difference for people who have never used a command line.
-           What you would do. You would attend one session of about 90 to 120 minutes.
-
-You would complete a set of everyday computer tasks twice: once using our system, and
-
-once using the operating system you normally use, on a computer we provide. Which
-one you start with is decided in advance and is not a test of you. Afterwards you would
-
 ──────── p. 122 ────────
                                                                                        122
 
 
+last week and put them in one folder” — and carries it out. We want to find out whether
+
+that is genuinely easier to use than the desktop you already use, and whether it makes
+more difference for people who have never used a command line.
+
+         What you would do. You would attend one session of about 90 to 120 minutes.
+
+You would complete a set of everyday computer tasks twice: once using our system, and
+once using the operating system you normally use, on a computer we provide. Which
+
+one you start with is decided in advance and is not a test of you. Afterwards you would
+
 fill in two short questionnaires about each interface and take part in a 10 to 15 minute
-
 conversation about your experience, during which we may replay the screen recording
-and ask what you were thinking at particular moments.
 
+and ask what you were thinking at particular moments.
          What we record. We record what happens on the screen during the tasks, audio
 
 of the closing conversation, your questionnaire answers, and the times and outcomes of
-the tasks. We do not record your name against any of this. Everything is filed under a
 
+the tasks. We do not record your name against any of this. Everything is filed under a
 code.
 
          What could go wrong, and what protects you. The instructions you give will
-cause real commands to run, and some commands can delete or change files. You will be
 
+cause real commands to run, and some commands can delete or change files. You will be
 working on a laboratory computer prepared for this study, holding only made-up practice
+
 files. You will not use your own device and will not sign in to any of your own accounts,
 
 so none of your own data is involved at any point. Each machine is reset to a clean state
+between participants.    Some people find working under observation and a timer
 
-between participants.     Some people find working under observation and a timer
 uncomfortable, or feel frustrated when a task does not go well. We are evaluating the
-
 interface, not you, and you may pause or stop at any moment without giving a reason.
 
          Benefits. There is no direct benefit to you. The findings are intended to inform
-how conversational interfaces to computers are designed, particularly for people without
 
+how conversational interfaces to computers are designed, particularly for people without
 technical training.
 
          How your information is handled. Your data is processed under Republic Act
-No. 10173, the Data Privacy Act of 2012, on the basis of your written consent. It is
 
+No. 10173, the Data Privacy Act of 2012, on the basis of your written consent. It is
 stored under a code rather than your name, on password-protected university
+
 infrastructure that only the research team can reach. Screen recordings and audio cannot
+
+──────── p. 123 ────────
+                                                                                       123
+
 
 be made fully anonymous — a voice identifies a person, and a screen can show file
 
 names — so we keep them only as long as we need them for analysis. They are
-destroyed once transcription and coding are complete, and in any case no later than
 
+destroyed once transcription and coding are complete, and in any case no later than
 ninety days after the last session. The list linking your code to your signed consent form
 
 is kept separately and destroyed when the withdrawal window below closes, fourteen
 days after your last session.
 
-──────── p. 123 ────────
-                                                                                            123
-
-
          Withdrawing. You may stop the session at any point, without explanation and
 
 without any consequence. You may also ask us to delete your data for up to fourteen
-
 days afterwards; we keep the code-to-consent list for exactly that period so that we can
+
 find and remove your records if you ask. After fourteen days that list is destroyed and we
 
 can no longer identify which records are yours, so withdrawal is not possible beyond that
@@ -865,11 +872,9 @@ point.
          How the results are used. Results are reported in aggregate in a thesis and
 
 possibly in academic publications. We may quote short remarks you make in the closing
-conversation. Quotations are attributed only to a participant code and a group label,
+conversation. Quotations are attributed only to a participant code, never to your name,
 
-never to your name, and you can decline to be quoted while still taking part in everything
-
-else.
+and you can decline to be quoted while still taking part in everything else.
          Questions or concerns. For questions about the study, contact the research team
 
 at [research team contact address]. For concerns about how the study is being conducted,
@@ -881,9 +886,9 @@ team.
 
 
 
-                                          APPENDIX F
-                                   Informed Consent Form
+                                      APPENDIX F
 
+                                Informed Consent Form
          Study title. Recoverability Analysis of Language-Model-Generated Shell
 
 Commands, Deployed in the SynapseOS Conversational Interface
@@ -893,18 +898,16 @@ this form, and tick each box to confirm your agreement. You may ask questions at
 
 time before signing.
 
-         Statement
-
-  □      I have read and understood the Participant Information Sheet, and I have had the
-         opportunity to ask questions.
-
-  □      I am 18 years of age or older.
-
 ──────── p. 124 ────────
                                                                                                   124
 
 
         Statement
+
+  □     I have read and understood the Participant Information Sheet, and I have had the
+        opportunity to ask questions.
+
+  □     I am 18 years of age or older.
 
   □     I understand that my participation is voluntary, and that I may stop at any time
         without giving a reason and without any consequence.
@@ -924,7 +927,6 @@ time before signing.
 
 
         Separate permissions. You may take part in the study without agreeing to
-
 these. Please tick only those you accept.
 
         Statement
@@ -950,64 +952,62 @@ stored separately from all study data, and the code-to-name list derived from it
 
 destroyed on the schedule stated in Chapter 3, Section 2.5.
 
-
-
-                                          APPENDIX G
-
 ──────── p. 125 ────────
                                                                                        125
 
 
+                                      APPENDIX G
                                Session Facilitator Checklist
+
         Followed identically for every participant so that session conduct does not vary
 
 across the sample. Items marked † must be completed before the participant arrives.
-
         Before the session †
-      1. Restore both machines to the clean baseline image; confirm no data remains
 
+      1. Restore both machines to the clean baseline image; confirm no data remains
         from the previous participant.
+
       2. Boot the baseline machine into the operating system matching the participant’s
 
         screening record (Windows, macOS, or Linux with GNOME).
-
       3. Provision the task environment identically on both machines: practice file set in
+
         place, the applications referenced by tasks T7–T9 present or absent as specified,
 
         and the test applications SampleApp and DemoTool installed.
-
       4. On the SynapseOS machine, confirm the inference server is running and the
+
         model is loaded, and run one throwaway task to confirm the system responds.
 
       5. Confirm screen recording works on both machines and has free storage for the
-
         full session.
-      6. Lay out the printed task prompt sheet for the assigned form, the two
 
+      6. Lay out the printed task prompt sheet for the assigned form, the two
         questionnaire sets, the information sheet, and the consent form.
+
       7. Record which interface mode SynapseOS is running in for this session, per the
 
         readiness checkpoint in the System Environment Specifications.
-
         During the session
+
       1. Give the information sheet, answer questions, obtain signed consent. File the
 
         consent form separately from all study materials.
-
       2. If the condition about to begin is SynapseOS, give the five-minute orientation to
+
         it; the participant’s own operating system gets none (Chapter 3, Section 2.4).
-
         Use the same wording for every participant; do not demonstrate any task from
+
         the task set.
-
-      3. Start screen recording. Present tasks one at a time in the randomized order for
-
-        this participant.    Do not prompt, hint, or answer questions about how to
-        accomplish a task.
 
 ──────── p. 126 ────────
                                                                                   126
 
+
+3. Start screen recording. Present tasks one at a time in the randomized order for
+  this participant.    Do not prompt, hint, or answer questions about how to
+
+  accomplish a task.
 
 4. Do not ask the participant to think aloud during timed tasks.
 5. Record the outcome of each task and note any facilitator intervention, with the
@@ -1023,8 +1023,8 @@ across the sample. Items marked † must be completed before the participant arr
 8. Conduct the closing conversation, replaying portions of the screen recording to
 
   prompt recall. Ask what the participant was thinking, not whether they liked the
-
   system.
+
 9. Debrief: explain the study’s expectations in full, answer questions, and thank the
 
   participant.
@@ -1036,8 +1036,8 @@ across the sample. Items marked † must be completed before the participant arr
 2. Log any fallback invocation, with participant code, task, and timestamp.
 
 3. Note any deviation from this checklist, however small, for reporting with the
-
   results.
+
 4. Restore both machines to the clean baseline image.
 
 5. Diarise the participant’s fourteen-day withdrawal deadline.
