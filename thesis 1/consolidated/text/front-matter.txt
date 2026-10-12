@@ -73,8 +73,8 @@ Chapter 1: INTRODUCTION                                           1
 
      1.4 Objectives of the Study                                  5
      1.5 Contributions of the Study                               6
-     1.6 Significance of the Study                                9
-     1.7 Scope and Limitations of the Study                      10
+     1.6 Significance of the Study                               10
+     1.7 Scope and Limitations of the Study                      11
 
 Chapter 2: REVIEW OF RELATED LITERATURE                          14
      2.1 Introduction to the Review                              14
@@ -90,7 +90,7 @@ Chapter 2: REVIEW OF RELATED LITERATURE                          14
 
      2.9 Synthesis: Comparative Analysis and Research Gap        36
      2.10 Review of the Methodological Literature                43
-     2.11 Summary                                                46
+     2.11 Summary                                                45
 
 Chapter 3: METHODOLOGY                                           48
 
@@ -107,7 +107,7 @@ Chapter 3: METHODOLOGY                                           48
 
     Section 1: Dataset                   54
     Section 2: Procedure / Experiment    66
-    Section 3: System Testing            83
+    Section 3: System Testing            84
 
 REFERENCES                              107
 
@@ -126,11 +126,11 @@ mediated interfaces for personal computing
 Table 3.1: Study evaluation machines                                                     52
 
 Table 3.2: SynapseOS minimum deployment requirements                                     52
-Table 3.3: Metrics for the recoverability algorithm, and what each is for                85
+Table 3.3: Metrics for the recoverability algorithm, and what each is for                86
 Table 3.4: Paired comparisons of the effect analysis against each list on the held-out   91
 corpus, with Holm-corrected significance
 
-Table 3.5: Composition and resolution ablation — the full analysis against the same      96
+Table 3.5: Composition and resolution ablation — the full analysis against the same      97
 rule table with composition, resolution, or both disabled
 Table C.1: Custom cross-platform task suite — core tasks                                 117
 
