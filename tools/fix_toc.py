@@ -40,7 +40,10 @@ def find(text):
     m = re.match(r"(table|figure) ([a-z0-9.]+):", text)
     if m:
         key = f"{m.group(1)} {m.group(2)}."
-        hit = next((i for i in range(cursor[m.group(1)], len(pages)) if key in pages[i]), None)
+        # The caption is the line that starts with the label; prose that mentions
+        # "Figure 3.1." on an earlier page must not be taken for it.
+        hit = next((i for i in range(cursor[m.group(1)], len(pages))
+                    if any(l.lower().startswith(key) for l in lines[i])), None)
         if hit is not None:
             cursor[m.group(1)] = hit
         return hit

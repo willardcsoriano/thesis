@@ -736,15 +736,15 @@ capture.
 
            Participants are classified as novice users if they report basic proficiency on
 their primary OS, computing use limited to web browsing and document editing, no prior
-command-line experience on any platform, and fail the behavioral screener. Participants
+command-line experience on any platform, and fail all three behavioral screener tasks.
 
-are classified as power users if they report advanced proficiency on their primary OS —
-capable of performing file management, process monitoring, and system administration
-tasks efficiently using that OS’s native tools — regardless of which OS that is, and pass
-all three behavioral screener tasks.       Participants whose self-report and behavioral
+Participants are classified as power users if they report advanced proficiency on their
+primary OS — capable of performing file management, process monitoring, and system
+administration tasks efficiently using that OS’s native tools — regardless of which OS
+that is, and pass all three behavioral screener tasks. Participants whose self-report and
 
-screener results disagree, or who do not clearly satisfy either classification, are excluded.
-Primary OS is recorded for all participants as a grouping variable, and prior
+behavioral screener results disagree, or who do not clearly satisfy either classification, are
+excluded. Primary OS is recorded for all participants as a grouping variable, and prior
 conversational AI exposure as a covariate, in the analysis; prior AI exposure is analyzed
 as an exploratory covariate only (see Section 3.4) rather than a primary grouping
 

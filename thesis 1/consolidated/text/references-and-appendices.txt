@@ -326,10 +326,10 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
          This section contains the study instruments administered to participants and the
 
 procedure governing their administration. Wording, difficulty calibration, and task-form
-equivalence are validated during the pilot study described in Section 2.3 and revised
+equivalence are validated during the pilot study described in Chapter 3, Section 2.3 and
 
-before the main study begins; the instruments are reproduced here in the form submitted
-for ethics review.
+revised before the main study begins; the instruments are reproduced here in the form
+submitted for ethics review.
 
 
 
@@ -421,26 +421,26 @@ system Date: ____________
   Demand             was the task?                      low                       high
 
 ──────── p. 114 ────────
-                                                                                         114
+                                                                                          114
 
 
-  Subscale           Question                       Low         Rating (0–     High
-                                                    anchor      100, steps     anchor
+  Subscale           Question                       Low         Rating (0–      High
+                                                    anchor      100, steps      anchor
                                                                 of 5)
 
-  Temporal           How hurried or rushed was      Very        ____           Very
-  Demand             the pace of the task?          low                        high
+  Temporal           How hurried or rushed was      Very        ____            Very
+  Demand             the pace of the task?          low                         high
 
-  Performance        How successful were you in     Perfect     ____           Failure
+  Performance        How successful were you in     Perfect     ____            Failure
                      accomplishing what you
                      were asked to do?
 
-  Effort             How hard did you have to       Very        ____           Very
-                     work to accomplish your        low                        high
+  Effort             How hard did you have to       Very        ____            Very
+                     work to accomplish your        low                         high
                      level of performance?
 
-  Frustration        How insecure, discouraged,     Very        ____           Very
-                     irritated, stressed and        low                        high
+  Frustration        How insecure, discouraged,     Very        ____            Very
+                     irritated, stressed and        low                         high
                      annoyed were you?
 
 
@@ -451,9 +451,9 @@ system Date: ____________
                             Custom Cross-Platform Task Suite
            The suite comprises sixteen tasks in two parts. Twelve core tasks span the four
 
-categories defined in Section 1.5 at three difficulty levels, and constitute the main
+categories defined in Chapter 3, Section 1.5 at three difficulty levels, and constitute the
 
-platform comparison.      Four boundary tasks deliberately fall outside what a shell-
+main platform comparison. Four boundary tasks deliberately fall outside what a shell-
 mediated interface can express; they are administered and scored but reported separately
 
 from the main comparison, because their purpose is to characterize the capability
@@ -475,10 +475,10 @@ equally answerable through natural language on SynapseOS and through native tool
 the baseline machine.
 
 ──────── p. 115 ────────
-                                                                                              115
+                                                                                           115
 
 
-         Tasks T7–T9 require identical provisioning on all study machines — the same
+        Tasks T7–T9 require identical provisioning on all study machines — the same
 
 designated applications present or absent, and the two test applications (SampleApp,
 DemoTool) installed — so that the prompt means the same thing under both conditions
@@ -489,45 +489,45 @@ checklist in Appendix G. Task T9 is classified irreversible and is included spec
 exercise the confirmation gate; T11 mutates file content and is included to exercise the
 
 undo journal. Difficulty is assigned by the number of distinct operations required and the
-specificity of the target, and is validated during the pilot study described in Section 2.3.
+specificity of the target, and is validated during the pilot study described in Chapter 3,
+
+Section 2.3.
 
 Table C.1. Custom cross-platform task suite — core tasks.
 
-  ID       Category         Level         Form A            Form B             Success
-                                          prompt            prompt             criterion
+  ID      Category         Level         Form A           Form B            Success
+                                         prompt           prompt            criterion
 
-  T1       File search      Simple        Find every        Find every         All matching
-           &                              PDF in the        image in the       files present
-           organization                   Documents         Downloads          in the target
-                                          folder and        folder and         folder; no
-                                          gather them       gather them        matching file
-                                          into one          into one           left behind or
-                                          folder named      folder named       lost.
-                                          PDFs.             Images.
+  T1      File search      Simple        Find every       Find every        All matching
+          &                              PDF in the       image in the      files present
+          organization                   Documents        Downloads         in the target
+                                         folder and       folder and        folder; no
+                                         gather them      gather them       matching file
+                                         into one         into one          left behind or
+                                         folder named     folder named      lost.
+                                         PDFs.            Images.
 
-  T2       File search      Moderate      Show the ten      Show the ten       The correct
-           &                              largest files     oldest files       ten files
-           organization                   anywhere          anywhere           identified,
-                                          under the         under the          largest/oldest
-                                          home folder.      home folder.       first.
+  T2      File search      Moderate      Show the ten     Show the ten      The correct
+          &                              largest files    oldest files      ten files
+          organization                   anywhere         anywhere          identified,
+                                         under the        under the         largest/oldest
+                                         home folder.     home folder.      first.
 
-  T3       File search      Complex       Find files        Find files         Correct file
-           &                              modified in       larger than        set copied;
-           organization                   the last seven    10 MB              directory
-                                          days and          modified this      structure
-                                          copy them         month and          preserved;
-                                          into a folder     copy them          originals
-                                          named             into large-        untouched.
-                                          recent-work,      recent,
-                                          preserving        preserving
-                                          their folder      their folder
-                                          structure.        structure.
+  T3      File search      Complex       Find files       Find files        Correct file
+          &                              modified in      larger than       set copied;
+          organization                   the last seven   10 MB             directory
+                                         days and         modified this     structure
+                                         copy them        month and         preserved;
+                                         into a folder    copy them         originals
+                                         named            into large-       untouched.
+                                         recent-work,     recent,
+                                         preserving       preserving
+                                         their folder     their folder
+                                         structure.       structure.
 
-  T4       System &         Simple        Identify the      Identify the       Correct
-           process                        program           program            process
-           monitoring                     currently         currently          named.
-                                                            using the most
-                                                            CPU.
+  T4      System &         Simple        Identify the     Identify the      Correct
+          process                        program          program           process
+          monitoring                     currently        currently         named.
 
 ──────── p. 116 ────────
                                                                                 116
@@ -535,8 +535,8 @@ Table C.1. Custom cross-platform task suite — core tasks.
 
 ID   Category      Level      Form A           Form B            Success
                               prompt           prompt            criterion
-                              using the
-                              most
+                              using the        using the most
+                              most             CPU.
                               memory.
 
 T5   System &      Moderate   Report free      Report free       Both figures
@@ -639,59 +639,59 @@ Table C.2. Boundary tasks — outside shell expressibility, reported separately.
                                                            blurred.
 
 ──────── p. 118 ────────
-                                                                                          118
+                                                                                        118
 
 
-  ID       Category         Level         Form A            Form B         Success
-                                          prompt            prompt         criterion
+  ID      Category        Level         Form A            Form B         Success
+                                        prompt            prompt         criterion
 
-  C3       Document         Moderate      Make the          Change the     Formatting
-           formatting                     heading of the    supplied       applied
-                                          supplied          document’s     correctly,
-                                          document bold     body font      verified in
-                                          and centred.      to 14 point.   the saved
-                                                                           file.
+  C3      Document        Moderate      Make the          Change the     Formatting
+          formatting                    heading of the    supplied       applied
+                                        supplied          document’s     correctly,
+                                        document bold     body font      verified in
+                                        and centred.      to 14 point.   the saved
+                                                                         file.
 
-  C4       Window           Simple        Arrange the       Minimize       End state
-           management                     four open         every open     matches the
-                                          windows so all    window         requested
-                                          are visible       except the     arrangement.
-                                          simultaneously.   text editor.
-
-
+  C4      Window          Simple        Arrange the       Minimize       End state
+          management                    four open         every open     matches the
+                                        windows so all    window         requested
+                                        are visible       except the     arrangement.
+                                        simultaneously.   text editor.
 
 
-                                       APPENDIX D
 
-                            Pre-Study Screening Questionnaire
 
-           Completed before enrolment and used to classify each volunteer as a novice or a
-power user, and to record the covariates described in Section 1.4. The form records a
+                                     APPENDIX D
 
-participant ID code only; the volunteer’s name appears solely on the consent form
+                          Pre-Study Screening Questionnaire
 
-(Appendix F), which is stored separately from all study data. Screening data belonging
-to volunteers who are not enrolled is destroyed within seven days of the screening
+         Completed before enrolment and used to classify each volunteer as a novice or a
+power user, and to record the covariates described in Chapter 3, Section 1.4. The form
 
-session.
+records a participant ID code only; the volunteer’s name appears solely on the consent
 
-           Participant ID: ____________ Date: ____________
-           Part 1 — Background (self-report)
+form (Appendix F), which is stored separately from all study data. Screening data
+belonging to volunteers who are not enrolled is destroyed within seven days of the
+
+screening session.
+
+         Participant ID: ____________ Date: ____________
+         Part 1 — Background (self-report)
 
        1. Are you 18 years of age or older? □ Yes □ No (a “No” response ends the
-           screening; the study enrols adults only)
+         screening; the study enrols adults only)
 
        2. Approximately how many years have you used a computer regularly?
 
-           ____________
+         ____________
        3. Which operating system do you use most? □ Windows □ macOS □ Linux
 
        4. Roughly how many hours per day do you use that operating system?
 
-           ____________ (four or more hours is required for enrolment)
+         ____________ (four or more hours is required for enrolment)
        5. How would you describe your proficiency with that operating system? □ Basic
 
-            □ Intermediate □ Advanced
+          □ Intermediate □ Advanced
 
 ──────── p. 119 ────────
                                                                                          119
@@ -720,41 +720,46 @@ screener determines which group they join and that neither outcome affects eligi
 
 payment or participation.
 
-  #      Task                                Time         Pass criterion        Result
-                                             limit
+  #      Task                                 Time        Pass criterion        Result
+                                              limit
 
-  S1     Locate the files most recently      3            Correct files         □ Pass
-         modified in your home or user       minutes      identified and        □ Fail
+  S1     Locate the files most recently       3           Correct files         □ Pass
+         modified in your home or user        minutes     identified and        □ Fail
          folder and move them into a new                  relocated unaided.
          folder.
 
-  S2     Using your operating system’s       3            Correct               □ Pass
-         own system monitor, identify the    minutes      application named     □ Fail
+  S2     Using your operating system’s        3           Correct               □ Pass
+         own system monitor, identify the     minutes     application named     □ Fail
          application currently consuming                  unaided.
          the most memory.
 
-  S3     Determine whether a named           3            Correct status and    □ Pass
-         application is installed on this    minutes      version reported      □ Fail
+  S3     Determine whether a named            3           Correct status and    □ Pass
+         application is installed on this     minutes     version reported      □ Fail
          machine and report its version.                  unaided.
 
 
          Classification (facilitator use). A volunteer is classified power user if they
 
-report advanced proficiency on their primary operating system, report at least basic
+report advanced proficiency on their primary operating system — file management,
 
-command-line familiarity, and pass all three screener tasks. A volunteer is classified
-novice if they report basic proficiency, report no command-line familiarity, and fail all
+process monitoring, and system administration with that system’s own tools —
+whichever system it is, and pass all three screener tasks. A volunteer is classified novice
 
-three screener tasks. Any volunteer whose self-report and screener results disagree, or
+if they report basic proficiency, computing use limited to web browsing and document
 
 ──────── p. 120 ────────
-                                                                                     120
+                                                                                       120
 
 
-who falls between these definitions, is not enrolled. This rule retains only unambiguous
-cases and therefore samples the extremes of the proficiency range deliberately; the
+editing, and no command-line experience on any platform, and fail all three screener
+tasks. These are the rules of Chapter 3, Section 1.4. Any volunteer whose self-report and
 
-consequence for generalization is stated in Section 3.7.
+screener results disagree, or who falls between these definitions, is not enrolled. This
+
+rule retains only unambiguous cases and therefore samples the extremes of the
+proficiency range deliberately; the consequence for generalization is stated in Chapter 3,
+
+Section 3.7.
 
            Classification: □ Novice □ Power user □ Not enrolled Assigned task form:
 □ A first □ B first Assigned condition order: □ SynapseOS first □ Own OS first
@@ -764,8 +769,8 @@ consequence for generalization is stated in Section 3.7.
                                       APPENDIX E
 
                              Participant Information Sheet
-
            Study title. Recoverability Analysis of Language-Model-Generated Shell
+
 Commands, Deployed in the SynapseOS Conversational Interface
 
            Who is running this study. This research is conducted by undergraduate
@@ -782,8 +787,8 @@ committee are given at the end of this sheet.
 people who know how to write commands for it. We have built a system that lets a
 
 person say what they want in ordinary language — for example, “find the files I changed
-
 last week and put them in one folder” — and carries it out. We want to find out whether
+
 that is genuinely easier to use than the desktop you already use, and whether it makes
 
 more difference for people who have never used a command line.
@@ -794,14 +799,14 @@ You would complete a set of everyday computer tasks twice: once using our system
 once using the operating system you normally use, on a computer we provide. Which
 one you start with is decided in advance and is not a test of you. Afterwards you would
 
+──────── p. 121 ────────
+                                                                                       121
+
+
 fill in two short questionnaires about each interface and take part in a 10 to 15 minute
 
 conversation about your experience, during which we may replay the screen recording
 and ask what you were thinking at particular moments.
-
-──────── p. 121 ────────
-                                                                                       121
-
 
          What we record. We record what happens on the screen during the tasks, audio
 
@@ -809,8 +814,8 @@ of the closing conversation, your questionnaire answers, and the times and outco
 the tasks. We do not record your name against any of this. Everything is filed under a
 
 code.
-
          What could go wrong, and what protects you. The instructions you give will
+
 cause real commands to run, and some commands can delete or change files. You will be
 
 working on a laboratory computer prepared for this study, holding only made-up practice
@@ -822,8 +827,8 @@ between participants.     Some people find working under observation and a timer
 uncomfortable, or feel frustrated when a task does not go well. We are evaluating the
 
 interface, not you, and you may pause or stop at any moment without giving a reason.
-
          Benefits. There is no direct benefit to you. The findings are intended to inform
+
 how conversational interfaces to computers are designed, particularly for people without
 
 technical training.
@@ -840,18 +845,18 @@ names — so we keep them only as long as we need them for analysis. They are
 destroyed once transcription and coding are complete, and in any case no later than
 
 ninety days after the last session. The list linking your code to your signed consent form
-
 is kept separately and destroyed when the withdrawal window below closes, fourteen
+
 days after your last session.
 
-         Withdrawing. You may stop the session at any point, without explanation and
-without any consequence. You may also ask us to delete your data for up to fourteen
-
-days afterwards; we keep the code-to-consent list for exactly that period so that we can
-
 ──────── p. 122 ────────
-                                                                                              122
+                                                                                            122
 
+
+         Withdrawing. You may stop the session at any point, without explanation and
+
+without any consequence. You may also ask us to delete your data for up to fourteen
+days afterwards; we keep the code-to-consent list for exactly that period so that we can
 
 find and remove your records if you ask. After fourteen days that list is destroyed and we
 
@@ -864,8 +869,8 @@ possibly in academic publications. We may quote short remarks you make in the cl
 conversation. Quotations are attributed only to a participant code and a group label,
 
 never to your name, and you can decline to be quoted while still taking part in everything
-
 else.
+
          Questions or concerns. For questions about the study, contact the research team
 
 at [research team contact address]. For concerns about how the study is being conducted,
@@ -881,8 +886,8 @@ team.
                                    Informed Consent Form
 
          Study title. Recoverability Analysis of Language-Model-Generated Shell
-
 Commands, Deployed in the SynapseOS Conversational Interface
+
          Please read the Participant Information Sheet (Appendix E) before completing
 
 this form, and tick each box to confirm your agreement. You may ask questions at any
@@ -895,18 +900,18 @@ time before signing.
 
   □      I am 18 years of age or older.
 
-  □      I understand that my participation is voluntary, and that I may stop at any time
-         without giving a reason and without any consequence.
-
-  □      I understand that the instructions I give will cause real commands to run on a
-         laboratory computer, that this computer holds only practice files prepared for the
-         study, and that none of my own devices, accounts, or files are involved.
-
 ──────── p. 123 ────────
                                                                                                   123
 
 
         Statement
+
+  □     I understand that my participation is voluntary, and that I may stop at any time
+        without giving a reason and without any consequence.
+
+  □     I understand that the instructions I give will cause real commands to run on a
+        laboratory computer, that this computer holds only practice files prepared for the
+        study, and that none of my own devices, accounts, or files are involved.
 
   □     I understand that my data is stored under a code, that the list linking that code to my
         name is kept separately, and that I may request deletion of my data for up to fourteen
@@ -919,7 +924,6 @@ time before signing.
 
 
         Separate permissions. You may take part in the study without agreeing to
-
 these. Please tick only those you accept.
 
         Statement
@@ -939,79 +943,82 @@ ______________________________ Date: ______________
         Researcher obtaining consent (printed): ______________________________
 
 Signature: ______________________________ Date: ______________
-        Filing note: this is the only study document bearing the participant’s name. It is
 
+        Filing note: this is the only study document bearing the participant’s name. It is
 stored separately from all study data, and the code-to-name list derived from it is
 
-destroyed on the schedule stated in Section 2.5.
+destroyed on the schedule stated in Chapter 3, Section 2.5.
 
 
 
                                           APPENDIX G
-                                 Session Facilitator Checklist
+
+──────── p. 124 ────────
+                                                                                       124
+
+
+                               Session Facilitator Checklist
 
         Followed identically for every participant so that session conduct does not vary
 
 across the sample. Items marked † must be completed before the participant arrives.
         Before the session †
 
-──────── p. 124 ────────
-                                                                                  124
+      1. Restore both machines to the clean baseline image; confirm no data remains
 
+        from the previous participant.
+      2. Boot the baseline machine into the operating system matching the participant’s
 
-1. Restore both machines to the clean baseline image; confirm no data remains
+        screening record (Windows, macOS, or Linux with GNOME).
 
-  from the previous participant.
+      3. Provision the task environment identically on both machines: practice file set in
+        place, the applications referenced by tasks T7–T9 present or absent as specified,
 
-2. Boot the baseline machine into the operating system matching the participant’s
-  screening record (Windows, macOS, or Linux with GNOME).
+        and the test applications SampleApp and DemoTool installed.
+      4. On the SynapseOS machine, confirm the inference server is running and the
 
-3. Provision the task environment identically on both machines: practice file set in
+        model is loaded, and run one throwaway task to confirm the system responds.
 
-  place, the applications referenced by tasks T7–T9 present or absent as specified,
-  and the test applications SampleApp and DemoTool installed.
+      5. Confirm screen recording works on both machines and has free storage for the
+        full session.
 
-4. On the SynapseOS machine, confirm the inference server is running and the
+      6. Lay out the printed task prompt sheet for the assigned form, the two
 
-  model is loaded, and run one throwaway task to confirm the system responds.
-5. Confirm screen recording works on both machines and has free storage for the
+        questionnaire sets, the information sheet, and the consent form.
+      7. Record which interface mode SynapseOS is running in for this session, per the
 
-  full session.
-6. Lay out the printed task prompt sheet for the assigned form, the two
+        readiness checkpoint in the System Environment Specifications.
 
-  questionnaire sets, the information sheet, and the consent form.
+        During the session
+      1. Give the information sheet, answer questions, obtain signed consent. File the
 
-7. Record which interface mode SynapseOS is running in for this session, per the
-  readiness checkpoint in the System Environment Specifications.
+        consent form separately from all study materials.
+      2. If the condition about to begin is SynapseOS, give the five-minute orientation to
 
-  During the session
+        it; the participant’s own operating system gets none (Chapter 3, Section 2.4).
 
-1. Give the information sheet, answer questions, obtain signed consent. File the
-  consent form separately from all study materials.
+        Use the same wording for every participant; do not demonstrate any task from
+        the task set.
 
-2. Give the five-minute orientation to the assigned first condition. Use the same
+      3. Start screen recording. Present tasks one at a time in the randomized order for
 
-  wording for every participant; do not demonstrate any task from the task set.
-3. Start screen recording. Present tasks one at a time in the randomized order for
-
-  this participant.    Do not prompt, hint, or answer questions about how to
-  accomplish a task.
-
-4. Do not ask the participant to think aloud during timed tasks.
-
-5. Record the outcome of each task and note any facilitator intervention, with the
-  reason.
-
-6. Administer SUS and NASA-TLX immediately on completing the condition,
-
-  before any discussion of it.
+        this participant.    Do not prompt, hint, or answer questions about how to
+        accomplish a task.
 
 ──────── p. 125 ────────
                                                                                   125
 
 
-7. Offer a short break. Move to the second machine and repeat from step 3 with
-  the other task form.
+4. Do not ask the participant to think aloud during timed tasks.
+5. Record the outcome of each task and note any facilitator intervention, with the
+
+  reason.
+
+6. Administer SUS and NASA-TLX immediately on completing the condition,
+  before any discussion of it.
+
+7. Offer a short break. Move to the second machine and repeat from step 2 with
+  the other condition and the other task form.
 
 8. Conduct the closing conversation, replaying portions of the screen recording to
 
@@ -1019,13 +1026,13 @@ across the sample. Items marked † must be completed before the participant arr
   system.
 
 9. Debrief: explain the study’s expectations in full, answer questions, and thank the
-  participant.
 
+  participant.
   After the session
 
 1. Transfer all recordings and logs to protected storage under the participant code;
-  delete local copies from both machines.
 
+  delete local copies from both machines.
 2. Log any fallback invocation, with participant code, task, and timestamp.
 
 3. Note any deviation from this checklist, however small, for reporting with the
