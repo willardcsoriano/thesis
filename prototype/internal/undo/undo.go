@@ -418,11 +418,11 @@ func Apply(e Entry) []error {
 	//  4. Content and metadata are restored last, on top of the settled tree.
 	//  5. Other created paths are removed once nothing needs them.
 	//
-	// A created path that a capture restores (the line removed a file and made
-	//    one of the same name) is removed before the restore, not after, or
-	//    removing "what the command created" would delete the restored original.
-	//    A path that is still the captured original, because the part that would
-	//    have removed it never ran, is kept.
+	// A created path that a capture restores (the line removed a file and made one
+	// of the same name) is removed before the restore, not after, or removing "what
+	// the command created" would delete the restored original. A path that is still
+	// the captured original, because the part that would have removed it never ran,
+	// is kept.
 	created := append([]string(nil), e.Created...)
 	sort.Sort(sort.Reverse(sort.StringSlice(created)))
 	targets := restoreTargets(e)
