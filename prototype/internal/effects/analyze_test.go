@@ -92,7 +92,7 @@ func TestVerdicts(t *testing.T) {
 		{"/bin/rm a.txt", false, RecoverableWithCapture, []string{"remove a.txt"}},
 		{"sudo rm a.txt", false, RecoverableWithCapture, []string{"remove a.txt"}},
 		{"cd logs && rm x.log", false, RecoverableWithCapture, []string{"remove logs/x.log"}},
-		{"(cd logs; rm y.log); ls", false, RecoverableWithCapture, []string{"remove logs/y.log"}},
+		{"(cd logs && rm y.log); ls", false, RecoverableWithCapture, []string{"remove logs/y.log"}},
 		// wrappers, resolved
 		{"find logs -name '*.log' -delete", true, RecoverableWithCapture, []string{"remove logs/x.log", "remove logs/y.log"}},
 		{"find . -name '*.tmp' -exec rm {} \\;", true, RecoverableWithCapture, []string{"remove one.tmp", "remove sub/two.tmp"}},

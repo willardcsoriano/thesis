@@ -418,6 +418,11 @@ var curated = []Case{
 	{ID: "S36-rename-new-name", Cmd: "mv notes.txt renamed.txt"},
 	{ID: "S37-mv-into-subdir", Cmd: "mv a.txt logs/"},
 	{ID: "S35-large-overwrite", Setup: "head -c 10485760 /dev/zero > huge.bin", Cmd: "echo x > huge.bin"},
+	// A later part that may run after an earlier one failed (the line is not read as if
+	// every part succeeded): the write is captured although the move came first.
+	{ID: "S38-move-then-write-same-name", Cmd: "mv a.txt tmp/; echo x > a.txt"},
+	{ID: "S39-move-or-write", Setup: "chmod 555 tmp", Cmd: "mv a.txt tmp/ || echo x > a.txt"},
+	{ID: "S40-loop-assignment-outlives-loop", Cmd: "x=a.txt; for f in b.txt; do x=$f; done; rm $x"},
 }
 
 type corpusRow struct {

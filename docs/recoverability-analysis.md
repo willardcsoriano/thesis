@@ -920,18 +920,26 @@ The fixes made on 2026-10-09 and 2026-10-10 (section 11) were each checked again
 3. `rsync --dry-run --log-file=…` writes its log even in a dry run, so that resolver was not read-only. Bubblewrap blocked the write, and the running system resolves only under bubblewrap by default, but the evaluation tools and `SYNAPSE_RESOLVE=always` do not. Such options now make `rsync` unresolved, and `FuzzResolversAreReadOnly` checks the property for every resolver.
 4. Extracting an archive the same line downloads or creates (`curl -o x.tar URL && tar xf x.tar`): the archive does not exist when the analysis lists it, the listing fails with no output, and that read as "extracts nothing", so the extraction could overwrite files unprotected. Found by mutation testing. Extraction now asks when the archive does not exist yet, or an earlier part of the line creates or rewrites it.
 
-None of these occurs in the round-7 corpus. That is the argument for targeted rule tests, property tests, and mutation testing alongside a corpus.
+5. A variable changed by `unset`, `read`, or `mapfile` kept its environment value, so a later `rm "$f"` was captured at the wrong path. Found by the second mutation sample. Such variables are now unknown and ask.
+
+**Found by the paper's reviews (2026-10-12), fixed, with regression tests:**
+
+6. A `find` or a directory removal after an earlier part of the line moved or wrote into the same tree (`mv a.txt logs/ && find logs -delete`). PR #87.
+7. The line was read as if every part succeeded and as if branches left no trace: `cd logs || rm a.txt`, `mv a.txt tmp/ || echo x > a.txt`, `cd logs; rm *`, an assignment inside an `if` or a loop. PR #88.
+
+None of these occurs in the round-7 corpus; re-running it after each fix changed no decision. `analyzer-defects.md` logs all seven, how each was found, and why the last two lie between commands rather than in any rule. That is the argument for targeted rule tests, property tests, mutation testing, and review of the pseudocode alongside a corpus.
 
 ## 12. Where the work goes next
 
 Thesis 1 presents the algorithm and a preliminary evaluation on a benchmark. What remains open, in rough order of value:
 
-1. **Close the identified coverage gaps.** Treat a here-string feeding `xargs` as visible input (4 of the 34); check whether the files a `find -exec` creates actually match its own expression before refusing to resolve (2 of the 34, and 4 of the 32 needless confirmations).
-2. **Reduce needless confirmations** without admitting a silent loss: a larger read-only allowlist (`split`, `pv`, `dos2unix`, …) accounts for 13 of the 32.
-3. **Scope undo** to the folder and session it belongs to (`open-problems.md` row 42).
-4. **Extend the effect domain** beyond files and the two modelled package and service managers.
-5. **Strengthen the guarantee from tested to argued:** a written soundness argument per construct for G1, or a mechanised one.
-6. **Field validity:** run the planned user study (Chapter 3) with the analysis on, to measure what it protects in commands real people cause, not a sampled benchmark; and repeat with a larger model, since the 3B model's translation is the system's weakest link.
+1. **Differential testing of composition.** Generate compound lines by joining corpus commands with `;`, `||`, `&&`, pipes, `if`, and loops, including parts made to fail, run each in the sandbox oracle, and flag any loss the analysis neither captured nor asked about. Defects 6 and 7 (section 11) lived in exactly this region, which the corpus barely samples.
+2. **Close the identified coverage gaps.** Treat a here-string feeding `xargs` as visible input (4 of the 34); check whether the files a `find -exec` creates actually match its own expression before refusing to resolve (2 of the 34, and 4 of the 32 needless confirmations).
+3. **Reduce needless confirmations** without admitting a silent loss: a larger read-only allowlist (`split`, `pv`, `dos2unix`, …) accounts for 13 of the 32.
+4. **Scope undo** to the folder and session it belongs to (`open-problems.md` row 42).
+5. **Extend the effect domain** beyond files and the two modelled package and service managers.
+6. **Strengthen the guarantee from tested to argued:** a written soundness argument per construct for G1, or a mechanised one.
+7. **Field validity:** run the planned user study (Chapter 3) with the analysis on, to measure what it protects in commands real people cause, not a sampled benchmark; and repeat with a larger model, since the 3B model's translation is the system's weakest link.
 
 ## 13. Reproducing everything
 
