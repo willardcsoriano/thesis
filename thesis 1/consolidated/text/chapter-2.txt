@@ -1393,15 +1393,15 @@ its false alarms cost, since soundness is the property it claims [8]; hence sile
 
 primary measure and needless confirmation the cost. Its ground truth is observed by
 execution rather than assigned by judges, the standard by which executable semantics of
-the shell are validated against what shells actually do [12] and by which generated Bash
+the shell are validated against what shells actually do [12]; execution also underlies the
 
-commands are judged against what was intended [47]. Part of its corpus comes from a
-public dataset, NL2Bash [24], so that the evaluation does not rest only on commands
-written by the people who wrote the analysis. The claim that particular components
-produce the result is tested by ablation, rerunning the analysis with each switched off;
+scoring of generated Bash commands against what was intended [47]. Part of its corpus
+comes from a public dataset, NL2Bash [24], so that the evaluation does not rest only on
+commands written by the people who wrote the analysis. The claim that particular
+components produce the result is tested by ablation, rerunning the analysis with each
 
-and comparisons in which every system is scored on the same commands use the
-standard tests for paired proportions: McNemar’s exact test on the commands two
+switched off; and comparisons in which every system is scored on the same commands
+use the standard tests for paired proportions: McNemar’s exact test on the commands two
 systems handle differently, Wilson intervals for each proportion and Newcombe intervals
 for each difference, and Holm’s correction across each family of tests. Chapter 3,
 

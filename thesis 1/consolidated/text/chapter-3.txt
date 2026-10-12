@@ -2180,7 +2180,7 @@ correction across the three, each p-value remains below 10−42. On silent loss 
 discordant pairs in any comparison. The gap concentrates where the design predicts it
 
 ──────── p. 96 ────────
-                                                                                        96
+                                                                                         96
 
 
 should: commands whose real target is hidden behind a wrapper argument or is not
@@ -2189,45 +2189,47 @@ known until the command runs are exactly the cases composition and resolution ex
 while commands whose effects are visible without them — a literal path, a redirect, a
 
 chain joined by && — cost the ablated configurations little or nothing, because the table
-already covers them.      The reported result in Section 3.1(c) and (d) is therefore
+already covers them.       The capture-coverage result in Section 3.1(d) is therefore
 
 attributable to composition and resolution together, and not to the table they are
 
-sometimes mistaken for.
+sometimes mistaken for; the zero silent loss of Section 3.1(c) is owed to the table and the
+fail-closed default beneath it.
 
 
 
 3.3 Validation study: evaluation dataset
-        Sections 3.3 to 3.7 define the validation study, in which the analysis is deployed
+
+         Sections 3.3 to 3.7 define the validation study, in which the analysis is deployed
 
 in SynapseOS and exercised by participants. It exercises the platform on two task
-
 datasets: the OSWorld benchmark task suite [50], as a secondary check related to, but not
-comparable with, published agent scores, since its tasks are adapted, attended, and gated,
 
+comparable with, published agent scores, since its tasks are adapted, attended, and gated,
 and the custom cross-platform task suite described in Sections 1.1 and 1.5. The user
+
 study evaluation involves 40 participants (20 novice, 20 power users); the baseline
 
 condition is each participant’s primary operating system — Windows 11, macOS, or
-
 Linux with GNOME desktop — on a dedicated baseline machine.
 
 
 
 3.4 Validation study: evaluation profile
-        The study employs a within-subjects design with two conditions:
 
-        Condition A: SynapseOS (conversational interface layer on the Debian 13
+         The study employs a within-subjects design with two conditions:
 
-        evaluation machine)
-        Condition B: Participant’s primary operating system (Windows 11, macOS, or
+         Condition A: SynapseOS (conversational interface layer on the Debian 13
+         evaluation machine)
 
-        Linux with GNOME desktop, as determined by pre-study screening, on the
-        dedicated baseline machine)
+         Condition B: Participant’s primary operating system (Windows 11, macOS, or
+         Linux with GNOME desktop, as determined by pre-study screening, on the
 
-        All 40 participants complete both conditions.               Condition order is
+         dedicated baseline machine)
 
+         All 40 participants complete both conditions.              Condition order is
 counterbalanced: 20 participants complete Condition A first, and 20 participants complete
+
 Condition B first. Condition order is crossed with the two task forms in a 2×2 design,
 
 ──────── p. 97 ────────
