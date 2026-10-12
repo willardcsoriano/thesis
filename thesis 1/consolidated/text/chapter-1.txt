@@ -81,28 +81,20 @@ command can be undone. That is the gap this study’s research addresses.
                                                                                             3
 
 
-         The setting in which this gap arises has gaps of its own, surveyed in Chapter 2,
-Section 2.9. No surveyed system, implemented and evaluated, places a conversational
-layer over a whole desktop session for the person using the machine [25, 54]; the Linux
-work that exists serves servers and agents rather than an end user’s desktop [1, 13]; and
-
-controlled comparisons with the conventional graphical workflow cover narrow slices,
-such as a single application [26]. These gaps are not what this study contributes, but they
-are why the analysis is deployed in a working interface and validated with people, rather
-than only evaluated on a corpus.
          The opportunity is algorithmic. A command’s effect on a system can often be
 derived from the command itself, before it runs, and what that effect would destroy can
-
 be saved first; where it cannot be derived, the analysis can say so and ask. This study
 builds that analysis, and the terms it rests on, defined here, are used throughout. An effect
+
 is one thing a command does to one path — reading, creating, writing, or removing it, or
 changing its permissions — or to the system’s installed packages and running services. A
 pre-image is the data an effect would destroy, and capturing it means saving it before the
 command runs by the cheapest means that suffices — a hardlink, a copy, or a record —
-so that undo can restore it. Two mechanisms find a command’s effects. Composition
+so that undo can restore it.
+         Two mechanisms find a command’s effects.             Composition follows effects
 
-follows effects through the operators that join commands into one line (;, &&, ||, pipes,
-and redirection) and through the commands that run other commands (wrappers such as
+through the operators that join commands into one line (;, &&, ||, pipes, and
+redirection) and through the commands that run other commands (wrappers such as
 sudo, find -exec, xargs, sh -c strings, eval, and loops); resolution learns
 targets known only at run time by running a form of the command first proven to change
 nothing. From those effects the analysis reaches a verdict on the command, which is one
@@ -113,40 +105,49 @@ unrecoverable, if no capture would restore what it does, or the analysis cannot 
 fails closed: anything it cannot determine is unrecoverable, so the user is asked. Which
 verdicts the user is asked about is decided by a confirmation policy: the strict policy asks
 before every command that is not plainly recoverable, and the capture policy asks only
-before unrecoverable ones, capturing the rest silently. Because the analysis takes a
+before unrecoverable ones, capturing the rest silently.
+         Because the analysis takes a command as a string, it is independent of the
+interface and of the model that wrote the command.             The interface used here is
+
+SynapseOS, a conversational interface layer built for this study over a Linux desktop that
+keeps running underneath it; it is the experimental platform on which the analysis is
+deployed and validated with people, against each participant’s own primary operating
+system. That setting has gaps of its own, surveyed in Chapter 2, Section 2.9. No
+surveyed system, implemented and evaluated, places a conversational layer over a whole
 
 ──────── p. 4 ────────
-                                                                                         4
+                                                                                        4
 
 
-command as a string, it is independent of the interface and of the model that wrote the
-command. The interface used here is SynapseOS, a conversational interface layer built
-for this study over a Linux desktop that keeps running underneath it; it is the
-experimental platform on which the analysis is deployed and validated with people,
-against each participant’s own primary operating system.
+desktop session for the person using the machine [25, 54]; the Linux work that exists
+serves servers and agents rather than an end user’s desktop [1, 13]; and controlled
+comparisons with the conventional graphical workflow cover narrow slices, such as a
+single application [26]. These gaps are not what this study contributes, but they are why
+the analysis is deployed in a working interface and validated with people, rather than
+only evaluated on a corpus.
 
 
 
 1.3 Statement of the Problem
         Language models have made it practical to turn a request in ordinary language
-into a shell command and run it on the user’s own system, and conversational interfaces,
 
-coding assistants, and agentic tools increasingly execute what a model writes.          A
+into a shell command and run it on the user’s own system, and conversational interfaces,
+coding assistants, and agentic tools increasingly execute what a model writes.         A
 generated command can be wrong, or broader than the request intended. Whether what it
 destroys can then be restored depends on what was saved before it ran, and the tools that
 run such commands today do not determine that (Section 1.2). This study addresses the
 problem of determining, before a generated shell command runs, what it would change,
 whether the change can be undone, and the least that must be captured beforehand so that
-it can be. The problem is studied where it is most acute, a person who does not read shell
 
-syntax operating a Linux desktop through conversation, but the analysis applies wherever
-generated bash commands run on a system like the one studied.
+it can be. The problem is studied in a setting where it is acute, a person who does not
+read shell syntax operating a Linux desktop through conversation, but the analysis
+applies wherever generated bash commands run on a system like the one studied.
         Specifically, the study seeks to answer the following questions:
       1. How can the effect of a shell command on a system be represented formally, so
         that whether the command can be undone is a predicate over that representation,
         and so that anything the representation cannot determine is treated as
-        unrecoverable rather than safe?
 
+        unrecoverable rather than safe?
       2. Can a command’s effects be derived from its syntactic structure before it runs —
         composed through the operators that join commands and the commands that run
         other commands, with targets known only at run time (command substitutions,
@@ -222,11 +223,10 @@ workload.
 
 1.5 Contributions of the Study
          The study follows one design principle: adopt existing software wherever it will
-serve, and build only what cannot be adopted. The principle is stated here because it
-locates the contribution. Most of what is adopted, listed in Table 1.1, is the platform’s
-stack; what is built is the analysis, whose novelty against prior work is argued in
+serve, and build only what cannot be adopted. It matters here because it shows where the
+contribution lies. Most of what is adopted, listed in Table 1.1, is the platform’s stack;
+what is built is the analysis, whose novelty against prior work is argued in Chapter 2.
 
-Chapter 2.
 Table 1.1. Components adopted rather than built, and why.
 
 ──────── p. 7 ────────
@@ -281,7 +281,7 @@ the following.
          of abstract interpretation, which reasons soundly about what a program could do
 
 ──────── p. 8 ────────
-                                                                                 8
+                                                                                  8
 
 
 without running it, and of type-and-effect systems, which track what a program
@@ -297,44 +297,48 @@ unknown and asks; its claim is what it adds on top of a table, not that it has
 none. It is distinguished from permission models, which can refuse a command
 but cannot restore what an approved one destroyed, and from privilege
 mechanisms such as sudo and polkit, which gate on who is acting rather than on
-what is about to happen. The analysis was evaluated on a held-out corpus of
-777 commands, drawn after the analysis was frozen, from NL2Bash, a public
-dataset of English descriptions paired with Bash commands, and from templates
-and commands written for the purpose. For the 697 commands that act on files,
-the ground truth was observed by running each in a sandbox; the 80 whose
-effects lie outside the filesystem, such as on another machine, were labeled from
-a fixed table of state-changing tools. Of the 405 commands that destroy data or
-act outside the filesystem, the analysis let none run without either asking or
+what is about to happen.
 
-capturing first, where an enumerated pattern list let 41.2% through. Of the 325
-that destroy files, the pattern list let 31% through, and the checks of Codex CLI
-and cc-safety-net let 73% to 97% through, though those checks ask about fewer
-harmless commands than the analysis does (1 to 15 of the 372 that lose
-nothing). On silent loss the analysis ties a fail-closed list, which asks before
-every command it does not recognize as read-only, both at zero; its contribution
-is therefore not the verdict itself but what it restores, and how much less often
-than the fail-closed list it asks. Its capture coverage, the share of those 325 it
-captured beforehand and that undo then restored exactly, was 89.5%, where the
+The analysis was evaluated on a held-out corpus of 777 commands, drawn after
+the analysis was frozen, from NL2Bash, a public dataset of English descriptions
+paired with Bash commands, and from templates and commands written for the
+purpose. For the 697 commands that act on files, the ground truth was observed
+by running each in a sandbox; the 80 whose effects lie outside the filesystem,
+such as on another machine, were labeled from a fixed table of state-changing
+tools. Of the 405 commands that destroy data or act outside the filesystem, the
+analysis let none run without either asking or capturing first, where an
+enumerated pattern list let 41.2% through. Of the 325 that destroy files, the
+pattern list let 31% through, and the checks of Codex CLI and cc-safety-net let
+73% to 97% through, though those checks ask about fewer harmless commands
+than the analysis does (1 to 15 of the 372 that lose nothing). On silent loss the
+analysis ties a fail-closed list, which asks before every command it does not
+
+recognize as read-only, both at zero; its contribution is therefore not the verdict
+itself but what it restores, and how much less often than the fail-closed list it
+asks. Its capture coverage, the share of those 325 it captured beforehand and
 
 ──────── p. 9 ────────
-                                                                                         9
+                                                                                              9
 
 
-         fail-closed list restored none. Of the 372 commands that lose nothing, it asked
-         about 32 to 45 (9% to 12%, depending on the policy), against the fail-closed
-         list’s 101 (27%): far less often than that list, and not significantly more often
+         that undo then restored exactly, was 89.5%, where the fail-closed list restored
+         none. Of the 372 commands that lose nothing, it asked about 32 to 45 (9% to
+         12%, depending on the policy), against the fail-closed list’s 101 (27%): far less
 
-         than the pattern list (32 to 45 against 30 of 372). Ablations, which rerun the
-         analysis with one part switched off and the same table kept, show where the
-         result comes from: without composition, capture coverage falls to 35.4%;
-         without resolution, to 45.5%; and without both, to 32.0%.            Each drop is
-         significant under McNemar’s exact test, which compares two systems on the
+         often than that list, and not significantly more often than the pattern list (32 to 45
+         against 30 of 372).
 
-         same commands (each p < 10−42), and silent loss stays at zero throughout
-         (Chapter 3, Sections 3.1–3.2).          This is the study’s principal technical
-         contribution and the subject of RQ1 through RQ5.
+         Ablations, which rerun the analysis with one part switched off and the same
+         table kept, show where the result comes from: without composition, capture
+         coverage falls to 35.4%; without resolution, to 45.5%; and without both, to
+
+         32.0%. Each drop is significant under McNemar’s exact test, which compares
+
+         two systems on the same commands (each p < 10−42), and silent loss stays at
+
+         zero throughout (Chapter 3, Sections 3.1–3.2). This is the study’s principal
+         technical contribution and the subject of RQ1 through RQ5.
          The two supporting artifacts are not research contributions; they are how the
-
 contribution is deployed and validated in use.
       1. SynapseOS, the experimental platform. A working conversational interface
          layer for a Linux desktop, implemented as a single binary running over an
@@ -344,12 +348,12 @@ contribution is deployed and validated in use.
          runs, and records a recovery journal from which the command can be undone.
       2. A validation of the analysis in use. A controlled study in which participants,
          from novice users to power users, operate the platform on matched tasks. It
+
          measures how the analysis’s decisions hold on commands people cause — silent
          loss, verified restoration, and needless confirmation in live use — and, as
          characterizations of the platform, task success, time, error rate, and workload
          against each participant’s own primary operating system.
          Because the research contribution is evaluated against a labeled command
-
 corpus, independently of any participant, the platform and its validation are reported
 separately from it, and a negative result on any of the three is reported as such.
 
@@ -388,7 +392,7 @@ separately from it, and a negative result on any of the three is reported as suc
         which are outside the scope of this study.
 
 ──────── p. 11 ────────
-                                                                                         11
+                                                                                        11
 
 
 1.7 Scope and Limitations of the Study
@@ -407,80 +411,85 @@ each contribute.
          The study also covers the implementation of the platform in which the analysis
 is deployed. SynapseOS is a conversational interface layer, the surface through which
 intent is expressed and results are returned, and it sits above the session layer3 of the
-Linux desktop4; it runs as an agentic layer over an ordinary desktop session rather than in
-place of one: the desktop shell, session manager, and application launcher continue to run
-and remain available to the user, as do the kernel and the core system utilities beneath
-them. The Linux kernel, the core system utilities, and the existing ecosystem of Linux
-applications are not modified by this study; SynapseOS interacts with the system by
-translating natural language into shell commands executed through the standard
+Linux desktop4. It runs as an agentic layer over an ordinary desktop session rather than
+in place of one, so the desktop shell, session manager, and application launcher continue
+to run and remain available to the user, as do the kernel and the core system utilities
+beneath them. The Linux kernel, the core system utilities, and the existing ecosystem of
+Linux applications are not modified by this study. SynapseOS interacts with the system
+by translating natural language into shell commands executed through the standard
 command-line toolchain. The validation study recruits participants spanning novice
 
 computer users to power users for a controlled study on the platform, on cross-
 application desktop workflows that include shell operations, file management, and tasks
 representable in the OSWorld benchmark task suite [50], and it is bounded by the
 duration of the thesis project.
-         The following limitations are acknowledged, those of the analysis first. First,
-the recoverability analysis treats anything it cannot determine as unrecoverable, and so
-protects such commands only by asking first; code run by an interpreter, programs it does
+         The following limitations are acknowledged, those of the analysis first.
 
 ──────── p. 12 ────────
-                                                                                            12
+                                                                                          12
 
 
-not model, and variables with no value are of this kind. Of the 325 file-destroying
-commands in the corpus, 34 (10.5%) are protected only this way (Chapter 3,
-Section 3.1(d), lists them by cause). Second, some of what the analysis relies on rests on
-weaker evidence or on assumptions.         Its model of package and service changes is
+         First, the recoverability analysis treats anything it cannot determine as
+unrecoverable, and so protects such commands only by asking first; code run by an
+interpreter, programs it does not model, and variables with no value are of this kind. Of
+the 325 file-destroying commands in the corpus, 34 (10.5%) are protected only this way
 
-checked by unit tests rather than by execution, since no command in the corpus changes
-installed packages or running services under observation (Chapter 3, Section 3.1(e)). Its
-per-command rules are a hand-written enumeration, which its composition builds on
-rather than replaces. It resolves a command’s targets shortly before the command runs,
-so a file changed by another process in the interval is captured as it was when resolved.
-Undo restored 630 of the 631 commands executed in the recovery check, the one failure
-being reported in Chapter 3; and testing after the evaluation found seven defects in the
-analysis and one in its undo, all fixed and none triggered by any command in the corpus,
-so that re-running it changed no result (Chapter 3, Section 3.1(d)). Third, the corpus
-bounds what the evaluation shows.         It consists of human-written commands from
-NL2Bash, templates written by the same team that wrote the analysis’s rule table and the
-pattern-list baseline, and commands whose effects lie outside the filesystem. Each label
-describes what a command did on its fixture, the files and directories prepared for it to
-run on, not on every possible filesystem; and the labels of the 80 external commands, a
+(Chapter 3, Section 3.1(d), lists them by cause).
+         Second, some of what the analysis relies on rests on weaker evidence or on
+assumptions. Its model of package and service changes is checked by unit tests rather
+than by execution, since no command in the corpus changes installed packages or
+running services under observation (Chapter 3, Section 3.1(e)). Its per-command rules
+are a hand-written enumeration, which its composition builds on rather than replaces. It
+resolves a command’s targets shortly before the command runs, so a file changed by
+another process in the interval is captured as it was when resolved. Undo restored 630 of
+the 631 commands executed in the recovery check, the one failure being reported in
+Chapter 3; and testing after the evaluation found seven defects in the analysis and one in
+its undo, all fixed and none triggered by any command in the corpus, so that re-running it
+changed no result (Chapter 3, Section 3.1(d)).
+         Third, the corpus bounds what the evaluation shows. It consists of human-
+written commands from NL2Bash, templates written by the same team that wrote the
 
-fifth of the 405 behind the silent-loss result, are assigned from a table rather than
-observed, so they are weaker evidence than the 697 observed in the sandbox. The corpus
-was also written by people, not by the model. A smaller partition of commands the
-deployed model wrote pointed the same way, but there the analysis let one loss through,
-on a command that partition’s own labeling rule mislabeled, and its advantage in capture
-coverage over the pattern list was not significant; that result rests on 19 losses (Chapter 3,
-Section 3.1(d)).     These threats and their mitigations are stated in Chapter 3,
-Section 3.1(e).    Fourth, the recovery plan is minimum-cost relative to the capture
-mechanisms and cost model stated in Chapter 3, Section 2.1(c), not over every
-conceivable way of restoring a system. Fifth, the analysis does not ask less often than the
-pattern list, which it does not significantly exceed (32 to 45 against 30 of 372), or than
+analysis’s rule table and the pattern-list baseline, and commands whose effects lie outside
+the filesystem. Each label describes what a command did on its fixture, the files and
+directories prepared for it to run on, not on every possible filesystem; and the labels of
+the 80 external commands, a fifth of the 405 behind the silent-loss result, are assigned
+from a table rather than observed, so they are weaker evidence than the 697 observed in
+the sandbox. The corpus was also written by people, not by the model. A smaller
+partition of commands the deployed model wrote pointed the same way, but there the
+analysis let one loss through, on a command that partition’s own labeling rule mislabeled,
+and its advantage in capture coverage over the pattern list was not significant; that result
+rests on 19 losses (Chapter 3, Section 3.1(d)). These threats and their mitigations are
+stated in Chapter 3, Section 3.1(e).
 
 ──────── p. 13 ────────
-                                                                                                            13
+                                                                                                      13
 
 
-the coding-agent checks (1 to 15); and the deployed gate, which also consults the pattern
-list, asks about 58 to 67 (16% to 18%), still well below the fail-closed list’s 27%. How
-often the user is asked also depends on policy: the platform offers two confirmation
-policies over the analysis’s verdict, a strict policy, the default, which asks before every
-command that is not plainly recoverable, and a capture policy, which asks only before
-unrecoverable commands (Chapter 3, Section 2.1(e)); which serves users better is a
-question the validation study informs rather than settles. Sixth, the platform commits to a
-locally hosted, open-weights, code-specialized small language model (Qwen2.5-Coder-
-3B-Instruct) rather than a hosted frontier model, prioritizing privacy and offline operation
-over the potentially higher capability of larger hosted alternatives5. This may limit how
-often a request is translated correctly, which bounds the validation study but not the
-analysis, since the analysis takes whatever command it is given. Seventh, the platform
-targets the Linux desktop, and the validation study’s findings may not generalize to
-Windows or macOS. The study is also bounded by the task coverage of the OSWorld
+          Fourth, the recovery plan is minimum-cost relative to the capture mechanisms
+and cost model stated in Chapter 3, Section 2.1(c), not over every conceivable way of
+restoring a system.
+          Fifth, the analysis does not ask less often than the pattern list, which it does not
+significantly exceed (32 to 45 against 30 of 372), or than the coding-agent checks (1 to
+15); and the deployed gate, which also consults the pattern list, asks about 58 to 67 (16%
+to 18%), still well below the fail-closed list’s 27%. How often the user is asked also
+depends on policy: the platform offers two confirmation policies over the analysis’s
+verdict, a strict policy, the default, which asks before every command that is not plainly
+recoverable, and a capture policy, which asks only before unrecoverable commands
+(Chapter 3, Section 2.1(e)); which serves users better is a question the validation study
+informs rather than settles.
+          Sixth, the platform commits to a locally hosted, open-weights, code-specialized
+small language model (Qwen2.5-Coder-3B-Instruct) rather than a hosted frontier model,
 
-benchmark and the custom task suite, and it excludes users with motor accessibility needs
-for ethics-review and recruitment reasons, so accessibility-specific configurations such as
-speech-instructed operation for atypical speech [14] are out of scope.
+prioritizing privacy and offline operation over the potentially higher capability of larger
+hosted alternatives5. This may limit how often a request is translated correctly, which
+bounds the validation study but not the analysis, since the analysis takes whatever
+command it is given.
+          Seventh, the platform targets the Linux desktop, and the validation study’s
+findings may not generalize to Windows or macOS. The study is also bounded by the
+task coverage of the OSWorld benchmark and the custom task suite, and it excludes users
+with motor accessibility needs for ethics-review and recruitment reasons, so accessibility-
+specific configurations such as speech-instructed operation for atypical speech [14] are
+out of scope.
 
 
 
@@ -489,22 +498,22 @@ Notes
         1. Foundation models are large neural networks trained on broad, general-purpose data and
            adaptable to many tasks. Multimodal variants accept multiple input types — typically text and
            images — enabling the model to interpret visual interfaces and screenshots alongside natural
-           language.
-        2. Computer-using agents are AI systems that interact with a computer’s graphical environment —
-           clicking, typing, reading the screen — to complete tasks on behalf of a user. Unlike shell-level
-           automation, they operate through the same visual interface a human would use.
-        3. The session layer (or simply, the session) is the software the user directly interacts with
-           immediately after login — the desktop shell, window manager, session manager, and application
-           launcher on a graphical system, or the login shell on a text terminal. It is distinct from the
-           userland (or user space): the core system libraries and command-line tools (e.g., glibc, coreutils,
-           bash, apt) that run outside the kernel and that the session layer itself depends on and invokes.
-           SynapseOS sits above the session layer and does not replace it; the underlying userland is
-           unchanged.
 
 ──────── p. 14 ────────
-                                                                                                  14
+                                                                                                    14
 
 
+  language.
+2. Computer-using agents are AI systems that interact with a computer’s graphical environment —
+   clicking, typing, reading the screen — to complete tasks on behalf of a user. Unlike shell-level
+   automation, they operate through the same visual interface a human would use.
+3. The session layer (or simply, the session) is the software the user directly interacts with
+   immediately after login — the desktop shell, window manager, session manager, and application
+   launcher on a graphical system, or the login shell on a text terminal. It is distinct from the
+   userland (or user space): the core system libraries and command-line tools (e.g., glibc, coreutils,
+   bash, apt) that run outside the kernel and that the session layer itself depends on and invokes.
+   SynapseOS sits above the session layer and does not replace it; the underlying userland is
+   unchanged.
 4. A Linux session manager is the program that starts after user login and establishes the graphical
    environment — launching the window manager, desktop shell, and background services.
    SynapseOS does not replace this component: it launches over the session that the component
