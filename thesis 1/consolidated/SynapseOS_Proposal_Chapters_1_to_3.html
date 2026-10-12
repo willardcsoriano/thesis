@@ -374,11 +374,11 @@
   <p class="toc-entry level-2"><a href="#sec-conceptual-framework">Conceptual Framework</a><span class="toc-page">49</span></p>
   <p class="toc-entry level-2"><a href="#sec-system-env">System Environment Specifications</a><span class="toc-page">51</span></p>
   <p class="toc-entry level-2"><a href="#sec1">Section 1: Dataset</a><span class="toc-page">54</span></p>
-  <p class="toc-entry level-2"><a href="#sec2">Section 2: Procedure / Experiment</a><span class="toc-page">65</span></p>
-  <p class="toc-entry level-2"><a href="#sec3">Section 3: System Testing</a><span class="toc-page">82</span></p>
+  <p class="toc-entry level-2"><a href="#sec2">Section 2: Procedure / Experiment</a><span class="toc-page">66</span></p>
+  <p class="toc-entry level-2"><a href="#sec3">Section 3: System Testing</a><span class="toc-page">83</span></p>
 
-  <p class="toc-entry" style="font-weight: bold; margin-top: 0.8em;"><a href="#sec-master-references">REFERENCES</a><span class="toc-page">104</span></p>
-  <p class="toc-entry" style="font-weight: bold; margin-top: 0.8em;"><a href="#sec-appendices">APPENDICES</a><span class="toc-page">111</span></p>
+  <p class="toc-entry" style="font-weight: bold; margin-top: 0.8em;"><a href="#sec-master-references">REFERENCES</a><span class="toc-page">105</span></p>
+  <p class="toc-entry" style="font-weight: bold; margin-top: 0.8em;"><a href="#sec-appendices">APPENDICES</a><span class="toc-page">112</span></p>
 </div>
 
 <div class="toc-block" id="list-of-tables" style="page-break-before: always;">
@@ -388,11 +388,11 @@
   <p class="toc-entry"><a href="#table-2-1">Table 2.2: Comparative analysis of surveyed systems along the four-layer pipeline</a><span class="toc-page">37</span></p>
   <p class="toc-entry"><a href="#table-3-1">Table 3.1: Study evaluation machines</a><span class="toc-page">52</span></p>
   <p class="toc-entry"><a href="#table-3-2">Table 3.2: SynapseOS minimum deployment requirements</a><span class="toc-page">52</span></p>
-  <p class="toc-entry"><a href="#table-3-3">Table 3.3: Metrics for the recoverability algorithm, and what each is for</a><span class="toc-page">84</span></p>
-  <p class="toc-entry"><a href="#table-3-4">Table 3.4: Paired comparisons of the effect analysis against each list on the held-out corpus, with Holm-corrected significance</a><span class="toc-page">89</span></p>
-  <p class="toc-entry"><a href="#table-3-5">Table 3.5: Composition and resolution ablation — the full analysis against the same rule table with composition, resolution, or both disabled</a><span class="toc-page">94</span></p>
-  <p class="toc-entry"><a href="#appendix-c">Table C.1: Custom cross-platform task suite &mdash; core tasks</a><span class="toc-page">114</span></p>
-  <p class="toc-entry"><a href="#appendix-c">Table C.2: Boundary tasks &mdash; outside shell expressibility</a><span class="toc-page">116</span></p>
+  <p class="toc-entry"><a href="#table-3-3">Table 3.3: Metrics for the recoverability algorithm, and what each is for</a><span class="toc-page">85</span></p>
+  <p class="toc-entry"><a href="#table-3-4">Table 3.4: Paired comparisons of the effect analysis against each list on the held-out corpus, with Holm-corrected significance</a><span class="toc-page">90</span></p>
+  <p class="toc-entry"><a href="#table-3-5">Table 3.5: Composition and resolution ablation — the full analysis against the same rule table with composition, resolution, or both disabled</a><span class="toc-page">95</span></p>
+  <p class="toc-entry"><a href="#appendix-c">Table C.1: Custom cross-platform task suite &mdash; core tasks</a><span class="toc-page">115</span></p>
+  <p class="toc-entry"><a href="#appendix-c">Table C.2: Boundary tasks &mdash; outside shell expressibility</a><span class="toc-page">117</span></p>
 </div>
 
 <div class="toc-block" id="list-of-figures">
@@ -641,13 +641,13 @@
 
 <p>The gap these guards share is the one this study&rsquo;s algorithmic contribution addresses.&nbsp; Every shipped guard surveyed decides by <em>permission</em>: the command is matched against an enumerated set of patterns judged dangerous, and is then allowed, refused, or escalated to the user, through allow-and-deny lists over command prefixes.&nbsp; NaSh [13] goes further as a proposal, adding summaries of what a command would affect and selective undo to its guardrails, but leaves the mechanisms for both open.&nbsp; A permission model answers whether a command may run.&nbsp; It does not answer whether, having run, the command can be undone — and those are different questions with different answers.&nbsp; Refusing a command protects a user only until they approve it, which for any system that must let work proceed is most of the time.</p>
 
-<p>The distinction matters because enumeration does not compose.&nbsp; A pattern list matches a command in isolation, whereas a generated line routinely chains several operations whose recovery requirements differ — a removal, a version-control reset, and an in-place edit may appear in one invocation joined by <code>&amp;&amp;</code>, with redirects and command substitution altering what each actually touches.&nbsp; No enumeration of command prefixes expresses that, and extending the list does not converge: each newly named tool leaves the next one unnamed.&nbsp; Determining recoverability over a composed command, and computing the minimal information needed to reverse it, is the open problem this study takes up (RQ1&ndash;RQ3), and it is what separates the present work from the guardrail designs surveyed above.&nbsp; The comparison that matters is not only against an enumerated list of dangerous commands.&nbsp; A list can be turned around so that it asks before every command it does not recognize as read-only, which removes the first weakness above at the cost of asking about everything unfamiliar; that fail-closed list is the strongest simple baseline, and the study therefore claims what the analysis adds to it &mdash; seeing through wrappers, resolving run-time targets, and capturing exactly what would be lost &mdash; and not the verdict alone.</p>
+<p>The distinction matters because enumeration does not compose.&nbsp; A pattern list matches a command in isolation, whereas a generated line routinely chains several operations whose recovery requirements differ — a removal, a version-control reset, and an in-place edit may appear in one invocation joined by <code>&amp;&amp;</code>, with redirects and command substitution altering what each actually touches.&nbsp; No enumeration of command prefixes expresses that, and extending the list does not converge: each newly named tool leaves the next one unnamed.&nbsp; Determining recoverability over a composed command, and computing the minimal information needed to reverse it, is the open problem this study takes up (RQ1&ndash;RQ3), and it is what separates the present work from the guardrail designs surveyed above.&nbsp; The comparison that matters is not only against an enumerated list of dangerous commands.&nbsp; A list can be turned around so that it asks before every command it does not recognize as read-only, which removes the first weakness above at the cost of asking about everything unfamiliar; that fail-closed list is the strongest simple baseline, and the study therefore claims what the analysis adds to it &mdash; capturing what would be lost so that undo restores it, and asking far less often, both of which composition and resolution make possible &mdash; and not the verdict alone.</p>
 
 <p>Risk in agents that execute tools has also been studied by evaluation rather than by guarding.&nbsp; ToolEmu emulates tool execution with a language model so that the failures of language-model agents, including destructive actions, can be found before the agents are deployed [38].&nbsp; It measures how risky an agent is across many cases; it does not protect a user from the particular command an agent is about to run.</p>
 
 <h3 class="italic">Static analysis of shell programs</h3>
 
-<p class="no-indent">Static analysis of shell scripts specifically is comparatively little studied, and the existing work targets properties adjacent to recoverability rather than recoverability itself.&nbsp; ABash [28] performs abstract interpretation over bash&rsquo;s variable-expansion semantics to catch common expansion bugs and includes taint tracking, but is not concerned with what a script&rsquo;s commands would do to the filesystem if executed correctly.&nbsp; Smoosh [12] gives the POSIX shell a mechanized, executable small-step operational semantics, validated against other shells' conformance test suites — exactly the kind of ground-truth semantics a static effect analysis would need to be checked against — but stops at defining that semantics rather than analyzing programs written in it.&nbsp; Closest of the three is CoLiS [2], which applies symbolic execution to the more than twenty-seven thousand POSIX-shell maintainer scripts in the Debian package archive to find violations of the properties Debian policy requires of these scripts, which run with root privileges during install, upgrade, and removal; among those properties is <em>idempotence</em>, that running a script a second time causes no further harm.&nbsp; Idempotence and recoverability are related but distinct: a script can be idempotent while still being destructive on its first run — <em>rm -rf /var/cache/pkg</em> is idempotent, since running it twice does no more damage than once, and unrecoverable, since the first run already destroyed what a recovery would need — and a command can be recoverable without being idempotent, if each run produces a new, independently-reversible effect.&nbsp; CoLiS is therefore the nearest prior application of static effect reasoning to shell scripts specifically, and it stops short of the present study&rsquo;s question for exactly this reason: verifying that re-execution is safe does not determine whether the first execution can be undone.&nbsp; No work identified in this review derives a recoverability verdict for a shell command from its statically-computed effects; that is the specific gap the present study&rsquo;s algorithmic contribution fills.</p>
+<p class="no-indent">Static analysis of shell scripts specifically is comparatively little studied, and the existing work targets properties adjacent to recoverability rather than recoverability itself.&nbsp; ABash [28] performs abstract interpretation over bash&rsquo;s variable-expansion semantics to catch common expansion bugs and includes taint tracking, but is not concerned with what a script&rsquo;s commands would do to the filesystem if executed correctly.&nbsp; Smoosh [12] gives the POSIX shell a mechanized, executable small-step operational semantics, validated against other shells' conformance test suites — exactly the kind of ground-truth semantics a static effect analysis would need to be checked against — but stops at defining that semantics rather than analyzing programs written in it.&nbsp; Closest of the three is CoLiS [2], which applies symbolic execution to the more than twenty-seven thousand POSIX-shell maintainer scripts in the Debian package archive to find violations of the properties Debian policy requires of these scripts, which run with root privileges during install, upgrade, and removal; among those properties is <em>idempotence</em>, that running a script a second time causes no further harm.&nbsp; Idempotence and recoverability are related but distinct: a script can be idempotent while still being destructive on its first run — <em>rm -rf /var/cache/pkg</em> is idempotent, since running it twice does no more damage than once, and destructive: nothing restores it unless what it removes was captured before the first run — and a command can be recoverable without being idempotent, if each run produces a new, independently-reversible effect.&nbsp; CoLiS is therefore the nearest prior application of static effect reasoning to shell scripts specifically, and it stops short of the present study&rsquo;s question for exactly this reason: verifying that re-execution is safe does not determine whether the first execution can be undone.&nbsp; No work identified in this review derives a recoverability verdict for a shell command from its statically-computed effects; that is the specific gap the present study&rsquo;s algorithmic contribution fills.</p>
 
 <h3 class="italic">Recovery after the fact</h3>
 
@@ -1051,7 +1051,7 @@
 
 <p class="no-indent">The corpus is generated by a program, not assembled by hand, and is held as four partitions reported separately rather than pooled.&nbsp; The first is NL2Bash [24], which supplies human-written commands and is the generalization set: candidates are drawn at random from the dataset with a recorded seed, excluding any command used during development.&nbsp; The second is a set of parameterized command templates covering each shell composition operator &mdash; sequencing, conditional execution, pipelines, redirects, command substitution, loops, <code>find -exec</code>, <code>xargs</code>, <code>sh -c</code> and other interpreters, and wrappers such as <code>sudo</code> and <code>env</code> &mdash; which exists because naturally occurring corpora under-represent compound commands, and compound commands are where the algorithm&rsquo;s contribution lies.&nbsp; The third is a set of commands whose effect lies outside the filesystem, described under (b) below.&nbsp; A fourth partition holds commands the deployed model itself wrote: the NL2Bash descriptions of a random sample of tasks are given to the prototype&rsquo;s model with the runtime&rsquo;s own prompt, and the command it returns is labeled by the same pipeline.&nbsp; It is reported apart, because a set drawn from this prototype&rsquo;s own output is biased toward the shapes it produces, and because the analysis is about model-generated commands, which NL2Bash&rsquo;s human-written ones are not.&nbsp; Commands logged during the validation study are scored the same way (Section&nbsp;3.5(e)).</p>
 
-<p>A second stratification is by the shape of the command, assigned by the generator from the command&rsquo;s syntax: a single named command; a chain; one whose targets are computed while it runs; a redirect; one whose effect hides inside an interpreter or a tool the rule table does not name; and one whose effect lies outside the filesystem.&nbsp; The claims under test concern the composed, run-time, and hidden shapes, and a corpus dominated by plain named commands would measure the strength of a list and not the contribution of the analysis, so results are reported per shape as well as in aggregate.</p>
+<p>A second stratification is by the shape of the command, assigned by the generator from the command&rsquo;s syntax: a single named command; a chain; one whose targets are computed while it runs; a redirect; one whose effect hides inside a shell, interpreter, or wrapper it names, such as <em>sh -c</em>, <em>awk</em>, or <em>env</em>; and one whose effect lies outside the filesystem.&nbsp; A command that fits several is given the first that applies, in the order hidden, run-time, chain, redirect, single; and the shape follows the syntax alone, so a program the rule table does not model is classed by how it is written, not by why the analysis asks about it, which is why the 34 losses the analysis asked about are counted differently by cause and by shape in Section&nbsp;3.1(d).&nbsp; The claims under test concern the composed, run-time, and hidden shapes, and a corpus dominated by plain named commands would measure the strength of a list and not the contribution of the analysis, so results are reported per shape as well as in aggregate.</p>
 
 <h4>b) Ground Truth by Sandboxed Execution</h4>
 
@@ -1179,29 +1179,37 @@
          overlay V of paths created or removed by earlier parts of c;
          V ⊕ E is V updated with the creations, removals, and moves in E;
          doubt(V) makes V's removals, and its creations over removed
-         paths, possible only, so a later write there is still captured
+         paths, possible only, so a later write there is still captured;
+         JOIN(S₁, …) makes unknown what the scopes disagree on
+<b>Returns:</b> EFFECTS gives (E, S′, V′): the effects, then the scope and
+         overlay after node; a line giving only E means (E, S, V ⊕ E)
 <b>Marks:</b>   [C] is off in the composition ablation, which returns {UNKNOWN};
          [R] is off in the resolution ablation, where RESOLVE returns ⊥
 
 <b>function</b> EFFECTS(node, S, V)
   <b>if</b> node = (A &amp;&amp; B) <b>then</b>                       // B runs only if A did
-    E<sub>A</sub> ← EFFECTS(A, S, V)
-    <b>return</b> E<sub>A</sub> ∪ EFFECTS(B, S after A, V ⊕ E<sub>A</sub>)
+    (E<sub>A</sub>, S<sub>A</sub>, V<sub>A</sub>) ← EFFECTS(A, S, V)
+    (E<sub>B</sub>, S<sub>B</sub>, V<sub>B</sub>) ← EFFECTS(B, S<sub>A</sub>, V<sub>A</sub>)
+    <b>return</b> (E<sub>A</sub> ∪ E<sub>B</sub>, JOIN(S<sub>A</sub>, S<sub>B</sub>), V<sub>B</sub>)
   <b>else if</b> node = (A ; B), (A || B), or (A | B) <b>then</b>
-    E<sub>A</sub> ← EFFECTS(A, S, V)            // B may run although A failed
-    S′ ← S after A (for |, S), its directory unknown if A ran cd
-    <b>return</b> E<sub>A</sub> ∪ EFFECTS(B, S′, doubt(V ⊕ E<sub>A</sub>))
+    (E<sub>A</sub>, S<sub>A</sub>, V<sub>A</sub>) ← EFFECTS(A, S, V)    // B may run although A failed
+    S′ ← S<sub>A</sub> (for |, S), its directory unknown if A ran cd
+    (E<sub>B</sub>, S<sub>B</sub>, V<sub>B</sub>) ← EFFECTS(B, S′, doubt(V<sub>A</sub>))
+    <b>return</b> (E<sub>A</sub> ∪ E<sub>B</sub>, S<sub>B</sub> (for ||, JOIN(S<sub>A</sub>, S<sub>B</sub>); for |, S), doubt(V<sub>B</sub>))
   <b>else if</b> node = if, case, or while <b>then</b>
-    E ← the condition's effects ∪ every branch's or body's effects,
-        each analyzed from S
-    S ← S with a variable or directory on which the paths that may
-        have run disagree made unknown; V ← doubt(V ⊕ E)
-    <b>return</b> E                        // a branch may not have run
+    analyze the condition from (S, V), then each branch or body from
+    the state the condition leaves, a while body once under doubt
+    <b>return</b> (the union of their effects E, JOIN of their scopes and
+            S, doubt(V ⊕ E))                   // a branch may not have run
   <b>else if</b> node has a redirect target t <b>then</b>
-    <b>return</b> EFFECTS(strip_redirect(node), S, V) ∪ {write-or-create(t)}
+    (E, S′, V′) ← EFFECTS(strip_redirect(node), S, V)
+    <b>return</b> (E ∪ {write-or-create(t)}, S′, V′ ⊕ {write-or-create(t)})
   <b>else if</b> node = (for x in W; do body; done) <b>then</b>           // [C]
-    <b>return</b> the union, over w in EXPAND(W) in order, of
-           EFFECTS(body, S[x := w], V), S and V carried between items
+    E ← ∅
+    <b>for each</b> w in EXPAND(W), in order <b>do</b>   // passes share the state
+      (E<sub>w</sub>, S, V) ← EFFECTS(body, S[x := w], V)
+      E ← E ∪ E<sub>w</sub>; V ← doubt(V)     // a pass may fail part-way
+    <b>return</b> (E, S, V)
   <b>else if</b> node runs another command: sh -c s, eval, a wrapper
        such as sudo, find, or xargs <b>then</b>                       // [C]
     <b>if</b> its targets are known only at run time <b>then</b>
@@ -1216,12 +1224,13 @@
   <b>else</b>
     // a simple command; argument-aware; no rule gives {UNKNOWN}
     <b>if</b> S's directory is unknown <b>then return</b> {UNRESOLVED}
-    <b>return</b> RULE(name, args, S, V)
+    <b>return</b> RULE(name, args, S, V)       // cd, assignments update S
   <b>end if</b>
 <b>end function</b>
 
 <b>function</b> RESOLVE(node, S, V)
   // learns run-time targets, changing nothing
+  <b>if</b> no read-only sandbox is available <b>then return</b> ⊥
   d ← DRYRUN(node)
   // find with actions replaced by prints; xargs' producer;
   // git clean -n, tar -t, rsync -n; command substitutions
@@ -1301,7 +1310,7 @@
 <p class="no-indent">The following validation procedures are applied to ensure the reliability and accuracy of the system and the study instruments:</p>
 <ul>
   <li><strong>Pilot study:</strong> conducted with five participants prior to the main study to validate the task set difficulty, the questionnaire instruments, and the session procedure; findings from the pilot study are used to revise instruments and procedures before the main data collection begins</li>
-  <li><strong>Intent parsing accuracy:</strong> evaluated using an execution-based scoring methodology [47] — each generated command is executed in a controlled environment and its resulting system state compared against a human-annotated expected outcome for each task utterance, rather than syntax-level string matching, with ambiguous cases resolved through LLM-assisted functional equivalence assessment at 95% confidence; accuracy is computed as the proportion of first-attempt matches</li>
+  <li><strong>Intent parsing accuracy:</strong> evaluated using an execution-based scoring methodology [47] — each generated command is executed in a controlled environment and its resulting system state compared against a human-annotated expected outcome for each task utterance, rather than syntax-level string matching, with ambiguous cases, where the resulting state differs from the expected one only in ways the task did not ask about, decided by a written equivalence rubric fixed before data collection and applied by two members of the team independently, disagreements settled by discussion and the number of cases decided this way reported; accuracy is computed as the proportion of first-attempt matches</li>
   <li><strong>Confirmation policy effectiveness:</strong> evaluated by verifying that every command in the task set that the analysis judges unrecoverable, and under the strict policy every command it judges recoverable only with capture, triggers the confirmation prompt, and that no such command executes without user approval</li>
   <li><strong>Undo success rate:</strong> evaluated by executing a representative set of reversible operations and verifying that the undo log correctly restores the prior system state in each case</li>
 </ul>
@@ -1497,7 +1506,7 @@
 
 <p class="no-indent">The analysis-in-use measures of Section&nbsp;3.5(e) are reported descriptively, as proportions with Wilson 95% intervals over the commands executed, and set beside the corpus results of Section&nbsp;3.1; they are not tested for significance, because the number and kind of commands participants cause cannot be fixed in advance.&nbsp; Quantitative analysis of the platform measures proceeds in three stages.&nbsp; First, descriptive statistics — means, standard deviations, and 95% confidence intervals — are computed for all platform measures (task completion time, error rate, SUS score, NASA-TLX score) per condition and per participant group.&nbsp; Second, the Shapiro-Wilk test is applied to assess normality of each distribution before selecting the appropriate inferential test: the paired-samples t-test for normally distributed data, or the Wilcoxon signed-rank test for non-normally distributed data.&nbsp; Third, effect size is computed for all primary comparisons regardless of statistical significance: Cohen&rsquo;s <em>d</em> where the paired-samples t-test is applied, and the matched-pairs rank-biserial correlation where the Wilcoxon signed-rank test is applied.</p>
 
-<p>Subgroup analysis is conducted separately for the novice and power user groups to determine whether the effect of the interface condition differs across populations.&nbsp; The interaction between interface condition and user group is examined to assess whether SynapseOS produces differential effects depending on technical background.&nbsp; Because condition order and task form are crossed between subjects (Section&nbsp;1.2(d)), each platform measure is modeled with condition, group, order, and task form as fixed effects and crossed random intercepts for participant and task: error, which is binary per task, by a logistic mixed model; completion time by a linear mixed model on its logarithm; and the SUS and NASA-TLX scores, which are taken once per condition, by a linear mixed model with a random intercept for participant, from which the condition &times; group and condition &times; order interactions are read.&nbsp; The condition term of each of these models is the confirmatory test for its measure; the paired tests above are sensitivity checks, and the power analysis, computed for a paired <em>t</em>-test, approximates the power of the condition term.</p>
+<p>Subgroup analysis is conducted separately for the novice and power user groups to determine whether the effect of the interface condition differs across populations.&nbsp; The interaction between interface condition and user group is examined to assess whether SynapseOS produces differential effects depending on technical background.&nbsp; Because condition order and task form are crossed between subjects (Section&nbsp;1.2(d)), each platform measure is modeled with condition, group, order, and task form as fixed effects and crossed random intercepts for participant and task: error, which is binary per task, by a logistic mixed model; completion time by a linear mixed model on its logarithm; and the SUS and NASA-TLX scores, which are taken once per condition, by a linear mixed model with a random intercept for participant, from which the condition &times; group and condition &times; order interactions are read.&nbsp; The condition term of each of these models is the confirmatory test for its measure, with Holm&rsquo;s correction across the four; the paired tests above are sensitivity checks, and the power analysis, computed for a paired <em>t</em>-test, approximates the power of the condition term.</p>
 
 <p>The benchmark task success rate of Section&nbsp;3.5(f) is reported descriptively, as a proportion with its Wilson interval, as are the telemetry measures of Section&nbsp;1.1(d) that are not otherwise analyzed (command latency and conversational turns per task), as means with confidence intervals per participant group.</p>
 

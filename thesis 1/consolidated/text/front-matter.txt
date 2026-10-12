@@ -106,12 +106,12 @@ Chapter 3: METHODOLOGY                                           48
     System Environment Specifications    51
 
     Section 1: Dataset                   54
-    Section 2: Procedure / Experiment    65
-    Section 3: System Testing            82
+    Section 2: Procedure / Experiment    66
+    Section 3: System Testing            83
 
-REFERENCES                              104
+REFERENCES                              105
 
-APPENDICES                              111
+APPENDICES                              112
 
 ──────── p. vi ────────
                                         LIST OF TABLES
@@ -125,14 +125,14 @@ Table 2.2: Comparative analysis of surveyed systems along the four-layer pipelin
 Table 3.1: Study evaluation machines                                                     52
 Table 3.2: SynapseOS minimum deployment requirements                                     52
 
-Table 3.3: Metrics for the recoverability algorithm, and what each is for                84
-Table 3.4: Paired comparisons of the effect analysis against each list on the held-out   89
+Table 3.3: Metrics for the recoverability algorithm, and what each is for                85
+Table 3.4: Paired comparisons of the effect analysis against each list on the held-out   90
 corpus, with Holm-corrected significance
-Table 3.5: Composition and resolution ablation — the full analysis against the same      94
+Table 3.5: Composition and resolution ablation — the full analysis against the same      95
 
 rule table with composition, resolution, or both disabled
-Table C.1: Custom cross-platform task suite — core tasks                                 114
-Table C.2: Boundary tasks — outside shell expressibility                                 116
+Table C.1: Custom cross-platform task suite — core tasks                                 115
+Table C.2: Boundary tasks — outside shell expressibility                                 117
 
 
 

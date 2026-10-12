@@ -562,10 +562,10 @@ list of dangerous commands. A list can be turned around so that it asks before e
 command it does not recognize as read-only, which removes the first weakness above at
 the cost of asking about everything unfamiliar; that fail-closed list is the strongest simple
 
-baseline, and the study therefore claims what the analysis adds to it — seeing through
-wrappers, resolving run-time targets, and capturing exactly what would be lost — and not
+baseline, and the study therefore claims what the analysis adds to it — capturing what
+would be lost so that undo restores it, and asking far less often, both of which
 
-the verdict alone.
+composition and resolution make possible — and not the verdict alone.
 
           Risk in agents that execute tools has also been studied by evaluation rather than
 by guarding. ToolEmu emulates tool execution with a language model so that the failures
@@ -608,10 +608,10 @@ idempotence, that running a script a second time causes no further harm. Idempot
 and recoverability are related but distinct: a script can be idempotent while still being
 destructive on its first run — rm -rf /var/cache/pkg is idempotent, since running it twice
 
-does no more damage than once, and unrecoverable, since the first run already destroyed
-what a recovery would need — and a command can be recoverable without being
+does no more damage than once, and destructive: nothing restores it unless what it
+removes was captured before the first run — and a command can be recoverable without
 
-idempotent, if each run produces a new, independently-reversible effect.        CoLiS is
+being idempotent, if each run produces a new, independently-reversible effect. CoLiS is
 
 therefore the nearest prior application of static effect reasoning to shell scripts
 specifically, and it stops short of the present study’s question for exactly this reason:

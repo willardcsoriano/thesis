@@ -1,13 +1,12 @@
 Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. Do not edit: change the HTML and rebuild.
 
-──────── p. 104 ────────
+──────── p. 105 ────────
                                 REFERENCES
 
 
 
 
 [1]   Alibaba Cloud. 2026. Alibaba Cloud Linux 4 Agentic Edition (ANOLISA):
-
       Product              overview.                Product             documentation.
 
       https://help.aliyun.com/en/alinux/agentic-os Accessed 12 October 2026.
@@ -19,13 +18,13 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
       Technology Transfer 24, 5 (2022), 717–733.
 
 [3]   V. Braun and V. Clarke. 2006. Using thematic analysis in psychology. Qualitative
-      Research in Psychology 3, 2 (2006), 77–101.
 
+      Research in Psychology 3, 2 (2006), 77–101.
 [4]   C. Bravo-Lillo, L. Cranor, S. Komanduri, S. Schechter, and M. Sleeper. 2014.
 
       Harder to Ignore? Revisiting Pop-Up Fatigue and Approaches to Prevent It. In
-      Proceedings of the Tenth Symposium on Usable Privacy and Security (SOUPS
 
+      Proceedings of the Tenth Symposium on Usable Privacy and Security (SOUPS
       2014).               USENIX                   Association,               105–111.
 
       https://www.usenix.org/conference/soups2014/proceedings/presentation/bravo-
@@ -37,8 +36,8 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
       (Eds.). Taylor & Francis, 189–194.
 
 [6]   A. B. Brown and D. A. Patterson. 2003. Undo for operators: Building an undoable
-      e-mail store. In Proceedings of the 2003 USENIX Annual Technical Conference.
 
+      e-mail store. In Proceedings of the 2003 USENIX Annual Technical Conference.
       USENIX Association. https://www.usenix.org/conference/2003-usenix-annual-
 
       technical-conference/undo-operators-building-undoable-e-mail-store
@@ -46,14 +45,13 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
 
 
 
-                                       104
+                                       105
 
-──────── p. 105 ────────
-                                                                                       105
+──────── p. 106 ────────
+                                                                                       106
 
 
 [7]    L. Clark, N. Pantidi, O. Cooney, P. R. Doyle, D. Garaialde, J. Edwards, B.
-
        Spillane, E. Gilmartin, C. Murad, C. Munteanu, V. Wade, and B. R. Cowan. 2019.
 
        What makes a good conversation? Challenges in designing truly conversational
@@ -65,13 +63,13 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
        static analysis of programs by construction or approximation of fixpoints. In
 
        Conference Record of the Sixth Annual ACM SIGPLAN-SIGACT Symposium on
-       Principles of Programming Languages (POPL ’77). ACM, 238–252.
 
+       Principles of Programming Languages (POPL ’77). ACM, 238–252.
 [9]    J. W. Creswell and V. L. Plano Clark. 2018. Designing and Conducting Mixed
 
        Methods Research (3rd ed.). SAGE Publications.
-[10]   X. Deng, Y. Gu, B. Zheng, S. Chen, S. Stevens, B. Wang, H. Sun, and Y. Su.
 
+[10]   X. Deng, Y. Gu, B. Zheng, S. Chen, S. Stevens, B. Wang, H. Sun, and Y. Su.
        2023. Mind2Web: Towards a Generalist Agent for the Web. In Advances in
 
        Neural Information Processing Systems 36 (NeurIPS 2023).
@@ -83,8 +81,8 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
 [12]   M. Greenberg and A. J. Blatt. 2020. Executable formal semantics for the POSIX
 
        shell. Proceedings of the ACM on Programming Languages 4, POPL, Article 43
-       (2020).
 
+       (2020).
 [13]   B. R. Gyawali, S. Achalla, K. Kallas, and S. Kumar. 2025. NaSh: Guardrails for
 
        an LLM-Powered Natural Language Shell. arXiv:2506.13028
@@ -99,21 +97,21 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
 
        Holland, 139–183.
 
-──────── p. 106 ────────
-                                                                                       106
+──────── p. 107 ────────
+                                                                                       107
 
 
 [16]   W. Hong, W. Wang, Q. Lv, J. Xu, W. Yu, J. Ji, Y. Wang, Z. Wang, Y. Dong, M.
        Ding, and J. Tang. 2024. CogAgent: A Visual Language Model for GUI Agents.
 
        In Proceedings of CVPR 2024.
-[17]   Z. Hui, Y. Li, D. Zhao, T. Chen, C. Banbury, and K. Koishida. 2025. WinClick:
 
+[17]   Z. Hui, Y. Li, D. Zhao, T. Chen, C. Banbury, and K. Koishida. 2025. WinClick:
        GUI Grounding with Multimodal Large Language Models. arXiv:2503.04730
 
 [18]   E. L. Hutchins, J. D. Hollan, and D. A. Norman. 1985. Direct manipulation
-       interfaces. Human–Computer Interaction 1, 4 (1985), 311–338.
 
+       interfaces. Human–Computer Interaction 1, 4 (1985), 311–338.
 [19]   J. Jacobs, J. Lapon, and V. Naessens. 2026. Local LLMs for NL2Bash: A Large-
 
        Scale Open-Source Model Evaluation for Bash Command Generation. In NDSS
@@ -125,8 +123,8 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
        Programming Languages (POPL ’91). ACM, 303–310.
 
 [21]   kenryu42. 2026. cc-safety-net. https://github.com/kenryu42/cc-safety-net Version
-       2.6.1.
 
+       2.6.1.
 [22]   E. Lamprou, T. Zhu, D. Jin, G. Ntousakis, G. Liargkovas, C. Eng, K. Kallas, M.
 
        Greenberg, and N. Vasilakis. 2026. Controlling opaque-component effects with
@@ -138,22 +136,22 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
 [23]   Y. Li, J. He, X. Zhou, Y. Zhang, and J. Baldridge. 2020. Mapping Natural
 
        Language Instructions to Mobile UI Action Sequences. In Proceedings of ACL
-       2020. 8198–8210.
 
+       2020. 8198–8210.
 [24]   X. V. Lin, C. Wang, L. Zettlemoyer, and M. D. Ernst. 2018. NL2Bash: A corpus
 
        and semantic parser for natural language interface to the Linux operating system.
-       In Proceedings of the Eleventh International Conference on Language Resources
 
+       In Proceedings of the Eleventh International Conference on Language Resources
        and Evaluation (LREC 2018). European Language Resources Association.
 
-──────── p. 107 ────────
-                                                                                      107
+──────── p. 108 ────────
+                                                                                      108
 
 
 [25]   R. Liu, T. Zhe, D. Wang, Z. Yao, K. Liu, Y. Fu, H. Liu, and J. Pei. 2026. AgentOS:
-       From Application Silos to a Natural Language-Driven Data Ecosystem.
 
+       From Application Silos to a Natural Language-Driven Data Ecosystem.
        arXiv:2603.08938
 
 [26]   J. Lu, Z. Zhang, F. Yang, J. Zhang, L. Wang, C. Du, Q. Lin, S. Rajmohan, D.
@@ -165,8 +163,8 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
        user expectation and experience of conversational agents. In Proceedings of the
 
        2016 CHI Conference on Human Factors in Computing Systems (CHI ’16). ACM,
-       5286–5297.
 
+       5286–5297.
 [28]   K. Mazurak and S. Zdancewic. 2007. ABASH: Finding bugs in bash scripts. In
 
        Proceedings of the 2007 Workshop on Programming Languages and Analysis for
@@ -178,13 +176,13 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
 [30]   R. Niu, J. Li, S. Wang, Y. Fu, X. Hu, X. Leng, H. Kong, Y. Chang, and Q. Wang.
 
        2024. ScreenAgent: A Vision Language Model-driven Computer Control Agent.
-       arXiv:2402.07945
 
+       arXiv:2402.07945
 [31]   D. A. Norman. 1986. Cognitive engineering. In User Centered System Design:
 
        New Perspectives on Human-Computer Interaction, D. A. Norman and S. W.
-       Draper (Eds.). Lawrence Erlbaum Associates, 31–61.
 
+       Draper (Eds.). Lawrence Erlbaum Associates, 31–61.
 [32]   OpenAI. 2026. Codex CLI. https://github.com/openai/codex Commit 1f4c473.
 
 [33]   A. Padmanabha, J. Yuan, J. Gupta, Z. Karachiwalla, C. Majidi, H. Admoni, and Z.
@@ -196,10 +194,11 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
 [34]   J. Park, P. Tang, S. Das, S. Appalaraju, K. Y. Singh, R. Manmatha, and S. Ghadar.
 
        2025. R-VLM: Region-aware Vision Language Model for Precise GUI
+
        Grounding. In Findings of the Association for Computational Linguistics: ACL
 
-──────── p. 108 ────────
-                                                                                       108
+──────── p. 109 ────────
+                                                                                       109
 
 
        2025. 9669–9685.
@@ -208,8 +207,8 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
        Operating system transactions. In Proceedings of the ACM SIGOPS 22nd
 
        Symposium on Operating Systems Principles (SOSP ’09). ACM, 161–176.
-[36]   C. Rawles, A. Li, D. Rodriguez, O. Riva, and T. Lillicrap. 2023. Android in the
 
+[36]   C. Rawles, A. Li, D. Rodriguez, O. Riva, and T. Lillicrap. 2023. Android in the
        Wild: A Large-Scale Dataset for Android Device Control. In Advances in Neural
 
        Information Processing Systems 36 (NeurIPS 2023).
@@ -221,13 +220,13 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
        and T. Hashimoto. 2024. Identifying the risks of LM agents with an LM-emulated
 
        sandbox. In Proceedings of ICLR 2024.
-[39]   D. S. Santry, M. J. Feeley, N. C. Hutchinson, A. C. Veitch, R. W. Carton, and J.
 
+[39]   D. S. Santry, M. J. Feeley, N. C. Hutchinson, A. C. Veitch, R. W. Carton, and J.
        Ofir. 1999. Deciding when to forget in the Elephant file system. In Proceedings of
 
        the Seventeenth ACM Symposium on Operating Systems Principles (SOSP ’99).
-       ACM, 110–123.
 
+       ACM, 110–123.
 [40]   J. Sauro and J. R. Lewis. 2016. Quantifying the User Experience: Practical
 
        Statistics for User Research (2nd ed.). Morgan Kaufmann.
@@ -239,17 +238,17 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
        (2000), 63–65.
 
 [43]   B. Shneiderman and P. Maes. 1997. Direct manipulation vs. interface agents.
-       interactions 4, 6 (1997), 42–61.
 
+       interactions 4, 6 (1997), 42–61.
 [44]   J.-P. Talpin and P. Jouvelot. 1994. The type and effect discipline. Information and
 
        Computation 111, 2 (1994), 245–296.
-[45]   H. G. W. van Dam. 2025. A Multimodal GUI Architecture for Interfacing with
 
+[45]   H. G. W. van Dam. 2025. A Multimodal GUI Architecture for Interfacing with
        LLM-Based Conversational Assistants. arXiv:2510.06223
 
-──────── p. 109 ────────
-                                                                                       109
+──────── p. 110 ────────
+                                                                                       110
 
 
 [46]   J. Wang, H. Xu, J. Ye, M. Yan, W. Shen, J. Zhang, F. Huang, and J. Sang. 2024.
@@ -263,13 +262,13 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
        arXiv:2502.06858
 
 [48]   J. Whiteside, S. Jones, P. S. Levy, and D. Wixon. 1985. User performance with
-       command, menu, and iconic interfaces. In Proceedings of the SIGCHI Conference
 
+       command, menu, and iconic interfaces. In Proceedings of the SIGCHI Conference
        on Human Factors in Computing Systems (CHI ’85). ACM, 185–191.
 
 [49]   R. Wilensky, D. N. Chin, M. Luria, J. Martin, J. Mayfield, and D. Wu. 1988. The
-       Berkeley Unix Consultant Project. Computational Linguistics 14, 4 (1988), 35–
 
+       Berkeley Unix Consultant Project. Computational Linguistics 14, 4 (1988), 35–
        84.
 
 [50]   T. Xie, D. Zhang, J. Chen, X. Li, S. Zhao, R. Cao, T. J. Hua, Z. Cheng, D. Shin, F.
@@ -281,13 +280,13 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
        37 (NeurIPS 2024).
 
 [51]   S. Yao, J. Zhao, D. Yu, N. Du, I. Shafran, K. Narasimhan, and Y. Cao. 2023.
-       ReAct: Synergizing Reasoning and Acting in Language Models. In Proceedings
 
+       ReAct: Synergizing Reasoning and Acting in Language Models. In Proceedings
        of ICLR 2023.
 
 [52]   M. Yuan, Z. Zhou, X. Xiong, et al. 2026. OSWorld 2.0: Benchmarking Computer
-       Use Agents on Long-Horizon Real-World Tasks. arXiv:2606.29537
 
+       Use Agents on Long-Horizon Real-World Tasks. arXiv:2606.29537
 [53]   C. Zhang, S. He, J. Qian, B. Li, L. Li, S. Qin, Y. Kang, M. Ma, G. Liu, Q. Lin, S.
 
        Rajmohan, D. Zhang, and Q. Zhang. 2024. Large Language Model-Brained GUI
@@ -300,20 +299,20 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
        S. Rajmohan, and D. Zhang. 2025. UFO2: The Desktop AgentOS.
        arXiv:2504.14603
 
-──────── p. 110 ────────
-                                                                                    110
+──────── p. 111 ────────
+                                                                                    111
 
 
 [55]   C. Zhang, Z. Yang, J. Liu, Y. Li, Y. Han, X. Chen, Z. Huang, B. Fu, and G. Yu.
 
        2023. AppAgent: Multimodal Agents as Smartphone Users. arXiv:2312.13771
-[56]   B. Zheng, B. Gou, J. Kil, H. Sun, and Y. Su. 2024. GPT-4V(ision) is a Generalist
 
+[56]   B. Zheng, B. Gou, J. Kil, H. Sun, and Y. Su. 2024. GPT-4V(ision) is a Generalist
        Web Agent, if Grounded. In Proceedings of ICML 2024.
 
 [57]   S. Zhou, F. F. Xu, H. Zhu, X. Zhou, R. Lo, A. Sridhar, X. Cheng, T. Ou, Y. Bisk,
-       D. Fried, U. Alon, and G. Neubig. 2024. WebArena: A Realistic Web
 
+       D. Fried, U. Alon, and G. Neubig. 2024. WebArena: A Realistic Web
        Environment for Building Autonomous Agents. In Proceedings of ICLR 2024.
 
 [58]   X. Zhou, S. Zhang, Y. Zhao, J. Wei, T. Song, A. Cohan, and C. Zhao. 2026. GUI
@@ -321,12 +320,12 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
 
        Use Agents. arXiv:2606.24551
 
-──────── p. 111 ────────
+──────── p. 112 ────────
                                          APPENDICES
 
          This section contains the study instruments administered to participants and the
-procedure governing their administration. Wording, difficulty calibration, and task-form
 
+procedure governing their administration. Wording, difficulty calibration, and task-form
 equivalence are validated during the pilot study described in Section 2.3 and revised
 
 before the main study begins; the instruments are reproduced here in the form submitted
@@ -337,13 +336,13 @@ for ethics review.
                                          APPENDIX A
 
                                 System Usability Scale (SUS)
-         Administered immediately after each condition, referring to the interface just
 
+         Administered immediately after each condition, referring to the interface just
 used. Items are the standard ten-item instrument of Brooke [5], with the word “system”
 
 replaced throughout by “interface” so that participants rate the interaction surface rather
-than the machine. Each item is answered on a five-point scale from 1 (strongly disagree)
 
+than the machine. Each item is answered on a five-point scale from 1 (strongly disagree)
 to 5 (strongly agree).
 
          Participant ID: ____________ Condition: □ SynapseOS            □ Own operating
@@ -367,8 +366,8 @@ system Date: ____________
   6      I thought there was too much inconsistency in this     □   □     □      □     □
          interface.
 
-──────── p. 112 ────────
-                                                                                           112
+──────── p. 113 ────────
+                                                                                           113
 
 
   #      Statement                                               1      2     3   4      5
@@ -385,8 +384,8 @@ system Date: ____________
 
 
         Scoring (not shown to participants). For odd-numbered items, subtract 1 from
-the response. For even-numbered items, subtract the response from 5. Sum the ten
 
+the response. For even-numbered items, subtract the response from 5. Sum the ten
 adjusted scores and multiply by 2.5, giving a value from 0 to 100. This value is not a
 
 percentage; interpretation follows Sauro and Lewis [40].
@@ -397,13 +396,13 @@ percentage; interpretation follows Sauro and Lewis [40].
                           NASA Task Load Index (NASA-TLX)
 
         Administered immediately after each condition, referring to the set of tasks just
-completed. Six subscales are rated on a twenty-one-point scale presented as a line
 
+completed. Six subscales are rated on a twenty-one-point scale presented as a line
 divided into equal intervals and scored 0 to 100 in steps of five. This study uses the
 
 unweighted variant (Raw TLX): the pairwise weighting procedure of the original
-instrument [15] is omitted, and the composite workload score is the arithmetic mean of
 
+instrument [15] is omitted, and the composite workload score is the arithmetic mean of
 the six subscale ratings. All six subscales, including Performance (anchored from Perfect
 
 to Failure), run from low to high workload, so no subscale is reverse-scored.
@@ -421,8 +420,8 @@ system Date: ____________
   Physical           How physically demanding           Very         ____         Very
   Demand             was the task?                      low                       high
 
-──────── p. 113 ────────
-                                                                                         113
+──────── p. 114 ────────
+                                                                                         114
 
 
   Subscale           Question                       Low         Rating (0–     High
@@ -448,13 +447,13 @@ system Date: ____________
 
 
                                       APPENDIX C
-                            Custom Cross-Platform Task Suite
 
+                            Custom Cross-Platform Task Suite
            The suite comprises sixteen tasks in two parts. Twelve core tasks span the four
 
 categories defined in Section 1.5 at three difficulty levels, and constitute the main
-platform comparison.      Four boundary tasks deliberately fall outside what a shell-
 
+platform comparison.      Four boundary tasks deliberately fall outside what a shell-
 mediated interface can express; they are administered and scored but reported separately
 
 from the main comparison, because their purpose is to characterize the capability
@@ -466,27 +465,27 @@ would make any favourable result difficult to defend.
            Every task exists in two parallel forms, matched on category, difficulty, and
 
 number of required steps, and differing only in target. No participant encounters the
-same form twice; form and condition order are crossed as described in Section 2.4. All
 
+same form twice; form and condition order are crossed as described in Section 2.4. All
 prompts are phrased as human goals in plain language, containing no shell syntax, no
 
 command names, and no interface-specific vocabulary, so that they are equally
-answerable through natural language on SynapseOS and through native tools on the
 
+answerable through natural language on SynapseOS and through native tools on the
 baseline machine.
 
-──────── p. 114 ────────
-                                                                                              114
+──────── p. 115 ────────
+                                                                                              115
 
 
          Tasks T7–T9 require identical provisioning on all study machines — the same
-designated applications present or absent, and the two test applications (SampleApp,
 
+designated applications present or absent, and the two test applications (SampleApp,
 DemoTool) installed — so that the prompt means the same thing under both conditions
 
 and on all three baseline operating systems; this provisioning is part of the facilitator
-checklist in Appendix G. Task T9 is classified irreversible and is included specifically to
 
+checklist in Appendix G. Task T9 is classified irreversible and is included specifically to
 exercise the confirmation gate; T11 mutates file content and is included to exercise the
 
 undo journal. Difficulty is assigned by the number of distinct operations required and the
@@ -530,8 +529,8 @@ Table C.1. Custom cross-platform task suite — core tasks.
                                                             using the most
                                                             CPU.
 
-──────── p. 115 ────────
-                                                                                115
+──────── p. 116 ────────
+                                                                                116
 
 
 ID   Category      Level      Form A           Form B            Success
@@ -586,8 +585,8 @@ T9   Application   Complex    A                A provisioned     Application
                                                files it          gate.
                                                created.
 
-──────── p. 116 ────────
-                                                                                          116
+──────── p. 117 ────────
+                                                                                          117
 
 
   ID      Category         Level        Form A           Form B            Success
@@ -639,8 +638,8 @@ Table C.2. Boundary tasks — outside shell expressibility, reported separately.
                                        brighter.           more
                                                            blurred.
 
-──────── p. 117 ────────
-                                                                                          117
+──────── p. 118 ────────
+                                                                                          118
 
 
   ID       Category         Level         Form A            Form B         Success
@@ -675,8 +674,8 @@ participant ID code only; the volunteer’s name appears solely on the consent f
 to volunteers who are not enrolled is destroyed within seven days of the screening
 
 session.
-           Participant ID: ____________ Date: ____________
 
+           Participant ID: ____________ Date: ____________
            Part 1 — Background (self-report)
 
        1. Are you 18 years of age or older? □ Yes □ No (a “No” response ends the
@@ -688,23 +687,22 @@ session.
        3. Which operating system do you use most? □ Windows □ macOS □ Linux
 
        4. Roughly how many hours per day do you use that operating system?
-           ____________ (four or more hours is required for enrolment)
 
+           ____________ (four or more hours is required for enrolment)
        5. How would you describe your proficiency with that operating system? □ Basic
 
             □ Intermediate □ Advanced
 
-──────── p. 118 ────────
-                                                                                         118
+──────── p. 119 ────────
+                                                                                         119
 
 
        6. How would you describe your familiarity with a command line or terminal on
-
          any platform? □ None □ Basic □ Intermediate □ Advanced
 
        7. How often do you use conversational AI tools such as chat assistants or AI
-         coding assistants? □ Never □ Occasionally □ Regularly □ Daily
 
+         coding assistants? □ Never □ Occasionally □ Regularly □ Daily
        8. If you use such tools, which ones? ______________________________
 
          Part 2 — Behavioural screener
@@ -716,8 +714,8 @@ used in the main study. The screener exists because self-reported proficiency is
 unreliable classifier: fluency with an operating system’s own tools is the property being
 
 measured, not confidence about it. Each task is scored pass or fail by the facilitator
-against the stated time limit and completion criterion. The volunteer is told that the
 
+against the stated time limit and completion criterion. The volunteer is told that the
 screener determines which group they join and that neither outcome affects eligibility for
 
 payment or participation.
@@ -743,14 +741,14 @@ payment or participation.
          Classification (facilitator use). A volunteer is classified power user if they
 
 report advanced proficiency on their primary operating system, report at least basic
-command-line familiarity, and pass all three screener tasks. A volunteer is classified
 
+command-line familiarity, and pass all three screener tasks. A volunteer is classified
 novice if they report basic proficiency, report no command-line familiarity, and fail all
 
 three screener tasks. Any volunteer whose self-report and screener results disagree, or
 
-──────── p. 119 ────────
-                                                                                     119
+──────── p. 120 ────────
+                                                                                     120
 
 
 who falls between these definitions, is not enrolled. This rule retains only unambiguous
@@ -766,8 +764,8 @@ consequence for generalization is stated in Section 3.7.
                                       APPENDIX E
 
                              Participant Information Sheet
-           Study title. Recoverability Analysis of Language-Model-Generated Shell
 
+           Study title. Recoverability Analysis of Language-Model-Generated Shell
 Commands, Deployed in the SynapseOS Conversational Interface
 
            Who is running this study. This research is conducted by undergraduate
@@ -779,13 +777,13 @@ Science.    It will be carried out only after review and approval by the Univers
 Institutional Review Board. Contact details for the research team and for the ethics
 
 committee are given at the end of this sheet.
-           Why we are doing this. Most of what a computer can do is reachable only by
 
+           Why we are doing this. Most of what a computer can do is reachable only by
 people who know how to write commands for it. We have built a system that lets a
 
 person say what they want in ordinary language — for example, “find the files I changed
-last week and put them in one folder” — and carries it out. We want to find out whether
 
+last week and put them in one folder” — and carries it out. We want to find out whether
 that is genuinely easier to use than the desktop you already use, and whether it makes
 
 more difference for people who have never used a command line.
@@ -797,22 +795,22 @@ once using the operating system you normally use, on a computer we provide. Whic
 one you start with is decided in advance and is not a test of you. Afterwards you would
 
 fill in two short questionnaires about each interface and take part in a 10 to 15 minute
-conversation about your experience, during which we may replay the screen recording
 
+conversation about your experience, during which we may replay the screen recording
 and ask what you were thinking at particular moments.
 
-──────── p. 120 ────────
-                                                                                       120
+──────── p. 121 ────────
+                                                                                       121
 
 
          What we record. We record what happens on the screen during the tasks, audio
-of the closing conversation, your questionnaire answers, and the times and outcomes of
 
+of the closing conversation, your questionnaire answers, and the times and outcomes of
 the tasks. We do not record your name against any of this. Everything is filed under a
 
 code.
-         What could go wrong, and what protects you. The instructions you give will
 
+         What could go wrong, and what protects you. The instructions you give will
 cause real commands to run, and some commands can delete or change files. You will be
 
 working on a laboratory computer prepared for this study, holding only made-up practice
@@ -824,8 +822,8 @@ between participants.     Some people find working under observation and a timer
 uncomfortable, or feel frustrated when a task does not go well. We are evaluating the
 
 interface, not you, and you may pause or stop at any moment without giving a reason.
-         Benefits. There is no direct benefit to you. The findings are intended to inform
 
+         Benefits. There is no direct benefit to you. The findings are intended to inform
 how conversational interfaces to computers are designed, particularly for people without
 
 technical training.
@@ -842,8 +840,8 @@ names — so we keep them only as long as we need them for analysis. They are
 destroyed once transcription and coding are complete, and in any case no later than
 
 ninety days after the last session. The list linking your code to your signed consent form
-is kept separately and destroyed when the withdrawal window below closes, fourteen
 
+is kept separately and destroyed when the withdrawal window below closes, fourteen
 days after your last session.
 
          Withdrawing. You may stop the session at any point, without explanation and
@@ -851,8 +849,8 @@ without any consequence. You may also ask us to delete your data for up to fourt
 
 days afterwards; we keep the code-to-consent list for exactly that period so that we can
 
-──────── p. 121 ────────
-                                                                                              121
+──────── p. 122 ────────
+                                                                                              122
 
 
 find and remove your records if you ask. After fourteen days that list is destroyed and we
@@ -866,8 +864,8 @@ possibly in academic publications. We may quote short remarks you make in the cl
 conversation. Quotations are attributed only to a participant code and a group label,
 
 never to your name, and you can decline to be quoted while still taking part in everything
-else.
 
+else.
          Questions or concerns. For questions about the study, contact the research team
 
 at [research team contact address]. For concerns about how the study is being conducted,
@@ -883,8 +881,8 @@ team.
                                    Informed Consent Form
 
          Study title. Recoverability Analysis of Language-Model-Generated Shell
-Commands, Deployed in the SynapseOS Conversational Interface
 
+Commands, Deployed in the SynapseOS Conversational Interface
          Please read the Participant Information Sheet (Appendix E) before completing
 
 this form, and tick each box to confirm your agreement. You may ask questions at any
@@ -904,8 +902,8 @@ time before signing.
          laboratory computer, that this computer holds only practice files prepared for the
          study, and that none of my own devices, accounts, or files are involved.
 
-──────── p. 122 ────────
-                                                                                                  122
+──────── p. 123 ────────
+                                                                                                  123
 
 
         Statement
@@ -936,8 +934,8 @@ these. Please tick only those you accept.
 
 
         Participant name (printed): ______________________________                     Signature:
-______________________________ Date: ______________
 
+______________________________ Date: ______________
         Researcher obtaining consent (printed): ______________________________
 
 Signature: ______________________________ Date: ______________
@@ -953,12 +951,12 @@ destroyed on the schedule stated in Section 2.5.
                                  Session Facilitator Checklist
 
         Followed identically for every participant so that session conduct does not vary
-across the sample. Items marked † must be completed before the participant arrives.
 
+across the sample. Items marked † must be completed before the participant arrives.
         Before the session †
 
-──────── p. 123 ────────
-                                                                                  123
+──────── p. 124 ────────
+                                                                                  124
 
 
 1. Restore both machines to the clean baseline image; confirm no data remains
@@ -969,13 +967,13 @@ across the sample. Items marked † must be completed before the participant arr
   screening record (Windows, macOS, or Linux with GNOME).
 
 3. Provision the task environment identically on both machines: practice file set in
-  place, the applications referenced by tasks T7–T9 present or absent as specified,
 
+  place, the applications referenced by tasks T7–T9 present or absent as specified,
   and the test applications SampleApp and DemoTool installed.
 
 4. On the SynapseOS machine, confirm the inference server is running and the
-  model is loaded, and run one throwaway task to confirm the system responds.
 
+  model is loaded, and run one throwaway task to confirm the system responds.
 5. Confirm screen recording works on both machines and has free storage for the
 
   full session.
@@ -987,13 +985,13 @@ across the sample. Items marked † must be completed before the participant arr
   readiness checkpoint in the System Environment Specifications.
 
   During the session
-1. Give the information sheet, answer questions, obtain signed consent. File the
 
+1. Give the information sheet, answer questions, obtain signed consent. File the
   consent form separately from all study materials.
 
 2. Give the five-minute orientation to the assigned first condition. Use the same
-  wording for every participant; do not demonstrate any task from the task set.
 
+  wording for every participant; do not demonstrate any task from the task set.
 3. Start screen recording. Present tasks one at a time in the randomized order for
 
   this participant.    Do not prompt, hint, or answer questions about how to
@@ -1005,19 +1003,19 @@ across the sample. Items marked † must be completed before the participant arr
   reason.
 
 6. Administer SUS and NASA-TLX immediately on completing the condition,
+
   before any discussion of it.
 
-──────── p. 124 ────────
-                                                                                  124
+──────── p. 125 ────────
+                                                                                  125
 
 
 7. Offer a short break. Move to the second machine and repeat from step 3 with
-
   the other task form.
 
 8. Conduct the closing conversation, replaying portions of the screen recording to
-  prompt recall. Ask what the participant was thinking, not whether they liked the
 
+  prompt recall. Ask what the participant was thinking, not whether they liked the
   system.
 
 9. Debrief: explain the study’s expectations in full, answer questions, and thank the
@@ -1029,9 +1027,10 @@ across the sample. Items marked † must be completed before the participant arr
   delete local copies from both machines.
 
 2. Log any fallback invocation, with participant code, task, and timestamp.
-3. Note any deviation from this checklist, however small, for reporting with the
 
+3. Note any deviation from this checklist, however small, for reporting with the
   results.
 
 4. Restore both machines to the clean baseline image.
+
 5. Diarise the participant’s fourteen-day withdrawal deadline.
