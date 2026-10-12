@@ -61,7 +61,7 @@ Read section 1 and the worked example (section 5) for the idea. Sections 3 and 4
 
 What this document does not own: the reasoning behind design choices and the rejected alternatives (`algorithms.md`, `decisions.md` D29, D34, D35), the survey of what exists (`prior-art.md`), the comparison with open-source safety lists in full (`external-baselines.md`), and the open bugs (`open-problems.md`). It links to them rather than repeating them.
 
-In the thesis, the algorithm is described in Chapter 3, Section 2.1(c), validated end to end in Section 2.3, and evaluated in Section 3.1 (Tables 3.4 and 3.5).
+In the thesis, the algorithm is described in Chapter 3, Section 2.1(a)–(c), validated end to end in Section 2.3, and evaluated in Section 3.1 (Tables 3.4 and 3.5).
 
 ## 1. The problem
 
@@ -874,7 +874,7 @@ The raw score understates the tests, because many breakages change nothing obser
 
 ## 10. Evaluation results
 
-Round 7, the reported result: 777 commands drawn after the design was frozen and run once (seed 20260925; 450 from NL2Bash, 247 templates covering each composition operator, 80 with effects outside the filesystem). Ground truth comes from running each command in a bubblewrap sandbox on its fixture and comparing the tree (`internal/oracle`); no human labels. Full tables: Chapter 3, Section 3.1(g)–(h); `prototype/pilot/results_round7*.txt`, `stats_round7*.txt`.
+Round 7, the reported result: 777 commands drawn after the design was frozen and run once (seed 20260925; 450 from NL2Bash, 247 templates covering each composition operator, 80 with effects outside the filesystem). Ground truth comes from running each command in a bubblewrap sandbox on its fixture and comparing the tree (`internal/oracle`); no human labels. Full tables: Chapter 3, Sections 3.1(d) and 3.2; `prototype/pilot/results_round7*.txt`, `stats_round7*.txt`.
 
 | System | Silent loss (of 405 that lose data) | Backed up and restored (of 325 file losses) | Needless confirmation (of 372 safe) |
 |---|---|---|---|
@@ -893,7 +893,7 @@ Round 7, the reported result: 777 commands drawn after the design was frozen and
 - **The ablations, answering "how much is the algorithm and how much the rule table":** the same rule table with **composition** switched off restores 35.4% instead of 89.5% (176 commands won, 0 lost, p = 2.1×10⁻⁵³) and asks needlessly about 66% of safe commands instead of 8.6%. With **runtime-target resolution** switched off (no runner, so every target learned by a read-only run is unresolved) it restores 45.5% (143 won, 0 lost, p = 1.8×10⁻⁴³) and asks needlessly about 19%. With **both** off, the table alone restores 32.0% (187 won, 0 lost, p = 1.0×10⁻⁵⁶). Each p stays below 10⁻⁴² after a Holm correction across the three.
 - **The two parts need each other:** either alone barely beats the table (45.5% and 35.4% against 32.0%); together they reach 89.5%. Composition sees that `find -exec rm` removes each match; only resolution says which files match: 126 of the 143 commands lost without resolution involve `find`. Silent loss is 0 in every configuration, because the fail-closed default depends on neither: they make the analysis useful, not safe. Produced by `cmd/listpilot` (systems `ALG-nocompose`, `ALG-noresolve`, `ALG-tableonly`); results in `pilot/stats_round7_nocompose.txt`.
 - **Undo:** 630 of 631 executed commands restored exactly (99.8%).
-- **External lists:** the open-source checks were built for coding agents inside version control and let 73–97% of file-destroying commands through without asking; full method and caveats in `external-baselines.md` and Chapter 3, Section 3.1(c).
+- **External lists:** the open-source checks were built for coding agents inside version control and let 73–97% of file-destroying commands through without asking; full method and caveats in `external-baselines.md` and Chapter 3, Section 3.1(a).
 
 Each row scores that system's own decision. The running system also consults the pattern list and asks when either asks, which can add confirmations but never removes protection.
 
