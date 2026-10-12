@@ -1548,14 +1548,15 @@ formulas, data analysis plan, and threats to validity.
 
 (b), against the baselines in (a), by the metrics in (b) and the statistics in (c); (d) reports
 the results, and (e) the threats specific to this evaluation. The evaluation answers RQ4
+directly, and it supplies the evidence for RQ2 and RQ3: whether a command’s effects can
 
 ──────── p. 83 ────────
                                                                                         83
 
 
-directly, and it supplies the evidence for RQ2 and RQ3: whether a command’s effects can
-be derived before it runs shows in silent loss and composition coverage, and whether the
-plan restores, in capture coverage verified by sandboxed undo.
+be derived before it runs shows in silent loss and capture coverage, overall and for each
+command shape, and whether the plan restores, in capture coverage verified by
+sandboxed undo.
 
 
 
@@ -1823,7 +1824,7 @@ only if the analysis planned a capture and the undo then restored the tree exact
 by executing the command in the sandbox, applying the undo the runtime would apply,
 
 ──────── p. 89 ────────
-                                                                                             89
+                                                                                         89
 
 
 and comparing the tree. By that measure the analysis covered 291 of the 325 executable
@@ -1847,7 +1848,7 @@ failed is rsync -ur dir_a dir_b && rsync -ur dir_b dir_a: the second call copies
 directory the first call’s own output had just nested inside it, one level deeper than the
 analysis re-resolves; it is reported, not fixed (docs/open-problems.md).
 
-           The pooled figures hold within each partition. On the 150 losses among the
+        The pooled figures hold within each partition. On the 150 losses among the
 
 human-written NL2Bash commands the analysis let none through silently and covered
 133 (88.7%); on the 175 among the templates, written by the same team as its rule table,
@@ -1857,26 +1858,25 @@ it let none through and covered 158 (90.3%). The pattern list let 40% of the NL2
 losses, 23% of the template losses, and 84% of the 80 external commands run silently.
 Under the capture policy the analysis asked needlessly on 8% of the harmless NL2Bash
 
-commands and 10% of the harmless templates. The same figures for every system, and
-for each command shape, are provided as supplementary material.
+commands and 10% of the harmless templates.            By command shape, of the 405
+commands that lose something or act outside the filesystem, the pattern list let through
+
+silently 4 of the 34 compound lines, 5 of the 29 hidden effects, 53 of the 164 commands
+
+with run-time targets, 37 of the 85 plain commands, 1 of the 13 redirections, and 67 of
+the 80 external commands; the analysis let none through in any shape, and the 34 file-
+
+destroying commands it asked about without a capture are 6 compound lines, 8 hidden
+
+effects, 15 with run-time targets, and 5 plain commands. The same figures for every
+system are provided as supplementary material.
 
 Table 3.4. Paired comparisons of the effect analysis against each list on the held-out
 
 corpus, with Holm-corrected significance.
 
- Comparison      Discordant    p, exact       p, Holm        Risk            Odds ratio
- (analysis       items                                       difference
- against)        (analysis                                   (95%
-                 right /                                     Newcombe)
-                 analysis
-                 wrong)
-
- Silent loss,    167 / 0       1.1×10−50      3.2×10−50      +0.412          undefined (no
- pattern list                                                [+0.365,        discordant
-                                                             +0.461]         losses)
-
 ──────── p. 90 ────────
-                                                                                              90
+                                                                                                 90
 
 
  Comparison         Discordant   p, exact       p, Holm         Risk             Odds ratio
@@ -1885,6 +1885,10 @@ corpus, with Holm-corrected significance.
                     right /                                     Newcombe)
                     analysis
                     wrong)
+
+ Silent loss,       167 / 0      1.1×10−50      3.2×10−50       +0.412           undefined (no
+ pattern list                                                   [+0.365,         discordant
+                                                                +0.461]          losses)
  Silent loss,       0/0          1              1               0.000 [−0.009,   undefined
  fail-closed list                                               +0.009]
  Capture            170 / 14     3.1×10−35      6.3×10−35       +0.480           12.1
@@ -1898,114 +1902,114 @@ corpus, with Holm-corrected significance.
            The pattern is the one the design predicted. The analysis differs from the pattern
 
 list in silent loss and in capture, and differs from the fail-closed list only in capture: on
-
 silent loss the two are indistinguishable at zero, which is the finding that the verdict is not
-the contribution and that what the analysis adds is a capture that works. It does this at a
 
+the contribution and that what the analysis adds is a capture that works. It does this at a
 cost in friction, asking on 12% of harmless commands under the strict policy and 9%
 
 under the capture policy, where the pattern list asked on 8% and the fail-closed list on
-27%.
 
+27%.
            On the model-generated partition the results have the same shape but rest on few
 
-losses, and on an earlier version of the analyser: this partition was generated with the
-analyzer and undo of round 6, the third corpus above, before that round’s recovery check
+losses. Its commands were generated during round 6, the third corpus above; they were
 
-led to its five undo fixes and before the seven analyzer defects found after round 7 were
-fixed, and it was not regenerated with the final build for this draft, so its numbers should
+scored then with that round’s analyzer and undo, and scored again with the final analyzer,
+after the seven defects found after round 7 were fixed, and its undo, which changed none
 
-be read as indicative rather than as part of the reported result. The deployed 3B model
+of its 720 decisions (180 commands under each of the four systems scored) and none of
+the figures below. The deployed 3B model was asked for a command for each of 350
 
-was asked for a command for each of 350 randomly drawn NL2Bash descriptions. Of
-the commands it returned, 165 ran cleanly and were labeled, 15 were external, and the
+randomly drawn NL2Bash descriptions. Of the commands it returned, 165 ran cleanly
 
-rest were excluded because they exited non-zero, timed out, needed a program that is not
+and were labeled, 15 were external, and the rest were excluded because they exited non-
+zero, timed out, needed a program that is not installed, or wrote outside the fixture. Only
 
-installed, or wrote outside the fixture. Only 19 of the 165 lost anything: the model’s
-commands are mostly read-only. On those, and the 15 external ones (34 in all), the
+19 of the 165 lost anything: the model’s commands are mostly read-only. On those, and
 
-pattern list let 20 through silently (58.8%, interval 42.2–73.6%) and the fail-closed list
-and the analysis one each (2.9%, 0.5–14.9%), a listing this partition’s own external-
+the 15 external ones (34 in all), the pattern list let 20 through silently (58.8%, interval
 
 ──────── p. 91 ────────
                                                                                            91
 
 
-partition rule mislabeled as device access. The analysis planned a capture that the undo
+42.2–73.6%) and the fail-closed list and the analysis one each (2.9%, 0.5–14.9%), a
 
-then restored exactly for 17 of the 19 losses (89.5%, 68.6–97.1%), against 10 for the
-pattern list (52.6%, 31.7–72.7%) and none for the fail-closed list; the undo restored all
+listing this partition’s own external-partition rule mislabeled as device access.        The
+analysis planned a capture that the undo then restored exactly for 17 of the 19 losses
 
-149 executed commands. With 19 losses the intervals are wide, and the comparison of
+(89.5%, 68.6–97.1%), against 10 for the pattern list (52.6%, 31.7–72.7%) and none for
 
-coverage against the pattern list is not significant after correction (Holm-adjusted p =
+the fail-closed list; the undo restored all 149 executed commands. With 19 losses the
+intervals are wide, and the comparison of coverage against the pattern list is not
 
-0.13); the other three comparisons agree with the larger corpus (adjusted p = 1.5×10−5 for
+significant after correction (Holm-adjusted p = 0.13); the other three comparisons agree
 
-silent loss against the pattern list, 4.6×10−5 for coverage against the fail-closed list, and
+with the larger corpus (adjusted p = 1.5×10−5 for silent loss against the pattern list,
 
-no difference on silent loss against the fail-closed list).
-         Four limits apply. The remaining commands the analysis asked on without
+4.6×10−5 for coverage against the fail-closed list, and no difference on silent loss against
+
+the fail-closed list).
+          Four limits apply. The remaining commands the analysis asked on without
 
 capturing are mostly ones it cannot see into — an interpreter or an unknown program, a
-variable with no value in the fixture, a privileged command whose targets it declines to
 
+variable with no value in the fixture, a privileged command whose targets it declines to
 resolve, and shred — and it asks on these by construction. A large share of NL2Bash
 
 candidates are excluded because they name paths or programs the fixture cannot supply,
-which biases that partition toward commands that run on a small tree. The external
 
+which biases that partition toward commands that run on a small tree. The external
 partition is assigned by a table of state-changing tools and not observed, so its labels are
 
 only as good as the table, as the model-generated partition’s one error shows. And the
-model-generated partition above was scored against an earlier build of the analyser, not
 
+model-generated partition above was scored against an earlier build of the analyser, not
 the one the primary result was frozen against.
 
 
 
 e) Threats Specific to This Evaluation
-         Four are anticipated. First, corpus bias is addressed by partitioning, as described
 
+          Four are anticipated. First, corpus bias is addressed by partitioning, as described
 in Section 1.2(a). Second, oracle validity replaces label subjectivity: the labels are
 
 observed, so they cannot be argued with, but they are facts about one command on one
-small fixture, run for a few seconds, seeing the working tree and not repository internals.
 
+small fixture, run for a few seconds, seeing the working tree and not repository internals.
 A loss that appears only on a differently shaped tree, or after the time limit, is labeled by
 
 what happened here. The oracle’s own behavior is pinned by unit tests over commands
+
 whose outcome is known, its exclusions are reported, and the bias they introduce —
+
+──────── p. 92 ────────
+                                                                                          92
+
 
 toward commands that run on a small fixture, which excludes most NL2Bash candidates
 
 that name paths or hosts the fixture cannot supply — is stated and not corrected. Third,
 
-──────── p. 92 ────────
-                                                                                           92
-
-
 the algorithm and the labels are produced by the same research team, which creates a risk
-
 that the labels reflect the algorithm’s assumptions; the generator is independent of the
 
 analysis by construction, and the corpus is fixed by a recorded seed and hash before the
 analysis is run on it. A fourth threat follows from the same fact: the analysis rests on a
 
 table of what each known command does, written by the same team, and a table written
-with the corpus in view measures the cases its author anticipated. The corpus is therefore
 
+with the corpus in view measures the cases its author anticipated. The corpus is therefore
 generated from several seeds. Earlier ones are used to correct the analysis and the undo;
 
 the primary result is reported on one drawn after both are frozen, with the analyzer’s hash
-recorded beside the result. That result is a single draw, so variation from one corpus
 
+recorded beside the result. That result is a single draw, so variation from one corpus
 draw to another is not estimated; the development rounds, drawn from different seeds
 
 before the design was frozen, showed the same pattern (zero silent loss for the analysis
-and capture coverage near 90%), but they were not independent of the design and are not
 
+and capture coverage near 90%), but they were not independent of the design and are not
 offered as replication. Nor does the corpus verify the package and service part of the
 
 model: the oracle can write only inside a fixture, so no command in the corpus changes
@@ -2016,92 +2020,92 @@ changes are checked by the prototype’s unit tests rather than by execution.
 
 
 3.2 Ablation studies (Objective 5)
-         Chapter 1, Section 1.5 states the analysis’s claim as what it adds on top of a table
 
+        Chapter 1, Section 1.5 states the analysis’s claim as what it adds on top of a table
 of what each known command does, not that it has none — a distinction raised directly
 
 by this study’s adviser: how much of the result above comes from the algorithm itself,
-and how much from that table? The algorithm adds two things a table cannot do, and
 
+and how much from that table? The algorithm adds two things a table cannot do, and
 RQ5 asks for the contribution of each. Composition analyses through the commands that
 
 hide another command’s targets: wrappers (sudo, env, nohup, timeout, and similarly
 transparent commands), find -exec/-execdir/-ok/-okdir, xargs, eval, shell -c strings, and
 
 for-loops. Runtime-target resolution learns targets that exist only while a command runs,
+
 by running a form of it first proven read-only: command substitution and the producer
+
+──────── p. 93 ────────
+                                                                                          93
+
 
 feeding xargs, the rewritten find expression, and the dry runs of tar, unzip, rsync, rename,
 
 git, and the package and service tools. Three further configurations of the analyzer are
 
-──────── p. 93 ────────
-                                                                                         93
-
-
 run over the identical held-out corpus, each identical to the one scored above except for
-
 what it disables: composition, routed straight to the unresolved verdict an unknown
 
 command receives; resolution, with no runner, so that every target it would have learned
-is unresolved; and both, which leaves the per-command rule table alone. Every other
 
+is unresolved; and both, which leaves the per-command rule table alone. Every other
 dispatch path is untouched, including the &&/pipe/subshell traversal that requires no
 
 lookup beyond the table. If the table is where the result comes from, disabling either
-should cost little.
 
+should cost little.
          Each costs a great deal (Table 3.5). Capture coverage, verified by the same
 
 sandboxed recovery check as the primary result, falls from 291 of 325 executable losses
 (89.5%) to 115 (35.4%) without composition, to 148 (45.5%) without resolution, and to
 
 104 (32.0%) without both. McNemar’s exact test on the paired discordant items rejects
-equality overwhelmingly in each case, and not one discordant item favors an ablated
 
+equality overwhelmingly in each case, and not one discordant item favors an ablated
 configuration over the full one: 176 items without composition, 143 without resolution,
 
 and 187 without both. Silent loss is unchanged at 0.0% in every configuration, because
-the fail-closed default that the analysis falls back to for anything it cannot resolve
 
+the fail-closed default that the analysis falls back to for anything it cannot resolve
 depends on neither — a command it can no longer see through, or whose targets it can no
 
 longer learn, is treated exactly as an unknown command already is, which asks rather
 than runs silently. Composition and resolution are therefore not what keep the analysis
 
 safe; the table and the fail-closed default already do that, which is why Table 3.4 found
-the analysis indistinguishable from the fail-closed list on silent loss. They are what make
 
+the analysis indistinguishable from the fail-closed list on silent loss. They are what make
 the analysis useful — the difference between asking about nearly everything and actually
 
 recovering what was lost — and that is the part a table, however complete, cannot supply
-on its own.
 
+on its own.
          The two depend on each other. Neither alone recovers much more than the
 
 table: composition without resolution reaches 45.5% and resolution without composition
+
 35.4%, against 32.0% for the table, while the two together reach 89.5%. Of the 143
-
 items lost when resolution is disabled, 126 involve find (58 with -exec, 47 feeding xargs,
-
-12 with -delete, and 9 in substitutions or archive commands), 6 are other xargs pipelines,
-5 are rsync, 4 are git, and 2 are plain command substitutions: composition can see that
 
 ──────── p. 94 ────────
                                                                                                94
 
 
+12 with -delete, and 9 in substitutions or archive commands), 6 are other xargs pipelines,
+5 are rsync, 4 are git, and 2 are plain command substitutions: composition can see that
+
 find -exec rm removes each match, but only resolution can say which files match. The
 two also differ in what they cost the user.           Without composition the analysis asks
 
 needlessly about 246 of the 372 commands that lose nothing (66%), because every
-wrapper and find becomes an unknown command; without resolution it asks about 70
 
+wrapper and find becomes an unknown command; without resolution it asks about 70
 (19%), because it still sees what kind of command it faces and only the targets are
 
 unknown; the full analysis asks about 32 (9%).
-Table 3.5. Composition and resolution ablation: the full analysis against the same rule
 
+Table 3.5. Composition and resolution ablation: the full analysis against the same rule
 table with composition, runtime-target resolution, or both disabled, on the held-out
 
 corpus.
@@ -2130,12 +2134,11 @@ the analysis beats a list — and are treated as a family of their own; with a H
 
 correction across the three, each p-value remains below 10−42. On silent loss there are no
 discordant pairs in any comparison. The gap concentrates where the design predicts it
-
 should: commands whose real target is hidden behind a wrapper argument or is not
 
 known until the command runs are exactly the cases composition and resolution exist for,
-while commands whose effects are visible without them — a literal path, a redirect, a
 
+while commands whose effects are visible without them — a literal path, a redirect, a
 chain joined by && — cost the ablated configurations little or nothing, because the table
 
 ──────── p. 95 ────────
@@ -2229,9 +2232,9 @@ Inferential testing and effect size reporting follow the procedures described in
 
 b) Error Rate
 
-         Error rate is computed as the proportion of task attempts resulting in failure or
+         Error rate is computed as the proportion of tasks presented that end in failure or
 
-incorrect outcome:
+an incorrect outcome:
 
            Error Rate = (Failed Tasks + Incorrect Outcomes) / Tasks Presented
 

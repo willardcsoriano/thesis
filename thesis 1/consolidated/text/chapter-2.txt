@@ -51,34 +51,38 @@ purpose conversational systems without a system-control capability, were exclude
 unless they bear on that interaction theory.
          Candidate works were identified through language-model-assisted search across
 arXiv, the ACM Digital Library, IEEE Xplore, and the ACL Anthology, extended by
-backward and forward citation chaining from each work that met the criteria above. This
-review is therefore a narrative review rather than a systematic one, and the search is not
-claimed to be exhaustive. Because assisted search can surface plausible but non-existent
-references, and can attribute to a source a claim that source does not make, every work
-cited in this chapter was subsequently verified by hand against its primary record —
-author list, venue, and year — and, where a specific claim is attributed to a work, against
-the presence of that claim in the work’s own text. That verification pass corrected errors
-of both attribution and currency introduced by the initial search, and it is reported here
+backward and forward citation chaining from each work that met the criteria above.
+Shipped systems that guard or recover from agents’ commands are documented outside
+those databases, so vendor documentation and open-source repositories were also
+searched directly for command guards and recovery mechanisms, as of October 2026;
+ANOLISA, Codex CLI, and cc-safety-net were found this way. This review is therefore
+a narrative review rather than a systematic one, and the search is not claimed to be
+exhaustive. Because assisted search can surface plausible but non-existent references,
+and can attribute to a source a claim that source does not make, every work cited in this
+chapter was subsequently verified by hand against its primary record — author list,
+venue, and year — and, where a specific claim is attributed to a work, against the
+
+presence of that claim in the work’s own text. That verification pass corrected errors of
+both attribution and currency introduced by the initial search, and it is reported here
 because the reliability of this chapter rests on it rather than on the discovery method. The
 limitation this leaves is one of recall rather than accuracy: assisted search favors well-
-
 indexed and heavily cited work, so the corpus may under-represent less visible literature.
 The absence claims in §2.9 are accordingly scoped to the surveyed corpus and stated as
 such, rather than as claims about the literature as a whole. The chapter first sets out the
 theoretical frameworks (§2.2), then proceeds thematically — historical foundations and
 the case against natural-language interaction (§2.3), natural-language-to-shell translation
 (§2.4), command safety, static analysis of shell commands, and recovery mechanisms, the
-literature closest to the study’s algorithm (§2.5), graphical and computer-using agents
-(§2.6), accessibility and speech-driven interaction (§2.7), and evaluation environments
-(§2.8) — before synthesizing the surveyed works into a statement of the research gap and
 
 ──────── p. 16 ────────
                                                                                          16
 
 
+literature closest to the study’s algorithm (§2.5), graphical and computer-using agents
+(§2.6), accessibility and speech-driven interaction (§2.7), and evaluation environments
+
+(§2.8) — before synthesizing the surveyed works into a statement of the research gap and
 a comparative analysis (§2.9). It closes with a review of the methodological literature
 that informs the validation study (§2.10) and a summary that motivates the methodology
-
 detailed in Chapter 3 (§2.11).
 
 
@@ -87,6 +91,7 @@ detailed in Chapter 3 (§2.11).
          This review rests on two frameworks of different standing. The first is the
 theoretical basis of the study’s contribution: the program-analysis tradition in which the
 recoverability analysis is an instance. The second organizes the literature on language-
+
 mediated interfaces, in which the platform that deploys the analysis is positioned.
 
 
@@ -99,23 +104,23 @@ language shells and command guards surveyed in this chapter draw on.            
 interpretation, introduced by Cousot and Cousot [8], is the foundational technique for
 computing sound, conservative approximations of a program’s runtime behavior by
 evaluating it over an abstract domain rather than its concrete one. Type-and-effect
+
 systems, whose types and effects can be inferred by the algebraic reconstruction of
 Jouvelot and Gifford [20] and are given a full formal treatment by Talpin and Jouvelot
 [44], extend a program’s type judgment with an explicit account of the side effects an
-
 expression may produce, so that a compiler or static checker can reason about those
 effects instead of leaving them implicit in execution. The recoverability algorithm this
 study contributes (Chapter 3, Section 2.1(a)–(c)) is an instance of this discipline applied
 to a question that no work in the surveyed corpus applies either tradition to: whether the
 effects of a generated command can be undone, and what must be captured beforehand so
-that they can be. A generated shell command is treated as an expression whose effect —
-on the filesystem and on the system’s installed packages and running services, rather than
-on a type system’s abstract state — is derived from its syntax and composed across its
 
 ──────── p. 17 ────────
                                                                                             17
 
 
+that they can be. A generated shell command is treated as an expression whose effect —
+on the filesystem and on the system’s installed packages and running services, rather than
+on a type system’s abstract state — is derived from its syntax and composed across its
 operators, and it is that effect set, not the command’s name, that the recoverability verdict
 is computed over. This connects the algorithm to an established formal lineage rather
 than presenting it as a bespoke heuristic, and it grounds the algorithm’s one-sided
@@ -124,62 +129,65 @@ under-approximating it — in the same requirement abstract interpretation itsel
 a sound abstraction may lose precision, but it may never assert a property the concrete
 execution does not actually have.
          Two parts of the analysis go beyond a purely static reading. Combining static
+
 and dynamic analysis is not new in general; what is specific to this study is the
 combination it uses, dry runs run only after the static analysis proves them read-only,
 feeding a recoverability verdict, and a recovery plan chosen over that verdict’s effects.
-
 Where a target is known only at run time, the analysis runs a form of the command first,
 which makes it a hybrid of static and dynamic analysis; its soundness still rests on the
+
 static part, because a form is run only when the static analysis proves it can change
 nothing, and a target that cannot be resolved this way falls back to unrecoverable. And
+
 the recovery plan is a cost-minimizing choice over that abstraction: for each effect the
 
 abstraction admits, it selects the cheapest capture that restores it, so the plan inherits the
 abstraction’s over-approximation, capturing more than strictly necessary when the
 
 analysis is unsure, never less.
-
          Three properties of the analysis follow from this framework and are carried
+
 through the rest of the study. Its abstract domain is the effect set: what a command would
-
 read, create, write, remove, or alter in metadata, or change in the system’s installed
+
 packages and running services, rather than the command’s name.              Its semantics is
-
 compositional: the effects of a line are built from the effects of its parts through the
-operators that join them, which is what an enumerated list of command patterns cannot
 
+operators that join them, which is what an enumerated list of command patterns cannot
 express. And its soundness is one-sided: whatever cannot be determined is treated as
-unrecoverable, so that the analysis may ask more often than necessary but may never
 
 ──────── p. 18 ────────
                                                                                             18
 
 
-declare a destructive command safe. That guarantee is relative to the per-command rule
+unrecoverable, so that the analysis may ask more often than necessary but may never
 
+declare a destructive command safe. That guarantee is relative to the per-command rule
 table and to the filesystem as it is when targets are resolved, shortly before the command
+
 runs (Chapter 3, Section 2.1(a)).
 
 
 
 The four-layer interaction pipeline
+
          The heterogeneous systems surveyed in this chapter — shell translators, web
-
 and mobile agents, desktop automation frameworks, and accessibility interfaces — differ
-widely in platform, action space, and evaluation method, yet they address a common
 
+widely in platform, action space, and evaluation method, yet they address a common
 problem: converting a user’s expressed intent into effects on a computing system. To
+
 compare them on common ground, this review adopts a four-layer interaction pipeline —
 
 Input, Reasoning, Action, and Operating-System Integration — as its framework for the
-
 interface literature. The framework is informed by the component view of large language
+
 model (LLM)-brained graphical user interface (GUI) agents in the survey of Zhang and
-
 colleagues [53], whose perception, planning, and action components are recast here, with
-an added layer for the scope of an interface’s effect, as four layers for language-mediated
 
+an added layer for the scope of an interface’s effect, as four layers for language-mediated
 computing interfaces as a class. Figure 2.1 depicts the pipeline and situates the layers
+
 relative to one another.
 
 
@@ -193,9 +201,10 @@ relative to one another.
 
 
     Figure 2.1. The four-layer interaction pipeline for language-mediated computing
-  interfaces, adapted from the LLM-brained GUI-agent survey of Zhang and colleagues
 
+  interfaces, adapted from the LLM-brained GUI-agent survey of Zhang and colleagues
  [53]. A user’s intent enters at the Input layer, is parsed and grounded at the Reasoning
+
      layer, executed at the Action layer, and takes effect within a scope defined at the
 
                                Operating-System Integration layer.
@@ -587,105 +596,106 @@ against — but stops at defining that semantics rather than analyzing programs 
 it. Closest of the three is CoLiS [2], which applies symbolic execution to the more than
 twenty-seven thousand POSIX-shell maintainer scripts in the Debian package archive to
 
-verify idempotence — that running a script a second time causes no further harm — a
-property Debian policy requires of these scripts because they run with root privileges
+find violations of the properties Debian policy requires of these scripts, which run with
+root privileges during install, upgrade, and removal; among those properties is
 
-during install, upgrade, and removal. Idempotence and recoverability are related but
+idempotence, that running a script a second time causes no further harm. Idempotence
 
 ──────── p. 27 ────────
-                                                                                          27
+                                                                                        27
 
 
-distinct: a script can be idempotent while still being destructive on its first run — rm -rf
-/var/cache/pkg is idempotent, since running it twice does no more damage than once, and
+and recoverability are related but distinct: a script can be idempotent while still being
+destructive on its first run — rm -rf /var/cache/pkg is idempotent, since running it twice
 
-unrecoverable, since the first run already destroyed what a recovery would need — and a
-command can be recoverable without being idempotent, if each run produces a new,
+does no more damage than once, and unrecoverable, since the first run already destroyed
+what a recovery would need — and a command can be recoverable without being
 
-independently-reversible effect. CoLiS is therefore the nearest prior application of static
+idempotent, if each run produces a new, independently-reversible effect.        CoLiS is
 
-effect reasoning to shell scripts specifically, and it stops short of the present study’s
-question for exactly this reason: verifying that re-execution is safe does not determine
+therefore the nearest prior application of static effect reasoning to shell scripts
+specifically, and it stops short of the present study’s question for exactly this reason:
 
-whether the first execution can be undone. No work identified in this review derives a
-recoverability verdict for a shell command from its statically-computed effects; that is the
+verifying that re-execution is safe does not determine whether the first execution can be
+undone. No work identified in this review derives a recoverability verdict for a shell
 
-specific gap the present study’s algorithmic contribution fills.
+command from its statically-computed effects; that is the specific gap the present study’s
+algorithmic contribution fills.
 
 
 
 Recovery after the fact
-
          Guards and analyses act before a command runs. A separate literature restores a
+
 system after something has gone wrong, and it approaches the study’s question from the
 
 other side: not what a command will destroy, but how to recover what was destroyed.
-
 Three kinds of mechanism are relevant.
+
          Filesystem snapshots are the most widely deployed, and one shipped natural-
-
 language shell already relies on them: ANOLISA’s checkpoint tool snapshots an agent’s
+
 workspace at file level before key operations or after each round of conversation, and
-
 rolls back to any snapshot [1]. A copy-on-write filesystem such as btrfs can snapshot a
+
 whole subvolume at little cost, because a snapshot shares its blocks with the live
-
 filesystem until they are modified [37], so snapshots can be taken on a schedule or before
+
 system updates. A snapshot needs no knowledge of the command it protects against,
-
 which is both its strength and its limit. Restoring one returns the whole subvolume to an
-earlier moment and discards every later change along with the unwanted one, and nothing
 
+earlier moment and discards every later change along with the unwanted one, and nothing
 about a snapshot can tell the user, before a command runs, whether that command will
+
 lose anything. On a filesystem without copy-on-write, such as the ext4 on which this
 
 study is conducted, a snapshot must visit every file in the tree, a cost measured in
-
-Chapter 3, Section 3.1(a). Versioning file systems instead keep old versions of individual
 
 ──────── p. 28 ────────
                                                                                            28
 
 
+Chapter 3, Section 3.1(a). Versioning file systems instead keep old versions of individual
 files: the Elephant file system retains versions under per-file policies that decide when an
+
 old version may be forgotten [39]. Recovery is then per file and needs no foresight, but
-
 its storage cost is paid on every change, mistaken or not, and obtaining it means replacing
+
 the filesystem.
-
          Undo at the level of a service or the operating system makes recovery a property
+
 of the system’s design. Operator Undo intercepts and logs the user interactions with an e-
-
 mail service before they reach it, so that an operator can rewind the service’s state, repair
+
 it, and replay what users did since [6]. Operating system transactions let a program
-
 group system calls so that their effects can be rolled back as a unit before they commit
+
 [35]. Intrusion recovery systems such as Taser log system activity so that the effects of
-
 an attack can be identified and reverted afterward while legitimate changes are kept [11].
-Each restores more completely than any list can, but each requires something the setting
 
+Each restores more completely than any list can, but each requires something the setting
 of this study does not have: a service built to be undoable, a kernel and programs that use
+
 transactions, or continuous logging of all system activity.
 
          A different route learns a command’s effects by running it where they can be
-
 contained. The try utility runs a command in a semisolate over the current environment,
+
 built from Linux namespaces and a union filesystem, captures its effects on the
-
 filesystem, and lets the user inspect them and then apply, discard, or apply part of them
+
 [22]. Its authors motivate it with cases this study shares, a find -exec suggested by a
-
 language model that deletes a user’s files among them. It is the closest prior work to the
+
 analysis’s dry runs, and the two differ in where the knowledge comes from: try executes
-
 the command itself and shows its effects to a user who must judge them, and it does not
+
 contain effects outside the filesystem, such as network calls; the present study runs only
-
 commands it has first proven read-only, decides from the command’s structure what it
-would destroy, and captures exactly that before the command runs. For the same reason
 
+would destroy, and captures exactly that before the command runs. For the same reason
 try is not scored as a baseline in Chapter 3: it decides nothing about a command, since it
+
 runs every command and leaves what to keep to the user.
 
 ──────── p. 29 ────────
@@ -725,8 +735,10 @@ study’s algorithm combines.
 
   Shell program        A script’s   Partly:           Through their    No
   analyses: ABash,     text         CoLiS, for        own
-  Smoosh, CoLiS                     idempotence       semantics
-  [2, 12, 28]
+  Smoosh, CoLiS                     policy            semantics
+  [2, 12, 28]                       properties
+                                    such as
+                                    idempotence
 
   Running in a         The          After running     Not needed       Yes: the user
   semisolate: try      command,     it                                 applies or
