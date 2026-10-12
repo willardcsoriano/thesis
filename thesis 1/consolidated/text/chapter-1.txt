@@ -174,14 +174,14 @@ studied.
            return the system to that state?
 
 ──────── p. 5 ────────
-                                                                                       5
+                                                                                        5
 
 
-      4. Against an enumerated list of destructive patterns, a list that refuses every
-        command it does not recognize, and the command-safety checks of open-
+      4. Against an enumerated list of destructive patterns, a fail-closed list that asks
+        before every command it does not recognize as read-only, and the command-
 
-        source AI coding agents, does the analysis lose less data silently, restore more
-        of what is lost, and ask the user less often?
+        safety checks of open-source AI coding agents, does the analysis lose less data
+        silently, restore more of what is lost, and ask the user less often?
 
       5. How much of that result do composition and runtime-target resolution each
         contribute, beyond the per-command rule table on which both rest?
@@ -306,132 +306,131 @@ supporting artifacts that serve it. The research contribution is the following.
          images to capture before it runs. Its formal basis is an effect semantics in the
 
 ──────── p. 8 ────────
-                                                                                     8
+                                                                               8
 
 
-tradition of abstract interpretation and type-and-effect systems [7, 19, 43]: a
+tradition of abstract interpretation, which reasons soundly about what a
+program could do without running it, and type-and-effect systems, which track
+
+what a program changes and not only what it computes [7, 19, 43]: a
 command is represented not by its name but by the set of effects its syntax
-
 implies, resolved against a working directory and propagated through the
 operators that join commands into one line, and the verdict is a predicate over
 that set.    Soundness is one-sided, because over-approximating what a
 command destroys costs a confirmation, whereas under-approximating it
+
 destroys data. The analysis rests on a table of what each known command
 does, and a command absent from that table is unknown and asks; its claim is
-
 what it adds on top of a table, not that it has none. It is distinguished from
 permission models, which can refuse a command but cannot restore what an
 approved one destroyed, and from privilege mechanisms such as sudo and
+
 polkit, which gate on who is acting rather than on what is about to happen. It
 was evaluated on a held-out corpus of 777 commands, drawn after the analysis
-
 was frozen from NL2Bash, a public dataset of English descriptions paired
 with Bash commands, and from templates and commands written for the
-purpose, whose ground truth was observed by running each command in a
-sandbox. Of the 405 that destroy data or act outside the filesystem, it let none
-run without asking, where an enumerated pattern list let 41.2% through. Of
+purpose.    For the 697 commands that act on files, the ground truth was
 
-the 325 that destroy files, the pattern list let 31% through and the checks of
-Codex CLI and cc-safety-net let 73% to 97% through. Its capture coverage,
-the share of those 325 it captured beforehand and that undo then restored
-exactly, was 89.5%, where a list that refuses every command it does not
-recognize restored none; and of the 372 commands that lose nothing, it asked
+observed by running each in a sandbox; the 80 whose effects lie outside the
+filesystem, such as on another machine, were labeled from a fixed table of
+state-changing tools.    Of the 405 that destroy data or act outside the
+filesystem, it let none run without asking, where an enumerated pattern list let
+41.2% through. Of the 325 that destroy files, the pattern list let 31% through
 
-about 32 to 45 (9% to 12%, depending on the policy), against that list’s 101
-(27%). It asked about as often as the pattern list, which asked about 30 (8%)
-but let destructive commands run silently. On silent loss it ties the refusing
-list, both at zero, so its contribution is what it restores, and that it asks far less
-than the refusing list and no more than the pattern list, not the verdict itself.
-Ablations, which rerun the analysis with one part switched off and the same
+and the checks of Codex CLI and cc-safety-net let 73% to 97% through. Its
+capture coverage, the share of those 325 it captured beforehand and that undo
+then restored exactly, was 89.5%, where a fail-closed list, which asks before
+every command it does not recognize as read-only, restored none; and of the
+372 commands that lose nothing, it asked about 32 to 45 (9% to 12%,
+depending on the policy), against that list’s 101 (27%). On silent loss it ties
 
 ──────── p. 9 ────────
-                                                                                        9
+                                                                                             9
 
 
+         the fail-closed list, both at zero, so its contribution is what it restores, and that
+         it asks far less often than the fail-closed list and not significantly more often
+         than the pattern list (32 to 45 against 30 of 372), not the verdict itself.
+
+         Ablations, which rerun the analysis with one part switched off and the same
          table kept, show where the result comes from: without composition, capture
          coverage falls to 35.4%; without resolution, to 45.5%; and without both, to
          32.0%, each drop significant under McNemar’s exact test, which compares
 
          two systems on the same commands (each p < 10−42), with silent loss at zero
-         throughout (Chapter 3, Sections 3.1–3.2).        This is the study’s principal
+         throughout (Chapter 3, Sections 3.1–3.2).          This is the study’s principal
          technical contribution and the subject of RQ1 through RQ5.
          The two supporting artifacts are not research contributions; they are how the
-
 contribution is deployed and validated in use.
+
       1. SynapseOS, the experimental platform. A working conversational interface
          layer for a Linux desktop in which the analysis is deployed: it grounds natural-
          language intent in shell commands, gates each command on the analysis’s
          verdict, captures what the analysis’s plan names before the command runs, and
-
          records a recovery journal from which the command can be undone,
+
          implemented as a single binary running over an unmodified desktop session.
       2. A validation of the analysis in use. A controlled study in which participants
          operate the platform on matched tasks, measuring how the analysis’s decisions
          hold on commands people cause — silent loss, verified restoration, and
-
          needless confirmation in live use — and, as characterizations of the platform,
          task success, time, error rate, and workload against each participant’s own
+
          primary operating system, for users fluent in neither existing interface and
          users fluent in both.
          The research contribution is evaluated against a labeled command corpus,
 independently of any participant; the platform and its validation are reported separately
-
 for that reason, and a negative result on any of them is reported as such.
-
-
-
-1.6 Significance of the Study
-         The findings of this study are expected to benefit the following groups:
 
 ──────── p. 10 ────────
                                                                                      10
 
 
+1.6 Significance of the Study
+        The findings of this study are expected to benefit the following groups:
       1. Developers of AI agents that run shell commands. Coding assistants and
+
         other agents that execute generated commands guard them with lists of
         dangerous patterns, which on this study’s corpus let most file-destroying
-
         commands run without asking (Section 1.5) [20, 31]. The recoverability
         analysis can be placed in front of any system that executes generated shell
         commands, and it adds what a list cannot: a capture, taken before the
         command runs, from which the command can be undone.
+
       2. The research community. The study contributes a static analysis of shell
         commands for recoverability, a property the surveyed analyses of shell
-
         programs do not address (Chapter 2, Section 2.5), together with an evaluation
-        against ground truth observed by sandboxed execution rather than assigned by
-        human labelers, and ablations that separate what composition and runtime-
-        target resolution each contribute from the rule table beneath them.
-      3. People who direct a computer through conversation. A person who cannot
+        against ground truth observed by sandboxed execution for every command
+        that acts on files, rather than assigned by human labelers, and ablations that
 
+        separate what composition and runtime-target resolution each contribute from
+        the rule table beneath them.
+      3. People who direct a computer through conversation. A person who cannot
         read a shell command cannot judge one a model wrote for them, so letting a
         model act on their behalf is safe only if what it destroys can be restored; the
+
         analysis supplies that for the commands it can determine, and asks first about
         the rest. The validation study also characterizes the platform for novice and
         power users, and the platform could later host accessibility-specific
-
         configurations, such as speech-driven operation for users with motor
         impairments [13, 32, 33], which are outside the scope of this study.
-
-
-
-1.7 Scope and Limitations of the Study
-        This study covers the design and evaluation of a recoverability analysis for
-
-generated shell commands, which is its research contribution. The analysis covers
-commands in the bash dialect on a Debian system: their effects on the filesystem, and
-the changes to package and service state they make through apt, dpkg, and systemd. It
-is evaluated on a corpus of 777 commands drawn from NL2Bash, from templates
 
 ──────── p. 11 ────────
                                                                                        11
 
 
+1.7 Scope and Limitations of the Study
+         This study covers the design and evaluation of a recoverability analysis for
+generated shell commands, which is its research contribution. The analysis covers
+commands in the bash dialect on a Debian system: their effects on the filesystem, and
+
+the changes to package and service state they make through apt, dpkg, and systemd. It
+is evaluated on a corpus of 777 commands drawn from NL2Bash, from templates
 covering each composition operator, and from tools whose effects lie outside the
 filesystem, and the contributions of composition and of runtime-target resolution are
 measured by ablation on the same corpus. The subject matter is program analysis
-applied to shell commands, drawing on natural language processing, LLM-based
 
+applied to shell commands, drawing on natural language processing, LLM-based
 reasoning, Linux system integration, and human-computer interaction for the setting in
 which it is deployed.
          The study also covers the implementation of the platform in which the
@@ -443,60 +442,63 @@ session rather than in place of one: the desktop shell, session manager, and app
 launcher continue to run and remain available to the user, as do the kernel and the core
 system utilities beneath them. The Linux kernel, the core system utilities, and the
 existing ecosystem of Linux applications are not modified by this study; SynapseOS
-interacts with the system by translating natural language into shell commands executed
 
+interacts with the system by translating natural language into shell commands executed
 through the standard command-line toolchain. The validation study recruits novice
 computer users and power users for a controlled study on the platform, on cross-
 application desktop workflows that include shell operations, file management, and
 tasks representable in the OSWorld benchmark task suite [49], and it is bounded by the
-duration of the thesis project.
 
+duration of the thesis project.
          The following limitations are acknowledged, those of the analysis first. First,
 the recoverability analysis treats anything it cannot determine as unrecoverable, and so
 protects such commands only by asking first: code run by an interpreter, programs it
+
+──────── p. 12 ────────
+                                                                                         12
+
+
 does not model, and variables with no value are of this kind. Of the 325 file-destroying
 commands in the corpus, 34 (10.5%) are protected only this way, and undo restored
-
 630 of the 631 commands executed in the recovery check, the one failure being
 reported in Chapter 3. Second, its per-command rules are a hand-written enumeration,
 which its composition builds on rather than replaces, and it resolves a command’s
+
 targets shortly before the command runs, so a file changed by another process in the
-
-──────── p. 12 ────────
-                                                                                            12
-
-
 interval is captured as it was when resolved. Third, it is evaluated on a corpus of
 human-written commands from NL2Bash, templates written by the same team that
 wrote its rule table and the pattern-list baseline, and commands whose effects lie
 outside the filesystem; each label describes what a command did on its fixture, the files
+
 and directories prepared for it to run on, not on every possible filesystem. Nor does it
+ask less often than the pattern list: it asks about as often, not significantly more (32 to
+45 against 30 of 372), while that list lets destructive commands run silently. These
+threats and their mitigations are stated in Chapter 3, Section 3.1(e).        Fourth, the
+recovery plan is minimum-cost relative to the capture mechanisms and cost model
 
-ask less often than the pattern list: it asks about as often, while that list lets destructive
-commands run silently. These threats and their mitigations are stated in Chapter 3,
-Section 3.1(e). Fourth, the recovery plan is minimum-cost relative to the capture
-mechanisms and cost model stated in Chapter 3, Section 2.1(c), not over every
-conceivable way of restoring a system. Fifth, the platform offers two confirmation
+stated in Chapter 3, Section 2.1(c), not over every conceivable way of restoring a
+system. Fifth, the platform offers two confirmation policies over the analysis’s verdict,
+a strict policy, the default, which asks before every command that is not plainly
+recoverable, and a capture policy, which asks only before unrecoverable commands
+(Chapter 3, Section 2.1(e)); which serves users better is a question the validation study
 
-policies over the analysis’s verdict, a strict policy, the default, which asks before every
-command that is not plainly recoverable, and a capture policy, which asks only before
-unrecoverable commands (Chapter 3, Section 2.1(e)); which serves users better is a
-question the validation study informs rather than settles. Sixth, the platform commits
-to a locally hosted, open-weights, code-specialized small language model (Qwen2.5-
+informs rather than settles. Sixth, the platform commits to a locally hosted, open-
+weights, code-specialized small language model (Qwen2.5-Coder-3B-Instruct) rather
+than a hosted frontier model, prioritizing privacy and offline operation over the
+potentially higher capability of larger hosted alternatives5; this may limit how often a
+request is translated correctly, which bounds the validation study but not the analysis,
+which takes whatever command it is given. Seventh, the platform targets the Linux
 
-Coder-3B-Instruct) rather than a hosted frontier model, prioritizing privacy and offline
-operation over the potentially higher capability of larger hosted alternatives5; this may
-limit how often a request is translated correctly, which bounds the validation study but
-not the analysis, which takes whatever command it is given. Seventh, the platform
-targets the Linux desktop, and the validation study’s findings may not generalize to
-
-Windows or macOS; it is bounded by the task coverage of the OSWorld benchmark
-and the custom task suite, and users with motor accessibility needs are excluded from it
-for ethics-review and recruitment reasons, so accessibility-specific configurations such
-as speech-instructed operation for atypical speech [13] are out of scope.
+desktop, and the validation study’s findings may not generalize to Windows or macOS;
+it is bounded by the task coverage of the OSWorld benchmark and the custom task
 
 ──────── p. 13 ────────
                                                                                                            13
+
+
+suite, and users with motor accessibility needs are excluded from it for ethics-review
+and recruitment reasons, so accessibility-specific configurations such as speech-
+instructed operation for atypical speech [13] are out of scope.
 
 
 

@@ -399,27 +399,27 @@ system Date: ____________
   Demand        the task?                                low                      high
 
 ──────── p. 114 ────────
-                                                                                        114
+                                                                                         114
 
 
-  Subscale       Question                           Low        Rating (0–      High
-                                                    ancho      100, steps      ancho
-                                                    r          of 5)           r
+  Subscale       Question                           Low         Rating (0–      High
+                                                    ancho       100, steps      ancho
+                                                    r           of 5)           r
 
-  Tempora        How hurried or rushed was the      Very       ____            Very
-  l              pace of the task?                  low                        high
+  Tempora        How hurried or rushed was the      Very        ____            Very
+  l              pace of the task?                  low                         high
   Demand
 
-  Performa       How successful were you in         Perfec     ____            Failur
-  nce            accomplishing what you were        t                          e
+  Performa       How successful were you in         Perfec      ____            Failur
+  nce            accomplishing what you were        t                           e
                  asked to do?
 
-  Effort         How hard did you have to work      Very       ____            Very
-                 to accomplish your level of        low                        high
+  Effort         How hard did you have to work      Very        ____            Very
+                 to accomplish your level of        low                         high
                  performance?
 
-  Frustrati      How insecure, discouraged,         Very       ____            Very
-  on             irritated, stressed and annoyed    low                        high
+  Frustrati      How insecure, discouraged,         Very        ____            Very
+  on             irritated, stressed and annoyed    low                         high
                  were you?
 
 
@@ -430,11 +430,11 @@ system Date: ____________
                             Custom Cross-Platform Task Suite
            The suite comprises sixteen tasks in two parts. Twelve core tasks span the
 
-four categories defined in Section 1.5 at three difficulty levels, and constitute the
-primary comparison.       Four boundary tasks deliberately fall outside what a shell-
+four categories defined in Section 1.5 at three difficulty levels, and constitute the main
+platform comparison. Four boundary tasks deliberately fall outside what a shell-
 
 mediated interface can express; they are administered and scored but reported
-separately from the primary comparison, because their purpose is to characterize the
+separately from the main comparison, because their purpose is to characterize the
 
 capability boundary honestly rather than to contribute to the between-condition
 contrast. Omitting them would leave the suite composed only of work the command

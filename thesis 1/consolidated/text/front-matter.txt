@@ -78,15 +78,15 @@ Chapter 1: INTRODUCTION                                           1
 
      1.5 Contributions of the Study                               6
 
-     1.6 Significance of the Study                                9
-     1.7 Scope and Limitations of the Study                      10
+     1.6 Significance of the Study                               10
+     1.7 Scope and Limitations of the Study                      11
 
 Chapter 2: REVIEW OF RELATED LITERATURE                          14
 
      2.1 Introduction to the Review                              14
 
-     2.2 Theoretical Framework                                   14
-     2.3 Historical Foundations of Natural-Language Interfaces   20
+     2.2 Theoretical Framework                                   16
+     2.3 Historical Foundations of Natural-Language Interfaces   19
 
      2.4 Natural-Language-to-Shell Translation                   23
 
@@ -161,7 +161,7 @@ Table C.2: Boundary tasks — outside shell expressibility                      
                                     LIST OF FIGURES
 
 
-Figure 2.1: The four-layer interaction pipeline for language-mediated computing   17
+Figure 2.1: The four-layer interaction pipeline for language-mediated computing   18
 interfaces
 Figure 3.1: Conceptual framework: the recoverability analysis and the platform    50
 
