@@ -121,17 +121,19 @@ Table 1.1: Components adopted rather than built, and why                        
 Table 2.1: Approaches to the safety of shell commands, compared on the properties        30
 the study’s algorithm combines
 
-Table 2.2: Comparative analysis of surveyed systems along the four-layer pipeline        37
+Table 2.2: Comparative analysis of surveyed systems on conversational and LLM-           37
+mediated interfaces for personal computing
 Table 3.1: Study evaluation machines                                                     52
-Table 3.2: SynapseOS minimum deployment requirements                                     52
 
+Table 3.2: SynapseOS minimum deployment requirements                                     52
 Table 3.3: Metrics for the recoverability algorithm, and what each is for                85
 Table 3.4: Paired comparisons of the effect analysis against each list on the held-out   90
 corpus, with Holm-corrected significance
-Table 3.5: Composition and resolution ablation — the full analysis against the same      95
 
+Table 3.5: Composition and resolution ablation — the full analysis against the same      95
 rule table with composition, resolution, or both disabled
 Table C.1: Custom cross-platform task suite — core tasks                                 115
+
 Table C.2: Boundary tasks — outside shell expressibility                                 117
 
 
@@ -145,7 +147,7 @@ Table C.2: Boundary tasks — outside shell expressibility                      
 Figure 2.1: The four-layer interaction pipeline for language-mediated computing       18
 
 interfaces
-Figure 3.1: Conceptual framework: the recoverability analysis and the platform that   50
+Figure 3.1: Conceptual framework: the recoverability analysis and the platform that   51
 deploys it
 
 

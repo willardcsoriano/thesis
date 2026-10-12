@@ -392,15 +392,15 @@ power is inaccessible to most people in practice.        But the best-known cont
 comparison of command, menu, and iconic interfaces, conducted by Whiteside and
 colleagues across seventy-six users and seven systems [48], concluded that interface style
 
-itself did not predict either performance or preference: careful design did, and the system
-that served novices best also served experts best. That finding is as much a caution for
+itself did not predict either performance or preference: careful design did, and there was
+no necessary tradeoff between ease of use and ease of learning. That finding is as much a
 
-the present study as a motivation for it. It warns against attributing to a conversational
+caution for the present study as a motivation for it. It warns against attributing to a
 
-paradigm what may in fact belong to the quality of one particular implementation, and it
-is a principal reason this study measures a specific system against a specific baseline
+conversational paradigm what may in fact belong to the quality of one particular
+implementation, and it is a principal reason this study measures a specific system against
 
-rather than claiming to measure one paradigm against another.
+a specific baseline rather than claiming to measure one paradigm against another.
 
 ──────── p. 23 ────────
                                                                                          23
@@ -593,128 +593,130 @@ semantics to catch common expansion bugs and includes taint tracking, but is not
 concerned with what a script’s commands would do to the filesystem if executed
 
 correctly. Smoosh [12] gives the POSIX shell a mechanized, executable small-step
-operational semantics, validated against other shells' conformance test suites — exactly
+operational semantics which, run against the POSIX and Modernish test suites and its
 
-the kind of ground-truth semantics a static effect analysis would need to be checked
-against — but stops at defining that semantics rather than analyzing programs written in
+authors’ own, proved more conformant to the standard than seven widely used shells —
+exactly the kind of ground-truth semantics a static effect analysis would need to be
 
-it. Closest of the three is CoLiS [2], which applies symbolic execution to the more than
+checked against — but stops at defining that semantics rather than analyzing programs
 
 ──────── p. 27 ────────
-                                                                                        27
+                                                                                         27
 
 
-twenty-seven thousand POSIX-shell maintainer scripts in the Debian package archive to
-find violations of the properties Debian policy requires of these scripts, which run with
+written in it. Closest of the three is CoLiS [2], which applies symbolic execution to the
+more than twenty-seven thousand POSIX-shell maintainer scripts in the Debian package
 
-root privileges during install, upgrade, and removal; among those properties is
+archive to find violations of the properties Debian policy requires of these scripts, which
+run with root privileges during install, upgrade, and removal; among those properties is
+
 idempotence, that running a script a second time causes no further harm. Idempotence
 
 and recoverability are related but distinct: a script can be idempotent while still being
-
 destructive on its first run — rm -rf /var/cache/pkg is idempotent, since running it twice
+
 does no more damage than once, and destructive: nothing restores it unless what it
-
 removes was captured before the first run — and a command can be recoverable without
+
 being idempotent, if each run produces a new, independently-reversible effect. CoLiS is
-
 therefore the nearest prior application of static effect reasoning to shell scripts
+
 specifically, and it stops short of the present study’s question for exactly this reason:
-
 verifying that re-execution is safe does not determine whether the first execution can be
-undone. No work identified in this review derives a recoverability verdict for a shell
 
+undone. No work identified in this review derives a recoverability verdict for a shell
 command from its statically-computed effects; that is the specific gap the present study’s
+
 algorithmic contribution fills.
 
 
 
 Recovery after the fact
-
          Guards and analyses act before a command runs. A separate literature restores a
+
 system after something has gone wrong, and it approaches the study’s question from the
-
 other side: not what a command will destroy, but how to recover what was destroyed.
+
 Three kinds of mechanism are relevant.
-
          Filesystem snapshots are the most widely deployed, and one shipped natural-
+
 language shell already relies on them: ANOLISA’s checkpoint tool snapshots an agent’s
-
 workspace at file level before key operations or after each round of conversation, and
-rolls back to any snapshot [1]. A copy-on-write filesystem such as btrfs can snapshot a
 
+rolls back to any snapshot [1]. A copy-on-write filesystem such as btrfs can snapshot a
 whole subvolume at little cost, because a snapshot shares its blocks with the live
+
 filesystem until they are modified [37], so snapshots can be taken on a schedule or before
 
 system updates. A snapshot needs no knowledge of the command it protects against,
-
-which is both its strength and its limit. Restoring one returns the whole subvolume to an
 
 ──────── p. 28 ────────
                                                                                            28
 
 
+which is both its strength and its limit. Restoring one returns the whole subvolume to an
 earlier moment and discards every later change along with the unwanted one, and nothing
+
 about a snapshot can tell the user, before a command runs, whether that command will
-
 lose anything. On a filesystem without copy-on-write, such as the ext4 on which this
+
 study is conducted, a snapshot must visit every file in the tree, a cost measured in
-
 Chapter 3, Section 3.1(a). Versioning file systems instead keep old versions of individual
+
 files: the Elephant file system retains versions under per-file policies that decide when an
-
 old version may be forgotten [39]. Recovery is then per file and needs no foresight, but
+
 its storage cost is paid on every change, mistaken or not, and obtaining it means replacing
-
 the filesystem.
+
          Undo at the level of a service or the operating system makes recovery a property
-
 of the system’s design. Operator Undo intercepts and logs the user interactions with an e-
-mail service before they reach it, so that an operator can rewind the service’s state, repair
 
+mail service before they reach it, so that an operator can rewind the service’s state, repair
 it, and replay what users did since [6]. Operating system transactions let a program
+
 group system calls so that their effects can be rolled back as a unit before they commit
 
 [35]. Intrusion recovery systems such as Taser log system activity so that the effects of
-
 an attack can be identified and reverted afterward while legitimate changes are kept [11].
+
 Each restores more completely than any list can, but each requires something the setting
-
 of this study does not have: a service built to be undoable, a kernel and programs that use
+
 transactions, or continuous logging of all system activity.
-
          A different route learns a command’s effects by running it where they can be
+
 contained. The try utility runs a command in a semisolate over the current environment,
-
 built from Linux namespaces and a union filesystem, captures its effects on the
+
 filesystem, and lets the user inspect them and then apply, discard, or apply part of them
-
 [22]. Its authors motivate it with cases this study shares, a find -exec suggested by a
-language model that deletes a user’s files among them. It is the closest prior work to the
 
+language model that deletes a user’s files among them. It is the closest prior work to the
 analysis’s dry runs, and the two differ in where the knowledge comes from: try executes
+
 the command itself and shows its effects to a user who must judge them, and it does not
 
 contain effects outside the filesystem, such as network calls; the present study runs only
-
-commands it has first proven read-only, decides from the command’s structure what it
 
 ──────── p. 29 ────────
                                                                                         29
 
 
+commands it has first proven read-only, decides from the command’s structure what it
+
 would destroy, and captures exactly that before the command runs. For the same reason
-
 try is not scored as a baseline in Chapter 3: it decides nothing about a command, since it
+
 runs every command and leaves what to keep to the user.
-
          The present study takes a narrower path between these literatures. Like a guard,
+
 it acts on one command before the command runs, on an unmodified system and
-
 filesystem. Like a recovery mechanism, it restores. It captures only what that one
-command would destroy, which it determines by analysis, so its cost follows from what
 
+command would destroy, which it determines by analysis, so its cost follows from what
 the command touches rather than from the size of the system, and it can say before the
+
 command runs whether undo will be possible. Table 2.1 compares the approaches
 
 surveyed in this section on these properties.
