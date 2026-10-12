@@ -38,7 +38,7 @@ mediated interfaces, in which the platform that deploys the analysis is position
                                           14
 
 ──────── p. 15 ────────
-                                                                                       15
+                                                                                      15
 
 
 Program analysis: abstract interpretation and effect systems
@@ -51,39 +51,51 @@ Abstract interpretation, introduced by Cousot and Cousot [7], is the foundationa
 
 technique for computing sound, conservative approximations of a program’s runtime
 behavior by evaluating it over an abstract domain rather than its concrete one. Type-
-and-effect systems, developed by Jouvelot and Gifford [19] and given a full formal
-treatment by Talpin and Jouvelot [43], extend a program’s type judgment with an
-explicit account of the side effects an expression may produce, so that a compiler or
-static checker can reason about those effects instead of leaving them implicit in
+and-effect systems, whose types and effects can be inferred by the algebraic
+reconstruction of Jouvelot and Gifford [19] and are given a full formal treatment by
+Talpin and Jouvelot [43], extend a program’s type judgment with an explicit account of
+the side effects an expression may produce, so that a compiler or static checker can
 
-execution. The recoverability algorithm this study contributes (Chapter 3, Section
-2.1(a)–(c)) is an instance of this discipline applied to a question neither tradition has
-addressed, whether the filesystem effects of a generated command can be undone and
-what must be captured beforehand so that they can be: a generated shell command is
-treated as an expression whose effect — on the filesystem, rather than on a type
+reason about those effects instead of leaving them implicit in execution.           The
+recoverability algorithm this study contributes (Chapter 3, Section 2.1(a)–(c)) is an
+instance of this discipline applied to a question that no work in the surveyed corpus
+applies either tradition to: whether the effects of a generated command can be undone,
+and what must be captured beforehand so that they can be. A generated shell command
 
-system’s abstract state — is derived from its syntax and composed across its operators,
-and it is that effect set, not the command’s name, that the recoverability verdict is
-computed over. This connects the algorithm to an established formal lineage rather
-than presenting it as a bespoke heuristic, and it grounds the algorithm’s one-sided
-soundness property — over-approximating destructiveness under uncertainty rather
+is treated as an expression whose effect — on the filesystem and on the system’s
+installed packages and running services, rather than on a type system’s abstract state —
+is derived from its syntax and composed across its operators, and it is that effect set,
+not the command’s name, that the recoverability verdict is computed over.          This
+connects the algorithm to an established formal lineage rather than presenting it as a
 
-than under-approximating it — in the same requirement abstract interpretation itself
-imposes: a sound abstraction may lose precision, but it may never assert a property the
-concrete execution does not actually have.
-        Three properties of the analysis follow from this framework and are carried
+bespoke heuristic, and it grounds the algorithm’s one-sided soundness property —
+over-approximating destructiveness under uncertainty rather than under-approximating
+it — in the same requirement abstract interpretation itself imposes: a sound abstraction
+may lose precision, but it may never assert a property the concrete execution does not
+actually have.
+
+──────── p. 16 ────────
+                                                                                       16
+
+
+          Two parts of the analysis go beyond a purely static reading, and the
+framework covers both. Where a target is known only at run time, the analysis runs a
+
+form of the command first, which makes it a hybrid of static and dynamic analysis; its
+soundness still rests on the static part, because a form is run only when the static
+analysis proves it can change nothing, and a target that cannot be resolved this way
+falls back to unrecoverable. And the recovery plan is a cost-minimizing choice over
+that abstraction: for each effect the abstraction admits, it selects the cheapest capture
+
+that restores it, so the plan inherits the abstraction’s over-approximation, capturing
+more than strictly necessary when the analysis is unsure, never less.
+          Three properties of the analysis follow from this framework and are carried
 through the rest of the study. Its abstract domain is the effect set: what a command
 would read, create, write, remove, or alter in metadata, rather than the command’s
 
 name. Its semantics is compositional: the effects of a line are built from the effects of
-
-──────── p. 16 ────────
-                                                                                           16
-
-
 its parts through the operators that join them, which is what an enumerated list of
 command patterns cannot express. And its soundness is one-sided: whatever cannot be
-
 determined is treated as unrecoverable, so that the analysis may ask more often than
 necessary but may never declare a destructive command safe.
 
@@ -91,17 +103,22 @@ necessary but may never declare a destructive command safe.
 
 The four-layer interaction pipeline
           The heterogeneous systems surveyed in this chapter — shell translators, web
-
 and mobile agents, desktop automation frameworks, and accessibility interfaces —
 differ widely in platform, action space, and evaluation method, yet they address a
 common problem: converting a user’s expressed intent into effects on a computing
+
 system.    To compare them on common ground, this review adopts a four-layer
 interaction pipeline — Input, Reasoning, Action, and Operating-System Integration —
-
 as its framework for the interface literature. The framework is adapted from the
 layered decomposition of large language model (LLM)-brained graphical user interface
+
+──────── p. 17 ────────
+                                                                                           17
+
+
 (GUI) agents proposed in the survey of Zhang and colleagues [52], generalized here
 from graphical agents specifically to language-mediated computing interfaces as a
+
 class. Figure 2.1 depicts the pipeline and situates the layers relative to one another.
 
 
@@ -115,34 +132,33 @@ class. Figure 2.1 depicts the pipeline and situates the layers relative to one a
 
 
    Figure 2.1. The four-layer interaction pipeline for language-mediated computing
- interfaces, adapted from the LLM-brained GUI-agent survey of Zhang and colleagues
 
+ interfaces, adapted from the LLM-brained GUI-agent survey of Zhang and colleagues
 [52]. A user’s intent enters at the Input layer, is parsed and grounded at the Reasoning
     layer, executed at the Action layer, and takes effect within a scope defined at the
                                Operating-System Integration layer.
-
-──────── p. 17 ────────
-                                                                                       17
-
-
-        The Input layer concerns how a user expresses intent, whether by typed text,
+         The Input layer concerns how a user expresses intent, whether by typed text,
 speech, or structured shortcuts. The Reasoning layer concerns how that intent is parsed
-
 into a plan and grounded into the affordances of the environment. The Action layer
 concerns how a grounded plan is executed — through command translation, through
+
 binding to native application programming interfaces (APIs), or through simulated
 keyboard and mouse operations. The Operating-System Integration layer concerns the
 scope of computing an approach can affect, from a single application to an entire
 operating system.
-
-        This framework is appropriate to that literature for three reasons. First, it is
+         This framework is appropriate to that literature for three reasons. First, it is
 modality-neutral: because it abstracts over whether intent arrives as text, speech, or
 gesture and whether action is realized through shell commands, API calls, or simulated
 clicks, it accommodates the full span of surveyed systems without privileging any one
 interaction style — a necessary property for a review that spans command-line,
 graphical, and accessibility work. Second, it is diagnostic: locating each system’s
+
 principal limitation at a specific layer — visual grounding as a Reasoning-and-Action
 failure, or narrow platform coverage as an Operating-System Integration limitation —
+
+──────── p. 18 ────────
+                                                                                         18
+
 
 turns an otherwise flat catalogue of systems into a structured comparison, and it is this
 layer-by-layer positioning that the comparative synthesis of §2.9 makes explicit. Third,
@@ -150,39 +166,41 @@ it is directly applicable to the platform: SynapseOS, in which the analysis is d
 (Chapter 3, Figure 3.1), instantiates this same pipeline — accepting natural-language
 intent at the Input layer, parsing it with a locally-hosted small language model at the
 Reasoning layer, translating it into shell commands executed through the standard
+
 toolchain at the Action layer, and spanning the full graphical session rather than a
 single application at the Operating-System Integration layer. The pipeline therefore
 serves both as the organizing lens for the interface literature and as the vocabulary in
 which the platform is later positioned; the analysis sits between its Reasoning and
-
 Action layers, where a generated command is about to take effect.
-
-──────── p. 18 ────────
-                                                                                         18
-
-
-         Works were included in this review if they satisfy at least one of six criteria:
+         Works were included in this review if they satisfy at least one of seven criteria:
 they analyze or guard shell commands or scripts, reason statically about a program’s
 effects, or restore a system’s state after a change; they translate natural language into
 executable system actions; they operate graphical, web, or mobile interfaces through
 LLM-based reasoning; they address speech- or accessibility-driven interaction with
-computing systems; they provide an evaluation environment for such systems; or they
 
+computing systems; they provide an evaluation environment for such systems; they
 report a controlled empirical comparison between a language-mediated interface and a
-conventional graphical one. The sixth criterion is stated explicitly because the fourth
-gap this chapter identifies concerns the scarcity of exactly such comparisons: a corpus
-admitting only the first five criteria could not contain a comparative interface study by
-construction, and an absence argument drawn from it would be circular rather than
-evidential. Works concerned solely with model architecture or training, without a
-computing-interaction target, and general-purpose conversational systems without a
-system-control capability, were excluded as outside the scope of this study.
+conventional graphical one; or they set out the interaction theory, and the critiques of
+natural-language interaction, against which such an interface must be judged. The
+comparison criterion is stated explicitly because the fourth gap this chapter identifies
+concerns the scarcity of exactly such comparisons: a corpus admitting only the other
+criteria could not contain a comparative interface study by construction, and an absence
+argument drawn from it would be circular rather than evidential. Works concerned
+solely with model architecture or training, without a computing-interaction target, and
+general-purpose conversational systems without a system-control capability, were
+excluded unless they bear on that interaction theory.
+
+──────── p. 19 ────────
+                                                                                         19
+
+
          Candidate works were identified through language-model-assisted search
 across arXiv, the ACM Digital Library, IEEE Xplore, and the ACL Anthology,
-
 extended by backward and forward citation chaining from each work that met the
 criteria above. This review is therefore a narrative review rather than a systematic one,
 and the search is not claimed to be exhaustive. Because assisted search can surface
 plausible but non-existent references, and can attribute to a source a claim that source
+
 does not make, every work cited in this chapter was subsequently verified by hand
 against its primary record — author list, venue, and year — and, where a specific claim
 is attributed to a work, against the presence of that claim in the work’s own text. That
@@ -190,71 +208,66 @@ verification pass corrected errors of both attribution and currency introduced b
 initial search, and it is reported here because the reliability of this chapter rests on it
 rather than on the discovery method. The limitation this leaves is one of recall rather
 than accuracy: assisted search favors well-indexed and heavily cited work, so the
-
 corpus may under-represent less visible literature. The absence claims in §2.9 are
 accordingly scoped to the surveyed corpus and stated as such, rather than as claims
-
-──────── p. 19 ────────
-                                                                                      19
-
-
 about the literature as a whole. The chapter first sets out the theoretical frameworks
 (§2.2), then proceeds thematically — historical foundations (§2.3), natural-language-
+
 to-shell translation (§2.4), command safety, static analysis of shell commands, and
 recovery mechanisms, the literature closest to the study’s algorithm (§2.5), graphical
 and computer-using agents (§2.6), accessibility and speech-driven interaction (§2.7),
 and evaluation environments (§2.8) — before synthesizing the surveyed works into a
-
 statement of the research gap and a comparative analysis (§2.9). It closes with a review
 of the methodological literature that informs the validation study (§2.10) and a
 summary that motivates the methodology detailed in Chapter 3 (§2.11).
 
+──────── p. 20 ────────
+                                                                                     20
 
 
 2.3 Historical Foundations of Natural-Language Interfaces
-
         The aspiration to let users describe what they want in ordinary language and
 have a computer carry it out is not new. The earliest serious system in this tradition,
 the Berkeley Unix Consultant of Wilensky and colleagues [48], was already operational
 by the late 1980s. The Unix Consultant was an intelligent natural-language interface
 that allowed naive users to learn about the Unix operating system through conversation
 in ordinary English, addressing both the natural-language-frontend problem and the
+
 consultation problem, and thereby distinguishing itself from systems intended only as
 command translators. It was built on the KODIAK knowledge representation and
 incorporated a user-modeling component that represented the user’s knowledge state
 and a teaching component through which users could extend its knowledge base in
 natural language. The system demonstrated end-to-end natural-language consultation
-
 about Unix, successfully answering "how do I," definitional, and problem-solving
 questions.   Critically, its authors identified knowledge acquisition as the principal
 bottleneck: extending the system to a new domain required substantial hand-
 engineering — a concern that directly foreshadows the contemporary problem of LLM-
 based agents requiring per-application grounding data.
 
-──────── p. 20 ────────
-                                                                                      20
-
-
-         The intervening decades saw natural-language interaction treated primarily as
+        The intervening decades saw natural-language interaction treated primarily as
 a supervised-learning problem. Representative of this pre-LLM era, the work of Li and
 colleagues on mapping natural-language instructions to mobile user-interface action
 sequences [22] trained dedicated phrase-extraction and grounding transformers on
 hand-annotated action sequences, achieving 70.59% accuracy on predicting complete
 ground-truth action sequences on its benchmark but remaining bound to its purpose-
 built datasets and architectures. The decisive shift came with the introduction of in-
-
 context reasoning patterns for LLMs. ReAct, introduced by Yao and colleagues [50],
 collapsed the multi-stage supervised pipeline into a prompting strategy: the language
 model is prompted to alternate between free-text "Thought" steps that update its plan
 and "Action" steps that interact with an external environment, with observations fed
+
+──────── p. 21 ────────
+                                                                                        21
+
+
 back into subsequent reasoning. Implemented purely as a prompting strategy without
 fine-tuning, ReAct nonetheless outperformed imitation-learning and reinforcement-
 learning baselines that required thousands of training trajectories.
          The historical significance of this transition is twofold, and it frames the
 remainder of this review. First, it explains why progress in the field has been so rapid
 since 2023: the methodological foundations became portable across modalities and
-
 platforms in a way that the earlier dataset-bound approaches were not. Nearly every
+
 system surveyed in the sections that follow inherits from ReAct the convention of
 interleaving reasoning traces with environment-affecting actions. Second, this shared
 inheritance underscores a corresponding fragility: these systems inherit the failure
@@ -262,8 +275,6 @@ modes of LLM reasoning — hallucinated actions, plan inconsistency, and brittle
 long-horizon tasks — alongside their capabilities, a concern that the evaluation
 literature reviewed in §2.8 quantifies.
 
-──────── p. 21 ────────
-                                                                                         21
 
 
 Interface paradigms and the case against natural language
@@ -273,22 +284,27 @@ question. Shneiderman’s account of direct manipulation [40] holds that interfa
 succeed when the objects of interest are continuously visible, when actions upon them
 are rapid, incremental, and reversible, and when their effects are immediately apparent
 — properties that let a user build and maintain an accurate model of system state.
-
 Norman formalized what an interface does for a user as the bridging of two gulfs [30]:
 the gulf of execution, between an intention and the actions a system makes available,
+
 and the gulf of evaluation, between the system’s response and the user’s ability to
 interpret it.   Hutchins, Hollan, and Norman [17] argued that direct manipulation
 narrows both, by making an interface feel like the object of interest itself rather than a
 description of it.
+
+──────── p. 22 ────────
+                                                                                         22
+
+
          A language interface sits awkwardly against nearly every one of those
 properties. An utterance is not continuously visible, not incremental, and not reversible
 by the same gesture that produced it; the set of available actions is not displayed, so the
 user must guess at the system’s capabilities rather than see them. Shneiderman and
 Maes debated precisely this trade-off between direct manipulation and interface agents
-
 [42], and Shneiderman argued subsequently that speech and language interaction
 consume the same cognitive resources a user needs in order to hold a task in mind,
 where pointing does not [41]. Empirical work on modern conversational agents has
+
 largely borne the concern out: Luger and Sellen documented a persistent gulf between
 what users expected a conversational agent to understand and what it actually did [26],
 and Clark and colleagues found that the properties people value in human conversation
@@ -296,27 +312,26 @@ transfer poorly to interaction with an agent [6].
          This critique is the strongest argument against the premise of the present
 study, and it shapes the system’s design rather than being set aside by it. Two of its
 three concerns are addressed directly. The gulf of evaluation is narrowed by displaying
-
 the generated command and its raw output rather than reporting an outcome in prose,
-
-──────── p. 22 ────────
-                                                                                        22
-
-
 so that the user sees what was actually done rather than a description of it. The
 irreversibility of an utterance is answered by the confirmation gate and the undo
 journal, which restore by mechanism the reversibility that direct manipulation obtains
+
 for free. The third concern — that a user cannot see the boundary of what the system is
 able to do — is not solved by this design and is carried forward as an acknowledged
 limitation.
-           The comparative question is older than the current literature and considerably
+         The comparative question is older than the current literature and considerably
 less settled than it is often assumed to be. It is widely held that the command line’s
-
 power is inaccessible to most people in practice.        But the best-known controlled
 comparison of command, menu, and iconic interfaces, conducted by Whiteside and
 colleagues across seventy-six users and seven systems [47], concluded that interface
 style itself did not predict either performance or preference: careful design did, and the
 system that served novices best also served experts best. That finding is as much a
+
+──────── p. 23 ────────
+                                                                                        23
+
+
 caution for the present study as a motivation for it. It warns against attributing to a
 conversational paradigm what may in fact belong to the quality of one particular
 implementation, and it is a principal reason this study measures a specific system
@@ -330,21 +345,16 @@ another.
 translation of natural language into shell commands. Because SynapseOS grounds user
 intent into commands executed through the standard Linux command-line toolchain,
 the accuracy, safety, and context-awareness of natural-language-to-Bash translation are
-
 of central relevance to its design.
            The standard dataset for this task is NL2Bash, from Lin and colleagues [23]:
 over nine thousand English descriptions paired with Bash commands, collected from
+
 question-and-answer sites, tutorials, and course material. It supplies the human-written
-
-──────── p. 23 ────────
-                                                                                         23
-
-
 commands of this study’s evaluation corpus (Chapter 3, Section 1.2(a)). Its commands
 were collected for translation rather than for safety, so most of them are read-only,
 which is why that corpus is sized against the labels it must contain rather than drawn as
 the dataset comes.
-         Westenfelder and colleagues [46] address this translation problem directly.
+           Westenfelder and colleagues [46] address this translation problem directly.
 Their work constructs a manually verified test set of 600 instruction–command pairs
 and a training set of 40,939 pairs, and introduces a functional-equivalence heuristic that
 reaches 95% confidence in determining whether two Bash commands produce the
@@ -354,16 +364,21 @@ a measure of whether a generated command actually accomplishes the intended task
 Their fine-tuned models substantially outperform zero-shot baselines, demonstrating
 that fine-tuning specifically on command-translation data is effective. The authors
 identify two persistent limitations: ambiguity in user instructions, and the absence of
+
+──────── p. 24 ────────
+                                                                                         24
+
+
 system context — the contents of the current directory, the user’s command history,
 and environment variables — at translation time. Integrating context-aware retrieval is
 identified as a direction, one that the persistent conversational session of SynapseOS is
 well positioned to supply.
-         The feasibility of deploying such a system without reliance on a hosted
+            The feasibility of deploying such a system without reliance on a hosted
 frontier model is supported by the large-scale evaluation of Jacobs and colleagues [18],
-
 who assess a broad range of locally deployable open-source LLMs on Bash command
 generation. Their work provides an empirical anchor for the viability of running
 natural-language-to-Bash translation on local, open-weights models of modest size —
+
 the deployment posture adopted by SynapseOS for reasons of privacy and offline
 operation. Taken together, the shell-and-command-line thread establishes that natural-
 language-to-Bash translation is tractable, that safety and reversibility are central rather
@@ -372,8 +387,6 @@ level system has been evaluated with users against the conventional workflow it 
 supplement. How such systems guard the commands they generate, and what static
 analysis of shell commands can establish, are taken up in §2.5.
 
-──────── p. 24 ────────
-                                                                                      24
 
 
 2.5 Command Safety, Static Analysis, and Recovery
@@ -385,35 +398,32 @@ of what the study needs, and none, as this section shows, determines before a co
 runs whether its effects can be undone and captures exactly what undoing them
 requires.
 
+──────── p. 25 ────────
+                                                                                      25
 
 
 Guards
-            Where translation accuracy is the concern of Westenfelder and colleagues
+         Where translation accuracy is the concern of Westenfelder and colleagues
 (§2.4), safety is the concern of Gyawali and colleagues, whose NaSh system [12]
 proposes guardrails for an LLM-powered natural-language shell for Linux. Published
 under the operating-systems classification, NaSh interposes a guardrail layer between
-
 the user’s natural-language input and the LLM-generated command: the model
 proposes a candidate command, the guardrail layer evaluates it against safety,
 reversibility, and confirmation criteria, and the user receives a structured preview
-before execution.       The authors note that LLM outputs may be unintended or
+before execution.     The authors note that LLM outputs may be unintended or
 unexplainable, requiring guardrails for user error recovery, and they leave as open work
+
 both the design of recovery and rollback mechanisms for irreversible system operations
 and the empirical user evaluation of the approach. The first of these open problems,
 recovery from an operation already approved, is the one the present study’s
 recoverability analysis addresses; the second is taken up by its validation in use.
-            The same design is what ships.      Coding agents that execute generated
+         The same design is what ships.         Coding agents that execute generated
 commands guard them with lists of command patterns: the dangerous-command check
-
 of OpenAI’s Codex CLI [31] and cc-safety-net [20], a pre-execution guard used with
 several agentic coding tools, are representative open-source examples, and both are
 scored as baselines in Chapter 3, Section 3.1(a). Both are designed for agents working
-
-──────── p. 25 ────────
-                                                                                       25
-
-
 inside a version-controlled project, where deleting project files is routine and version
+
 control, rather than the guard, is what makes a mistake recoverable. A personal
 computer’s files have no such safeguard, which is the setting of this study.
          The gap these guards share is the one this study’s algorithmic contribution
@@ -424,11 +434,15 @@ guardrails of this kind, together with summaries of what a command would affect 
 selective undo, but leaves the mechanisms for both open; the shipped guards above
 operate the same way in practice, with allow-and-deny lists over command prefixes. A
 
+──────── p. 26 ────────
+                                                                                       26
+
+
 permission model answers whether a command may run. It does not answer whether,
 having run, the command can be undone — and those are different questions with
 different answers. Refusing a command protects a user only until they approve it,
 which for any system that must let work proceed is most of the time.
-         The distinction matters because enumeration does not compose. A pattern list
+        The distinction matters because enumeration does not compose. A pattern list
 matches a command in isolation, whereas a generated line routinely chains several
 operations whose recovery requirements differ — a removal, a version-control reset,
 and an in-place edit may appear in one invocation joined by &&, with redirects and
@@ -442,20 +456,18 @@ the guardrail designs surveyed above. The comparison that matters is not only ag
 an enumerated list of dangerous commands. A list can be turned around so that it
 refuses every command it does not recognize, which removes the first weakness above
 at the cost of asking about everything unfamiliar; that fail-closed list is the strongest
-
-──────── p. 26 ────────
-                                                                                         26
-
-
 simple baseline, and the study therefore claims what the analysis adds to it — seeing
 through wrappers, resolving run-time targets, and capturing exactly what would be lost
 — and not the verdict alone.
-         Risk in agents that execute tools has also been studied by evaluation rather
+        Risk in agents that execute tools has also been studied by evaluation rather
+
 than by guarding. ToolEmu emulates tool execution with a language model so that the
 failures of language-model agents, including destructive actions, can be found before
 the agents are deployed [37]. It measures how risky an agent is across many cases; it
 does not protect a user from the particular command an agent is about to run.
 
+──────── p. 27 ────────
+                                                                                         27
 
 
 Static analysis of shell programs
@@ -464,37 +476,35 @@ the existing work targets properties adjacent to recoverability rather than reco
 itself. ABash [27] performs abstract interpretation over bash’s variable-expansion
 semantics to catch common expansion bugs and includes taint tracking, but is not
 concerned with what a script’s commands would do to the filesystem if executed
-
 correctly. Smoosh [11] gives the POSIX shell a mechanized, executable small-step
 operational semantics, validated against other shells' conformance test suites — exactly
 the kind of ground-truth semantics a static effect analysis would need to be checked
 against — but stops at defining that semantics rather than analyzing programs written
 in it. Closest of the three is CoLiS [2], which applies symbolic execution to the more
+
 than twenty-seven thousand POSIX-shell maintainer scripts in the Debian package
 archive to verify idempotence — that running a script a second time causes no further
 harm — a property Debian policy requires of these scripts because they run with root
 privileges during install, upgrade, and removal. Idempotence and recoverability are
 related but distinct: a script can be idempotent while still being destructive on its first
 run — rm -rf /var/cache/pkg is idempotent, since running it twice does no more
-
 damage than once, and unrecoverable, since the first run already destroyed what a
 recovery would need — and a command can be recoverable without being idempotent,
-
-──────── p. 27 ────────
-                                                                                        27
-
-
 if each run produces a new, independently-reversible effect. CoLiS is therefore the
 nearest prior application of static effect reasoning to shell scripts specifically, and it
 stops short of the present study’s question for exactly this reason: verifying that re-
+
 execution is safe does not determine whether the first execution can be undone. No
 work identified in this review derives a recoverability verdict for a shell command
 from its statically-computed effects; that is the specific gap the present study’s
 algorithmic contribution fills.
 
+──────── p. 28 ────────
+                                                                                        28
 
 
 Recovery after the fact
+
          Guards and analyses act before a command runs. A separate literature restores
 a system after something has gone wrong, and it approaches the study’s question from
 the other side: not what a command will destroy, but how to recover what was
@@ -502,11 +512,11 @@ destroyed. Three kinds of mechanism are relevant.
          Filesystem snapshots are the most widely deployed, and one shipped natural-
 language shell already relies on them: ANOLISA’s checkpoint tool snapshots an
 agent’s workspace at file level before key operations or after each round of
-
 conversation, and rolls back to any snapshot [1]. A copy-on-write filesystem such as
 btrfs can snapshot a whole subvolume at little cost, because a snapshot shares its blocks
 with the live filesystem until they are modified [36], so snapshots can be taken on a
 schedule or before system updates. A snapshot needs no knowledge of the command it
+
 protects against, which is both its strength and its limit. Restoring one returns the
 whole subvolume to an earlier moment and discards every later change along with the
 unwanted one, and nothing about a snapshot can tell the user, before a command runs,
@@ -514,15 +524,10 @@ whether that command will lose anything. On a filesystem without copy-on-write,
 such as the ext4 on which this study is conducted, a snapshot must visit every file in the
 tree, a cost measured in Chapter 3, Section 3.1(a). Versioning file systems instead keep
 old versions of individual files: the Elephant file system retains versions under per-file
-
-──────── p. 28 ────────
-                                                                                       28
-
-
 policies that decide when an old version may be forgotten [38]. Recovery is then per
-
 file and needs no foresight, but its storage cost is paid on every change, mistaken or
 not, and obtaining it means replacing the filesystem.
+
          Undo at the level of a service or the operating system makes recovery a
 property of the system’s design.       Operator Undo intercepts and logs the user
 interactions with an e-mail service before they reach it, so that an operator can rewind
@@ -530,6 +535,11 @@ the service’s state, repair it, and replay what users did since [5]. Operating
 transactions let a program group system calls so that their effects can be rolled back as
 a unit before they commit [34]. Intrusion recovery systems such as Taser log system
 activity so that the effects of an attack can be identified and reverted afterward while
+
+──────── p. 29 ────────
+                                                                                      29
+
+
 legitimate changes are kept [10]. Each restores more completely than any list can, but
 each requires something the setting of this study does not have: a service built to be
 
@@ -551,78 +561,82 @@ command runs.
          The present study takes a narrower path between these literatures. Like a
 guard, it acts on one command before the command runs, on an unmodified system and
 filesystem. Like a recovery mechanism, it restores. It captures only what that one
-
-──────── p. 29 ────────
-                                                                                    29
-
-
 command would destroy, which it determines by analysis, so its cost follows from what
 the command touches rather than from the size of the system, and it can say before the
-
 command runs whether undo will be possible. Table 2.1 compares the approaches
 surveyed in this section on these properties.
 
 ──────── p. 30 ────────
-                                                                                        30
+                                                                                    30
 
 
 Table 2.1. Approaches to the safety of shell commands, compared on the properties
 the study’s algorithm combines.
 
-  Approach              Acts on     Knows what        Composition      Restores
-                                    will change       and run-         what was
-                                                      time targets     lost
+  Approach             Acts on     Knows what      Composition     Restores
+                                   will change     and run-        what was
+                                                   time targets    lost
 
-  Pattern-list          The         No: matches       Partly: some     No
-  guards: NaSh,         pending     patterns          wrappers and
-  Codex CLI, cc-        comman                        nested shells
-  safety-net [12, 20,   d
-  31]
+  Pattern-list         The         No: matches     Partly: some    No
+  guards: Codex        pending     patterns        wrappers and
+  CLI, cc-safety-net   comman                      nested shells
+  [20, 31]             d
 
-  Shell program         A           Partly:           Through their    No
-  analyses: ABash,      script’s    CoLiS, for        own
-  Smoosh, CoLiS         text        idempotence       semantics
+  Design proposal:     The         Proposed,       Not specified   Proposed,
+  NaSh [12]            pending     mechanism                       mechanism
+                       comman      unspecified                     unspecified
+                       d
+
+  Shell program        A           Partly:         Through their   No
+  analyses: ABash,     script’s    CoLiS, for      own
+  Smoosh, CoLiS        text        idempotence     semantics
   [2, 11, 27]
 
-  Running in a          The         After running     Not needed       Yes: the user
-  semisolate: try       comman      it                                 applies or
-  [21]                  d, run                                         discards
-                        over a
-                        union
-                        filesyste
-                        m
+  Running in a         The         After running   Not needed      Yes: the user
+  semisolate: try      comman      it                              applies or
+  [21]                 d, run                                      discards
+                       over a
+                       union
+                       filesyste
+                       m
 
-  Agent workspace       An          No                Not needed       Yes:
-  snapshots:            agent’s                                        everything
-  ANOLISA [1]           workspa                                        since the
-                        ce                                             snapshot
+  Agent workspace      An          No              Not needed      Yes:
+  snapshots:           agent’s                                     everything
+  ANOLISA [1]          workspa                                     since the
+                       ce                                          snapshot
 
-  Filesystem            A whole     No                Not needed       Yes: all later
-  snapshots [36]        subvolu                                        changes
-                        me
+  Filesystem           A whole     No              Not needed      Yes: all later
+  snapshots [36]       subvolu                                     changes
+                       me
 
-  Versioning file       Every       No                Not needed       Yes: per file
-  systems [38]          file
+  Versioning file      Every       No              Not needed      Yes: per file
+  systems [38]         file
 
-  Service undo, OS      A           No                Not needed       Yes
-  transactions,         system
-  intrusion recovery    built or
-  [5, 10, 34]           logged
-                        for it
-
-  This study            The         Yes: its effect   Yes:             Yes: exactly
-                        pending     set               composed         what the plan
-                        comman                        and resolved     captured
-                        d                             before it runs
+  Service undo, OS     A           No              Not needed      Yes
+  transactions,        system
+  intrusion recovery   built or
+  [5, 10, 34]          logged
+                       for it
 
 ──────── p. 31 ────────
-                                                                                          31
+                                                                                            31
+
+
+  Approach               Acts on       Knows what        Composition        Restores
+                                       will change       and run-           what was
+                                                         time targets       lost
+
+  This study             The           Yes: its effect   Yes:               Yes: exactly
+                         pending       set               composed           what the plan
+                         comman                          and resolved       captured
+                         d                               before it runs
+
+
 
 
 2.6 Graphical and Computer-Using Agents
          A parallel and larger body of work addresses computer-using agents1 —
 systems that operate graphical environments by issuing actions and observing results.
-
 Although SynapseOS operates at the command line rather than by simulating graphical
 interaction, this literature is essential context: it establishes the dominant architectural
 patterns, defines the recurring technical bottleneck of visual grounding2, and, through
@@ -637,23 +651,24 @@ Web agents
 agents. Mind2Web, introduced by Deng and colleagues [9], is the first dataset for
 developing generalist web agents that follow language instructions across diverse real-
 world websites, comprising over two thousand open-ended tasks collected from 137
+
 websites across 31 domains; its accompanying two-stage model uses a small language
 model to filter candidate elements from large documents before invoking a larger
 model to choose among them. WebArena, introduced by Zhou and colleagues [56],
-
 provides a fully self-hosted, reproducible web environment of functional website
 clones and evaluates 812 long-horizon tasks for functional correctness rather than
 trajectory similarity, establishing a challenging benchmark on which contemporary
 models achieved completion rates far below human performance.                  Zheng and
-colleagues [55], in their SeeAct framework, decouple visual understanding from action:
-the model observes a screenshot, generates a textual plan, and a separate step grounds
-that plan onto page elements. Their central finding is diagnostic for the entire field —
-with oracle grounding provided, the model completes 51.1% of tasks on live websites,
 
 ──────── p. 32 ────────
                                                                                        32
 
 
+colleagues [55], in their SeeAct framework, decouple visual understanding from action:
+the model observes a screenshot, generates a textual plan, and a separate step grounds
+that plan onto page elements. Their central finding is diagnostic for the entire field —
+
+with oracle grounding provided, the model completes 51.1% of tasks on live websites,
 substantially outperforming a text-only baseline at 13.3%, but performance degrades
 sharply when grounding must itself be inferred, confirming visual grounding as the
 principal bottleneck.
@@ -664,7 +679,6 @@ Mobile agents
          Mobile-device control has produced large-scale datasets and progressively
 more autonomous agents. The pre-LLM work of Li and colleagues [22], discussed in
 §2.3, established the grounding problem for mobile interfaces. Android in the Wild,
-
 from Rawles and colleagues [35], contributes a dataset of 715,000 episodes spanning
 30,000 unique instructions, in which actions are gestures at arbitrary screen coordinates
 rather than operations on indexed interface elements, exposing the challenge that
@@ -672,112 +686,103 @@ actions must be inferred from visual appearance rather than from a structured mo
 the interface.    AppAgent, from Zhang and colleagues [54], operates Android
 applications through a simplified action space of taps and swipes and learns to use new
 applications through autonomous exploration or by observing human demonstrations,
+
 generating application-specific documentation that matched or exceeded human-written
 documentation. Mobile-Agent, from Wang and colleagues [45], adopts a purely vision-
 centric approach that requires no system metadata, using optical-character-recognition
 and icon-detection modules to locate interface elements — achieving broad
-
 applicability across mobile environments at the cost of vision-grounding errors that
 require recovery mechanisms.
 
+──────── p. 33 ────────
+                                                                                       33
 
 
 Desktop and cross-application agents
          Desktop agents are the most direct graphical analogue to the present work, and
-
 their limitations are the most instructive. ScreenAgent, from Niu and colleagues [29],
 is a vision-language-model-driven agent for cross-application desktop control that
+
 operates in a plan–act–reflect cycle, specifying actions as coordinates and key
 sequences; its authors acknowledge that vision-only grounding is less reliable than
-
-──────── p. 33 ────────
-                                                                                        33
-
-
 approaches with API access.        WinClick, from Hui and colleagues [16], targets
 Windows-desktop grounding and observes that most existing GUI agents rely on
 structured data formats such as the document object model or HyperText Markup
 Language, which are unavailable across general desktop environments; it therefore
-
 performs visual grounding directly from screenshots. UFO², the "Desktop AgentOS"
 of Zhang and colleagues [53], is the most ambitious desktop system surveyed: it fuses
 the native Windows accessibility framework with vision-based parsing in a hybrid
 action mechanism, dispatching subtasks from a coordinating agent to application-
 specialized agents. Its authors argue that existing computer-using agents are hindered
+
 by shallow operating-system integration, fragile screenshot-based interaction, and
 disruptive execution, and they identify adaptation to other desktop platforms, such as
 Linux and macOS, as future work. UFO² acts on the user’s behalf, as an automation
 layer beside the user’s own Windows session, and its authors frame cross-platform
 deployment as groundwork for a unified ecosystem of desktop automation solutions;
-the platform built for this study is instead operated by a person, turn by turn.
+the platform built for this study is instead operated by a person, turn by turn. AgentOS,
+from Liu and colleagues [24], goes further in ambition, proposing that a natural-
+language portal replace application silos as the way a person uses the operating system,
+but it is offered as a research direction, without a built system or an evaluation.
+
+──────── p. 34 ────────
+                                                                                            34
 
 
-
-Contemporaneous commercial systems (as of September 2026)
+Contemporaneous commercial systems (as of October 2026)
          The systems surveyed above are research artifacts. Shipping systems move
 faster than the peer-reviewed literature, and one is close enough to this study to warrant
 explicit positioning; what follows describes it as of October 2026. Alibaba Cloud
-
 Linux 4 Agentic Edition, ANOLISA, is a Linux distribution for AI agents whose
-default shell accepts ordinary language alongside shell commands, forces confirmation
-before operations it treats as unrecoverable, such as restarting the machine, and ships a
-checkpoint tool that snapshots an agent’s workspace at file level and can roll back to
-any snapshot [1]. It is the nearest shipped system to the present work, and it differs in
-the respect that matters here: it recovers by snapshot, restoring everything since a
-checkpoint, rather than by determining what one command will destroy and capturing
-exactly that (§2.5). It is also built to run AI agents on cloud servers, whereas the
 
-──────── p. 34 ────────
-                                                                                        34
-
-
-platform studied here runs a local model and is operated by a person turn by turn. The
-question this study asks is not whether conversation is a better interface, but whether
-what a generated command destroys can be determined and captured before it runs; the
-platform’s interface is the setting in which the answer is validated.
+default shell accepts ordinary language alongside shell commands and forces
+confirmation before operations it treats as unrecoverable, such as restarting the
+machine [1]; its checkpoint tool is described in §2.5. It is the nearest shipped system to
+the present work, and it differs in the respect that matters here: it recovers by snapshot,
+restoring everything since a checkpoint, rather than by determining what one command
+will destroy and capturing exactly that. It is also built to run AI agents on cloud
+servers, whereas the platform studied here runs a local model under a person’s
+direction. The question this study asks is not whether conversation is a better interface,
+but whether what a generated command destroys can be determined and captured
+before it runs; the platform’s interface is the setting in which the answer is validated.
 
 
 
 Vision-language foundation models
-          Underlying many of these agents are vision-language models trained
+         Underlying many of these agents are vision-language models trained
 specifically for interface understanding. CogAgent, from Hong and colleagues [15], is
-an   eighteen-billion-parameter    visual   language     model    specialized   for   GUI
-understanding and navigation, using both low- and high-resolution image encoders to
+an   eighteen-billion-parameter     visual   language    model     specialized   for   GUI
 
+understanding and navigation, using both low- and high-resolution image encoders to
 recognize the small icons and text typical of graphical interfaces. It supports the
 position that pure-vision GUI agents are viable when the underlying model is trained
 appropriately — but at a compute cost, and with the cross-platform generalization
 limitations common to the entire graphical-agent literature. Across web, mobile, and
 desktop, these systems demonstrate broad capability within a single platform class,
-while consistently identifying visual grounding as an unsolved bottleneck and trending
-toward hybrid execution that prefers structured access where available and falls back to
-vision.
+while consistently identifying visual grounding as an unsolved bottleneck.
 
+──────── p. 35 ────────
+                                                                                        35
 
 
 2.7 Accessibility and Speech-Driven Interaction
-          A distinct thread of the literature approaches conversational computing from
+         A distinct thread of the literature approaches conversational computing from
 the perspective of accessibility, targeting users with motor, speech, or cognitive needs.
 This thread is relevant to the present study in two ways: it provides the most rigorous
 human-centered evaluations in the field, and it exhibits a limitation that is the mirror
+
 image of the mainstream agent literature, sharpening the opportunity the proposed
-
 system addresses.
-
-──────── p. 35 ────────
-                                                                                          35
-
-
          VoicePilot, from Padmanabha and colleagues [32], is a framework for using
 LLMs as speech interfaces to physically assistive robots for individuals with motor
 impairments. Although its immediate target is robotic assistance rather than desktop
 computing, it is included here because it is the most rigorous human-centered
 evaluation in the LLM-speech-interface literature. The authors derive five concrete
-
 design guidelines from a study with motor-impaired participants, among them the
 importance of execution speed approaching that of a caregiver and the necessity of
 preview-and-confirm workflows — a guideline that directly informs the reversibility-
-based confirmation design of the present study.         DexAssist, from Mehendale and
+based confirmation design of the present study.       DexAssist, from Mehendale and
+
 Walishetti [28], targets web navigation by users with fine-motor impairments using two
 LLMs in tandem — one to interpret voice commands and a second to map the
 interpretation onto interface elements with fallback strategies — reducing the
@@ -785,62 +790,68 @@ misinterpretation failures of single-model voice navigation on dense layouts. Th
 architecture of van Dam [44] proposes retrofitting LLM-based conversational
 interfaces onto existing single-application graphical interfaces, exposing an
 application’s navigation graph through a tool protocol and handling voice input through
-
 real-time speech recognition; its author observes that most production applications
 were never designed with speech in mind, making such retrofitting an ongoing
 challenge.
+
          More recent work continues to mature the components required for speech-
 driven interface control. Han and colleagues, in GUIRoboTron-Speech [13], advance
 automated GUI agents driven directly by speech instructions, while Park and
+
+──────── p. 36 ────────
+                                                                                          36
+
+
 colleagues, in R-VLM [33], contribute region-aware visual grounding for more precise
 identification of on-screen elements. What unites this thread is that it operates at the
 level of the individual application or interaction technique rather than at the level of the
 session itself. These approaches presuppose an underlying conversational surface on
-
 which to run. A conversational interface layer over the whole session could provide
 one, which positions accessibility not as a target of the present study, which scopes it
+
 out for recruitment and ethics reasons, but as a possible later use of its platform.
 
-──────── p. 36 ────────
-                                                                                       36
 
 
 2.8 Evaluation Environments and Benchmarks
-        The rapid proliferation of computer-using agents has been accompanied by
+         The rapid proliferation of computer-using agents has been accompanied by
 increasingly rigorous evaluation environments, and these establish both the current
+
 ceiling of the field’s capability and the methods by which that capability is measured.
 The most consequential is OSWorld, from Xie and colleagues [49], a benchmark of 369
 real-world computer tasks in a real-computer environment spanning Ubuntu, Windows,
-
 and macOS. At its 2024 release the margin it measured was stark: humans achieved
-72.36% success where the best evaluated model reached 12.24%. That particular
-margin has since closed, with leading agents now exceeding the original human
-baseline on the revised task set — but the closure reflects progress on short, self-
-contained tasks rather than on sustained computer work. Its successor, OSWorld 2.0
-[51], evaluates 108 long-horizon workflows whose median item requires roughly an
-hour and a half of skilled human operation; there the best frontier configuration
-completes only 20.6% of tasks outright. The reported failures concentrate not in
-interface navigation but in tracking constraints across a long task, absorbing
-information that arrives mid-way, and verifying a result before declaring completion.
+72.36% success where the best evaluated model reached 12.24%. That margin has
+narrowed substantially since, but on short, self-contained tasks rather than on sustained
+computer work.       Its successor, OSWorld 2.0 [51], evaluates 108 long-horizon
+workflows whose median item requires roughly an hour and a half of skilled human
+operation; there the best frontier configuration completes only 20.6% of tasks outright.
+The reported failures concentrate not in interface navigation but in tracking constraints
 
-The field’s ceiling has moved substantially; it has not been reached. OSWorld is also
-directly relevant to the present study as the source of a real-task suite against which
-benchmark comparability can be established.
-        Complementing the benchmark literature, the survey of LLM-brained GUI
+across a long task, absorbing information that arrives mid-way, and verifying a result
+before declaring completion. The field’s ceiling has moved substantially; it has not
+been reached. OSWorld is also directly relevant to the present study as the source of a
+real-task suite against which benchmark comparability can be established. Direct
+comparisons between interfaces are rarer.        AXIS, from Lu and colleagues [25],
+compares an API-first agent with unaided manual operation by people in Microsoft
+
+──────── p. 37 ────────
+                                                                                       37
+
+
+Word, in a within-subjects design with a cloud-hosted frontier model, and Zhou and
+colleagues compare screen-only graphical agents with command-line agents across 440
+matched desktop tasks [57].
+         Complementing the benchmark literature, the survey of LLM-brained GUI
 agents by Zhang and colleagues [52] synthesizes the field through 2024, organizing it
 around the components of perception, planning, action, and memory, and providing the
+
 four-layer vocabulary adopted in §2.2 of this review. It enumerates the field’s open
 challenges — accurate element localization, knowledge retrieval, long-horizon
 planning, and safety-aware execution control; of these, safety-aware execution control
 is the one closest to the present study. What the evaluation literature reveals, however,
 is a specific methodological limitation: rigorous as these benchmarks are, they measure
-
 the autonomous task completion of agents acting on a user’s behalf, not the
-
-──────── p. 37 ────────
-                                                                                              37
-
-
 comparative performance of a human user working through a conversational interface
 versus a conventional graphical one. That distinction motivates the evaluation design
 reviewed in §2.10.
@@ -848,14 +859,22 @@ reviewed in §2.10.
 
 
 2.9 Synthesis: Comparative Analysis and Research Gap
-          The synthesis has two parts. The first concerns the study’s algorithm and is
+         The synthesis has two parts. The first concerns the study’s algorithm and is
 stated briefly because §2.5 has established it: every guard surveyed decides whether a
-command may run by matching it against a list of patterns, every analysis of shell
-programs targets a property other than recoverability, every recovery mechanism either
-restores wholesale or needs a system built for it, and none derives from a command’s
-structure what it would destroy or captures what is needed to undo it. That is the
+command may run by matching it against a list of patterns or, like ToolEmu [37],
+measures risk across many runs; every analysis of shell programs targets a property
+other than recoverability; every recovery mechanism either restores wholesale, as
 
-research gap. The second part concerns the setting in which the gap arises.
+ANOLISA’s snapshots do [1], or needs a system built for it; try [21] previews a
+command only by running it and leaving its effects for the user to judge; and none
+derives from a command’s structure what it would destroy or captures what is needed
+to undo it. That is the research gap. The second part concerns the setting in which the
+gap arises.
+
+──────── p. 38 ────────
+                                                                                                     38
+
+
           Positioning the interface systems against one another along the four-layer
 pipeline makes the structure of that setting explicit. Table 2.2 summarizes the principal
 systems by coverage scope, action mechanism, evaluation approach, and key
@@ -864,124 +883,111 @@ Table 2.2. Comparative analysis of surveyed systems on conversational and LLM-
 mediated interfaces for personal computing, positioned by coverage scope, action
 mechanism, evaluation, and key limitation.
 
- Source           System         Coverage        Action        Evaluation        Key
-                                 scope           mechanism                       limitation
+ Source            System         Coverage        Action           Evaluation        Key
+                                  scope           mechanism                          limitation
 
- Wilensky et      Unix           Shell           Natural-      Demonstratio      Hand-
- al. [48]         Consultant     consultation    language      n, case studies   engineered
-                                                 Q&A (no                         knowledge
-                                                 execution)                      base
- Westenfelder     Westenfelder   Shell (CLI)     Command       600-pair test     Limited
- et al. [46]      et al.                         translation   set, fine-        system-
-                                                               tuning            context
-                                                                                 awareness
- Gyawali et al.   NaSh           Shell (Linux)   Guarded       Worked            No formal
- [12]                                            command       examples,         user
-                                                 translation   design paper      evaluation
-
-──────── p. 38 ────────
-                                                                                                    38
-
-
-Source            System           Coverage        Action           Evaluation      Key
-                                   scope           mechanism                        limitation
-van Dam [44]      Multimodal       Single          API binding +    Architectural   Per-
-                  GUI Arch.        application     voice            prototype       application
-                                                                                    retrofitting
-Padmanabha        VoicePilot       Assistive       Voice + robot    User study,     Robot
-et al. [32]                        robot           API              motor-          domain, not
-                                                                    impaired        the OS
-                                                                    participants
-Mehendale         DexAssist        Web (e-         Dual-LLM         Web-task        Narrow to e-
-and Walishetti                     commerce)       voice +          evaluation      commerce
-[28]                                               element
-                                                   mapping
-Deng et al. [9]   Mind2Web         Web (137        Element          Dataset         Structured-
-                                   sites)          selection from   benchmark       data-only in
-                                                   filtered                         original form
-                                                   HTML
-Zhou et al.       WebArena         Web (self-      Functional       Benchmark,      Simulated, not
-[56]                               hosted)         task execution   low model       live web
-                                                                    baseline
-Zheng et al.      SeeAct           Web (live       Visual plan +    51.1% with      Grounding
-[55]                               sites)          grounding        oracle          hard without
-                                                                    grounding       oracle
-Rawles et al.     Android in the   Mobile          Coordinate       Dataset, 715k   Brittle to
-[35]              Wild             (Android)       gestures         episodes        interface
-                                                                                    updates
-Zhang et al.      AppAgent         Mobile (10      Tap/swipe +      50-task         Per-app
-[54]                               apps)           element labels   evaluation      knowledge
-                                                                                    acquisition
-Wang et al.       Mobile-Agent     Mobile          OCR + icon       Mobile-Eval     Vision-
-[45]                               (vision-only)   detection +      benchmark       grounding
-                                                   planning                         errors
-Hong et al.       CogAgent         Cross-          Vision-          SOTA on         Compute cost
-[15]                               platform GUI    language         VQA /           of high-res
-                                                   model (high-     navigation      inputs
-                                                   res)
-Niu et al. [29]   ScreenAgent      Cross-app       Vision +         Plan–act–       Vision-only
-                                   desktop         mouse/keyboa     reflect         grounding
-                                                   rd               evaluation      fragility
-Hui et al. [16]   WinClick         Desktop         Visual           WinSpot         Windows-
-                                   (Windows)       grounding        benchmark       specific
-Zhang et al.      UFO²             Desktop         Hybrid API +     System          Windows-
-[53]                               (Windows)       vision           deployment,     only;
-                                                                    task            automates
-                                                                    benchmarks      atop the OS
+ Wilensky et       Unix           Shell           Natural-         Demonstratio      Hand-
+ al. [48]          Consultant     consultation    language         n, case studies   engineered
+                                                  Q&A (no                            knowledge
+                                                  execution)                         base
+ Westenfelder      Westenfelder   Shell (CLI)     Command          600-pair test     Limited
+ et al. [46]       et al.                         translation      set, fine-        system-
+                                                                   tuning            context
+                                                                                     awareness
+ Gyawali et al.    NaSh           Shell (Linux)   Guarded          Worked            No formal
+ [12]                                             command          examples,         user
+                                                  translation      design paper      evaluation
+ van Dam [44]      Multimodal     Single          API binding +    Architectural     Per-
+                   GUI Arch.      application     voice            prototype         application
+                                                                                     retrofitting
+ Padmanabha        VoicePilot     Assistive       Voice + robot    User study,       Robot
+ et al. [32]                      robot           API              motor-            domain, not
+                                                                   impaired          the OS
+                                                                   participants
+ Mehendale         DexAssist      Web (e-         Dual-LLM         Web-task          Narrow to e-
+ and Walishetti                   commerce)       voice +          evaluation        commerce
+ [28]                                             element
+                                                  mapping
+ Deng et al. [9]   Mind2Web       Web (137        Element          Dataset           Structured-
+                                  sites)          selection from   benchmark         data-only in
+                                                  filtered                           original form
+                                                  HTML
+ Zhou et al.       WebArena       Web (self-      Functional       Benchmark,        Simulated, not
+ [56]                             hosted)         task execution   low model         live web
+                                                                   baseline
+ Zheng et al.      SeeAct         Web (live       Visual plan +    51.1% with        Grounding
+ [55]                             sites)          grounding        oracle            hard without
+                                                                   grounding         oracle
 
 ──────── p. 39 ────────
-                                                                                                   39
+                                                                                                       39
 
 
- Source            System        Coverage         Action         Evaluation       Key
-                                 scope            mechanism                       limitation
- Xie et al. [49]   OSWorld       Ubuntu,          Evaluation     369 tasks;       Reveals field-
-                                 Windows,         harness        12.24% best      wide
-                                 macOS                           vs 72.36%        grounding gap
-                                                                 human at
-                                                                 2024 release
- Li et al. [22]    PixelHelp /   Mobile (Pixel)   Two-stage      ACL              Pre-LLM;
-                   seq2act                        transformer    benchmark,       dataset-bound
-                                                                 three datasets
- Yao et al. [50]   ReAct         Cross-domain     Thought–       Multi-           Inherits LLM
-                                                  action–        benchmark        hallucination,
-                                                  observation    evaluation       brittleness
-                                                  prompting
- Han et al. [13]   GUIRoboTron   GUI (speech-     Speech-        Benchmark        Application,
-                   -Speech       driven)          instructed     evaluation       not session,
-                                                  agent                           level
- Park et al.       R-VLM         GUI              Region-aware   Grounding        Component,
- [33]                            grounding        visual         benchmark        not full
-                                                  grounding                       system
- Jacobs et al.     Local LLMs    Shell (CLI)      Open-source    Large-scale      Evaluation,
- [18]              for NL2Bash                    model          model            not a deployed
-                                                  evaluation     comparison       system
+Source            System           Coverage         Action           Evaluation       Key
+                                   scope            mechanism                         limitation
+Rawles et al.     Android in the   Mobile           Coordinate       Dataset, 715k    Brittle to
+[35]              Wild             (Android)        gestures         episodes         interface
+                                                                                      updates
+Zhang et al.      AppAgent         Mobile (10       Tap/swipe +      50-task          Per-app
+[54]                               apps)            element labels   evaluation       knowledge
+                                                                                      acquisition
+Wang et al.       Mobile-Agent     Mobile           OCR + icon       Mobile-Eval      Vision-
+[45]                               (vision-only)    detection +      benchmark        grounding
+                                                    planning                          errors
+Hong et al.       CogAgent         Cross-           Vision-          SOTA on          Compute cost
+[15]                               platform GUI     language         VQA /            of high-res
+                                                    model (high-     navigation       inputs
+                                                    res)
+Niu et al. [29]   ScreenAgent      Cross-app        Vision +         Plan–act–        Vision-only
+                                   desktop          mouse/keyboa     reflect          grounding
+                                                    rd               evaluation       fragility
+Hui et al. [16]   WinClick         Desktop          Visual           WinSpot          Windows-
+                                   (Windows)        grounding        benchmark        specific
+Zhang et al.      UFO²             Desktop          Hybrid API +     System           Windows-
+[53]                               (Windows)        vision           deployment,      only; acts on
+                                                                     task             the user’s
+                                                                     benchmarks       behalf
+Xie et al. [49]   OSWorld          Ubuntu,          Evaluation       369 tasks;       Reveals field-
+                                   Windows,         harness          12.24% best      wide
+                                   macOS                             vs 72.36%        grounding gap
+                                                                     human at
+                                                                     2024 release
+Li et al. [22]    PixelHelp /      Mobile (Pixel)   Two-stage        ACL              Pre-LLM;
+                  seq2act                           transformer      benchmark,       dataset-bound
+                                                                     three datasets
+Yao et al. [50]   ReAct            Cross-domain     Thought–         Multi-           Inherits LLM
+                                                    action–          benchmark        hallucination,
+                                                    observation      evaluation       brittleness
+                                                    prompting
+Han et al. [13]   GUIRoboTron      GUI (speech-     Speech-          Benchmark        Application,
+                  -Speech          driven)          instructed       evaluation       not session,
+                                                    agent                             level
+Park et al.       R-VLM            GUI              Region-aware     Grounding        Component,
+[33]                               grounding        visual           benchmark        not full
+                                                    grounding                         system
+Jacobs et al.     Local LLMs       Shell (CLI)      Open-source      Large-scale      Evaluation,
+[18]              for NL2Bash                       model            model            not a deployed
+                                                    evaluation       comparison       system
+
+──────── p. 40 ────────
+                                                                                       40
 
 
-           Six patterns emerge from this comparison, each surfacing a recurring theme in
+            Six patterns emerge from this comparison, each surfacing a recurring theme in
 the literature.
 
 
 
 Bifurcation by coverage scope
-           The field is bifurcated by coverage scope. Shell-level work [12, 46] and
+            The field is bifurcated by coverage scope. Shell-level work [12, 46] and
 single-application work [32, 44] sit at the narrow end; cross-application desktop, web,
 and mobile agents sit at the broad end but each within a single platform class. No
 system in the surveyed corpus implements a working conversational layer over the full
 graphical session that has been empirically validated against the conventional desktop
-
 workflow it would supplement. The Unix Consultant [48] came closest in ambition
 four decades ago, but its pre-LLM foundation prevented it from scaling beyond
-demonstration.      AgentOS [24] proposes a natural-language portal in place of the
-graphical desktop, but as a research direction, without a built system or an evaluation,
-
-──────── p. 40 ────────
-                                                                                         40
-
-
-and UFO² [53], the most operationally advanced desktop-agent system surveyed, is by
-construction an automation layer that acts on the user’s behalf beside the user’s own
-Windows session.
+demonstration. Neither AgentOS [24], a research direction without a built system, nor
+UFO² [53], an automation layer that acts on the user’s behalf (§2.6), fills it.
 
 
 
@@ -989,38 +995,35 @@ Execution mechanism at the action layer
             A second pattern concerns the execution mechanism at the Action layer. The
 literature divides among command translation, API binding, and GUI simulation, with
 a dominant trend toward hybrid execution [44, 53] that prefers structured access where
+
 available and falls back to vision.       Vision-only systems [29, 45] achieve broad
 applicability at the cost of grounding fragility, while structured-access systems achieve
 precision at the cost of per-environment integration. Notably, the Unix Consultant
 operated purely at the consultation layer without executing actions — an approach that
 reflects an underappreciated design principle, that the agent that explains can be safer
-
 than the agent that acts, which the confirmation-gated design of the present study
 revisits.
 
+──────── p. 41 ────────
+                                                                                         41
 
 
 Visual grounding as the principal bottleneck
-            A third pattern is that visual grounding is the field’s principal bottleneck,
-
+         A third pattern is that visual grounding is the field’s principal bottleneck,
 identified explicitly by both SeeAct [55] and the GUI-agents survey [52]. The 51.1%
 ceiling of GPT-4V with oracle grounding and its sharp degradation without are
 attributable in significant part to grounding failure. This bottleneck is a property of the
 graphical-simulation approach specifically; a command-line approach that grounds
 intent into shell commands rather than into on-screen pixel regions sidesteps it, at the
 cost of being bounded by what is expressible on the command line. Direct comparison
-qualifies that tradeoff usefully.     Across 440 matched desktop tasks, screen-only
+qualifies that tradeoff usefully.    Across 440 matched desktop tasks, screen-only
 graphical agents pass 59.1% while command-line agents reach only 48.2% — the shell
 is not automatically the stronger substrate — but command-line agents augmented with
 result verification reach 69.3%, the highest of the three conditions [57]. Execution
-
-──────── p. 41 ────────
-                                                                                      41
-
-
 through the shell becomes advantageous when it is paired with a mechanism that
-checks what the command actually did, which is precisely the role a reversibility gate
-and an undo record play in the present design.
+checks what the command actually did, a role analogous to the one the analysis and its
+
+undo record play in the present design.
 
 
 
@@ -1029,76 +1032,74 @@ Scarcity of comparative user evaluation
 evaluated either through architectural demonstration [12, 44] or through curated task
 benchmarks [9, 45, 49, 56]. User studies are rare, and the comparisons that do exist are
 narrow. VoicePilot [32] conducts a substantive human-centered evaluation of LLM-
-
 based interaction, and AXIS [25] compares an API-first agent against unaided manual
 operation in a within-subjects design — but within a single application, on a single
-platform, with a cloud-hosted frontier model.        No surveyed work compares a
+platform, with a cloud-hosted frontier model.          No surveyed work compares a
 conversational interface against the conventional graphical workflow across operating-
-system-level tasks on the same population. This is the empirical gap best filled by a
-controlled study of conversational interfaces.
-
-
-
-The operating-system substrate
-         A fifth pattern concerns the operating-system substrate. Windows [16, 53],
-Android [35, 45, 54], and the web [9, 55, 56] are each heavily represented; the Linux
-work that exists is aimed elsewhere than the end user’s desktop session. NaSh [12]
-addresses Linux at the shell level as a design proposal; Alibaba Cloud’s ANOLISA
-ships a natural-language Linux terminal with approval gating and rollback, but scoped
-to server and DevOps workloads; and OSWorld [49] includes Ubuntu as an evaluation
-platform rather than a deployment target.        No surveyed system implements a
-
-conversational session layer for the Linux desktop addressed to the person using the
-machine, despite Linux’s wide use for development and server work.
+system-level tasks on the same population. That gap belongs to the setting of this
+study, and the validation study addresses it in passing rather than as a research
+question.
 
 ──────── p. 42 ────────
                                                                                        42
 
 
+The operating-system substrate
+        A fifth pattern concerns the operating-system substrate. Windows [16, 53],
+Android [35, 45, 54], and the web [9, 55, 56] are each heavily represented; the Linux
+work that exists is aimed elsewhere than the end user’s desktop session. NaSh [12]
+
+addresses Linux at the shell level as a design proposal; Alibaba Cloud’s ANOLISA
+ships a natural-language Linux terminal with approval gating and rollback, but scoped
+to server and DevOps workloads; and OSWorld [49] includes Ubuntu as an evaluation
+platform rather than a deployment target.         No surveyed system implements a
+conversational session layer for the Linux desktop addressed to the person using the
+machine, despite Linux’s wide use for development and server work.
+
+
+
 Shared lineage and its fragility
-         A sixth pattern is the field’s shared intellectual lineage and its attendant
+        A sixth pattern is the field’s shared intellectual lineage and its attendant
 fragility. As established in §2.3, nearly every post-2023 system inherits the ReAct [50]
 convention of interleaving reasoning with action, which explains both the field’s rapid
-
 progress and the pervasiveness of LLM-reasoning failure modes across it — a fragility
 that makes safety and recoverability mechanisms, rather than raw capability alone,
 decisive for any deployable system.
-         A related but distinct class of contemporary systems warrants explicit
+        A related but distinct class of contemporary systems warrants explicit
 positioning here: AI-assisted coding agents, which translate natural-language intent into
+
 shell commands and execute them under human oversight — the same basic
 mechanism the present study adopts. These tools are excluded from Table 2.2 not on
 the grounds of being industry rather than academic work — a substantial share of the
 literature surveyed here is likewise unrefereed preprint — but because they occupy a
 different position on every axis that matters to this study. They are built for software
-engineers operating within an existing code repository, are powered by large models
-hosted on remote infrastructure, and run as a tool installed atop an otherwise
-unmodified desktop session. SynapseOS targets the inverse on each axis: any user of
-the machine regardless of command-line fluency, a locally-hosted small language
-model rather than a cloud dependency, and an interface layer over the whole desktop
-session rather than a tool used within one project. The mechanism is shared; the
-population, the model’s location, and the system’s place in the stack are not.
-         These patterns converge on a fourfold research gap.         First, the surveyed
+engineers operating within an existing code repository and are powered by large
+models hosted on remote infrastructure. SynapseOS differs on both axes: any user of
+
+──────── p. 43 ────────
+                                                                                       43
+
+
+the machine regardless of command-line fluency, and a locally hosted small language
+model rather than a cloud dependency. The mechanism is shared; the population and
+the model’s location are not.
+         These patterns converge on a fourfold research gap.        First, the surveyed
 systems guard a generated command by permission, matching it against an enumerated
 list of dangerous patterns, or recover by snapshot, and none determines before a
 command runs what it would destroy and captures exactly that (§2.5); this is the gap
-
 the study’s algorithmic contribution addresses. Second, no system in the surveyed
 corpus provides a conversational interface as a general route to operating a personal
 computer — one addressed to the person using the machine, spanning the operating
 system rather than a single application, and evaluated as an interface rather than as an
-
-──────── p. 43 ────────
-                                                                                        43
-
-
 autonomous agent. Existing systems are automation utilities: they act on the user’s
 behalf, and they are measured by how often they complete a task unattended rather than
 by whether a person directs them more effectively than they direct the interfaces they
 already have. Third, the work that exists on an open platform targets servers, agents,
+
 and benchmarks rather than the desktop session of an end user. Linux is chosen
 because its desktop session, toolchain, and command line are open to inspection and
 modification, which makes it the condition of the experiment rather than its subject; the
-absence of end-user desktop work there is what the platform addresses.            Fourth,
+absence of end-user desktop work there is what the platform addresses.           Fourth,
 controlled comparison against the conventional graphical workflow exists only within a
 single application, on a single platform, with a cloud-hosted frontier model [25]; no
 such comparison was found in the surveyed corpus for operating-system-level tasks
@@ -1106,41 +1107,51 @@ under a locally-hosted model and an explicit safety gate.             SynapseOS 
 conversational interface layer for the Linux desktop that translates natural-language
 intent into shell commands under a confirmation gate driven by the analysis, evaluated
 against each participant’s own operating system — is positioned against the other three
-
 gaps, as the platform on which the analysis addressing the first is validated. Its
 relationship to the closest prior work is worth stating directly. NaSh [12] proposes
 guardrails for an LLM-powered natural language shell — generated code that remains
+
+──────── p. 44 ────────
+                                                                                        44
+
+
 analyzable, selective undo, summaries of what a command would affect — as a design
 position, and explicitly leaves their mechanisms and their evaluation as open work.
 The present study contributes a mechanism for part of that position, which NaSh does
 not specify: an analysis that derives what a command would affect from its structure,
 through composition and the read-only resolution of run-time targets, and a plan that
+
 captures the least that undoing it requires, evaluated against observed ground truth.
 
-──────── p. 44 ────────
-                                                                                       44
 
 
 2.10 Review of the Methodological Literature
-        The algorithm is evaluated against ground truth observed by sandboxed
-execution, with paired statistical tests, as Chapter 3, Section 3.1 describes.       The
-methodological literature reviewed here shapes the validation study, in which the
-analysis is deployed in an interface and exercised by people, and so concerns how a
+         The algorithm is evaluated against ground truth observed by executing each
+command, the basis Westenfelder and colleagues also use for judging whether a
+generated Bash command does what was intended [46], and each comparison with a
+baseline is paired, because both systems are scored on the same commands (Chapter 3,
+Section 3.1). The methodological literature reviewed here shapes the validation study,
+in which the analysis is deployed in an interface and exercised by people, and so
+concerns how a conversational interface should be evaluated. The evaluation practices
+of the surveyed work fall into three categories, each with a characteristic limitation.
+Architectural demonstrations [12, 44] establish feasibility but provide no performance
+evidence. Curated task benchmarks [9, 49, 56] provide reproducible, quantitative
+measures but assess the autonomous task completion of agents acting on a user’s behalf
+rather than the performance of a human working through an interface. Human-centered
+user studies, exemplified by VoicePilot [32] and AXIS [25], provide the most direct
 
-conversational interface should be evaluated. The evaluation practices of the surveyed
-work fall into three categories, each with a characteristic limitation. Architectural
-demonstrations [12, 44] establish feasibility but provide no performance evidence.
-Curated task benchmarks [9, 49, 56] provide reproducible, quantitative measures but
-assess the autonomous task completion of agents acting on a user’s behalf rather than
-the performance of a human working through an interface. Human-centered user
-studies, exemplified by VoicePilot [32] and AXIS [25], provide the most direct
 evidence of an interface’s value to real users but remain rare in this literature and,
 where present, are confined to a single application rather than the operating system as a
 whole. The instruments this study adopts are drawn from established practice rather
 than constructed for it: the System Usability Scale [4] for perceived usability, with its
 interpretation grounded in subsequent large-sample analysis [39], and the NASA Task
 Load Index [14] for perceived workload.
-        These limitations motivate the methodological posture of the present study,
+
+──────── p. 45 ────────
+                                                                                       45
+
+
+         These limitations motivate the methodological posture of the present study,
 which is grounded in established human-computer-interaction evaluation practice. The
 study adopts a within-subjects design, in which each participant completes tasks under
 both the SynapseOS condition and the condition of their own operating system, so that
@@ -1148,20 +1159,15 @@ each participant serves as their own control and between-person variance is remo
 a confound; the order of conditions is counterbalanced to distribute learning effects
 evenly. It further adopts an expert-baseline comparison — using each participant’s
 most familiar environment as the comparison condition rather than a fixed alternative
-
 that may be unfamiliar — so that observed differences reflect interface quality rather
 than differential familiarity with the operating system, strengthening the ecological
 validity that the benchmark-only evaluations in the surveyed literature lack.         To
-
-──────── p. 45 ────────
-                                                                                        45
-
-
 integrate the quantitative measures of task completion time and error rate with
 qualitative evidence of user experience, the study employs a convergent mixed-methods
 structure in the sense set out by Creswell and Plano Clark [8], collecting both strands
 concurrently and integrating them at the interpretation stage; the qualitative data,
 gathered through retrospective think-aloud over the screen recording and a semi-
+
 structured interview, are analyzed using the thematic-analysis method of Braun and
 Clarke [3], a widely adopted six-phase approach for identifying and reporting patterns
 in qualitative data. Design considerations surfaced by the reviewed systems inform the
@@ -1173,42 +1179,47 @@ benchmark and custom task suite, the participant profile and screening criteria,
 session procedure, the metrics and their computation, and the statistical and qualitative
 analysis plan — is presented in detail in Chapter 3.
 
-
-
-2.11 Summary
-         This chapter reviewed two literatures.        The first, on which the study’s
-algorithm builds, is program analysis: abstract interpretation and type-and-effect
-systems [7, 19, 43] supply its formal basis, the command guards of natural-language
-shells and coding agents [12, 20, 31] decide by permission rather than by effect, the
-static analyses of shell programs [2, 11, 27] target properties adjacent to recoverability
-but not recoverability itself, and recovery mechanisms from snapshots to operating
-system transactions [5, 10, 34, 36, 38] restore after the fact, but wholesale or only on a
-system built for it. The second, in which the platform is situated, is the literature on
-natural-language and LLM-mediated interfaces to personal computing across nearly
-four decades, organized along a four-layer pipeline of Input, Reasoning, Action, and
-Operating-System Integration. The historical foundations established the long-standing
-
 ──────── p. 46 ────────
                                                                                         46
 
 
+2.11 Summary
+         This chapter reviewed two literatures.       The first, on which the study’s
+algorithm builds, is program analysis: abstract interpretation and type-and-effect
+systems [7, 19, 43] supply its formal basis, the command guards of natural-language
+shells and coding agents [12, 20, 31] decide by permission rather than by effect, the
+static analyses of shell programs [2, 11, 27] target properties adjacent to recoverability
+
+but not recoverability itself, recovery mechanisms from snapshots, including
+ANOLISA’s [1], to operating system transactions [5, 10, 34, 36, 38] restore after the
+fact, but wholesale or only on a system built for it, try [21] previews a command by
+running it, and ToolEmu [37] measures the risks of agents rather than guarding a given
+command. The second, in which the platform is situated, is the literature on natural-
+language and LLM-mediated interfaces to personal computing across nearly four
+decades, organized along a four-layer pipeline of Input, Reasoning, Action, and
+Operating-System Integration. The historical foundations established the long-standing
 aspiration to a natural-language interface to a real operating system [48] and the
 methodological shift, driven by in-context reasoning [50], that made the current
 generation of systems possible. The shell-and-command-line thread most directly
 related to the proposed design demonstrated that natural-language-to-Bash translation
 is tractable [46], that safety and reversibility are central concerns [12], and that local
 deployment is feasible [18], while leaving the extension from shell to session, and
-
 empirical user evaluation, as open work. The graphical-agent literature across web,
 mobile, and desktop [9, 15, 16, 29, 35, 45, 53–56] established the field’s architectural
 patterns and its recurring bottleneck of visual grounding, while the accessibility thread
 [13, 28, 32, 33, 44] revealed a complementary limitation that a general conversational
-interface layer would resolve. The evaluation literature [49, 51, 52] traced a capability
+interface layer could address. The evaluation literature [49, 51, 52] traced a capability
 ceiling that has risen sharply on short tasks while remaining low on long-horizon work,
 and exposed a methodological gap: interfaces are seldom evaluated comparatively
 against the conventional workflow with real users, and, in the surveyed corpus, not at
+
 the level of the operating system itself.
-         Synthesized, the surveyed works reveal a fourfold gap: no analysis of what a
+
+──────── p. 47 ────────
+                                                                                                      47
+
+
+          Synthesized, the surveyed works reveal a fourfold gap: no analysis of what a
 generated command would destroy, every guard deciding by permission and every
 shipped recovery restoring by snapshot; no conversational interface over a whole
 desktop session addressed to the person using it; no coverage of the Linux desktop; and
@@ -1219,11 +1230,8 @@ evaluated against ground truth obtained by sandboxed execution. The other three
 describe the setting in which that gap arises, and SynapseOS, the conversational
 interface layer for the Linux desktop built as the analysis’s experimental platform, is
 where the analysis is deployed and validated in use, through a controlled, within-
-subjects comparison against each participant’s own operating system.                  The
+subjects comparison against each participant’s own operating system.                               The
 methodology through which this evaluation is conducted is the subject of Chapter 3.
-
-──────── p. 47 ────────
-                                                                                                      47
 
 
 

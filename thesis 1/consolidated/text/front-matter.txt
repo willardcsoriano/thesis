@@ -86,21 +86,21 @@ Chapter 2: REVIEW OF RELATED LITERATURE                          14
      2.1 Introduction to the Review                              14
 
      2.2 Theoretical Framework                                   14
-     2.3 Historical Foundations of Natural-Language Interfaces   19
+     2.3 Historical Foundations of Natural-Language Interfaces   20
 
-     2.4 Natural-Language-to-Shell Translation                   22
+     2.4 Natural-Language-to-Shell Translation                   23
 
      2.5 Command Safety, Static Analysis, and Recovery           24
 
      2.6 Graphical and Computer-Using Agents                     31
-     2.7 Accessibility and Speech-Driven Interaction             34
+     2.7 Accessibility and Speech-Driven Interaction             35
 
      2.8 Evaluation Environments and Benchmarks                  36
 
      2.9 Synthesis: Comparative Analysis and Research Gap        37
 
      2.10 Review of the Methodological Literature                44
-     2.11 Summary                                                45
+     2.11 Summary                                                46
 
 
 
@@ -122,9 +122,9 @@ Chapter 3: METHODOLOGY                    48
 
      Section 3: System Testing            83
 
-REFERENCES                               103
+REFERENCES                               105
 
-APPENDICES                               110
+APPENDICES                               112
 
 ──────── p. vi ────────
                                        LIST OF TABLES
@@ -134,23 +134,23 @@ Table 1.1: Components adopted rather than built, and why                        
 Table 2.1: Approaches to the safety of shell commands, compared on the                30
 properties the study’s algorithm combines
 
-Table 2.2: Comparative analysis of surveyed systems along the four-layer pipeline     37
+Table 2.2: Comparative analysis of surveyed systems along the four-layer pipeline     38
 
 Table 3.1: Study evaluation machines                                                  52
 
 Table 3.2: SynapseOS minimum deployment requirements                                  52
 Table 3.3: Metrics for the recoverability algorithm, and what each is for             85
 
-Table 3.4: Paired comparisons of the effect analysis against each list on the held-   89
+Table 3.4: Paired comparisons of the effect analysis against each list on the held-   90
 
 out corpus, with Holm-corrected significance
 
-Table 3.5: Composition and resolution ablation — the full analysis against the        94
+Table 3.5: Composition and resolution ablation — the full analysis against the        95
 same rule table with composition, resolution, or both disabled
 
-Table C.1: Custom cross-platform task suite — core tasks                              113
+Table C.1: Custom cross-platform task suite — core tasks                              115
 
-Table C.2: Boundary tasks — outside shell expressibility                              115
+Table C.2: Boundary tasks — outside shell expressibility                              117
 
 
 
@@ -161,7 +161,7 @@ Table C.2: Boundary tasks — outside shell expressibility                      
                                     LIST OF FIGURES
 
 
-Figure 2.1: The four-layer interaction pipeline for language-mediated computing   16
+Figure 2.1: The four-layer interaction pipeline for language-mediated computing   17
 interfaces
 Figure 3.1: Conceptual framework: the recoverability analysis and the platform    50
 
