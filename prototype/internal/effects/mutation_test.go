@@ -285,3 +285,32 @@ func TestLaterCommandOnWhatTheLineMovedOrChanged(t *testing.T) {
 		t.Fatalf("a.txt, moved into the removed directory, is not captured: %+v", a.Plan().Captures)
 	}
 }
+
+func TestEarlierPartMayHaveFailed(t *testing.T) {
+	// Regression (found by the chapter 3 review, 2026-10-12): the analysis read a line
+	// as if every part succeeded. After ;, ||, a pipe, or a branch, a later part can
+	// run although an earlier one failed, so a removal may not have happened, a cd may
+	// have left the shell where it was, and a branch's assignment may not have run.
+	runRuleCases(t, []ruleCase{
+		// the move may fail, leaving a.txt for the redirect to overwrite
+		{"mv a.txt tmp/ || echo x > a.txt", false, RecoverableWithCapture, []string{"write a.txt"}, nil},
+		{"mv a.txt tmp/; echo x > a.txt", false, RecoverableWithCapture, []string{"write a.txt"}, nil},
+		{"rm a.txt | echo x > a.txt", false, RecoverableWithCapture, []string{"write a.txt"}, nil},
+		// after &&, the move did happen, and the redirect makes a new file
+		{"mv a.txt tmp/ && echo x > a.txt", false, Recoverable, nil, []string{"write a.txt"}},
+		// rm runs only where cd failed, or after a cd that may have failed
+		{"cd logs || rm a.txt", false, Unrecoverable, nil, nil},
+		{"cd logs; rm *", false, Unrecoverable, nil, nil},
+		{"(cd logs; rm y.log); ls", false, Unrecoverable, nil, nil},
+		// the guarded form is certain
+		{"cd logs || exit 1; rm x.log", false, RecoverableWithCapture, []string{"remove logs/x.log"}, nil},
+		{"cd logs && rm a.txt && cd .. && rm b.txt", false, RecoverableWithCapture, []string{"remove b.txt"}, nil},
+		// a branch or loop's assignments and cd outlive it, and may not have run
+		{"x=a.txt; if test -f q; then x=b.txt; fi; rm $x", false, Unrecoverable, nil, nil},
+		{"x=a.txt; if true; then x=b.txt; else x=b.txt; fi; rm $x", false, RecoverableWithCapture, []string{"remove b.txt"}, nil},
+		{"if true; then cd logs; fi; rm *", false, Unrecoverable, nil, nil},
+		{"for d in logs; do cd $d; done; rm x.log", false, Unrecoverable, nil, nil},
+		{"x=a.txt; for f in b.txt; do x=$f; done; rm $x", false, RecoverableWithCapture, []string{"remove b.txt"}, []string{"remove a.txt"}},
+		{"x=a.txt; while false; do x=b.txt; done; rm $x", false, Unrecoverable, nil, nil},
+	})
+}

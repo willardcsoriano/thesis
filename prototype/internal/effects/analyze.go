@@ -70,6 +70,12 @@ func (a *Analyzer) Analyze(ctx context.Context, cmd string) *Analysis {
 // removed, so later parts see the filesystem as it will be by then.
 type overlay struct {
 	created map[string]bool // path -> is a directory
+	// removed maps a path an earlier part of the line removes or moves away to whether
+	// that removal is certain to have happened by now. It is certain only across &&;
+	// after a part that may have failed (see mayHaveFailed) it is a possibility, and the
+	// path is looked up on disk again, so a later write to it is captured. A creation
+	// needs no such care: it is recorded only for a path that did not exist, so if it
+	// did not happen the path is still absent and there is nothing there to lose.
 	removed map[string]bool
 	// movedFrom maps a path that a move created to the path the data came from. The
 	// data exists nowhere else, so a later overwrite or removal of the destination
@@ -81,6 +87,28 @@ func newOverlay() *overlay {
 	return &overlay{created: map[string]bool{}, removed: map[string]bool{}, movedFrom: map[string]string{}}
 }
 
+func (o *overlay) clone() *overlay {
+	n := newOverlay()
+	for k, v := range o.created {
+		n.created[k] = v
+	}
+	for k, v := range o.removed {
+		n.removed[k] = v
+	}
+	for k, v := range o.movedFrom {
+		n.movedFrom[k] = v
+	}
+	return n
+}
+
+// doubt makes every removal so far a possibility rather than a fact.
+func (o *overlay) doubt() {
+	for p := range o.removed {
+		o.removed[p] = false
+	}
+}
+
+// removedUnder reports whether p, or a directory above it, is certainly gone.
 func (o *overlay) removedUnder(p string) bool {
 	for q := p; ; q = filepath.Dir(q) {
 		if o.removed[q] {
@@ -115,14 +143,66 @@ type scope struct {
 	wd    string
 	vars  map[string]string
 	unset map[string]bool
+	// cded records a cd since the start of the construct being analysed. If what
+	// follows may run after that cd failed, the directory is unknown (mayHaveFailed).
+	cded bool
 }
 
 func newScope(wd string) *scope {
 	return &scope{wd: wd, vars: map[string]string{}, unset: map[string]bool{}}
 }
 
+// join sets s to what is known after one of alts ran, without knowing which: a
+// variable or working directory on which they disagree is unknown afterwards, so a
+// command that uses it asks.
+func (s *scope) join(alts ...*scope) {
+	first := alts[0]
+	wd, cded := first.wd, false
+	names := map[string]bool{}
+	for _, a := range alts {
+		if a.wd != wd {
+			wd = unknownWD
+		}
+		cded = cded || a.cded
+		for k := range a.vars {
+			names[k] = true
+		}
+		for k := range a.unset {
+			names[k] = true
+		}
+	}
+	vars, unset := map[string]string{}, map[string]bool{}
+	for k := range names {
+		v, set := first.vars[k]
+		gone := first.unset[k]
+		for _, a := range alts[1:] {
+			if w, ok := a.vars[k]; ok != set || w != v || a.unset[k] != gone {
+				set, gone = false, true
+				break
+			}
+		}
+		if set {
+			vars[k] = v
+		}
+		if gone {
+			unset[k] = true
+		}
+	}
+	s.wd, s.vars, s.unset, s.cded = wd, vars, unset, cded
+}
+
+// fresh runs f with the record of cd commands cleared and then restores it. A failure
+// point inside f concerns only the cd commands in f: a cd before f either succeeded,
+// since f runs only after it, or was already doubted at an earlier failure point.
+func (s *scope) fresh(f func()) {
+	before := s.cded
+	s.cded = false
+	f()
+	s.cded = s.cded || before
+}
+
 func (s *scope) clone() *scope {
-	n := &scope{wd: s.wd, vars: make(map[string]string, len(s.vars)), unset: make(map[string]bool, len(s.unset))}
+	n := &scope{wd: s.wd, cded: s.cded, vars: make(map[string]string, len(s.vars)), unset: make(map[string]bool, len(s.unset))}
 	for k, v := range s.vars {
 		n.vars[k] = v
 	}
@@ -166,10 +246,51 @@ func (st *state) issue(k IssueKind, src, why string) {
 	st.an.Issues = append(st.an.Issues, Issue{Kind: k, Source: src, Reason: why})
 }
 
-func (st *state) stmts(list []*syntax.Stmt, sc *scope) {
-	for _, s := range list {
-		st.stmt(s, sc, nil)
+// mayHaveFailed is applied where what follows can run although something before it
+// failed: after ; or a newline, on the right of ||, after a negated command, between
+// pipeline stages, in an else branch, between loop passes. The analysis otherwise
+// reads the line as if every part succeeded. A removal before this point may not have
+// happened, so it becomes a possibility (overlay.doubt), and a cd may have failed and
+// left the shell where it was, so the working directory is unknown and later commands
+// that depend on it ask.
+func (st *state) mayHaveFailed(sc *scope) {
+	st.virt.doubt()
+	if sc.cded {
+		sc.wd = unknownWD
 	}
+}
+
+func (st *state) stmts(list []*syntax.Stmt, sc *scope) {
+	sc.fresh(func() {
+		for i, s := range list {
+			if i > 0 && !guarded(list[i-1]) {
+				st.mayHaveFailed(sc)
+			}
+			st.stmt(s, sc, nil)
+		}
+	})
+}
+
+// guarded reports whether what follows s runs only if s succeeded, as after
+// `cd dir || exit`.
+func guarded(s *syntax.Stmt) bool {
+	b, ok := s.Cmd.(*syntax.BinaryCmd)
+	return ok && !s.Negated && !s.Background && b.Op == syntax.OrStmt && exits(b.Y)
+}
+
+// exits reports whether s ends the shell, as `exit` or a block ending in it does.
+// `return` is not counted: outside a function it fails and the shell carries on.
+func exits(s *syntax.Stmt) bool {
+	if s.Negated || s.Background {
+		return false
+	}
+	switch x := s.Cmd.(type) {
+	case *syntax.CallExpr:
+		return len(x.Args) > 0 && x.Args[0].Lit() == "exit"
+	case *syntax.Block:
+		return len(x.Stmts) > 0 && exits(x.Stmts[len(x.Stmts)-1])
+	}
+	return false
 }
 
 func (st *state) stmt(s *syntax.Stmt, sc *scope, pc *pipeCtx) {
@@ -183,13 +304,41 @@ func (st *state) stmt(s *syntax.Stmt, sc *scope, pc *pipeCtx) {
 	case *syntax.BinaryCmd:
 		switch x.Op {
 		case syntax.Pipe, syntax.PipeAll:
+			// Every stage runs in a subshell, at the same time as the others, and any
+			// of them may fail.
 			stages := flattenPipe(x)
 			for i, stage := range stages {
+				if i > 0 {
+					st.virt.doubt()
+				}
 				st.stmt(stage, sc.clone(), &pipeCtx{stages: stages, idx: i})
 			}
-		default:
-			st.stmt(x.X, sc, nil)
-			st.stmt(x.Y, sc, nil)
+			st.virt.doubt()
+		case syntax.OrStmt:
+			sc.fresh(func() {
+				st.stmt(x.X, sc, nil)
+				if exits(x.Y) {
+					return // what follows runs only if X succeeded
+				}
+				y := sc.clone()
+				st.mayHaveFailed(y) // Y runs only if X failed
+				st.stmt(x.Y, y, nil)
+				sc.join(sc.clone(), y)
+				st.virt.doubt() // Y's removals happened only if X failed
+			})
+		default: // &&
+			// Each part runs only if every part before it succeeded, so it is analysed
+			// from the state they leave; what follows the chain may come after any
+			// of them stopped it, so it gets the join of the states after each part.
+			parts := append(andChain(x.X), andChain(x.Y)...)
+			run := sc.clone()
+			st.stmt(parts[0], run, nil)
+			alts := []*scope{run.clone()}
+			for _, p := range parts[1:] {
+				st.stmt(p, run, nil)
+				alts = append(alts, run.clone())
+			}
+			sc.join(alts...)
 		}
 	case *syntax.Subshell:
 		st.stmts(x.Stmts, sc.clone())
@@ -197,9 +346,10 @@ func (st *state) stmt(s *syntax.Stmt, sc *scope, pc *pipeCtx) {
 		st.stmts(x.Stmts, sc)
 	case *syntax.IfClause:
 		st.ifClause(x, sc)
+		st.virt.doubt()
 	case *syntax.WhileClause:
-		st.stmts(x.Cond, sc.clone())
-		st.stmts(x.Do, sc.clone())
+		st.stmts(x.Cond, sc)
+		st.loopBody(x.Do, sc, nil)
 	case *syntax.ForClause:
 		if !st.a.Compose {
 			st.issue(IssueOpaque, st.text(s), "composition disabled (ablation): loop body not expanded")
@@ -208,12 +358,17 @@ func (st *state) stmt(s *syntax.Stmt, sc *scope, pc *pipeCtx) {
 		st.forLoop(x, sc)
 	case *syntax.CaseClause:
 		st.collectNode(x.Word, sc)
+		alts := []*scope{sc.clone()} // no pattern matched
 		for _, it := range x.Items {
 			for _, p := range it.Patterns {
 				st.collectNode(p, sc)
 			}
-			st.stmts(it.Stmts, sc.clone())
+			b := sc.clone()
+			st.stmts(it.Stmts, b)
+			alts = append(alts, b)
 		}
+		sc.join(alts...)
+		st.virt.doubt()
 	case *syntax.TimeClause:
 		if x.Stmt != nil {
 			st.stmt(x.Stmt, sc, pc)
@@ -229,6 +384,18 @@ func (st *state) stmt(s *syntax.Stmt, sc *scope, pc *pipeCtx) {
 	default:
 		st.issue(IssueOpaque, st.text(s), fmt.Sprintf("unsupported construct %T", x))
 	}
+	if s.Negated {
+		st.mayHaveFailed(sc) // `! A && B` runs B when A failed
+	}
+}
+
+// andChain flattens a && b && c, which parses as (a && b) && c, into its parts.
+func andChain(s *syntax.Stmt) []*syntax.Stmt {
+	b, ok := s.Cmd.(*syntax.BinaryCmd)
+	if !ok || b.Op != syntax.AndStmt || s.Negated || s.Background || len(s.Redirs) > 0 {
+		return []*syntax.Stmt{s}
+	}
+	return append(andChain(b.X), andChain(b.Y)...)
 }
 
 func flattenPipe(b *syntax.BinaryCmd) []*syntax.Stmt {
@@ -247,20 +414,57 @@ func flattenPipe(b *syntax.BinaryCmd) []*syntax.Stmt {
 	return out
 }
 
+// ifClause analyses each branch from the state its condition leaves, and joins the
+// branches afterwards, since which one ran is not known. A branch's assignments and
+// cd commands outlive it, as they do in the shell.
 func (st *state) ifClause(x *syntax.IfClause, sc *scope) {
-	st.stmts(x.Cond, sc.clone())
-	st.stmts(x.Then, sc.clone())
-	if x.Else != nil {
-		st.ifClause(x.Else, sc)
+	if len(x.Cond) == 0 { // a plain else, which runs whenever it is reached
+		st.stmts(x.Then, sc)
+		return
 	}
+	sc.fresh(func() {
+		st.stmts(x.Cond, sc)
+		then := sc.clone()
+		st.stmts(x.Then, then)
+		other := sc.clone()
+		st.mayHaveFailed(other) // the condition failed
+		if x.Else != nil {
+			st.ifClause(x.Else, other)
+		}
+		sc.join(then, other)
+	})
+}
+
+// loopBody analyses a body that runs zero or more times, each pass starting from what
+// the one before left. One pass is first analysed on a scratch copy to see what it
+// changes; the body is then analysed from the join of that and the state before the
+// loop, and the state after the loop is the join of the two. prep, if set, adjusts the
+// state each pass starts from.
+func (st *state) loopBody(body []*syntax.Stmt, sc *scope, prep func(*scope)) {
+	if prep == nil {
+		prep = func(*scope) {}
+	}
+	once := sc.clone()
+	once.cded = false // only a cd inside the body can have failed in an earlier pass
+	prep(once)
+	scratch := st.child(st.depth)
+	scratch.virt = st.virt.clone()
+	scratch.stmts(body, once)
+	pass := sc.clone()
+	pass.join(sc, once)
+	pass.cded = once.cded
+	prep(pass)
+	st.mayHaveFailed(pass) // an earlier pass may have failed part-way
+	st.stmts(body, pass)
+	sc.join(sc.clone(), pass)
+	st.virt.doubt()
 }
 
 func (st *state) forLoop(x *syntax.ForClause, sc *scope) {
 	wi, ok := x.Loop.(*syntax.WordIter)
 	if !ok {
-		body := sc.clone()
 		st.collectNode(x.Loop, sc)
-		st.stmts(x.Do, body)
+		st.loopBody(x.Do, sc, nil)
 		return
 	}
 	for _, w := range wi.Items {
@@ -268,9 +472,7 @@ func (st *state) forLoop(x *syntax.ForClause, sc *scope) {
 	}
 	name := wi.Name.Value
 	unbound := func() {
-		body := sc.clone()
-		body.drop(name)
-		st.stmts(x.Do, body)
+		st.loopBody(x.Do, sc, func(s *scope) { s.drop(name) })
 	}
 	if !wi.InPos.IsValid() {
 		unbound()
@@ -286,10 +488,19 @@ func (st *state) forLoop(x *syntax.ForClause, sc *scope) {
 		st.issue(IssueUnresolved, st.text(x), fmt.Sprintf("loop over %d items is too many to analyse one by one", len(items)))
 		return
 	}
-	for _, it := range items {
-		body := sc.clone()
-		body.set(name, it)
-		st.stmts(x.Do, body)
+	// The passes share the shell's state, as they do in bash: each starts from what the
+	// one before left, and the loop variable keeps the last item afterwards.
+	sc.fresh(func() {
+		for i, it := range items {
+			if i > 0 {
+				st.mayHaveFailed(sc) // the pass before may have failed part-way
+			}
+			sc.set(name, it)
+			st.stmts(x.Do, sc)
+		}
+	})
+	if len(items) > 0 {
+		st.virt.doubt()
 	}
 }
 
@@ -969,7 +1180,7 @@ func (st *state) cd(c *call) {
 	}
 	p := c.abs(target)
 	if fi, err := os.Stat(p); err == nil && fi.IsDir() {
-		c.sc.wd = p
+		c.sc.wd, c.sc.cded = p, true
 		return
 	}
 	// The directory does not exist, so cd fails and the shell stays where it was.
