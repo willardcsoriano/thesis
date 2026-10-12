@@ -109,9 +109,9 @@ Chapter 3: METHODOLOGY                                           48
     Section 2: Procedure / Experiment    66
     Section 3: System Testing            83
 
-REFERENCES                              105
+REFERENCES                              106
 
-APPENDICES                              112
+APPENDICES                              113
 
 ──────── p. vi ────────
                                         LIST OF TABLES
@@ -127,14 +127,14 @@ Table 3.1: Study evaluation machines                                            
 
 Table 3.2: SynapseOS minimum deployment requirements                                     52
 Table 3.3: Metrics for the recoverability algorithm, and what each is for                85
-Table 3.4: Paired comparisons of the effect analysis against each list on the held-out   90
+Table 3.4: Paired comparisons of the effect analysis against each list on the held-out   91
 corpus, with Holm-corrected significance
 
-Table 3.5: Composition and resolution ablation — the full analysis against the same      95
+Table 3.5: Composition and resolution ablation — the full analysis against the same      96
 rule table with composition, resolution, or both disabled
-Table C.1: Custom cross-platform task suite — core tasks                                 115
+Table C.1: Custom cross-platform task suite — core tasks                                 116
 
-Table C.2: Boundary tasks — outside shell expressibility                                 117
+Table C.2: Boundary tasks — outside shell expressibility                                 118
 
 
 

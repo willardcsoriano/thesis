@@ -432,27 +432,27 @@ command’s targets shortly before the command runs, so a file changed by anothe
 
 
 process in the interval is captured as it was when resolved; and testing after the
-evaluation found seven defects in the analysis, all fixed, none triggered by any command
-in the corpus, so that re-running it changed no decision (Chapter 3, Section 3.1(d)).
-Third, it is evaluated on a corpus of human-written commands from NL2Bash, templates
+evaluation found seven defects in the analysis and one in its undo, all fixed, none
+triggered by any command in the corpus, so that re-running it changed no result
+(Chapter 3, Section 3.1(d)).      Third, it is evaluated on a corpus of human-written
 
-written by the same team that wrote its rule table and the pattern-list baseline, and
-commands whose effects lie outside the filesystem; each label describes what a command
-did on its fixture, the files and directories prepared for it to run on, not on every possible
-filesystem, and the labels of the 80 external commands, a fifth of the 405 behind the
-silent-loss result, are assigned from a table rather than observed, so they are weaker
-evidence than the 697 observed in the sandbox. Nor does it ask less often than the
-pattern list, which it does not significantly exceed (32 to 45 against 30 of 372), or than
-the coding-agent checks (1 to 15); and the deployed gate, which also consults the pattern
-list, asks about 58 to 67 (16% to 18%), still well below the fail-closed list’s 27%. Its
-corpus was written by people, not by the model: a smaller partition of commands the
-deployed model wrote pointed the same way, but there the analysis let one loss through,
-on a command that partition’s own labeling rule mislabeled, and its advantage in capture
-coverage over the pattern list was not significant; it rests on 19 losses (Chapter 3,
-Section 3.1(d)).     These threats and their mitigations are stated in Chapter 3,
+commands from NL2Bash, templates written by the same team that wrote its rule table
+and the pattern-list baseline, and commands whose effects lie outside the filesystem; each
+label describes what a command did on its fixture, the files and directories prepared for it
+to run on, not on every possible filesystem, and the labels of the 80 external commands, a
+fifth of the 405 behind the silent-loss result, are assigned from a table rather than
+observed, so they are weaker evidence than the 697 observed in the sandbox. Nor does it
+ask less often than the pattern list, which it does not significantly exceed (32 to 45 against
+30 of 372), or than the coding-agent checks (1 to 15); and the deployed gate, which also
+consults the pattern list, asks about 58 to 67 (16% to 18%), still well below the fail-closed
+list’s 27%. Its corpus was written by people, not by the model: a smaller partition of
+commands the deployed model wrote pointed the same way, but there the analysis let one
+loss through, on a command that partition’s own labeling rule mislabeled, and its
+advantage in capture coverage over the pattern list was not significant; it rests on 19
+losses (Chapter 3, Section 3.1(d)). These threats and their mitigations are stated in
 
-Section 3.1(e).    Fourth, the recovery plan is minimum-cost relative to the capture
-mechanisms and cost model stated in Chapter 3, Section 2.1(c), not over every
+Chapter 3, Section 3.1(e). Fourth, the recovery plan is minimum-cost relative to the
+capture mechanisms and cost model stated in Chapter 3, Section 2.1(c), not over every
 conceivable way of restoring a system. Fifth, the platform offers two confirmation
 policies over the analysis’s verdict, a strict policy, the default, which asks before every
 command that is not plainly recoverable, and a capture policy, which asks only before
