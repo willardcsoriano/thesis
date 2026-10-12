@@ -999,17 +999,17 @@ themselves — content backup, hardlink-based trash, git HEAD capture, permissio
 
 metadata capture — are those of the execution pipeline described in (e); the algorithm
 selects among them rather than introducing new ones. A rename or move is the one
-removal that needs no capture, because the same data survives at the destination and
+removal of pre-existing data that needs no capture, because the same data survives at the
 
 ──────── p. 71 ────────
                                                                                          71
 
 
-undo is moving it back; compression and archiving are not, because the bytes at the
-destination are a transformation of the original and moving them back returns the wrong
-content, so they are captured like any other deletion. Where a list can only refuse, the
+destination and undo is moving it back; compression and archiving are not, because the
+bytes at the destination are a transformation of the original and moving them back returns
+the wrong content, so they are captured like any other deletion. Where a list can only
 
-plan adds a capture that restores.
+refuse, the plan adds a capture that restores.
          Why the plan is minimal. Cost is counted as the work and storage a capture
 needs before the command runs: a hardlink, a permission record, a commit identifier, and
 an inverse command each cost a constant, and a content copy costs the size of the file.
@@ -1111,7 +1111,7 @@ function RESOLVE(node, S, V)
   return the targets d prints
 
 ──────── p. 73 ────────
-                                                                                       73
+                                                                                         73
 
 
  end function
@@ -1155,8 +1155,10 @@ function RESOLVE(node, S, V)
 
    decide and cover. UNRESOLVED and UNKNOWN are the sentinels that give the
         analysis its one-sided soundness: they can only push the verdict toward
- UNRECOVERABLE. A move (a removal whose data survives at another path) is the
-                         only removal PLAN does not capture.
+  UNRECOVERABLE. Apart from a path created earlier in the same line, which held
+   nothing to lose, a move (a removal whose data survives at another path) is the only
+
+                           removal PLAN does not capture.
 
 
 
@@ -2193,7 +2195,7 @@ already covers them.       The capture-coverage result in Section 3.1(d) is ther
 
 attributable to composition and resolution together, and not to the table they are
 
-sometimes mistaken for; the zero silent loss of Section 3.1(c) is owed to the table and the
+sometimes mistaken for; the zero silent loss of Section 3.1(d) is owed to the table and the
 fail-closed default beneath it.
 
 
