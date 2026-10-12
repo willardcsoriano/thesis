@@ -561,13 +561,15 @@ type restoreSet struct {
 	paths     []string
 	originals map[string]FileID
 	content   map[string]bool
-	// held is the identity of every file a trash capture holds, inside a trashed
-	// directory as well as at its top: once restored, such a file is an original.
-	held map[FileID]bool
+	// held maps the identity of every file a capture holds, inside a trashed or
+	// moved directory as well as at its top, to the path it belongs at. A file is an
+	// original only at that path; the same file under another name (a second link
+	// the line left behind) is a leftover.
+	held map[FileID]string
 }
 
 func restoreTargets(e Entry) restoreSet {
-	r := restoreSet{originals: map[string]FileID{}, content: map[string]bool{}, held: map[FileID]bool{}}
+	r := restoreSet{originals: map[string]FileID{}, content: map[string]bool{}, held: map[FileID]string{}}
 	for _, m := range e.Moves {
 		abs := filepath.Join(e.Dir, m.OldPath)
 		r.paths = append(r.paths, abs)
@@ -577,7 +579,7 @@ func restoreTargets(e Entry) restoreSet {
 	}
 	for _, m := range e.Moves {
 		if m.ID != nil {
-			r.held[*m.ID] = true
+			r.held[*m.ID] = filepath.Join(e.Dir, m.OldPath)
 		}
 	}
 	for rel, id := range e.Preexisting {
@@ -587,7 +589,9 @@ func restoreTargets(e Entry) restoreSet {
 		_ = filepath.WalkDir(t.TrashPath, func(p string, d fs.DirEntry, err error) error {
 			if err == nil && !d.IsDir() {
 				if id, ok := IDOf(p); ok {
-					r.held[id] = true
+					if rel, rerr := filepath.Rel(t.TrashPath, p); rerr == nil {
+						r.held[id] = filepath.Join(t.OriginalPath, rel)
+					}
 				}
 			}
 			return nil
@@ -618,7 +622,8 @@ func (r restoreSet) covers(abs string) bool {
 	return false
 }
 
-// isOriginal reports whether abs is still the very file a capture holds.
+// isOriginal reports whether abs is the very file a capture holds, at the path it
+// belongs at.
 func (r restoreSet) isOriginal(abs string) bool {
 	id, ok := IDOf(abs)
 	if !ok {
@@ -627,7 +632,7 @@ func (r restoreSet) isOriginal(abs string) bool {
 	if want, ok := r.originals[abs]; ok && id == want {
 		return true
 	}
-	return r.held[id]
+	return r.held[id] == abs
 }
 
 // moveBack moves a moved file or directory from where it is to where it was. A

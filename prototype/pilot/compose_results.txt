@@ -1,0 +1,13 @@
+Differential test of composition (pilot/make_compose.py, run with pilot/parallel_rc.py).
+Each row: seed:lines generated, then how many of the lines the analysis let run were
+restored exactly by the runtime's undo (V3, internal/gate entry alone), after the
+defect-8 fixes. Before them, the first draw restored 1512/1536. The last draw (seed
+20261018) was unseen until the fixes were done; its first run restored 6150/6151, and
+the one failure (a second name left for a restored file) was then fixed.
+
+20261013:2000   V3 restored exactly: 1536/1536
+20261014:4000   V3 restored exactly: 3111/3111
+20261015:4000   V3 restored exactly: 3099/3099
+20261016:4000   V3 restored exactly: 3083/3083
+20261017:8000   V3 restored exactly: 6074/6074
+20261018:8000   V3 restored exactly: 6151/6151

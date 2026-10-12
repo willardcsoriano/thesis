@@ -305,3 +305,33 @@ func TestOriginalInsideAMovedDirectoryIsNotRemovedAsACreation(t *testing.T) {
 		t.Fatalf("logs/x.log = %q, want the original", got)
 	}
 }
+
+func TestASecondNameForARestoredFileIsRemoved(t *testing.T) {
+	// `mv a.txt tmp/ ; cd tmp && mv a.txt tmp/`: the first move became a captured
+	// removal, a.txt comes back from trash, and tmp/a.txt is the same file under a
+	// second name the line left. It is not the original there, and goes.
+	t.Setenv("HOME", t.TempDir())
+	dir := t.TempDir()
+	a := filepath.Join(dir, "a.txt")
+	write(t, a, "a\n", 0o644)
+	trashed, errs := TrashPreserve([]string{a})
+	if len(errs) != 0 {
+		t.Fatal(errs)
+	}
+	if err := os.Mkdir(filepath.Join(dir, "tmp"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(a, filepath.Join(dir, "tmp", "a.txt")); err != nil {
+		t.Fatal(err)
+	}
+	e := Entry{Dir: dir, Trashed: trashed, Created: []string{"tmp/a.txt"}}
+	if errs := Apply(e); len(errs) != 0 {
+		t.Fatalf("Apply: %v", errs)
+	}
+	if got := read(t, a); got != "a\n" {
+		t.Fatalf("a.txt = %q, want it restored", got)
+	}
+	if _, err := os.Lstat(filepath.Join(dir, "tmp", "a.txt")); !os.IsNotExist(err) {
+		t.Fatalf("tmp/a.txt should be gone: %v", err)
+	}
+}
