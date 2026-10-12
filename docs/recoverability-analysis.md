@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is the single reference for SynapseOS's algorithmic contribution: a static analysis that reads a shell command before it runs, works out which files it will remove, overwrite, or re-permission (including targets hidden behind `find`, `xargs`, loops, `sudo`, and `sh -c`), and either backs exactly those files up so the command can be undone, or asks first when it cannot. It covers the problem, the formal model, every step of the algorithm, a complete map of its rules (generated from the code, so it cannot drift), the guarantees it makes and the test behind each, its cost, its evaluation, and its known limits. In short: on 777 held-out commands, no destructive command ran unprotected; 89.5% of file-destroying commands were backed up and verified restorable, against 35.4% with the same rule table and the composition switched off; and the core guarantee, that the analysis only ever executes read-only commands, held across 336,639 fuzzed command lines. `algorithms.md` keeps the design history; this file is what the algorithm is now.
+This is the single reference for SynapseOS's algorithmic contribution: a static analysis that reads a shell command before it runs, works out which files it will remove, overwrite, or re-permission (including targets hidden behind `find`, `xargs`, loops, `sudo`, and `sh -c`), and either backs exactly those files up so the command can be undone, or asks first when it cannot. It covers the problem, the formal model, every step of the algorithm, a complete map of its rules (generated from the code, so it cannot drift), the guarantees it makes and the test behind each, its cost, its evaluation, and its known limits. In short: on 777 held-out commands, no destructive command ran unprotected; 89.5% of file-destroying commands were backed up and verified restorable, against 35.4% with the same rule table and composition switched off, 45.5% with runtime-target resolution switched off, and 32.0% with both; and the core guarantee, that the analysis only ever executes read-only commands, held across 336,639 fuzzed command lines. `algorithms.md` keeps the design history; this file is what the algorithm is now.
 
 ## Table of Contents
 
@@ -213,7 +213,7 @@ For each simple command, `dispatch` decides what it is, in this order. The first
 10. **An interpreter** (`python`, `perl`, `node`, …) is opaque, and unrecoverable when it executes code piped in.
 11. **Anything else is unknown, and unknown asks.**
 
-When `Compose` is false (the ablation), step 3's wrappers, step 4's handlers, and `for` loops become opaque, and nothing else changes.
+When `Compose` is false (the composition ablation), step 3's wrappers, step 4's handlers, and `for` loops become opaque, and nothing else changes. When `Run` is nil (the resolution ablation), every resolver in step 4 refuses and its command is unresolved; composition still runs.
 
 ### Step 4: resolve run-time targets
 
@@ -883,12 +883,15 @@ Round 7, the reported result: 777 commands drawn after the design was frozen and
 | **Analysis, `capture` policy** | **0** | **291 (89.5%, CI 85.7–92.4%)** | **32 (8.6%)** |
 | Analysis, `strict` policy | 0 | 291 (89.5%) | 45 (12.1%) |
 | Analysis with composition off (ablation) | 0 | 115 (35.4%, CI 30.4–40.7%) | 246 (66.1%) |
+| Analysis with runtime-target resolution off (ablation) | 0 | 148 (45.5%, CI 40.2–51.0%) | 70 (18.8%) |
+| Analysis with both off: the rule table alone (ablation) | 0 | 104 (32.0%, CI 27.2–37.3%) | 251 (67.5%) |
 | Codex CLI's check (of 325 file losses) | 314 (96.6%) | n/a | 1 (0.3%) |
 | cc-safety-net, Paranoid (of 325) | 236 (72.6%) | n/a | 15 (4.0%) |
 
 - **Against the list:** silent loss 41.2% to 0% (McNemar exact, Holm-adjusted p = 3.2×10⁻⁵⁰); restored 41.5% to 89.5% (p = 6.3×10⁻³⁵).
 - **Against the fail-closed list:** the same zero silent loss, but 0% restored against 89.5%, and a third as many needless confirmations. The verdict alone is not the contribution; the capture is.
-- **The ablation, answering "how much is the algorithm and how much the rule table":** the same rule table with composition switched off restores 35.4% instead of 89.5% (176 commands won, 0 lost, p = 2.1×10⁻⁵³) and asks needlessly about 66% of safe commands instead of 8.6%.
+- **The ablations, answering "how much is the algorithm and how much the rule table":** the same rule table with **composition** switched off restores 35.4% instead of 89.5% (176 commands won, 0 lost, p = 2.1×10⁻⁵³) and asks needlessly about 66% of safe commands instead of 8.6%. With **runtime-target resolution** switched off (no runner, so every target learned by a read-only run is unresolved) it restores 45.5% (143 won, 0 lost, p = 1.8×10⁻⁴³) and asks needlessly about 19%. With **both** off, the table alone restores 32.0% (187 won, 0 lost, p = 1.0×10⁻⁵⁶). Each p stays below 10⁻⁴² after a Holm correction across the three.
+- **The two parts need each other:** either alone barely beats the table (45.5% and 35.4% against 32.0%); together they reach 89.5%. Composition sees that `find -exec rm` removes each match; only resolution says which files match: 126 of the 143 commands lost without resolution involve `find`. Silent loss is 0 in every configuration, because the fail-closed default depends on neither: they make the analysis useful, not safe. Produced by `cmd/listpilot` (systems `ALG-nocompose`, `ALG-noresolve`, `ALG-tableonly`); results in `pilot/stats_round7_nocompose.txt`.
 - **Undo:** 630 of 631 executed commands restored exactly (99.8%).
 - **External lists:** the open-source checks were built for coding agents inside version control and let 73–97% of file-destroying commands through without asking; full method and caveats in `external-baselines.md` and Chapter 3, Section 3.1(c).
 
