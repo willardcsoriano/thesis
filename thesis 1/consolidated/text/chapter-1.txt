@@ -1,124 +1,126 @@
 Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. Do not edit: change the HTML and rebuild.
 
 ──────── p. 1 ────────
-                                          Chapter 1
+                                      Chapter 1
 
-                                    INTRODUCTION
+                                 INTRODUCTION
 
 
 
 
 1.1 Background of the Study
-         Ask a person to gather every photo they took last June into a single folder and
+          Ask a person to gather every photo they took last June into a single folder and
 they will do it — opening a file browser, sorting by date, selecting, dragging. Ask a
 computer the same thing, in those same words, and for most of the history of personal
 computing it could not. The instruction has had to be translated first into the machine’s
 own vocabulary: a path, a menu, a sequence of clicks, or a command typed with exact
 
-syntax. Language models now do that translation, writing the command for a person who
-could not, and in doing so they move the risk. The person no longer has to know the
-command, but neither can they check it, and when a command they did not write and
-cannot read is wrong, it is their files that are lost.
-         The aspiration to instruct a computer in ordinary language is old; an early
-system for conversing with an operating system, the Berkeley UNIX Consultant, was
+syntax.
+          The aspiration to remove that translation, and instruct a computer in ordinary
+language, is old: an early system for conversing with an operating system, the Berkeley
+UNIX Consultant, was operational by the late 1980s [49].         Large language models
+(LLMs) and multimodal foundation models1 have reopened it with far greater capability.
+They translate natural language into Bash commands with usable accuracy [13, 47], and
 
-operational by the late 1980s [49]. Large language models (LLMs) and multimodal
-foundation models1 have reopened it with far greater capability. They translate natural
-language into Bash commands with usable accuracy [13, 47], and computer-using agents2
-built on them operate desktop, mobile, and web applications [53, 54, 56, 57].
-Increasingly, these systems act by running commands on a real machine, and therefore on
-a person’s own files.
-         Such a command can delete or overwrite files, and whether the damage can be
+computer-using agents2 built on them operate desktop, mobile, and web applications [53,
+54, 56, 57]. Increasingly, these systems act by running commands on a real machine, and
+therefore on a person’s own files.
+          In writing the command for a person who could not, language models also move
+the risk. The person no longer has to know the command, but neither can they check it,
+and when a command they did not write and cannot read is wrong, it is their files that are
+lost. Whether that loss can be undone depends on what was saved before the command
 
-undone depends on what was saved before it ran. Knowing what to save is not simple,
-because shell commands are programs: their targets may be hidden inside other
-commands, as in sudo rm, find -exec, or xargs, or computed only while they
+ran.
 
 
 
-                                              1
+
+                                          1
 
 ──────── p. 2 ────────
-                                                                                             2
+                                                                                        2
 
 
-run, as in rm $(ls *.log), so what a command will change cannot be read from its
+         Knowing what to save is not simple, because shell commands are programs:
 
-name. Determining that before the command runs, and saving beforehand exactly what it
-would destroy, is therefore a problem of program analysis rather than of interface design.
-This study addresses that problem, using a conversational interface layer for the Linux
-desktop as the setting in which the analysis is deployed and validated.
+their targets may be hidden inside other commands, as in sudo rm, find -exec, or
+xargs, or computed only while they run, as in rm $(ls *.log), so what a
+command will change cannot be read from its name.          Determining that before the
+command runs, and saving beforehand exactly what it would destroy, is therefore a
+problem of program analysis rather than of interface design. This study addresses that
+problem, using a conversational interface layer for the Linux desktop as the setting in
+which the analysis is deployed and validated.
 
 
 
 1.2 Gap and Opportunity
          The systems surveyed in Chapter 2 that run generated commands guard them in
+
 one of two ways, and neither looks at what a particular command will do. Most guard by
 permission: the command is matched against a list of patterns judged dangerous and is
 then allowed, refused, or put to the user, as in the dangerous-command check of
-
 OpenAI’s Codex CLI [32] and cc-safety-net, a guard used with several AI coding agents
 [21].   A few that ship add coarse recovery: Alibaba Cloud’s ANOLISA, a Linux
 distribution for AI agents, snapshots an agent’s workspace before key operations or after
+
 each round of conversation and can roll back to any snapshot [1], but a rollback restores
 everything since the snapshot rather than what one command destroyed. A list judges a
 command by its name and arguments, so it misses what the command touches through
-
 another command or through a target computed at run time; and neither a list nor a
 snapshot can say, before a command runs, whether the command will lose anything.
 Designs closer to this study’s aim do not close the gap either. NaSh, a design for a
 natural-language shell, proposes summaries of what a command would affect and
-selective undo, but leaves their mechanism open [13], and try contains a command’s
-effects only by running it, for the user to judge [22].      No system in the surveyed
-literature, nor any shipping tool examined, derives from a generated command’s
 
+selective undo, but leaves their mechanism open [13], and try contains a command’s
+effects only by running it, for the user to judge [22].     No system in the surveyed
+literature, nor any shipping tool examined, derives from a generated command’s
 structure, before it runs, what it would destroy and captures exactly that so that the
 command can be undone. That is the gap this study’s research addresses.
-         The setting in which this gap arises has gaps of its own, surveyed in Chapter 2,
-Section 2.9. No surveyed system, implemented and evaluated, places a conversational
-layer over a whole desktop session for the person using the machine [25, 54]; the Linux
 
 ──────── p. 3 ────────
                                                                                             3
 
 
+         The setting in which this gap arises has gaps of its own, surveyed in Chapter 2,
+Section 2.9. No surveyed system, implemented and evaluated, places a conversational
+layer over a whole desktop session for the person using the machine [25, 54]; the Linux
 work that exists serves servers and agents rather than an end user’s desktop [1, 13]; and
+
 controlled comparisons with the conventional graphical workflow cover narrow slices,
 such as a single application [26]. These gaps are not what this study contributes, but they
 are why the analysis is deployed in a working interface and validated with people, rather
-
 than only evaluated on a corpus.
          The opportunity is algorithmic. A command’s effect on a system can often be
 derived from the command itself, before it runs, and what that effect would destroy can
+
 be saved first; where it cannot be derived, the analysis can say so and ask. This study
 builds that analysis, and the terms it rests on, defined here, are used throughout. An effect
 is one thing a command does to one path — reading, creating, writing, or removing it, or
-
 changing its permissions — or to the system’s installed packages and running services. A
 pre-image is the data an effect would destroy, and capturing it means saving it before the
 command runs by the cheapest means that suffices — a hardlink, a copy, or a record —
 so that undo can restore it. Two mechanisms find a command’s effects. Composition
+
 follows effects through the operators that join commands into one line (;, &&, ||, pipes,
 and redirection) and through the commands that run other commands (wrappers such as
 sudo, find -exec, xargs, sh -c strings, eval, and loops); resolution learns
-
 targets known only at run time by running a form of the command first proven to change
 nothing. From those effects the analysis reaches a verdict on the command, which is one
 of three: recoverable, if undoing it needs nothing saved because it only creates or moves
 files; recoverable with capture, if undoing it needs pre-images saved first; and
+
 unrecoverable, if no capture would restore what it does, or the analysis cannot tell. It
 fails closed: anything it cannot determine is unrecoverable, so the user is asked. Which
 verdicts the user is asked about is decided by a confirmation policy: the strict policy asks
-
 before every command that is not plainly recoverable, and the capture policy asks only
 before unrecoverable ones, capturing the rest silently. Because the analysis takes a
-command as a string, it is independent of the interface and of the model that wrote the
-command. The interface used here is SynapseOS, a conversational interface layer built
 
 ──────── p. 4 ────────
-                                                                                          4
+                                                                                         4
 
 
+command as a string, it is independent of the interface and of the model that wrote the
+command. The interface used here is SynapseOS, a conversational interface layer built
 for this study over a Linux desktop that keeps running underneath it; it is the
 experimental platform on which the analysis is deployed and validated with people,
 against each participant’s own primary operating system.
@@ -128,61 +130,60 @@ against each participant’s own primary operating system.
 1.3 Statement of the Problem
         Language models have made it practical to turn a request in ordinary language
 into a shell command and run it on the user’s own system, and conversational interfaces,
-coding assistants, and agentic tools increasingly execute what a model writes.           A
-generated command can be wrong, or broader than the request intended. Whether what it
 
+coding assistants, and agentic tools increasingly execute what a model writes.          A
+generated command can be wrong, or broader than the request intended. Whether what it
 destroys can then be restored depends on what was saved before it ran, and the tools that
 run such commands today do not determine that (Section 1.2). This study addresses the
 problem of determining, before a generated shell command runs, what it would change,
 whether the change can be undone, and the least that must be captured beforehand so that
 it can be. The problem is studied where it is most acute, a person who does not read shell
+
 syntax operating a Linux desktop through conversation, but the analysis applies wherever
 generated bash commands run on a system like the one studied.
-
         Specifically, the study seeks to answer the following questions:
       1. How can the effect of a shell command on a system be represented formally, so
         that whether the command can be undone is a predicate over that representation,
         and so that anything the representation cannot determine is treated as
         unrecoverable rather than safe?
+
       2. Can a command’s effects be derived from its syntactic structure before it runs —
         composed through the operators that join commands and the commands that run
-
         other commands, with targets known only at run time (command substitutions,
         find matches, xargs input, archive members) resolved by commands first
         proven read-only — without executing anything that changes the system?
-      3. Given those effects, can a minimum-cost set of pre-images be computed whose
-        capture is sufficient to restore the prior state, and does restoring from it return
-        the system to that state?
 
 ──────── p. 5 ────────
-                                                                                         5
+                                                                                          5
 
 
+      3. Given those effects, can a minimum-cost set of pre-images be computed whose
+        capture is sufficient to restore the prior state, and does restoring from it return
+
+        the system to that state?
       4. Against an enumerated list of destructive patterns, a fail-closed list that asks
         before every command it does not recognize as read-only, and the command-
-
         safety checks of open-source AI coding agents, does the analysis lose less data
         silently, restore more of what is lost, and ask the user less often?
       5. How much of that result do composition and runtime-target resolution each
         contribute, beyond the per-command rule table on which both rest?
+
         A further question is answered by validation rather than posed as a research
 question: whether the analysis’s decisions hold when it is deployed in a working interface
 and exercised by people, whose commands the evaluation corpus does not contain
-
 (Chapter 3, Sections 3.3–3.7).
 
 
 
 1.4 Objectives of the Study
-
         The general objective of this study is to design and evaluate a recoverability
 analysis for shell commands generated by a language model: an algorithm that
 determines, before a command runs, what it would change, and computes the minimum-
 cost set of pre-images that must be captured for the command to be undone. The
+
 algorithm is deployed in SynapseOS, the experimental platform on which it is
 demonstrated and validated in use.
         Specifically, this study aims:
-
       1. To formalize an effect-semantics model for shell-command recoverability: the
         kinds of effect a command can have on the system, a recoverability verdict over
         them, and a one-sided soundness rule under which anything that cannot be
@@ -190,15 +191,15 @@ demonstrated and validated in use.
       2. To develop an effect-composition algorithm that derives a command’s effects
         from its syntactic structure rather than its name, composing them through the
         commands that run other commands and resolving targets known only at run
-        time through dry runs it first proves read-only (RQ2).
 
 ──────── p. 6 ────────
                                                                                              6
 
 
+         time through dry runs it first proves read-only (RQ2).
       3. To develop a minimum-cost recovery-plan generation algorithm that computes,
-         from a command’s effects, the cheapest set of captures sufficient to restore the
 
+         from a command’s effects, the cheapest set of captures sufficient to restore the
          prior state, and to verify by sandboxed execution that restoring from that plan
          does so (RQ3).
       4. To evaluate the recoverability analysis against pattern-based and fail-closed
@@ -211,8 +212,8 @@ demonstrated and validated in use.
          command rule table unchanged (RQ5).
          Each objective is algorithmic and measurable, and because the analysis takes a
 shell command as a string, each would stand if the interface were removed. SynapseOS
-is therefore the platform rather than an objective in itself: the validation study (Chapter 3,
 
+is therefore the platform rather than an objective in itself: the validation study (Chapter 3,
 Sections 3.3–3.7) measures how the analysis’s decisions hold on commands participants
 cause, and characterizes the platform through task success, time, error rate, and
 workload.
@@ -224,8 +225,8 @@ workload.
 serve, and build only what cannot be adopted. The principle is stated here because it
 locates the contribution. Most of what is adopted, listed in Table 1.1, is the platform’s
 stack; what is built is the analysis, whose novelty against prior work is argued in
-Chapter 2.
 
+Chapter 2.
 Table 1.1. Components adopted rather than built, and why.
 
 ──────── p. 7 ────────
