@@ -1,6 +1,6 @@
 ## Overview
 
-This is the record of how the Thesis 1 proposal was refined after the adviser's review of 2026-10-12, which asked that the recoverability-analysis algorithm become the research contribution and SynapseOS only the platform that deploys and validates it. It covers every round: what was asked, who reviewed and against what standard, what each review found (counted by severity), what was changed in response, and how each change was verified, with the pull requests that carry it. The stopping rule, set on 2026-10-12, is that a chapter is done when a fresh reviewer, checking it against a fixed pass/fail list of criteria, finds no HIGH or MEDIUM issue; LOW findings are kept in `2026-10-12-low-findings.md` for a later pass. The process converged by narrowing what reviewers were asked: open-ended reviews always find something, so the final rounds judged fixed criteria rather than hunting for problems.
+This is the record of how the Thesis 1 proposal was refined after the adviser's review of 2026-10-12, which asked that the recoverability-analysis algorithm become the research contribution and SynapseOS only the platform that deploys and validates it. It covers every round: what was asked, who reviewed and against what standard, what each review found (counted by severity), what was changed in response, and how each change was verified, with the pull requests that carry it. The stopping rule, set on 2026-10-12, is that a chapter is done when a fresh reviewer, checking it against a fixed pass/fail list of criteria, finds no HIGH or MEDIUM issue; LOW findings are kept in `2026-10-12-low-findings.md` for a later pass. The process converged by narrowing what reviewers were asked: open-ended reviews always find something, so the final rounds judged fixed criteria rather than hunting for problems. It took nineteen rounds; in round 19 all three chapters passed together. Along the way the reviews found two real defects in the analyzer itself, fixed in code (PRs #87 and #88) with no reported number changed, and three citations that said more than their sources, each corrected against the source.
 
 ## Table of Contents
 
@@ -14,6 +14,9 @@ This is the record of how the Thesis 1 proposal was refined after the adviser's 
   - [Round 3: fresh re-review of Chapter 1](#round-3-fresh-re-review-of-chapter-1)
   - [Round 4: second fresh re-review of Chapter 1](#round-4-second-fresh-re-review-of-chapter-1)
   - [Round 5: pass/fail check of all three chapters (2026-10-12)](#round-5-passfail-check-of-all-three-chapters-2026-10-12)
+  - [Rounds 6 to 19: the pass/fail loop to zero](#rounds-6-to-19-the-passfail-loop-to-zero)
+  - [What the reviews found in the prototype](#what-the-reviews-found-in-the-prototype)
+  - [Decisions left to the team](#decisions-left-to-the-team)
 - [Facts the reviews surfaced](#facts-the-reviews-surfaced)
 - [References added, and how each was checked](#references-added-and-how-each-was-checked)
 - [Tools built along the way](#tools-built-along-the-way)
@@ -109,13 +112,58 @@ This is the record of how the Thesis 1 proposal was refined after the adviser's 
 
 **Changes (#86).** Every HIGH and MEDIUM finding in the three chapters fixed in one commit, including the coding-agent checks reported with Wilson intervals in Chapter 3, per-command pre-state snapshots for the validation study's replay, the deployed policy named, task form added to the mixed model, and threats for the single corpus draw and for too few data-losing commands in the study.
 
+### Rounds 6 to 19: the pass/fail loop to zero
+
+From round 6 on, every round is the same pass/fail check by fresh reviewers, repeated until all three chapters pass at once. A chapter that passed and was not edited afterwards was not re-checked until the end, when Chapter 1 was checked again against the final Chapters 2 and 3.
+
+| Round | Chapters checked | HIGH | MEDIUM | Commit | What the round was mostly about |
+|---|---|---|---|---|---|
+| 5 | 1, 2, 3 | 5 | 35 | #86 | see above |
+| 6 | 1, 2, 3 | 2 | 17 | d9c9f83 | the fail-closed list asks, it does not refuse; ground truth qualified for the 80 table-labeled commands; Algorithm 1's resolution guard; **analyzer defect 6 found** |
+| 7 | 1, 2, 3 | 0 | 16 | 955b9d1 | the deployed gate's own needless asks (58 to 67 of 372) reported; package and service changes disclosed as unverified by execution; the hybrid static-dynamic novelty scoped |
+| 8 | 1, 2, 3 | 0 | 8 | 419d4f4 | "earliest system" claims softened; §2.10 opened with the algorithm's evaluation; counterbalancing stated honestly |
+| 9 | 1, 2, 3 | 1 | 13 | a7e3e26 | **analyzer defect 7 found**; VoicePilot's participants and a guideline it never gave corrected against the source; a "fifth" effect kind that was the sixth |
+| 10 | 1, 2, 3 | 2 | 8 | de6b4fd | a citation misreporting what [58] measured; "not written by the analysis's authors" true only of the NL2Bash part; **the second half of defect 7 found**; the habituation claim cited (reference [4] added) |
+| 11 | 1, 2, 3 | 1 | 6 | 470c67a | the model-generated partition re-scored with the final analyzer (no change); CoLiS described as its source does; per-shape results reported |
+| 12 | 1, 2, 3 | 1 | 2 | abc5594 | **Chapter 1 passes**; a limitation made stale by the re-score; Table 2.2 given the systems the fourth gap rests on |
+| 13 | 2, 3 | 0 | 6 | f659d76 | Algorithm 1 made to thread its state; shape precedence; Holm across the four platform tests; an LLM-judged step replaced by a rubric |
+| 14 | 2, 3 | 0 | 5 | 3653b2a | power recomputed at Holm's level; failing commands' exclusion stated as a threat; the analysis's own enumeration admitted |
+| 15 | 2, 3 | 0 | 2 | a7eb054 | a source cited for more than it shows; the ablation's attribution split |
+| 16 | 2, 3 | 0 | 5 | edc09f4 | wording that recent fixes had made inconsistent |
+| 17 | 2, 3 | 0 | 1 | ee58303 | **Chapter 3 passes**; the gap no longer stated as universal |
+| 18 | 1, 2 | 0 | 4 | fab45e6 | Chapter 1 re-checked against the final Chapters 2 and 3: the gap stated as narrowly as Chapter 2 now states it |
+| 19 | 1, 2, 3 | 0 | 0 | 71d91c3 | **all three pass**; two wrong cross-references fixed anyway |
+
+**Why it took fourteen more rounds.** Three things kept the count above zero. First, each fresh reviewer samples differently, so a round finds issues earlier rounds passed over; the count fell, but not monotonically. Second, about a third of the MEDIUM findings from round 13 on were caused by the previous round's own fixes: a new sentence that overreached, a cross-reference to the wrong subsection, a number made stale by a later re-score. Third, three findings were not about wording at all: they were defects in the analyzer itself, and each one needed a code fix and a re-run before the paper could say anything true about it.
+
+**What changed the paper most.**
+- **Two analyzer defects** (next section), now disclosed in Chapters 1 and 3, with Algorithm 1 rewritten to match the fixed code: `&&` passes success on, `;`, `||`, and pipes doubt what came before, branches and loops join, and every line is marked with the ablation that switches it off.
+- **Claims checked against their sources:** VoicePilot studied 11 older adults and gives no preview-and-confirm guideline; the GUI-vs-CLI paper's 69.3% is skill augmentation, not result checking; CoLiS checks policy properties, idempotence among them. Each was corrected.
+- **Statistics made consistent:** confirmatory tests named, Holm applied to the platform measures, and power recomputed at the corrected level, which lowered it (below).
+- **Honesty about the corpus:** non-zero-exit commands are excluded from it, which under-samples exactly the failure paths where defect 7 lay; that is now a stated threat, and the validation study keeps such commands.
+
+### What the reviews found in the prototype
+
+Two of the seven analyzer defects found after the round-7 evaluation came from these reviews, both from a reviewer reading Algorithm 1 against the prose and asking whether the code did what the pseudocode said. `docs/analyzer-defects.md` logs all seven.
+
+- **Defect 6 (round 6, PR #87):** `mv a.txt logs/ && find logs -delete` and `mv a.txt logs/ && rm -r logs` let a moved file be deleted while undo still planned to move it back.
+- **Defect 7 (rounds 9 and 10, PR #88):** the analyzer read a line as if every part succeeded and as if branches left no trace. `cd logs || rm a.txt`, `mv a.txt tmp/ || echo x > a.txt`, `cd logs; rm *`, an assignment inside an `if`, and a path removed and made again before a `;` each lost a file with nothing captured. The fix models failure points and joins; 19 regression shapes and three sandboxed undo cases cover it.
+
+Neither was triggered by any command in the round-7 corpus: re-running it changed none of its 5,439 decisions, the recovery check's rows were identical, and the model-generated partition, re-scored with the final analyzer, changed none of its 720. Every figure in the paper stands. The lesson recorded in the defect log: the corpus barely samples compound lines with failing parts, and differential testing of generated compound lines against the sandbox is the test that would find the next such defect before a reviewer does.
+
+### Decisions left to the team
+
+- **Sample size.** At Holm's first-step level (α/4 = 0.0125), 40 participants give 80% power for d ≥ 0.55 and about 70% at d = 0.5; 48 would be needed for 80% at d = 0.5. The paper reports this honestly. The alternatives are recruiting 48, or naming one platform measure as primary so it is tested at α = 0.05 (34 participants suffice for d = 0.5 then).
+
 ## Facts the reviews surfaced
 
 - Results hold within each partition: the analysis covered 133 of 150 losses among human-written NL2Bash commands (88.7%) and 158 of 175 among the team-written templates (90.3%), answering the concern that the same team wrote the templates and the rule table.
 - The analysis asks about as often as the pattern list, not less; its gain on confirmations is against the fail-closed list.
 - ANOLISA, a shipping Linux distribution for AI agents, already offers file-level workspace snapshots per conversation round: the nearest shipped system, and recovery by snapshot rather than by analysis.
 - *try* (OSDI '26) previews a command's effects by running it in a semisolate; its authors cite an LLM-suggested `find -exec` deleting a user's files. It is the closest prior work to the analysis's dry runs.
-- The model-generated partition was made with round 6's analyzer, before that round's five undo fixes.
+- The model-generated partition's commands were made in round 6; re-scored with the final analyzer and undo, none of its 720 decisions changed.
+- Per command shape, the pattern list let through 4 of 34 compound lines, 5 of 29 hidden effects, 53 of 164 commands with run-time targets, 37 of 85 plain commands, 1 of 13 redirections, and 67 of 80 external commands; the analysis let none through in any shape.
+- Composition and resolution are what produce the capture coverage; the zero silent loss is owed to the rule table and the fail-closed default beneath it.
 
 ## References added, and how each was checked
 
@@ -129,6 +177,9 @@ This is the record of how the Thesis 1 proposal was refined after the adviser's 
 | Alibaba Cloud 2026, ANOLISA product overview | the documentation page | help.aliyun.com |
 | Lamprou et al. 2026, *try* (OSDI '26) | the open-access PDF | usenix.org |
 | Ruan et al. 2024, ToolEmu (ICLR) | arXiv and the ICLR listing | arXiv |
+| Bravo-Lillo et al. 2014, pop-up fatigue (SOUPS) | the USENIX proceedings page and abstract | usenix.org, open access |
+
+Existing references were also re-read against their sources when a reviewer doubted a claim: VoicePilot (arXiv HTML), the GUI-vs-CLI comparison (arXiv abstract), CoLiS (search-indexed HAL abstract; the HAL page itself blocks automated access), and SeeAct. Three of the four claims were wrong and were corrected.
 
 Each addition re-sorts the ACM numbered list, so every existing citation was renumbered by key and then independently verified to resolve to the same source.
 
@@ -139,4 +190,4 @@ Each addition re-sorts the ACM numbered list, so every existing citation was ren
 
 ## Pull requests
 
-#70 resolution ablation · #71 algorithm-first reframe · #72 recap and explainer · #74 two-page recap · #75–#77 Chapter 3 by objective · #78 Chapters 1–3 algorithm-first, archive · #80 recovery literature · #82 plain-text export · #83 round-1 fixes · #84 recap pages · #85 LOW findings list · #86 rounds 2–5 (Chapter 1 rewrite and the pass/fail fixes).
+#70 resolution ablation · #71 algorithm-first reframe · #72 recap and explainer · #74 two-page recap · #75–#77 Chapter 3 by objective · #78 Chapters 1–3 algorithm-first, archive · #80 recovery literature · #82 plain-text export · #83 round-1 fixes · #84 recap pages · #85 LOW findings list · #86 rounds 2–19 (Chapter 1 rewrite and every pass/fail fix) · #87 analyzer defect 6 · #88 analyzer defect 7, the defect log, and the model-generated partition's re-score.
