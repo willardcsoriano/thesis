@@ -150,7 +150,7 @@ analysis is unsure, never less.
 through the rest of the study. Its abstract domain is the effect set: what a command would
 read, create, write, remove, or alter in metadata, or change in the system’s installed
 
-packages and running services, rather than the command’s name.              Its semantics is
+packages and running services, not the command’s name alone.                Its semantics is
 compositional: the effects of a line are built from the effects of its parts through the
 
 operators that join them, which is what an enumerated list of command patterns cannot
@@ -546,26 +546,32 @@ an in-place edit may appear in one invocation joined by &&, with redirects and c
 substitution altering what each actually touches. No enumeration of command prefixes
 
 expresses that, and extending the list does not converge: each newly named tool leaves
-the next one unnamed. Determining recoverability over a composed command, and
+the next one unnamed. The analysis does not escape enumeration either: its effects come
 
-computing the minimal information needed to reverse it, is the open problem this study
+from a table of what each known command does, and a command the table does not
 
 ──────── p. 26 ────────
                                                                                               26
 
 
-takes up (RQ1–RQ3), and it is what separates the present work from the guardrail
+name is treated exactly as the fail-closed list treats it, by asking. What it adds is
 
-designs surveyed above. The comparison that matters is not only against an enumerated
-list of dangerous commands. A list can be turned around so that it asks before every
+composition over the table, read-only resolution of run-time targets, and the capture that
+lets a command run and still be undone. Determining recoverability over a composed
 
-command it does not recognize as read-only, which removes the first weakness above at
-the cost of asking about everything unfamiliar; that fail-closed list is the strongest simple
+command, and computing the minimal information needed to reverse it, is the open
+problem this study takes up (RQ1–RQ3), and it is what separates the present work from
 
-baseline, and the study therefore claims what the analysis adds to it — capturing what
-would be lost so that undo restores it, and asking far less often, both of which
+the guardrail designs surveyed above. The comparison that matters is not only against an
+enumerated list of dangerous commands. A list can be turned around so that it asks
 
-composition and resolution make possible — and not the verdict alone.
+before every command it does not recognize as read-only, which removes the first
+
+weakness above at the cost of asking about everything unfamiliar; that fail-closed list is
+the strongest simple baseline, and the study therefore claims what the analysis adds to it
+
+— capturing what would be lost so that undo restores it, and asking far less often, both of
+which composition and resolution make possible — and not the verdict alone.
 
           Risk in agents that execute tools has also been studied by evaluation rather than
 by guarding. ToolEmu emulates tool execution with a language model so that the failures
@@ -578,10 +584,9 @@ protect a user from the particular command an agent is about to run.
 
 
 Static analysis of shell programs
-
           Static analysis of shell scripts specifically is comparatively little studied, and the
-existing work targets properties adjacent to recoverability rather than recoverability
 
+existing work targets properties adjacent to recoverability rather than recoverability
 itself.   ABash [28] performs abstract interpretation over bash’s variable-expansion
 
 semantics to catch common expansion bugs and includes taint tracking, but is not
@@ -594,23 +599,23 @@ the kind of ground-truth semantics a static effect analysis would need to be che
 against — but stops at defining that semantics rather than analyzing programs written in
 
 it. Closest of the three is CoLiS [2], which applies symbolic execution to the more than
-twenty-seven thousand POSIX-shell maintainer scripts in the Debian package archive to
-
-find violations of the properties Debian policy requires of these scripts, which run with
-root privileges during install, upgrade, and removal; among those properties is
-
-idempotence, that running a script a second time causes no further harm. Idempotence
 
 ──────── p. 27 ────────
                                                                                         27
 
 
+twenty-seven thousand POSIX-shell maintainer scripts in the Debian package archive to
+find violations of the properties Debian policy requires of these scripts, which run with
+
+root privileges during install, upgrade, and removal; among those properties is
+idempotence, that running a script a second time causes no further harm. Idempotence
+
 and recoverability are related but distinct: a script can be idempotent while still being
+
 destructive on its first run — rm -rf /var/cache/pkg is idempotent, since running it twice
-
 does no more damage than once, and destructive: nothing restores it unless what it
-removes was captured before the first run — and a command can be recoverable without
 
+removes was captured before the first run — and a command can be recoverable without
 being idempotent, if each run produces a new, independently-reversible effect. CoLiS is
 
 therefore the nearest prior application of static effect reasoning to shell scripts
@@ -625,8 +630,8 @@ algorithmic contribution fills.
 
 
 Recovery after the fact
-         Guards and analyses act before a command runs. A separate literature restores a
 
+         Guards and analyses act before a command runs. A separate literature restores a
 system after something has gone wrong, and it approaches the study’s question from the
 
 other side: not what a command will destroy, but how to recover what was destroyed.
@@ -642,18 +647,18 @@ whole subvolume at little cost, because a snapshot shares its blocks with the li
 filesystem until they are modified [37], so snapshots can be taken on a schedule or before
 
 system updates. A snapshot needs no knowledge of the command it protects against,
+
 which is both its strength and its limit. Restoring one returns the whole subvolume to an
+
+──────── p. 28 ────────
+                                                                                           28
+
 
 earlier moment and discards every later change along with the unwanted one, and nothing
 about a snapshot can tell the user, before a command runs, whether that command will
 
 lose anything. On a filesystem without copy-on-write, such as the ext4 on which this
-
 study is conducted, a snapshot must visit every file in the tree, a cost measured in
-
-──────── p. 28 ────────
-                                                                                           28
-
 
 Chapter 3, Section 3.1(a). Versioning file systems instead keep old versions of individual
 files: the Elephant file system retains versions under per-file policies that decide when an
@@ -671,11 +676,11 @@ it, and replay what users did since [6]. Operating system transactions let a pro
 group system calls so that their effects can be rolled back as a unit before they commit
 
 [35]. Intrusion recovery systems such as Taser log system activity so that the effects of
+
 an attack can be identified and reverted afterward while legitimate changes are kept [11].
-
 Each restores more completely than any list can, but each requires something the setting
-of this study does not have: a service built to be undoable, a kernel and programs that use
 
+of this study does not have: a service built to be undoable, a kernel and programs that use
 transactions, or continuous logging of all system activity.
 
          A different route learns a command’s effects by running it where they can be
@@ -691,26 +696,27 @@ analysis’s dry runs, and the two differ in where the knowledge comes from: try
 the command itself and shows its effects to a user who must judge them, and it does not
 
 contain effects outside the filesystem, such as network calls; the present study runs only
+
 commands it has first proven read-only, decides from the command’s structure what it
 
-would destroy, and captures exactly that before the command runs. For the same reason
-try is not scored as a baseline in Chapter 3: it decides nothing about a command, since it
+──────── p. 29 ────────
+                                                                                        29
 
+
+would destroy, and captures exactly that before the command runs. For the same reason
+
+try is not scored as a baseline in Chapter 3: it decides nothing about a command, since it
 runs every command and leaves what to keep to the user.
 
-──────── p. 29 ────────
-                                                                                       29
-
-
          The present study takes a narrower path between these literatures. Like a guard,
-
 it acts on one command before the command runs, on an unmodified system and
+
 filesystem. Like a recovery mechanism, it restores. It captures only what that one
-
 command would destroy, which it determines by analysis, so its cost follows from what
-the command touches rather than from the size of the system, and it can say before the
 
+the command touches rather than from the size of the system, and it can say before the
 command runs whether undo will be possible. Table 2.1 compares the approaches
+
 surveyed in this section on these properties.
 
 ──────── p. 30 ────────
@@ -1362,7 +1368,7 @@ against each participant’s own operating system — is positioned against the 
 gaps, as the platform on which the analysis addressing the first is validated.          Its
 
 ──────── p. 43 ────────
-                                                                                        43
+                                                                                            43
 
 
 relationship to the closest prior work is worth stating directly. NaSh [13] proposes
@@ -1381,36 +1387,32 @@ least that undoing it requires, evaluated against observed ground truth.
 2.10 Review of the Methodological Literature
 
          The evaluation of the algorithm, which is the study’s primary evidence, follows
-from what the algorithm claims, and its methods are stated first. Its 450 human-written
-commands are drawn from a public dataset of natural-language descriptions paired with
-Bash commands, NL2Bash [24], so that part of it is not written by the people who wrote
+established practice for judging a program analysis, and its methods are stated first. A
+sound analysis is judged first by what it misses, its false negatives, and only then by what
+its false alarms cost, since soundness is the property it claims [8]; hence silent loss is the
 
-the analysis; the rest are templates written for the study and commands that act outside
-the filesystem (Chapter 3, Section 1.2(a)); and it is stratified by the label each command
-must carry so that the rare destructive commands are present in number. Of its 777
+primary measure and needless confirmation the cost. Its ground truth is observed by
+execution rather than assigned by judges, the standard by which executable semantics of
+the shell are validated against what shells actually do [12] and by which generated Bash
 
-commands, the 697 that act on files have ground truth observed rather than judged, by
-executing each in a sandbox and comparing the filesystem before and after, in the way
-that executable semantics of the shell are validated against what shells actually do [12]
-and that Westenfelder and colleagues judge whether a generated Bash command does
+commands are judged against what was intended [47]. Part of its corpus comes from a
+public dataset, NL2Bash [24], so that the evaluation does not rest only on commands
+written by the people who wrote the analysis. The claim that particular components
+produce the result is tested by ablation, rerunning the analysis with each switched off;
 
-what was intended [47]; the 80 that act outside the filesystem are labeled from a fixed
-table of state-changing tools. Its comparisons are paired, because every system is scored
-on the same commands, and use the standard tests for paired proportions: McNemar’s
-exact test on the commands two systems handle differently, Wilson intervals for each
+and comparisons in which every system is scored on the same commands use the
+standard tests for paired proportions: McNemar’s exact test on the commands two
+systems handle differently, Wilson intervals for each proportion and Newcombe intervals
+for each difference, and Holm’s correction across each family of tests. Chapter 3,
 
-proportion and Newcombe intervals for each difference, and Holm’s correction across
-each family of tests. And its claim that composition and resolution, rather than the rule
-table, produce the result is tested by ablation: the analysis is rerun with each part
-switched off and the table kept. Chapter 3, Sections 3.1 and 3.2 give the details.
-
-──────── p. 44 ────────
-                                                                                          44
-
-
+Sections 1.2, 3.1, and 3.2 give the design.
          The methodological literature reviewed here shapes the validation study, in
 which the analysis is deployed in an interface and exercised by people, and so concerns
 how a conversational interface should be evaluated. The evaluation practices of the
+
+──────── p. 44 ────────
+                                                                                           44
+
 
 surveyed work fall into three categories, each with a characteristic limitation.
 Architectural demonstrations [13, 45] establish feasibility but provide no performance
@@ -1419,13 +1421,13 @@ evidence.   Curated task benchmarks [10, 50, 57] provide reproducible, quantitat
 measures but assess the autonomous task completion of agents acting on a user’s behalf
 rather than the performance of a human working through an interface. Human-centered
 user studies, exemplified by VoicePilot [33] and AXIS [26], provide the most direct
-evidence of an interface’s value to real users but remain rare in this literature and, where
 
+evidence of an interface’s value to real users but remain rare in this literature and, where
 present, are confined to a single application rather than the operating system as a whole.
 The instruments this study adopts are drawn from established practice rather than
 constructed for it: the System Usability Scale [5] for perceived usability, with its
-interpretation grounded in subsequent large-sample analysis [40], and the NASA Task
 
+interpretation grounded in subsequent large-sample analysis [40], and the NASA Task
 Load Index [15] for perceived workload.
          These limitations motivate the methodological posture of the present study,
 which is grounded in established human-computer-interaction evaluation practice. The
@@ -1433,39 +1435,39 @@ which is grounded in established human-computer-interaction evaluation practice.
 study adopts a within-subjects design, in which each participant completes tasks under
 both the SynapseOS condition and the condition of their own operating system, so that
 each participant serves as their own control and between-person variance is removed as a
-confound; the order of conditions is counterbalanced to distribute learning effects evenly.
 
+confound; the order of conditions is counterbalanced to distribute learning effects evenly.
 It further adopts an expert-baseline comparison — using each participant’s most familiar
 environment as the comparison condition rather than a fixed alternative that may be
 unfamiliar — so that no participant is measured on an environment they have not used;
-familiarity then favors the baseline, so the comparison characterizes the platform against
 
+familiarity then favors the baseline, so the comparison characterizes the platform against
 each participant’s practiced environment rather than isolating interface quality
 (Chapter 3, Section 1.2(d)), while strengthening the ecological validity that the
 benchmark-only evaluations in the surveyed literature lack. To integrate the quantitative
+
 measures of task completion time and error rate with qualitative evidence of user
-
-──────── p. 45 ────────
-                                                                                           45
-
-
 experience, the study employs a convergent mixed-methods structure in the sense set out
-
 by Creswell and Plano Clark [9], collecting both strands concurrently and integrating
 them at the interpretation stage; the qualitative data, gathered through retrospective think-
-aloud over the screen recording and a semi-structured interview, are analyzed using the
-thematic-analysis method of Braun and Clarke [3], a widely adopted six-phase approach
 
+──────── p. 45 ────────
+                                                                                          45
+
+
+aloud over the screen recording and a semi-structured interview, are analyzed using the
+
+thematic-analysis method of Braun and Clarke [3], a widely adopted six-phase approach
 for identifying and reporting patterns in qualitative data. Design considerations surfaced
 by the reviewed systems inform the evaluation directly: the reversibility-and-guardrail
 framing of NaSh [13], and VoicePilot’s guideline that a command should take no longer
-than a caregiver would [33], together motivate measuring both what the confirmation
 
+than a caregiver would [33], together motivate measuring both what the confirmation
 gate and undo protect and what they cost the participant.
          The specific instantiation of this methodology — the composition of the
 benchmark and custom task suite, the participant profile and screening criteria, the
-session procedure, the metrics and their computation, and the statistical and qualitative
 
+session procedure, the metrics and their computation, and the statistical and qualitative
 analysis plan — is presented in detail in Chapter 3.
 
 
@@ -1473,8 +1475,8 @@ analysis plan — is presented in detail in Chapter 3.
 2.11 Summary
          This chapter reviewed two literatures. The first, on which the study’s algorithm
 builds, is program analysis: abstract interpretation and type-and-effect systems [8, 20, 44]
-supply its formal basis, the command guards of natural-language shells and coding agents
 
+supply its formal basis, the command guards of natural-language shells and coding agents
 [13, 21, 32] decide by permission rather than by effect, the static analyses of shell
 programs [2, 12, 28] target properties adjacent to recoverability but not recoverability
 itself, recovery mechanisms from snapshots, including ANOLISA’s [1], to operating
@@ -1482,26 +1484,26 @@ itself, recovery mechanisms from snapshots, including ANOLISA’s [1], to operat
 system transactions [6, 11, 35, 37, 39] restore after the fact, but wholesale or only on a
 system built for it, try [22] previews a command by running it, and ToolEmu [38]
 measures the risks of agents rather than guarding a given command. The second, in
-which the platform is situated, is the literature on natural-language and LLM-mediated
 
+which the platform is situated, is the literature on natural-language and LLM-mediated
 interfaces to personal computing across nearly four decades, organized along a four-layer
 pipeline of Input, Reasoning, Action, and Operating-System Integration. The historical
 foundations established the long-standing aspiration to a natural-language interface to a
+
+real operating system [49] and the methodological shift, driven by in-context reasoning
+[51], that made the current generation of systems possible, and the critique of natural-
+language interaction from direct manipulation [7, 18, 27, 31, 41–43], together with the
 
 ──────── p. 46 ────────
                                                                                         46
 
 
-real operating system [49] and the methodological shift, driven by in-context reasoning
-[51], that made the current generation of systems possible, and the critique of natural-
-language interaction from direct manipulation [7, 18, 27, 31, 41–43], together with the
 controlled comparison of Whiteside and colleagues [48], cautions that a conversational
-
 interface must earn its place, which shapes the platform’s design.        The shell-and-
 command-line thread most directly related to the proposed design demonstrated that
 natural-language-to-Bash translation is tractable [47], that safety and reversibility are
-central concerns [13], and that local deployment is feasible [19], while leaving the
 
+central concerns [13], and that local deployment is feasible [19], while leaving the
 extension from shell to session, and empirical user evaluation, as open work. The
 graphical-agent literature across web, mobile, and desktop [10, 16, 17, 30, 36, 46, 54–57]
 established the field’s architectural patterns and its recurring bottleneck of visual
@@ -1509,13 +1511,13 @@ established the field’s architectural patterns and its recurring bottleneck of
 grounding, while the accessibility thread [14, 29, 33, 34, 45] revealed a complementary
 limitation that a general conversational interface layer could address. The evaluation
 literature [50, 52, 53] traced a capability ceiling that remains low on long-horizon work,
-and exposed a methodological gap: interfaces are seldom evaluated comparatively
 
+and exposed a methodological gap: interfaces are seldom evaluated comparatively
 against the conventional workflow with real users, and, in the surveyed corpus, not at the
 level of the operating system itself.
          Synthesized, the surveyed works reveal a fourfold gap: no analysis of what a
-generated command would destroy, every shipped guard deciding by permission and
 
+generated command would destroy, every shipped guard deciding by permission and
 every shipped recovery restoring by snapshot, with try [22] instead leaving the judgment
 of a contained run to the user; no conversational interface over a whole desktop session
 addressed to the person using it; no coverage of the Linux desktop; and no controlled
@@ -1523,18 +1525,17 @@ addressed to the person using it; no coverage of the Linux desktop; and no contr
 comparison of a conversational interface against the conventional workflow at the level
 of the operating system. The first is the gap the present study’s research addresses,
 through a recoverability analysis of generated shell commands evaluated against ground
-truth obtained by sandboxed execution wherever a command acts on files. The other
 
+truth obtained by sandboxed execution wherever a command acts on files. The other
 three describe the setting in which that gap arises, and SynapseOS, the conversational
 interface layer for the Linux desktop built as the analysis’s experimental platform, is
+where the analysis is deployed and validated in use, through a controlled, within-subjects
+
+comparison against each participant’s own operating system. The methodology through
+which this evaluation is conducted is the subject of Chapter 3.
 
 ──────── p. 47 ────────
                                                                                                           47
-
-
-where the analysis is deployed and validated in use, through a controlled, within-subjects
-comparison against each participant’s own operating system. The methodology through
-which this evaluation is conducted is the subject of Chapter 3.
 
 
 
