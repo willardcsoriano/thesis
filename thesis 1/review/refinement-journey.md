@@ -163,9 +163,16 @@ The paper now reports the undo defect and the test in Chapter 3, Section 3.1(d),
 
 **What it cost.** The test was slow to converge for the same reason the reviews were: each fresh draw surfaced a rarer case than the last, and one fix made things worse before it was narrowed. The checker was made to run on every CPU to shorten each cycle.
 
+### Before sending: the participant design and a readability pass (2026-10-13)
+
+Two changes were made before the paper was re-sent.
+
+- **Every participant counts (PR #92).** The novice/power split excluded anyone in between or whose self-report the screener contradicted, and the four-test Holm correction had cut power to 70%. Each participant now gets a proficiency score (0 to 8) that enters the models as a continuous moderator, so no one is excluded for proficiency; task completion time is the single primary measure, which gives 87% power at d = 0.5 with the same 40; screening moves to sign-up, with its own consent, so every booked session yields an analyzed participant. Two design reviews checked it; their findings (a primary/secondary contradiction, the crossover's period effect being called a test of carryover, consent ordering, contact data, allocation) were fixed.
+- **Readability (PR #93).** Many review rounds had left the chapters reading as patched: abrupt transitions and sentences bolted on. Five editors rewrote paragraphs for flow under a rule that no fact, number, citation, or cross-reference may change, enforced by a script on each of the 120 edits; three reviewers then compared old and new text and found no change of meaning, and their nuance notes were applied. The paper is now 135 pages.
+
 ### Decisions left to the team
 
-- **Sample size.** At Holm's first-step level (α/4 = 0.0125), 40 participants give 80% power for d ≥ 0.55 and about 70% at d = 0.5; 48 would be needed for 80% at d = 0.5. The paper reports this honestly. The alternatives are recruiting 48, or naming one platform measure as primary so it is tested at α = 0.05 (34 participants suffice for d = 0.5 then).
+- **Sample size.** At Holm's first-step level (α/4 = 0.0125), 40 participants give 80% power for d ≥ 0.55 and about 70% at d = 0.5; 48 would be needed for 80% at d = 0.5. Resolved in PR #92: task completion time is the single primary measure, tested at α = 0.05, which gives 87% power at d = 0.5 with the same 40 participants.
 
 ## Facts the reviews surfaced
 
@@ -202,4 +209,4 @@ Each addition re-sorts the ACM numbered list, so every existing citation was ren
 
 ## Pull requests
 
-#70 resolution ablation · #71 algorithm-first reframe · #72 recap and explainer · #74 two-page recap · #75–#77 Chapter 3 by objective · #78 Chapters 1–3 algorithm-first, archive · #80 recovery literature · #82 plain-text export · #83 round-1 fixes · #84 recap pages · #85 LOW findings list · #86 rounds 2–19 (Chapter 1 rewrite and every pass/fail fix) · #87 analyzer defect 6 · #88 analyzer defect 7, the defect log, and the model-generated partition's re-score. · #89 the source, front-matter, and appendix corrections · #90 the differential test and the undo fix (defect 8) · the paper and recap update for defect 8.
+#70 resolution ablation · #71 algorithm-first reframe · #72 recap and explainer · #74 two-page recap · #75–#77 Chapter 3 by objective · #78 Chapters 1–3 algorithm-first, archive · #80 recovery literature · #82 plain-text export · #83 round-1 fixes · #84 recap pages · #85 LOW findings list · #86 rounds 2–19 (Chapter 1 rewrite and every pass/fail fix) · #87 analyzer defect 6 · #88 analyzer defect 7, the defect log, and the model-generated partition's re-score. · #89 the source, front-matter, and appendix corrections · #90 the differential test and the undo fix (defect 8) · #91 the paper and recap update for defect 8 · #92 every participant analyzed, one primary measure · #93 readability pass.
