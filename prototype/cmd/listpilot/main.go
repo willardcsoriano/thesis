@@ -1,11 +1,21 @@
-// Command listpilot runs five systems over pilot/corpus.jsonl and emits one JSON
+// Command listpilot runs seven systems over pilot/corpus.jsonl and emits one JSON
 // object per command per system: L0 (the current pattern-list classifier), L1 (a
 // list flipped to fail closed), ALG-strict and ALG-capture (two readings of the
-// full effect analysis), and ALG-nocompose (the same analysis with wrapper,
-// find -exec, xargs, eval, shell -c, and loop composition disabled, falling back
-// to the per-command rule table alone). ALG-nocompose exists to answer
-// docs/open-problems.md row 38 — the adviser's own question of how much of the
-// algorithm's result comes from composition versus the table it extends. It
+// full effect analysis), and three ablations of the full analysis, each read the
+// way ALG-capture is:
+//
+//   - ALG-nocompose disables wrapper, find -exec, xargs, eval, shell -c, and loop
+//     composition, falling back to the per-command rule table alone.
+//   - ALG-noresolve keeps composition but has no runner, so every target the
+//     analysis would learn by running a read-only command (command substitution
+//     and xargs producers, the find rewrite, tar -tf, unzip -Z1, rsync
+//     --dry-run, rename -n, git queries, apt-get -s, dpkg-query, systemctl
+//     is-active) is unresolved and fails closed.
+//   - ALG-tableonly turns both off: the per-command rule table alone.
+//
+// The ablations answer docs/open-problems.md row 38 and the adviser's request
+// to quantify how much of the algorithm's result comes from composition and
+// from runtime-target resolution versus the table they extend. listpilot
 // reports what each system would do and never executes a corpus command. The
 // only commands ever run are ALG's read-only resolvers, which it proves
 // read-only first and runs under a read-only sandbox where one is available.
@@ -142,15 +152,29 @@ func main() {
 		enc.Encode(result{ID: r.ID, System: "ALG-capture", Prompted: vd.Class == effects.Unrecoverable,
 			Protected: protected, Reason: first(vd.Reasons), Class: vd.Class.String()})
 
-		nc := *an
-		nc.Compose = false
-		ncRes := nc.Analyze(context.Background(), r.Command)
-		ncVd := ncRes.Verdict()
-		ncProtected := ncVd.Class == effects.RecoverableWithCapture
-		enc.Encode(result{ID: r.ID, System: "ALG-nocompose", Prompted: ncVd.Class == effects.Unrecoverable,
-			Protected: ncProtected, Reason: first(ncVd.Reasons), Class: ncVd.Class.String()})
+		for _, ab := range ablations {
+			ac := *an
+			ac.Compose = ab.compose
+			if !ab.resolve {
+				ac.Run = nil // no runner: the analysis refuses resolution and fails closed
+			}
+			vd := ac.Analyze(context.Background(), r.Command).Verdict()
+			enc.Encode(result{ID: r.ID, System: ab.system, Prompted: vd.Class == effects.Unrecoverable,
+				Protected: vd.Class == effects.RecoverableWithCapture, Reason: first(vd.Reasons), Class: vd.Class.String()})
+		}
 		os.RemoveAll(wd)
 	}
+}
+
+// ablations are the full analysis with composition, runtime-target resolution,
+// or both switched off, emitted in this order after the full systems.
+var ablations = []struct {
+	system           string
+	compose, resolve bool
+}{
+	{"ALG-nocompose", false, true},
+	{"ALG-noresolve", true, false},
+	{"ALG-tableonly", false, false},
 }
 
 func withoutHome(env []string) []string {
