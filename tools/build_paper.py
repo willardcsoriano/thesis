@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Builds the paper PDF: renders the HTML, settles the table-of-contents page numbers, and stamps
-the page numbers the writing guidelines require.
+"""Builds the paper PDF: renders the HTML, settles the table-of-contents page numbers, stamps
+the page numbers the writing guidelines require, and writes the per-chapter plain-text copy
+(text/, by export_text.py) that reviews and pull-request diffs read.
 
 Usage: SYNAPSE_CHROMIUM=/usr/bin/chromium tools/venv/bin/python tools/build_paper.py [paper.html] [paper.pdf]
 """
@@ -29,3 +30,4 @@ with tempfile.TemporaryDirectory() as td:
         raise SystemExit("table of contents did not settle")
     stamp(raw, pdf)
 print("wrote", pdf)
+subprocess.run([sys.executable, str(TOOLS / "export_text.py"), str(pdf), str(pdf.parent / "text")], check=True)
