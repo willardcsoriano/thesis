@@ -347,16 +347,17 @@ for that reason, and a negative result on any of them is reported as such.
          The findings of this study are expected to benefit the following groups:
       1. Developers of AI agents that run shell commands. Coding assistants and other
          agents that execute generated commands guard them with lists of dangerous
-         patterns, which on this study’s corpus let most file-destroying commands run
-         without asking (Section 1.5) [20, 31]. The recoverability analysis can be placed
+         patterns, which on this study’s corpus let 31% of the file-destroying commands
+         run without asking, and the checks of Codex CLI and cc-safety-net 73% to 97%
+         (Section 1.5) [20, 31]. The recoverability analysis can be placed in front of any
 
 ──────── p. 10 ────────
                                                                                         10
 
 
-        in front of any system that executes generated shell commands, and it adds what
-        a list cannot: a capture, taken before the command runs, from which the
-        command can be undone.
+        system that executes generated shell commands, and it adds what a list cannot: a
+        capture, taken before the command runs, from which the command can be
+        undone.
       2. The research community. The study contributes a static analysis of shell
         commands for recoverability, a property the surveyed analyses of shell programs
         do not address (Chapter 2, Section 2.5), together with an evaluation against
@@ -412,50 +413,52 @@ benchmark task suite [49], and it is bounded by the duration of the thesis proje
 the recoverability analysis treats anything it cannot determine as unrecoverable, and so
 protects such commands only by asking first: code run by an interpreter, programs it does
 not model, and variables with no value are of this kind. Of the 325 file-destroying
-commands in the corpus, 34 (10.5%) are protected only this way, and undo restored 630
-of the 631 commands executed in the recovery check, the one failure being reported in
+commands in the corpus, 34 (10.5%) are protected only this way (Chapter 3,
+Section 3.1(d), lists them by cause), and undo restored 630 of the 631 commands
 
-Chapter 3. Second, its per-command rules are a hand-written enumeration, which its
-composition builds on rather than replaces, and it resolves a command’s targets shortly
-before the command runs, so a file changed by another process in the interval is captured
-as it was when resolved. Third, it is evaluated on a corpus of human-written commands
-from NL2Bash, templates written by the same team that wrote its rule table and the
-pattern-list baseline, and commands whose effects lie outside the filesystem; each label
-describes what a command did on its fixture, the files and directories prepared for it to
+executed in the recovery check, the one failure being reported in Chapter 3. Second, its
+per-command rules are a hand-written enumeration, which its composition builds on
+rather than replaces, and it resolves a command’s targets shortly before the command
+runs, so a file changed by another process in the interval is captured as it was when
+resolved. Third, it is evaluated on a corpus of human-written commands from NL2Bash,
+templates written by the same team that wrote its rule table and the pattern-list baseline,
+and commands whose effects lie outside the filesystem; each label describes what a
 
 ──────── p. 12 ────────
                                                                                             12
 
 
-run on, not on every possible filesystem, and the labels of the 80 external commands, a
-fifth of the 405 behind the silent-loss result, are assigned from a table rather than
-observed, so they are weaker evidence than the 697 observed in the sandbox. Nor does it
-ask less often than the pattern list, which it does not significantly exceed (32 to 45 against
+command did on its fixture, the files and directories prepared for it to run on, not on every
+possible filesystem, and the labels of the 80 external commands, a fifth of the 405 behind
+the silent-loss result, are assigned from a table rather than observed, so they are weaker
+evidence than the 697 observed in the sandbox. Nor does it ask less often than the
 
-30 of 372), or than the coding-agent checks (1 to 15); and the deployed gate, which also
-consults the pattern list, asks about 58 to 67 (16% to 18%), still well below the fail-closed
-list’s 27%. Its corpus was written by people, not by the model: a smaller partition of
-commands the deployed model wrote showed the same pattern, but rests on 19 losses and
-an earlier build of the analysis (Chapter 3, Section 3.1(d)). These threats and their
-mitigations are stated in Chapter 3, Section 3.1(e).         Fourth, the recovery plan is
-minimum-cost relative to the capture mechanisms and cost model stated in Chapter 3,
-Section 2.1(c), not over every conceivable way of restoring a system. Fifth, the platform
-offers two confirmation policies over the analysis’s verdict, a strict policy, the default,
-which asks before every command that is not plainly recoverable, and a capture policy,
-which asks only before unrecoverable commands (Chapter 3, Section 2.1(e)); which
-serves users better is a question the validation study informs rather than settles. Sixth,
-the platform commits to a locally hosted, open-weights, code-specialized small language
-model (Qwen2.5-Coder-3B-Instruct) rather than a hosted frontier model, prioritizing
+pattern list, which it does not significantly exceed (32 to 45 against 30 of 372), or than
+the coding-agent checks (1 to 15); and the deployed gate, which also consults the pattern
+list, asks about 58 to 67 (16% to 18%), still well below the fail-closed list’s 27%. Its
+corpus was written by people, not by the model: a smaller partition of commands the
+deployed model wrote pointed the same way, but there the analysis let one loss through,
+on a command that partition’s own labeling rule mislabeled, and its advantage in capture
+coverage over the pattern list was not significant; it rests on 19 losses and an earlier build
+of the analysis (Chapter 3, Section 3.1(d)). These threats and their mitigations are stated
+in Chapter 3, Section 3.1(e). Fourth, the recovery plan is minimum-cost relative to the
+capture mechanisms and cost model stated in Chapter 3, Section 2.1(c), not over every
+conceivable way of restoring a system. Fifth, the platform offers two confirmation
+policies over the analysis’s verdict, a strict policy, the default, which asks before every
+command that is not plainly recoverable, and a capture policy, which asks only before
+unrecoverable commands (Chapter 3, Section 2.1(e)); which serves users better is a
 
-privacy and offline operation over the potentially higher capability of larger hosted
-alternatives5; this may limit how often a request is translated correctly, which bounds the
-validation study but not the analysis, which takes whatever command it is given.
-Seventh, the platform targets the Linux desktop, and the validation study’s findings may
-not generalize to Windows or macOS; it is bounded by the task coverage of the OSWorld
-benchmark and the custom task suite, and users with motor accessibility needs are
-excluded from it for ethics-review and recruitment reasons, so accessibility-specific
-configurations such as speech-instructed operation for atypical speech [13] are out of
-scope.
+question the validation study informs rather than settles. Sixth, the platform commits to a
+locally hosted, open-weights, code-specialized small language model (Qwen2.5-Coder-
+3B-Instruct) rather than a hosted frontier model, prioritizing privacy and offline operation
+over the potentially higher capability of larger hosted alternatives5; this may limit how
+often a request is translated correctly, which bounds the validation study but not the
+analysis, which takes whatever command it is given. Seventh, the platform targets the
+Linux desktop, and the validation study’s findings may not generalize to Windows or
+macOS; it is bounded by the task coverage of the OSWorld benchmark and the custom
+task suite, and users with motor accessibility needs are excluded from it for ethics-review
+and recruitment reasons, so accessibility-specific configurations such as speech-
+instructed operation for atypical speech [13] are out of scope.
 
 ──────── p. 13 ────────
                                                                                                             13
