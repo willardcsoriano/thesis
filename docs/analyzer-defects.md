@@ -56,3 +56,18 @@ After #88 the sandboxed recovery check on the corpus is identical, row for row, 
 ## What would find the next one first
 
 A differential test of composition: generate compound lines by joining corpus commands with `;`, `||`, `&&`, pipes, `if`, and loops, including parts made to fail (a `cd` to a missing directory, a `mv` into a read-only one), run each in the sandbox oracle, and flag any line where the oracle sees a loss the analysis neither captured nor asked about. It aims the existing ground truth at exactly the region where defects 6 and 7 lived, and it needs no human labels. It is recorded as the next step in section 12 of `recoverability-analysis.md`.
+
+## Defect 8: undo, found by the differential test (2026-10-13)
+
+The differential test proposed above was built (`prototype/pilot/make_compose.py`, `make composecheck`, run in parallel by `pilot/parallel_rc.py`). On its first 2,000 compound lines the analysis let 1,536 run, and undo failed to restore 24 of them. The analysis had captured what was needed; the fault was in undo, which assumed every recorded effect had happened. In several cases undo itself destroyed a file:
+
+| Shape | What undo did |
+|---|---|
+| `test -f nosuch && mv a.txt b.txt` (the move never ran) | moved b.txt onto a.txt, destroying a.txt |
+| `rm a.txt \|\| exit 1 ; cp b.txt a.txt` | restored a.txt, then deleted it as "created by the line" |
+| `if rm -r logs; then mkdir logs; fi` | could not restore logs over the new directory |
+| `mv a.txt b.txt ; mv b.txt tmp/` with the second move failing | wrote b's bytes into the restored a.txt through a shared inode |
+| `mv b.txt tmp/ \| mv a.txt b.txt` (pipeline stages race) | removed a's file as a leftover |
+
+Fix (branch `test/compose-differential`): moves are recorded with the moved file's identity and go back by identity, along chains and whatever order the parts ran; a directory made again is merged into; re-creations are removed before restoring, and a restored or pre-existing original is never removed; a content restore is separated from a file restored from trash. Eleven regression tests in `internal/undo/partial_test.go`, most confirmed to fail on the old code. Result: 100% of compound lines restored across five draws (about 16,900 lines run), with round 7 unchanged (0 of 5,439 decisions, recovery rows identical). Each fresh draw before the last fixes surfaced one or two rarer cases, so a final unseen draw is still to be run before merging.
+
