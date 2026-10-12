@@ -254,3 +254,34 @@ func TestMutationGapsPackages(t *testing.T) {
 		t.Fatalf("dpkg --auto-deconfigure: %s", v.Class)
 	}
 }
+
+func TestLaterCommandOnWhatTheLineMovedOrChanged(t *testing.T) {
+	// Regression (found by the chapter 3 review, 2026-10-12): find listed the tree as it
+	// is now, so after `mv a.txt logs/` it missed logs/a.txt and kept the move as
+	// "undo moves it back", although find deletes it. A tree the line changes cannot be
+	// listed beforehand, so find asks.
+	runRuleCases(t, []ruleCase{
+		{"mv a.txt logs/ && find logs -name '*.txt' -delete", true, Unrecoverable, nil, nil},
+		{"echo x > logs/new.txt && find logs -delete", true, Unrecoverable, nil, nil},
+		// an unchanged tree still resolves
+		{"find . -maxdepth 1 -name a.txt -delete", true, RecoverableWithCapture, []string{"remove a.txt"}, nil},
+	})
+
+	// Regression: removing a directory destroyed what the line had moved into it, while
+	// the move stayed "undo moves it back" and the directory's capture, taken before the
+	// line runs, does not hold the moved file. The move is now a captured removal.
+	wd := fixture(t)
+	a := analyze(t, wd, "mv a.txt logs/ && rm -r logs", false)
+	if v := a.Verdict(); v.Class != RecoverableWithCapture {
+		t.Fatalf("class = %v, want recoverable-with-capture", v.Class)
+	}
+	captured := false
+	for _, c := range a.Plan().Captures {
+		if c.Path == filepath.Join(wd, "a.txt") {
+			captured = true
+		}
+	}
+	if !captured {
+		t.Fatalf("a.txt, moved into the removed directory, is not captured: %+v", a.Plan().Captures)
+	}
+}

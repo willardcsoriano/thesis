@@ -666,18 +666,23 @@ func (st *state) add(c *call, e Effect) {
 // the original location, which is where the data is at capture time. It reports
 // whether the effect was fully handled.
 func (st *state) destroyMoved(c *call, e *Effect) bool {
+	// Removing a directory also destroys whatever an earlier part of the line moved
+	// into it, which the directory's own capture, taken before the line runs, does not
+	// hold: demote each such move to a captured removal of its source.
+	if e.Kind == Remove {
+		for q, src := range st.virt.movedFrom {
+			if strings.HasPrefix(q, e.Path+"/") {
+				st.demoteMove(src, q)
+			}
+		}
+	}
 	for q := e.Path; q != "/" && q != "."; q = filepath.Dir(q) {
 		src, moved := st.virt.movedFrom[q]
 		if !moved {
 			continue
 		}
 		if q == e.Path {
-			for i := range st.an.Effects {
-				if x := &st.an.Effects[i]; x.Kind == Remove && x.Path == src && x.MovedTo == q {
-					x.MovedTo = ""
-				}
-			}
-			delete(st.virt.movedFrom, q)
+			st.demoteMove(src, q)
 			return false // still apply the effect: the destination is one the line made
 		}
 		rel, _ := filepath.Rel(q, e.Path)
@@ -688,6 +693,52 @@ func (st *state) destroyMoved(c *call, e *Effect) bool {
 		}
 		st.add(c, orig)
 		return true
+	}
+	return false
+}
+
+// demoteMove turns the earlier move of src to dst into a plain removal of src, which
+// the plan captures, because moving back would no longer return the data.
+func (st *state) demoteMove(src, dst string) {
+	for i := range st.an.Effects {
+		if x := &st.an.Effects[i]; x.Kind == Remove && x.Path == src && x.MovedTo == dst {
+			x.MovedTo = ""
+		}
+	}
+	delete(st.virt.movedFrom, dst)
+}
+
+// lineChangesUnder reports whether an earlier part of the line created, moved into,
+// removed, or wrote anything at or under one of roots, so that listing the tree now
+// would not show what a later command will find there.
+func (st *state) lineChangesUnder(roots []string) bool {
+	under := func(p string) bool {
+		for _, r := range roots {
+			if p == r || strings.HasPrefix(p, r+"/") {
+				return true
+			}
+		}
+		return false
+	}
+	for p := range st.virt.created {
+		if under(p) {
+			return true
+		}
+	}
+	for p := range st.virt.removed {
+		if under(p) {
+			return true
+		}
+	}
+	for p := range st.virt.movedFrom {
+		if under(p) {
+			return true
+		}
+	}
+	for _, e := range st.an.Effects {
+		if e.Kind == Write && under(e.Path) {
+			return true
+		}
 	}
 	return false
 }
