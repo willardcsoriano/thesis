@@ -77,6 +77,10 @@ type overlay struct {
 	// needs no such care: it is recorded only for a path that did not exist, so if it
 	// did not happen the path is still absent and there is nothing there to lose.
 	removed map[string]bool
+	// recreated holds the creations over a path an earlier part of the line removed.
+	// The path existed before the line, so such a creation is doubted like the
+	// removal: if the removal failed, what a later part writes there is the original.
+	recreated map[string]bool
 	// movedFrom maps a path that a move created to the path the data came from. The
 	// data exists nowhere else, so a later overwrite or removal of the destination
 	// destroys it, and the move can no longer be undone by moving back.
@@ -84,7 +88,7 @@ type overlay struct {
 }
 
 func newOverlay() *overlay {
-	return &overlay{created: map[string]bool{}, removed: map[string]bool{}, movedFrom: map[string]string{}}
+	return &overlay{created: map[string]bool{}, removed: map[string]bool{}, recreated: map[string]bool{}, movedFrom: map[string]string{}}
 }
 
 func (o *overlay) clone() *overlay {
@@ -95,16 +99,37 @@ func (o *overlay) clone() *overlay {
 	for k, v := range o.removed {
 		n.removed[k] = v
 	}
+	for k, v := range o.recreated {
+		n.recreated[k] = v
+	}
 	for k, v := range o.movedFrom {
 		n.movedFrom[k] = v
 	}
 	return n
 }
 
-// doubt makes every removal so far a possibility rather than a fact.
+// doubt makes every removal so far, and every creation over a removed path, a
+// possibility rather than a fact.
 func (o *overlay) doubt() {
 	for p := range o.removed {
 		o.removed[p] = false
+	}
+	for p := range o.recreated {
+		delete(o.created, p)
+		delete(o.recreated, p)
+	}
+}
+
+// wasRemoved reports whether an earlier part of the line removed p or a directory
+// above it, certainly or possibly.
+func (o *overlay) wasRemoved(p string) bool {
+	for q := p; ; q = filepath.Dir(q) {
+		if _, ok := o.removed[q]; ok {
+			return true
+		}
+		if q == "/" || q == "." {
+			return false
+		}
 	}
 }
 
@@ -858,7 +883,9 @@ func (st *state) add(c *call, e Effect) {
 	}
 	switch e.Kind {
 	case Create:
-		delete(st.virt.removed, e.Path)
+		if st.virt.wasRemoved(e.Path) {
+			st.virt.recreated[e.Path] = true
+		}
 		st.virt.created[e.Path] = e.Dir
 	case Remove:
 		st.unmake(e.Path)

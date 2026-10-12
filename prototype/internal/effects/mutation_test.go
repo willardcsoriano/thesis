@@ -312,5 +312,12 @@ func TestEarlierPartMayHaveFailed(t *testing.T) {
 		{"for d in logs; do cd $d; done; rm x.log", false, Unrecoverable, nil, nil},
 		{"x=a.txt; for f in b.txt; do x=$f; done; rm $x", false, RecoverableWithCapture, []string{"remove b.txt"}, []string{"remove a.txt"}},
 		{"x=a.txt; while false; do x=b.txt; done; rm $x", false, Unrecoverable, nil, nil},
+		// a path removed and made again: if the removal failed, the last write
+		// overwrites the original (found by the round 10 review)
+		{"mv a.txt b.txt && echo n > a.txt; echo x > a.txt", false, RecoverableWithCapture, []string{"write a.txt"}, nil},
+		{"rm a.txt && touch a.txt; echo x > a.txt", false, RecoverableWithCapture, []string{"write a.txt"}, nil},
+		{"rm a.txt && echo n > a.txt && echo x > a.txt", false, RecoverableWithCapture, nil, []string{"write a.txt"}},
+		// a branch's removal may not have happened
+		{"if test -f q; then rm a.txt; fi && echo y > a.txt", false, RecoverableWithCapture, []string{"write a.txt"}, nil},
 	})
 }
