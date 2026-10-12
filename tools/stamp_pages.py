@@ -35,7 +35,7 @@ def stamp(src: Path, dst: Path) -> None:
             c.save()
             buf.seek(0)
             page.merge_page(PdfReader(buf).pages[0])
-    writer.add_metadata({"/Title": "SynapseOS: Recoverability Analysis of Language-Model-Generated Shell Commands in a Conversational Interface Layer"})
+    writer.add_metadata({"/Title": "Recoverability Analysis of Language-Model-Generated Shell Commands, Deployed in the SynapseOS Conversational Interface"})
     with open(dst, "wb") as f:
         writer.write(f)
 
