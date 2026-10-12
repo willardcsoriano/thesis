@@ -217,7 +217,7 @@ func TestCaptureMvRecordsMoveAndApplyMovesBack(t *testing.T) {
 	if len(errs) != 0 {
 		t.Fatalf("Capture errs: %v", errs)
 	}
-	if !reflect.DeepEqual(e.Moves, []undo.Move{{OldPath: "a.txt", NewPath: "c.txt"}}) {
+	if len(e.Moves) != 1 || e.Moves[0].OldPath != "a.txt" || e.Moves[0].NewPath != "c.txt" || e.Moves[0].ID == nil || e.Moves[0].NewExisted {
 		t.Fatalf("Moves = %+v", e.Moves)
 	}
 	// The destination is where the moved file lands; it must not also be recorded

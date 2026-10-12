@@ -150,6 +150,18 @@ recovery5:
 	RC_NO_CURATED=1 $(GO) run ./cmd/recoverycheck pilot/corpus5.jsonl > pilot/recovery_results5.txt
 	@sed -n "/^SUMMARY/,/^FAILURES/p" pilot/recovery_results5.txt
 
+# Differential test of composition: compound lines joining fixture commands with
+# ;, &&, ||, pipes, !, if, for, while, blocks, and subshells, some on a read-only
+# directory so that parts fail. Every line the analysis lets run is executed, undone,
+# and compared; any line not restored exactly is a loss neither asked about nor undone.
+COMPOSE_SEED ?= 20261015
+COMPOSE_N ?= 4000
+.PHONY: composecheck
+composecheck:
+	python3 pilot/make_compose.py $(COMPOSE_SEED) $(COMPOSE_N) > pilot/compose.jsonl
+	RC_NO_CURATED=1 $(GO) run ./cmd/recoverycheck pilot/compose.jsonl > pilot/compose_results.txt
+	@sed -n "/^SUMMARY/,/^FAILURES/p" pilot/compose_results.txt
+
 # The algorithm reference (docs/recoverability-analysis.md): rulemap rewrites its generated
 # rule map from the code; algocov prints per-function test coverage of the analysis;
 # fuzz runs the read-only-resolver property for FUZZTIME.

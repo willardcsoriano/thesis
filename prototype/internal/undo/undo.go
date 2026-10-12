@@ -75,6 +75,29 @@ import (
 type Move struct {
 	OldPath string `json:"old_path"`
 	NewPath string `json:"new_path"`
+	// ID identifies the moved file, taken from OldPath before the command ran. When
+	// set, undo moves NewPath back only if it is still that file: a move on a branch
+	// that did not run, or after a part that failed, never happened, and moving
+	// whatever sits at NewPath onto OldPath would destroy OldPath.
+	ID *FileID `json:"id,omitempty"`
+	// NewExisted records whether NewPath existed before the command ran. When the
+	// file at NewPath is not the moved one and NewPath is new, what sits there was
+	// made by the line (an earlier part replaced the file before moving it, as
+	// sed -i does) and is removed; the original comes back from its own capture.
+	NewExisted bool `json:"new_existed,omitempty"`
+}
+
+// IDOf returns the identity of the file at p, without following a symlink.
+func IDOf(p string) (FileID, bool) {
+	fi, err := os.Lstat(p)
+	if err != nil {
+		return FileID{}, false
+	}
+	st, ok := fi.Sys().(*syscall.Stat_t)
+	if !ok {
+		return FileID{}, false
+	}
+	return FileID{Dev: uint64(st.Dev), Ino: uint64(st.Ino)}, true
 }
 
 // ContentBackup records a full-content backup of one file taken immediately
@@ -140,6 +163,11 @@ type Entry struct {
 	MetadataBackups []MetadataBackup `json:"metadata_backups,omitempty"`
 	// Inverses put package or service state back by running a command.
 	Inverses []Inverse `json:"inverses,omitempty"`
+	// Preexisting gives the identity, before the command ran, of each Created path
+	// that already existed then: the analysis records a creation where it expects
+	// an earlier part of the line to have moved or removed the path, and if that part
+	// did not happen, what stands there after undo is the original and is kept.
+	Preexisting map[string]FileID `json:"preexisting,omitempty"`
 }
 
 // Inverse is one command that undoes a change to package or service state.
@@ -378,6 +406,7 @@ func Apply(e Entry) []error {
 
 	// Order matters, and each step below exists because the step before it would
 	// otherwise undo it:
+	//  0. A created path that a capture restores is removed first (see below).
 	//  1. Moves go back first. A move onto an existing name leaves the moved
 	//     data sitting at the destination; restoring the destination's old
 	//     content before moving it back would write the old bytes into the
@@ -387,17 +416,68 @@ func Apply(e Entry) []error {
 	//     discards working-tree changes, so restoring a dirty file first and
 	//     resetting after would erase exactly what was just restored.
 	//  4. Content and metadata are restored last, on top of the settled tree.
-	//  5. Created paths are removed once nothing needs them.
-	for i := len(e.Moves) - 1; i >= 0; i-- {
-		m := e.Moves[i]
-		oldAbs := filepath.Join(e.Dir, m.OldPath)
-		newAbs := filepath.Join(e.Dir, m.NewPath)
-		if err := os.MkdirAll(filepath.Dir(oldAbs), 0o755); err != nil {
-			errs = append(errs, fmt.Errorf("restoring %s: %w", m.OldPath, err))
+	//  5. Other created paths are removed once nothing needs them.
+	//
+	// A created path that a capture restores (the line removed a file and made
+	//    one of the same name) is removed before the restore, not after, or
+	//    removing "what the command created" would delete the restored original.
+	//    A path that is still the captured original, because the part that would
+	//    have removed it never ran, is kept.
+	created := append([]string(nil), e.Created...)
+	sort.Sort(sort.Reverse(sort.StringSlice(created)))
+	targets := restoreTargets(e)
+	var late []string
+	for _, c := range created {
+		abs := filepath.Join(e.Dir, c)
+		if !targets.covers(abs) {
+			late = append(late, c)
 			continue
 		}
-		if err := os.Rename(newAbs, oldAbs); err != nil {
-			errs = append(errs, fmt.Errorf("moving %s back to %s: %w", m.NewPath, m.OldPath, err))
+		if targets.isOriginal(abs) {
+			continue
+		}
+		if err := os.Remove(abs); err != nil {
+			// Not yet empty, or not there until a move puts its directory back.
+			late = append(late, c)
+		}
+	}
+
+	// Moves go back by identity: each moved file returns to the origin of the move
+	// that carried it, wherever it ended up, so the order in which the line's parts
+	// ran (a pipeline's stages run at once) does not matter. What sits at a move's
+	// destination that is no moved file, and was not there before, was made by the
+	// line and is removed.
+	byID := map[FileID]Move{}
+	for _, m := range e.Moves {
+		if m.ID != nil {
+			byID[*m.ID] = m
+		}
+	}
+	for i := len(e.Moves) - 1; i >= 0; i-- {
+		m := e.Moves[i]
+		newAbs := filepath.Join(e.Dir, m.NewPath)
+		back := m
+		if m.ID != nil {
+			id, ok := IDOf(newAbs)
+			if !ok {
+				continue // nothing there: the move never happened, or its file went on
+			}
+			if id != *m.ID {
+				other, known := byID[id]
+				if !known {
+					// Its data, if an original, comes back from its own capture.
+					if !m.NewExisted {
+						if err := os.Remove(newAbs); err != nil {
+							errs = append(errs, fmt.Errorf("removing %s: %w", m.NewPath, err))
+						}
+					}
+					continue
+				}
+				back = other
+			}
+		}
+		if err := moveBack(newAbs, filepath.Join(e.Dir, back.OldPath)); err != nil {
+			errs = append(errs, fmt.Errorf("moving %s back to %s: %w", m.NewPath, back.OldPath, err))
 		}
 	}
 
@@ -406,7 +486,7 @@ func Apply(e Entry) []error {
 			errs = append(errs, fmt.Errorf("restoring %s: %w", item.OriginalPath, err))
 			continue
 		}
-		if err := os.Rename(item.TrashPath, item.OriginalPath); err != nil {
+		if err := restoreTrashed(item); err != nil {
 			errs = append(errs, fmt.Errorf("restoring %s from trash: %w", item.OriginalPath, err))
 		}
 	}
@@ -432,7 +512,23 @@ func Apply(e Entry) []error {
 		}
 	}
 
+	// A file restored from trash is the original inode. If a path whose content is
+	// about to be restored is that same inode (an earlier part of the line moved the
+	// file there and a later part failed), writing in place would rewrite the
+	// restored original too, so that path is unlinked and written afresh.
+	restored := map[FileID]bool{}
+	for _, item := range e.Trashed {
+		if id, ok := IDOf(item.OriginalPath); ok {
+			restored[id] = true
+		}
+	}
 	for _, cb := range e.ContentBackups {
+		if id, ok := IDOf(cb.Path); ok && restored[id] {
+			if err := os.Remove(cb.Path); err != nil {
+				errs = append(errs, fmt.Errorf("separating %s from a restored file: %w", cb.Path, err))
+				continue
+			}
+		}
 		if err := restoreContent(cb); err != nil {
 			errs = append(errs, fmt.Errorf("restoring content of %s: %w", cb.Path, err))
 		}
@@ -447,14 +543,168 @@ func Apply(e Entry) []error {
 		}
 	}
 
-	created := append([]string(nil), e.Created...)
-	sort.Sort(sort.Reverse(sort.StringSlice(created)))
-	for _, c := range created {
-		if err := os.Remove(filepath.Join(e.Dir, c)); err != nil && !os.IsNotExist(err) {
+	for _, c := range late {
+		abs := filepath.Join(e.Dir, c)
+		if targets.isOriginal(abs) || targets.contentRestored(abs) {
+			continue // what is there now is the restored original
+		}
+		if err := os.Remove(abs); err != nil && !os.IsNotExist(err) {
 			errs = append(errs, fmt.Errorf("removing %s: %w", c, err))
 		}
 	}
 	return errs
+}
+
+// restoreSet is what Apply puts back: the paths captures restore, and the identity of
+// each captured original that may still be in place.
+type restoreSet struct {
+	paths     []string
+	originals map[string]FileID
+	content   map[string]bool
+	// held is the identity of every file a trash capture holds, inside a trashed
+	// directory as well as at its top: once restored, such a file is an original.
+	held map[FileID]bool
+}
+
+func restoreTargets(e Entry) restoreSet {
+	r := restoreSet{originals: map[string]FileID{}, content: map[string]bool{}, held: map[FileID]bool{}}
+	for _, m := range e.Moves {
+		abs := filepath.Join(e.Dir, m.OldPath)
+		r.paths = append(r.paths, abs)
+		if m.ID != nil {
+			r.originals[abs] = *m.ID
+		}
+	}
+	for _, m := range e.Moves {
+		if m.ID != nil {
+			r.held[*m.ID] = true
+		}
+	}
+	for rel, id := range e.Preexisting {
+		r.originals[filepath.Join(e.Dir, rel)] = id
+	}
+	for _, t := range e.Trashed {
+		_ = filepath.WalkDir(t.TrashPath, func(p string, d fs.DirEntry, err error) error {
+			if err == nil && !d.IsDir() {
+				if id, ok := IDOf(p); ok {
+					r.held[id] = true
+				}
+			}
+			return nil
+		})
+		r.paths = append(r.paths, t.OriginalPath)
+		if id, ok := IDOf(t.TrashPath); ok {
+			if fi, err := os.Lstat(t.TrashPath); err == nil && !fi.IsDir() {
+				r.originals[t.OriginalPath] = id // a file's capture is a hardlink to it
+			}
+		}
+	}
+	for _, cb := range e.ContentBackups {
+		r.paths = append(r.paths, cb.Path)
+		r.content[cb.Path] = true
+	}
+	return r
+}
+
+func (r restoreSet) contentRestored(abs string) bool { return r.content[abs] }
+
+// covers reports whether abs is, or lies under, a path a capture restores.
+func (r restoreSet) covers(abs string) bool {
+	for _, p := range r.paths {
+		if abs == p || strings.HasPrefix(abs, p+"/") {
+			return true
+		}
+	}
+	return false
+}
+
+// isOriginal reports whether abs is still the very file a capture holds.
+func (r restoreSet) isOriginal(abs string) bool {
+	id, ok := IDOf(abs)
+	if !ok {
+		return false
+	}
+	if want, ok := r.originals[abs]; ok && id == want {
+		return true
+	}
+	return r.held[id]
+}
+
+// moveBack moves a moved file or directory from where it is to where it was. A
+// directory of the same name made again after the move is merged into, as for a
+// directory restored from trash; a file made at the vacated name after the move
+// (mv logs tmp/ ; echo y > logs) is replaced, since the line made it.
+func moveBack(from, to string) error {
+	if err := os.MkdirAll(filepath.Dir(to), 0o755); err != nil {
+		return err
+	}
+	err := os.Rename(from, to)
+	if err == nil {
+		return nil
+	}
+	src, serr := os.Lstat(from)
+	dst, derr := os.Lstat(to)
+	if serr != nil || derr != nil || !src.IsDir() {
+		return err
+	}
+	if dst.IsDir() {
+		if merr := mergeTree(from, to, src.Mode().Perm()); merr != nil {
+			return merr
+		}
+		return os.Remove(from)
+	}
+	if rerr := os.Remove(to); rerr != nil {
+		return err
+	}
+	return os.Rename(from, to)
+}
+
+// restoreTrashed moves a trashed item back. When a directory of the same name exists
+// again (the line made it anew, or the removal never ran), the trashed tree is merged
+// into it: each entry missing from it is moved back, and the directory gets its
+// original mode. An entry present in both is left as it is.
+func restoreTrashed(item TrashedItem) error {
+	err := os.Rename(item.TrashPath, item.OriginalPath)
+	if err == nil {
+		return nil
+	}
+	src, serr := os.Lstat(item.TrashPath)
+	dst, derr := os.Lstat(item.OriginalPath)
+	if serr != nil || derr != nil || !src.IsDir() || !dst.IsDir() {
+		return err
+	}
+	return mergeTree(item.TrashPath, item.OriginalPath, src.Mode().Perm())
+}
+
+func mergeTree(from, into string, mode os.FileMode) error {
+	entries, err := os.ReadDir(from)
+	if err != nil {
+		return err
+	}
+	var errs []error
+	for _, en := range entries {
+		s, d := filepath.Join(from, en.Name()), filepath.Join(into, en.Name())
+		di, derr := os.Lstat(d)
+		switch {
+		case os.IsNotExist(derr):
+			if err := os.Rename(s, d); err != nil {
+				errs = append(errs, err)
+			}
+		case derr == nil && en.IsDir() && di.IsDir():
+			if si, err := os.Lstat(s); err == nil {
+				if err := mergeTree(s, d, si.Mode().Perm()); err != nil {
+					errs = append(errs, err)
+				}
+			}
+		}
+	}
+	if err := os.Chmod(into, mode); err != nil {
+		errs = append(errs, err)
+	}
+	if len(errs) > 0 {
+		return errs[0]
+	}
+	return nil
 }
 
 // inverseRunner is how Apply runs an inverse; a variable so tests can observe
