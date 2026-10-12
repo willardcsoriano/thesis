@@ -12,7 +12,8 @@ import math
 import pathlib
 import sys
 
-SYSTEMS = ["L0", "CODEX", "CCSN-standard", "CCSN-strict", "CCSN-paranoid", "L1", "ALG-strict", "ALG-capture", "ALG-nocompose"]
+SYSTEMS = ["L0", "CODEX", "CCSN-standard", "CCSN-strict", "CCSN-paranoid", "L1", "ALG-strict", "ALG-capture", "ALG-nocompose",
+           "ALG-noresolve", "ALG-tableonly"]
 
 
 def wilson(k, n, z=1.96):

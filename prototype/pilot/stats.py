@@ -11,7 +11,9 @@ Two primary measures, each compared for the analysis (ALG-strict) against the tw
                     recovery check was run the undo restored the tree exactly. Higher is better.
 Each test is McNemar's exact test on the paired discordant items, with the risk difference
 (Newcombe's paired interval, method 10) and the odds ratio b/c. Holm's correction is applied
-across the four. Stdlib only.
+across the four. Ablations of the analysis (composition off, runtime-target resolution
+off, both off), when present in classifier_out, are each compared with ALG-capture in a
+separate block at nominal significance. Stdlib only.
 """
 import collections
 import json
@@ -146,26 +148,42 @@ print("ALG wins: items where ALG-strict is right and the baseline is wrong; ALG 
 # Each system on its own, with Wilson intervals.
 print()
 for measure, items, fn in (("silent loss", dangerous, silent), ("capture coverage", losses, covered)):
-    for s in ("L0", "L1", "ALG-strict", "ALG-capture", "ALG-nocompose"):
+    for s in ("L0", "L1", "ALG-strict", "ALG-capture", "ALG-nocompose", "ALG-noresolve", "ALG-tableonly"):
         if s not in res:
             continue
         k = sum(fn(s, r) for r in items)
         lo, hi = wilson(k, len(items))
         print(f"{measure:17} {s:12} {k:>4}/{len(items):<4} = {k / len(items):6.1%}  [Wilson {lo:.1%}, {hi:.1%}]")
 
-# Composition ablation (docs/open-problems.md row 38): ALG-capture (the full analysis)
-# against ALG-nocompose (the same per-command rule table with wrapper, find -exec,
-# xargs, eval, shell -c, and loop composition disabled). A single comparison, not part
-# of the four-test family above, so it is reported at nominal significance with no Holm
-# correction; it answers a separate question (how much of ALG's result is composition
-# versus the table it extends), not "is ALG better than a list."
-if "ALG-nocompose" in res:
+# Ablations (docs/open-problems.md row 38, and the adviser's request to quantify the
+# contribution of composition and of runtime-target resolution): ALG-capture (the full
+# analysis) against the same analysis with one or both parts switched off.
+#   ALG-nocompose  wrapper, find -exec, xargs, eval, shell -c, and loop composition off
+#   ALG-noresolve  no runner, so nothing is resolved by running a read-only command
+#   ALG-tableonly  both off: the per-command rule table alone
+# Each is a single comparison, not part of the four-test family above, so it is reported
+# at nominal significance with no Holm correction; it answers a separate question (how
+# much of ALG's result each part carries), not "is ALG better than a list."
+# Coverage is scored for the ablations exactly as for the full analysis: protected AND,
+# where the recovery check ran, the full analysis's restore result for that item. The
+# check replayed the full analysis's capture plan, not the ablation's, so an ablation is
+# credited no more than the full analysis earned on that item. This is sound while every
+# item an ablation protects is one the full analysis also protects (on round 7 it is: no
+# ablation wins on coverage); an ablation win would need its own recovery check.
+ABLATIONS = (
+    ("composition ablation", "ALG-nocompose", "nocompose", "docs/open-problems.md row 38"),
+    ("resolution ablation", "ALG-noresolve", "noresolve", "runtime-target resolution off"),
+    ("both off", "ALG-tableonly", "tableonly", "composition and resolution off: the rule table alone"),
+)
+
+
+def ablation(title, sysname, short, note):
     print()
-    print("composition ablation: ALG-capture vs ALG-nocompose (docs/open-problems.md row 38)")
+    print(f"{title}: ALG-capture vs {sysname} ({note})")
     for measure, items, fn in (("silent loss", dangerous, silent), ("capture coverage", losses, covered)):
         a = b = c = d = 0
         for r in items:
-            x, y = fn("ALG-capture", r), fn("ALG-nocompose", r)
+            x, y = fn("ALG-capture", r), fn(sysname, r)
             if x and y:
                 a += 1
             elif x and not y:
@@ -174,12 +192,23 @@ if "ALG-nocompose" in res:
                 c += 1
             else:
                 d += 1
-        diff, lo, hi = newcombe_paired(a, b, c, d)  # full covered minus nocompose covered
-        wins, losses_ = b, c
+        # Orient so that a positive difference and a "full win" mean the full analysis is
+        # better: less silent loss, or more coverage.
+        if measure == "silent loss":
+            diff, lo, hi = newcombe_paired(a, c, b, d)  # ablated silent minus full silent
+            wins, losses_ = c, b
+        else:
+            diff, lo, hi = newcombe_paired(a, b, c, d)  # full covered minus ablated covered
+            wins, losses_ = b, c
         if wins + losses_ == 0:
             print(f"  {measure:17} n={len(items):<4} no discordant pairs (both systems agree on every item)")
             continue
         p = mcnemar_exact(wins, losses_)
         orr = (wins / losses_) if losses_ else float("inf")
-        print(f"  {measure:17} n={len(items):<4} full wins={wins:>3} nocompose wins={losses_:>3}  "
+        print(f"  {measure:17} n={len(items):<4} full wins={wins:>3} {short} wins={losses_:>3}  "
               f"p={p:.2g}  risk diff={diff:+.3f} [{lo:+.3f}, {hi:+.3f}]  odds ratio={orr:.1f}")
+
+
+for title, sysname, short, note in ABLATIONS:
+    if sysname in res:
+        ablation(title, sysname, short, note)
