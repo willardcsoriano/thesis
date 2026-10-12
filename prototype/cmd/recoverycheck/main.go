@@ -506,6 +506,23 @@ func main() {
 	if os.Getenv("RC_NO_CURATED") != "" {
 		all = cases // score only the corpus, not the hand-written cases
 	}
+	// RC_SHARD=i/n keeps every n-th case starting at i, so that n processes can
+	// share a corpus (pilot/parallel_rc.py). Each process sets HOME for its own
+	// captures, which is why the cases are split across processes, not goroutines.
+	if sh := os.Getenv("RC_SHARD"); sh != "" {
+		var i, n int
+		if _, err := fmt.Sscanf(sh, "%d/%d", &i, &n); err != nil || n < 1 || i < 0 || i >= n {
+			fmt.Fprintln(os.Stderr, "RC_SHARD must be i/n with 0 <= i < n")
+			os.Exit(2)
+		}
+		var mine []Case
+		for k, c := range all {
+			if k%n == i {
+				mine = append(mine, c)
+			}
+		}
+		all = mine
+	}
 
 	type row struct {
 		c          Case

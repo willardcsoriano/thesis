@@ -9,6 +9,7 @@ package gate
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"sort"
 	"time"
@@ -100,11 +101,27 @@ func (d Decision) Capture(dir, cmd string) (undo.Entry, []error) {
 		errs = append(errs, cerrs...)
 	}
 
+	// Each move records the identity of the file it moves, so undo moves back only
+	// what actually moved. In a chain (mv a b; mv b c) the second move carries the
+	// first one's file, so its identity is followed along the chain.
 	moveTargets := map[string]bool{}
+	carried := map[string]undo.FileID{}
 	for _, ef := range d.Analysis.Effects {
 		if ef.Kind == effects.Remove && ef.MovedTo != "" {
 			moveTargets[ef.MovedTo] = true
-			e.Moves = append(e.Moves, undo.Move{OldPath: rel(dir, ef.Path), NewPath: rel(dir, ef.MovedTo)})
+			m := undo.Move{OldPath: rel(dir, ef.Path), NewPath: rel(dir, ef.MovedTo)}
+			id, ok := carried[ef.Path]
+			if !ok {
+				id, ok = undo.IDOf(ef.Path)
+			}
+			if ok {
+				m.ID = &id
+				carried[ef.MovedTo] = id
+			}
+			if _, err := os.Lstat(ef.MovedTo); err == nil {
+				m.NewExisted = true
+			}
+			e.Moves = append(e.Moves, m)
 		}
 	}
 	seen := map[string]bool{}
@@ -112,6 +129,12 @@ func (d Decision) Capture(dir, cmd string) (undo.Entry, []error) {
 		if ef.Kind == effects.Create && !moveTargets[ef.Path] && !seen[ef.Path] {
 			seen[ef.Path] = true
 			e.Created = append(e.Created, rel(dir, ef.Path))
+			if id, ok := undo.IDOf(ef.Path); ok {
+				if e.Preexisting == nil {
+					e.Preexisting = map[string]undo.FileID{}
+				}
+				e.Preexisting[rel(dir, ef.Path)] = id
+			}
 		}
 	}
 	sort.Strings(e.Created)
