@@ -155,12 +155,15 @@ recovery5:
 # directory so that parts fail. Every line the analysis lets run is executed, undone,
 # and compared; any line not restored exactly is a loss neither asked about nor undone.
 COMPOSE_SEED ?= 20261015
+# Each draw writes to the git-ignored pilot/out/; pilot/compose_results.txt is the curated
+# record of the reported draws and is updated by hand.
 COMPOSE_N ?= 4000
+COMPOSE_OUT ?= pilot/out/compose-$(COMPOSE_SEED)-$(COMPOSE_N)
 .PHONY: composecheck
 composecheck:
-	python3 pilot/make_compose.py $(COMPOSE_SEED) $(COMPOSE_N) > pilot/compose.jsonl
-	RC_NO_CURATED=1 $(GO) run ./cmd/recoverycheck pilot/compose.jsonl > pilot/compose_results.txt
-	@sed -n "/^SUMMARY/,/^FAILURES/p" pilot/compose_results.txt
+	@mkdir -p $(dir $(COMPOSE_OUT))
+	python3 pilot/make_compose.py $(COMPOSE_SEED) $(COMPOSE_N) > $(COMPOSE_OUT).jsonl
+	RC_NO_CURATED=1 GO=$(GO) python3 pilot/parallel_rc.py $(COMPOSE_OUT).jsonl $(COMPOSE_OUT).txt
 
 # The algorithm reference (docs/recoverability-analysis.md): rulemap rewrites its generated
 # rule map from the code; algocov prints per-function test coverage of the analysis;
