@@ -14,7 +14,41 @@ silent loss       L0            167/405  =  41.2%  [Wilson 36.5%, 46.1%]
 silent loss       L1              0/405  =   0.0%  [Wilson 0.0%, 0.9%]
 silent loss       ALG-strict      0/405  =   0.0%  [Wilson 0.0%, 0.9%]
 silent loss       ALG-capture     0/405  =   0.0%  [Wilson 0.0%, 0.9%]
+silent loss       ALG-nocompose    0/405  =   0.0%  [Wilson 0.0%, 0.9%]
+silent loss       ALG-noresolve    0/405  =   0.0%  [Wilson 0.0%, 0.9%]
+silent loss       ALG-tableonly    0/405  =   0.0%  [Wilson 0.0%, 0.9%]
 capture coverage  L0            135/325  =  41.5%  [Wilson 36.3%, 47.0%]
 capture coverage  L1              0/325  =   0.0%  [Wilson 0.0%, 1.2%]
 capture coverage  ALG-strict    291/325  =  89.5%  [Wilson 85.7%, 92.4%]
 capture coverage  ALG-capture   291/325  =  89.5%  [Wilson 85.7%, 92.4%]
+capture coverage  ALG-nocompose  115/325  =  35.4%  [Wilson 30.4%, 40.7%]
+capture coverage  ALG-noresolve  148/325  =  45.5%  [Wilson 40.2%, 51.0%]
+capture coverage  ALG-tableonly  104/325  =  32.0%  [Wilson 27.2%, 37.3%]
+
+composition ablation: ALG-capture vs ALG-nocompose (docs/open-problems.md row 38)
+  silent loss       n=405  no discordant pairs (both systems agree on every item)
+  capture coverage  n=325  full wins=176 nocompose wins=  0  p=2.1e-53  risk diff=+0.542 [+0.484, +0.593]  odds ratio=inf
+
+resolution ablation: ALG-capture vs ALG-noresolve (runtime-target resolution off)
+  silent loss       n=405  no discordant pairs (both systems agree on every item)
+  capture coverage  n=325  full wins=143 noresolve wins=  0  p=1.8e-43  risk diff=+0.440 [+0.384, +0.492]  odds ratio=inf
+
+both off: ALG-capture vs ALG-tableonly (composition and resolution off: the rule table alone)
+  silent loss       n=405  no discordant pairs (both systems agree on every item)
+  capture coverage  n=325  full wins=187 tableonly wins=  0  p=1e-56  risk diff=+0.575 [+0.518, +0.626]  odds ratio=inf
+
+needless confirmation over 372 harmless items (label R)
+  L0           asks   30/372  =   8.1%  [Wilson 5.7%, 11.3%]
+  L1           asks  101/372  =  27.2%  [Wilson 22.9%, 31.9%]
+  ALG-strict   asks   45/372  =  12.1%  [Wilson 9.2%, 15.8%]
+  ALG-capture  asks   32/372  =   8.6%  [Wilson 6.2%, 11.9%]
+  analysis     vs  ALG asks list asks  p (exact)  p (Holm)
+  ALG-capture  L0        28        26       0.89      0.89
+  ALG-capture  L1         2        71    5.7e-19   2.3e-18
+  ALG-strict   L0        37        22      0.067      0.13
+  ALG-strict   L1         2        58    3.2e-15   9.5e-15
+  discordant counts: 'ALG asks' where only the analysis asks, 'list asks' where only the list does.
+
+deployed gate: the analysis, plus the pattern list (L0) consulted alongside it
+  ALG-capture  needless   58/372  =  15.6%   silent loss 0/405
+  ALG-strict   needless   67/372  =  18.0%   silent loss 0/405

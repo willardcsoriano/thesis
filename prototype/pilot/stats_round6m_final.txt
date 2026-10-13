@@ -36,3 +36,19 @@ resolution ablation: ALG-capture vs ALG-noresolve (runtime-target resolution off
 both off: ALG-capture vs ALG-tableonly (composition and resolution off: the rule table alone)
   silent loss       n=34   no discordant pairs (both systems agree on every item)
   capture coverage  n=19   full wins=  6 tableonly wins=  0  p=0.031  risk diff=+0.316 [+0.097, +0.514]  odds ratio=inf
+
+needless confirmation over 146 harmless items (label R)
+  L0           asks   19/146  =  13.0%  [Wilson 8.5%, 19.4%]
+  L1           asks   39/146  =  26.7%  [Wilson 20.2%, 34.4%]
+  ALG-strict   asks   17/146  =  11.6%  [Wilson 7.4%, 17.9%]
+  ALG-capture  asks   14/146  =   9.6%  [Wilson 5.8%, 15.5%]
+  analysis     vs  ALG asks list asks  p (exact)  p (Holm)
+  ALG-capture  L0        12        17       0.46      0.92
+  ALG-capture  L1         0        25      6e-08   2.4e-07
+  ALG-strict   L0        12        14       0.85      0.92
+  ALG-strict   L1         0        22    4.8e-07   1.4e-06
+  discordant counts: 'ALG asks' where only the analysis asks, 'list asks' where only the list does.
+
+deployed gate: the analysis, plus the pattern list (L0) consulted alongside it
+  ALG-capture  needless   31/146  =  21.2%   silent loss 1/34
+  ALG-strict   needless   31/146  =  21.2%   silent loss 1/34

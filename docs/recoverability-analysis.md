@@ -834,7 +834,7 @@ All of these run under `make -C prototype ci` unless marked.
 | `internal/gate` | Gate policy, capture, and real round trips: run the command for real, undo, compare | 10 tests, 15 sub-cases |
 | `internal/undo` | Each capture and restore mechanism, and a regression test per undo defect | 68 tests |
 | `internal/oracle`, `internal/recoverycheck` | The ground-truth oracle's labels and the tree comparison used to verify restores | 12 tests |
-| Corpus evaluation (`cmd/listpilot`, `pilot/analyze.py`, `pilot/stats.py`; not in `ci`) | All systems on 777 held-out commands, ground truth from sandboxed execution (`internal/oracle`), which shares no code with the analysis | 777 commands × 5 systems |
+| Corpus evaluation (`cmd/listpilot`, `pilot/analyze.py`, `pilot/stats.py`; not in `ci`) | All systems on 777 held-out commands, ground truth from sandboxed execution (`internal/oracle`), which shares no code with the analysis | 777 commands × 7 systems (four compared, three ablations) |
 | Recovery harness (`cmd/recoverycheck`; not in `ci`) | Each executable corpus command run for real in a sandbox, captured, undone, and compared | 631 executed |
 | External baselines (`cmd/extbaselines`, `pilot/ccsafetynet.mjs`; not in `ci`) | Codex CLI's check (ported, passing Codex's own tests) and cc-safety-net on the same 777 | 3,108 verdicts |
 
@@ -891,7 +891,7 @@ Round 7, the reported result: 777 commands drawn after the design was frozen and
 - **Against the list:** silent loss 41.2% to 0% (McNemar exact, Holm-adjusted p = 3.2×10⁻⁵⁰); restored 41.5% to 89.5% (p = 6.3×10⁻³⁵).
 - **Against the fail-closed list:** the same zero silent loss, but 0% restored against 89.5%, and a third as many needless confirmations. The verdict alone is not the contribution; the capture is.
 - **The ablations, answering "how much is the algorithm and how much the rule table":** the same rule table with **composition** switched off restores 35.4% instead of 89.5% (176 commands won, 0 lost, p = 2.1×10⁻⁵³) and asks needlessly about 66% of safe commands instead of 8.6%. With **runtime-target resolution** switched off (no runner, so every target learned by a read-only run is unresolved) it restores 45.5% (143 won, 0 lost, p = 1.8×10⁻⁴³) and asks needlessly about 19%. With **both** off, the table alone restores 32.0% (187 won, 0 lost, p = 1.0×10⁻⁵⁶). Each p stays below 10⁻⁴² after a Holm correction across the three.
-- **The two parts need each other:** either alone barely beats the table (45.5% and 35.4% against 32.0%); together they reach 89.5%. Composition sees that `find -exec rm` removes each match; only resolution says which files match: 126 of the 143 commands lost without resolution involve `find`. Silent loss is 0 in every configuration, because the fail-closed default depends on neither: they make the analysis useful, not safe. Produced by `cmd/listpilot` (systems `ALG-nocompose`, `ALG-noresolve`, `ALG-tableonly`); results in `pilot/stats_round7_nocompose.txt`.
+- **The two parts need each other:** either alone barely beats the table (45.5% and 35.4% against 32.0%); together they reach 89.5%. Composition sees that `find -exec rm` removes each match; only resolution says which files match: 126 of the 143 commands lost without resolution involve `find`. Silent loss is 0 in every configuration, because the fail-closed default depends on neither: they make the analysis useful, not safe. Produced by `cmd/listpilot` (systems `ALG-nocompose`, `ALG-noresolve`, `ALG-tableonly`); results in `pilot/stats_round7.txt`.
 - **Undo:** 630 of 631 executed commands restored exactly (99.8%).
 - **External lists:** the open-source checks were built for coding agents inside version control and let 73–97% of file-destroying commands through without asking; full method and caveats in `external-baselines.md` and Chapter 3, Section 3.1(a).
 
@@ -956,9 +956,10 @@ bin/effexplain -dir <folder> -list '<command>'      # trace one command; add -no
 
 cd pilot && sha256sum -c corpus7.sha256 && cd ..    # the reported corpus, unchanged
 go run ./cmd/listpilot pilot/corpus7.jsonl > pilot/classifier_out7.jsonl
-python3 pilot/analyze.py pilot/corpus7.jsonl pilot/classifier_out7.jsonl
-python3 pilot/stats.py                              # McNemar, Newcombe, Holm
-RC_NO_CURATED=1 go run ./cmd/recoverycheck pilot/corpus7.jsonl   # execute, undo, compare
+RC_NO_CURATED=1 go run ./cmd/recoverycheck pilot/corpus7.jsonl > pilot/recovery_results7.txt   # execute, undo, compare
+python3 pilot/analyze.py pilot/corpus7.jsonl pilot/classifier_out7.jsonl > pilot/results_round7.txt
+python3 pilot/stats.py pilot/corpus7.jsonl pilot/classifier_out7.jsonl pilot/recovery_results7.txt > pilot/stats_round7.txt   # McNemar, Newcombe, Holm
+make composecheck COMPOSE_SEED=20261018 COMPOSE_N=8000      # one differential-test draw, to pilot/out/
 make manualtest                                     # then follow manualtest/STORIES.md
 ```
 

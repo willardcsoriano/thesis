@@ -2074,7 +2074,7 @@ Table C.9. Reproduction of each reported result.
   Tables 3.4 and 3.5)                pilot/corpus7.json
 
 ──────── p. 152 ────────
-                                                                                      152
+                                                                                  152
 
 
 Result                         Command or make              Output file
@@ -2093,10 +2093,10 @@ coverage                       pilot/corpus7.json
                                ults7.txt
 
 Silent loss, asked without     python3                      results_round7.txt
-capture, and needless          pilot/analyze.py             (four systems);
-confirmation per system,       pilot/corpus7.json           results_round7_noc
-per partition, and per shape   l                            ompose.txt (with the
-                               pilot/classifier_o           ablations)
+capture, and needless          pilot/analyze.py             (all seven systems,
+confirmation per system,       pilot/corpus7.json           ablations included)
+per partition, and per shape   l
+                               pilot/classifier_o
                                ut7.jsonl
 
 Table 3.4, with Wilson         python3                      stats_round7.txt
@@ -2108,16 +2108,15 @@ intervals for each system      pilot/stats.py
                                pilot/recovery_res
                                ults7.txt
 
-Table 3.5 (ablations)          The same command, on         stats_round7_nocom
-                               the decisions of all seven   pose.txt; needless asks
-                               systems                      in
-                                                            results_round7_noc
-                                                            ompose.txt
+Table 3.5 (ablations)          The same command, which      stats_round7.txt;
+                               compares each ablation       needless asks in
+                               with the full analysis       results_round7.txt
 
-Needless-confirmation          Derived from                 No results file
-tests and the deployed         classifier_out7.js
-gate’s figures                 onl by the tests of Table
-                               C.6
+Needless-confirmation          The same command, which      stats_round7.txt
+tests and the deployed         ends with the needless-
+gate’s figures                 confirmation family of
+                               Table C.6 and the deployed
+                               gate
 
 Open-source checks             go run                       external_baselines
                                ./cmd/extbaselines           7.jsonl,
@@ -2128,14 +2127,14 @@ Open-source checks             go run                       external_baselines
                                elines7.jsonl; then
                                node
                                ccsafetynet.mjs
+                               with cc-safety-net 2.6.1
 
 ──────── p. 153 ────────
-                                                                                 153
+                                                                                         153
 
 
 Result                        Command or make               Output file
                               target
-                              with cc-safety-net 2.6.1
                               installed, appending to the
                               same file; then python3
                               pilot/analyze.py
@@ -2178,12 +2177,13 @@ Snapshot cost against the     bash                          snapshot_bench.txt
 capture plan                  pilot/bench_snapsh
                               ot.sh
 
-Differential test, one draw   make composecheck             compose_results.tx
-                              COMPOSE_SEED=                 t (all six draws)
-                              <seed> COMPOSE_N=
-                              <lines>, or, in parallel,
-                              python3
-                              pilot/make_compose
+Differential test, one draw   make composecheck             A new file in
+                              COMPOSE_SEED=                 pilot/out/ per draw;
+                              <seed> COMPOSE_N=             compose_results.tx
+                              <lines>, which                t records the six reported
+                              generates the lines and       draws
+                              runs the check on every
+                              processor
 
 ──────── p. 154 ────────
                                                                               154
@@ -2191,14 +2191,6 @@ Differential test, one draw   make composecheck             compose_results.tx
 
 Result                        Command or make              Output file
                               target
-                              .py <seed> <lines>
-                              >
-                              pilot/compose.json
-                              l followed by python3
-                              pilot/parallel_rc.
-                              py
-                              pilot/compose.json
-                              l <output>
 
 Unit, property, regression,   make ci; make fuzz           Test output only
 and coverage checks           for the read-only-resolver

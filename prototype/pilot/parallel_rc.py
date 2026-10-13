@@ -5,6 +5,7 @@ cases concurrently in one process. This runs one process per CPU on interleaved
 shards (RC_SHARD=i/n), then sums the recovery counts and gathers the failures.
 
 Usage: parallel_rc.py CORPUS.jsonl OUT.txt [N]     (N defaults to the CPU count)
+The Go toolchain is $GO if set, else go on PATH.
 """
 import os
 import re
@@ -13,7 +14,7 @@ import sys
 
 corpus, out = sys.argv[1], sys.argv[2]
 n = int(sys.argv[3]) if len(sys.argv) > 3 else os.cpu_count() or 1
-subprocess.run(["go", "build", "-o", "bin/recoverycheck", "./cmd/recoverycheck"], check=True)
+subprocess.run([os.environ.get("GO", "go"), "build", "-o", "bin/recoverycheck", "./cmd/recoverycheck"], check=True)
 procs = []
 for i in range(n):
     env = dict(os.environ, RC_SHARD=f"{i}/{n}")
