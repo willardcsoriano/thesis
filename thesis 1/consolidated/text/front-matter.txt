@@ -56,43 +56,43 @@ A Thesis Proposal Submitted to the Department of Computer Science
 ──────── p. iv ────────
                                    TABLE OF CONTENTS
 
-TITLE PAGE                                                         i
+TITLE PAGE                                                          i
 
-APPROVAL PAGE                                                     ii
-ACKNOWLEDGEMENT                                                  iii
-TABLE OF CONTENTS                                                iv
+APPROVAL PAGE                                                      ii
+ACKNOWLEDGEMENT                                                   iii
+TABLE OF CONTENTS                                                 iv
 
-LIST OF TABLES                                                   vi
-LIST OF FIGURES                                                  vii
+LIST OF TABLES                                                    vi
+LIST OF FIGURES                                                  viii
 
-Chapter 1: INTRODUCTION                                           1
+Chapter 1: INTRODUCTION                                            1
 
-     1.1 Background of the Study                                  1
-     1.2 Gap and Opportunity                                      2
-     1.3 Statement of the Problem                                 4
+     1.1 Background of the Study                                   1
+     1.2 Gap and Opportunity                                       2
+     1.3 Statement of the Problem                                  4
 
-     1.4 Objectives of the Study                                  5
-     1.5 Contributions of the Study                               6
-     1.6 Significance of the Study                               10
-     1.7 Scope and Limitations of the Study                      11
+     1.4 Objectives of the Study                                   5
+     1.5 Contributions of the Study                                6
+     1.6 Significance of the Study                                10
+     1.7 Scope and Limitations of the Study                       11
 
-Chapter 2: REVIEW OF RELATED LITERATURE                          15
-     2.1 Introduction to the Review                              15
+Chapter 2: REVIEW OF RELATED LITERATURE                           15
+     2.1 Introduction to the Review                               15
 
-     2.2 Theoretical Framework                                   17
-     2.3 Historical Foundations of Natural-Language Interfaces   21
-     2.4 Natural-Language-to-Shell Translation                   24
-     2.5 Command Safety, Static Analysis, and Recovery           25
+     2.2 Theoretical Framework                                    17
+     2.3 Historical Foundations of Natural-Language Interfaces    21
+     2.4 Natural-Language-to-Shell Translation                    24
+     2.5 Command Safety, Static Analysis, and Recovery            25
 
-     2.6 Graphical and Computer-Using Agents                     32
-     2.7 Accessibility and Speech-Driven Interaction             35
-     2.8 Evaluation Environments and Benchmarks                  36
+     2.6 Graphical and Computer-Using Agents                      32
+     2.7 Accessibility and Speech-Driven Interaction              35
+     2.8 Evaluation Environments and Benchmarks                   36
 
-     2.9 Synthesis: Comparative Analysis and Research Gap        37
-     2.10 Review of the Methodological Literature                44
-     2.11 Summary                                                46
+     2.9 Synthesis: Comparative Analysis and Research Gap         37
+     2.10 Review of the Methodological Literature                 44
+     2.11 Summary                                                 46
 
-Chapter 3: METHODOLOGY                                           49
+Chapter 3: METHODOLOGY                                            49
 
 
 
@@ -102,16 +102,16 @@ Chapter 3: METHODOLOGY                                           49
                                           v
 
 
-    Conceptual Framework                 50
-    System Environment Specifications    52
+    Conceptual Framework                50
+    System Environment Specifications   52
 
-    Section 1: Dataset                   55
-    Section 2: Procedure / Experiment    68
-    Section 3: System Testing            86
+    Section 1: Dataset                  55
+    Section 2: Procedure / Experiment   68
+    Section 3: System Testing           86
 
-REFERENCES                              109
+REFERENCES                              111
 
-APPENDICES                              116
+APPENDICES                              118
 
 ──────── p. vi ────────
                                         LIST OF TABLES
@@ -127,14 +127,31 @@ Table 3.1: Study evaluation machines                                            
 
 Table 3.2: SynapseOS minimum deployment requirements                                      53
 Table 3.3: Metrics for the recoverability algorithm, and what each is for                 88
-Table 3.4: Paired comparisons of the effect analysis against each list on the held-out    92
+Table 3.4: Paired comparisons of the effect analysis against each list on the held-out    93
 corpus, with Holm-corrected significance
 
-Table 3.5: Composition and resolution ablation — the full analysis against the same       98
-rule table with composition, resolution, or both disabled
-Table C.1: Custom cross-platform task suite — core tasks                                 119
+Table 3.5: Composition and resolution ablation — the full analysis against the           100
+same rule table with composition, resolution, or both disabled
+Table A.1: Composition: the constructs the analysis resolves through                     119
 
-Table C.2: Boundary tasks — outside shell expressibility                                 121
+Table A.2: Mutating rules for file operations                                            120
+Table A.3: Mutating rules for archives and compression                                   121
+Table A.4: Mutating rules for text processing and downloads                              122
+
+Table A.5: Mutating rules for version control (git), by subcommand                       123
+Table A.6: Resolvers: the only commands the analysis runs                                123
+Table A.7: Package, service, and system-state tools, when not used in a read-only        124
+form
+
+Table A.8: Commands that are always unrecoverable, by reason                             125
+Table A.9: Commands that are read-only only in some forms                                126
+Table B.1: Single commands: removal, overwrite, move, compression, resolution,           129
+
+and state changes
+Table B.2: Composed lines, parts that may fail, and fail-closed cases                    132
+
+Table C.1: The four generated corpora                                                    135
+Table C.2: Partitions of the round-7 corpus                                              138
 
 
 
@@ -142,15 +159,34 @@ Table C.2: Boundary tasks — outside shell expressibility                      
                                            vi
 
 ──────── p. vii ────────
+                                                                                    vii
+
+
+Table C.3: Command shapes in order of precedence, with the round-7 results for     140
+each
+
+Table C.4: The systems scored on the round-7 corpus and their configurations       143
+Table C.5: How each metric is computed on the round-7 corpus                       146
+Table C.6: Families of tests on the round-7 corpus                                 147
+Table C.7: Undo variants scored by the recovery check on the 631 executed round-   149
+7 commands
+Table C.8: Draws of the differential test, after the undo fix                      150
+Table C.9: Reproduction of each reported result                                    151
+
+Table D.1: Defects found after the round-7 evaluation                              155
+Table G.1: Custom cross-platform task suite — core tasks                           162
+Table G.2: Boundary tasks — outside shell expressibility                           165
+
+──────── p. viii ────────
                                       LIST OF FIGURES
 
 Figure 2.1: The four-layer interaction pipeline for language-mediated computing       19
-
 interfaces
 Figure 3.1: Conceptual framework: the recoverability analysis and the platform that   52
+
 deploys it
 
 
 
 
-                                        vii
+                                        viii

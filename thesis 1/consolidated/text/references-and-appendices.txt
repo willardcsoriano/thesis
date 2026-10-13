@@ -1,44 +1,43 @@
 Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. Do not edit: change the HTML and rebuild.
 
-──────── p. 109 ────────
+──────── p. 111 ────────
                                 REFERENCES
 
 
 
 
 [1]   Alibaba Cloud. 2026. Alibaba Cloud Linux 4 Agentic Edition (ANOLISA):
-
       Product              overview.                Product             documentation.
+
       https://help.aliyun.com/en/alinux/agentic-os Accessed 12 October 2026.
 
 [2]   B. Becker, N. Jeannerod, C. Marché, Y. Régis-Gianas, M. Sighireanu, and R.
-
       Treinen. 2022. The CoLiS platform for the analysis of maintainer scripts in
+
       Debian software packages. International Journal on Software Tools for
 
       Technology Transfer 24, 5 (2022), 717–733.
-
 [3]   V. Braun and V. Clarke. 2006. Using thematic analysis in psychology. Qualitative
-      Research in Psychology 3, 2 (2006), 77–101.
 
+      Research in Psychology 3, 2 (2006), 77–101.
 [4]   C. Bravo-Lillo, L. Cranor, S. Komanduri, S. Schechter, and M. Sleeper. 2014.
 
       Harder to Ignore? Revisiting Pop-Up Fatigue and Approaches to Prevent It. In
-      Proceedings of the Tenth Symposium on Usable Privacy and Security (SOUPS
 
+      Proceedings of the Tenth Symposium on Usable Privacy and Security (SOUPS
       2014).               USENIX                   Association,               105–111.
+
       https://www.usenix.org/conference/soups2014/proceedings/presentation/bravo-
 
       lillo
-
 [5]   J. Brooke. 1996. SUS: A “quick and dirty” usability scale. In Usability Evaluation
-      in Industry, P. W. Jordan, B. Thomas, I. L. McClelland, and B. Weerdmeester
 
+      in Industry, P. W. Jordan, B. Thomas, I. L. McClelland, and B. Weerdmeester
       (Eds.). Taylor & Francis, 189–194.
 
 [6]   A. B. Brown and D. A. Patterson. 2003. Undo for operators: Building an undoable
-      e-mail store. In Proceedings of the 2003 USENIX Annual Technical Conference.
 
+      e-mail store. In Proceedings of the 2003 USENIX Annual Technical Conference.
       USENIX Association. https://www.usenix.org/conference/2003-usenix-annual-
 
       technical-conference/undo-operators-building-undoable-e-mail-store
@@ -46,294 +45,2423 @@ Generated from SynapseOS_Proposal_Chapters_1_to_3.pdf by tools/export_text.py. D
 
 
 
-                                       109
+                                       111
 
-──────── p. 110 ────────
-                                                                                       110
+──────── p. 112 ────────
+                                                                                       112
 
 
 [7]    L. Clark, N. Pantidi, O. Cooney, P. R. Doyle, D. Garaialde, J. Edwards, B.
-
        Spillane, E. Gilmartin, C. Murad, C. Munteanu, V. Wade, and B. R. Cowan. 2019.
+
        What makes a good conversation? Challenges in designing truly conversational
 
        agents. In Proceedings of the 2019 CHI Conference on Human Factors in
-
        Computing Systems (CHI ’19). ACM, Article 475, 12 pages.
-[8]    P. Cousot and R. Cousot. 1977. Abstract interpretation: A unified lattice model for
 
+[8]    P. Cousot and R. Cousot. 1977. Abstract interpretation: A unified lattice model for
        static analysis of programs by construction or approximation of fixpoints. In
 
        Conference Record of the Sixth Annual ACM SIGPLAN-SIGACT Symposium on
-       Principles of Programming Languages (POPL ’77). ACM, 238–252.
 
+       Principles of Programming Languages (POPL ’77). ACM, 238–252.
 [9]    J. W. Creswell and V. L. Plano Clark. 2018. Designing and Conducting Mixed
 
        Methods Research (3rd ed.). SAGE Publications.
-[10]   X. Deng, Y. Gu, B. Zheng, S. Chen, S. Stevens, B. Wang, H. Sun, and Y. Su.
 
+[10]   X. Deng, Y. Gu, B. Zheng, S. Chen, S. Stevens, B. Wang, H. Sun, and Y. Su.
        2023. Mind2Web: Towards a Generalist Agent for the Web. In Advances in
+
        Neural Information Processing Systems 36 (NeurIPS 2023).
 
 [11]   A. Goel, K. Po, K. Farhadi, Z. Li, and E. de Lara. 2005. The Taser intrusion
-
        recovery system. In Proceedings of the Twentieth ACM Symposium on Operating
-       Systems Principles (SOSP ’05). ACM, 163–176.
 
+       Systems Principles (SOSP ’05). ACM, 163–176.
 [12]   M. Greenberg and A. J. Blatt. 2020. Executable formal semantics for the POSIX
 
        shell. Proceedings of the ACM on Programming Languages 4, POPL, Article 43
-       (2020).
 
+       (2020).
 [13]   B. R. Gyawali, S. Achalla, K. Kallas, and S. Kumar. 2025. NaSh: Guardrails for
 
        an LLM-Powered Natural Language Shell. arXiv:2506.13028
-[14]   W. Han, Z. Zeng, J. Huang, S. Jiang, et al. 2025. GUIRoboTron-Speech: Towards
 
+[14]   W. Han, Z. Zeng, J. Huang, S. Jiang, et al. 2025. GUIRoboTron-Speech: Towards
        Automated GUI Agents Based on Speech Instructions. arXiv:2506.11127v1
+
 [15]   S. G. Hart and L. E. Staveland. 1988. Development of NASA-TLX (Task Load
 
        Index): Results of empirical and theoretical research. In Human Mental Workload,
-
        P. A. Hancock and N. Meshkati (Eds.). Advances in Psychology, Vol. 52. North-
+
        Holland, 139–183.
-
-──────── p. 111 ────────
-                                                                                       111
-
-
-[16]   W. Hong, W. Wang, Q. Lv, J. Xu, W. Yu, J. Ji, Y. Wang, Z. Wang, Y. Dong, M.
-
-       Ding, and J. Tang. 2024. CogAgent: A Visual Language Model for GUI Agents.
-
-       In Proceedings of CVPR 2024.
-[17]   Z. Hui, Y. Li, D. Zhao, T. Chen, C. Banbury, and K. Koishida. 2025. WinClick:
-
-       GUI Grounding with Multimodal Large Language Models. arXiv:2503.04730
-
-[18]   E. L. Hutchins, J. D. Hollan, and D. A. Norman. 1985. Direct manipulation
-       interfaces. Human–Computer Interaction 1, 4 (1985), 311–338.
-
-[19]   J. Jacobs, J. Lapon, and V. Naessens. 2026. Local LLMs for NL2Bash: A Large-
-       Scale Open-Source Model Evaluation for Bash Command Generation. In NDSS
-
-       Workshop on LLM Assisted Security and Trust Exploration (LAST-X 2026).
-
-[20]   P. Jouvelot and D. K. Gifford. 1991. Algebraic reconstruction of types and effects.
-       In Proceedings of the 18th ACM SIGPLAN-SIGACT Symposium on Principles of
-
-       Programming Languages (POPL ’91). ACM, 303–310.
-
-[21]   kenryu42. 2026. cc-safety-net. https://github.com/kenryu42/cc-safety-net Version
-       2.6.1.
-
-[22]   E. Lamprou, T. Zhu, D. Jin, G. Ntousakis, G. Liargkovas, C. Eng, K. Kallas, M.
-
-       Greenberg, and N. Vasilakis. 2026. Controlling opaque-component effects with
-       semisolates and try. In Proceedings of the 20th USENIX Symposium on Operating
-
-       Systems Design and Implementation (OSDI ’26). USENIX Association.
-       https://www.usenix.org/conference/osdi26/presentation/lamprou
-
-[23]   Y. Li, J. He, X. Zhou, Y. Zhang, and J. Baldridge. 2020. Mapping Natural
-
-       Language Instructions to Mobile UI Action Sequences. In Proceedings of ACL
-       2020. 8198–8210.
-
-[24]   X. V. Lin, C. Wang, L. Zettlemoyer, and M. D. Ernst. 2018. NL2Bash: A corpus
-
-       and semantic parser for natural language interface to the Linux operating system.
-       In Proceedings of the Eleventh International Conference on Language Resources
-
-       and Evaluation (LREC 2018). European Language Resources Association.
-
-──────── p. 112 ────────
-                                                                                      112
-
-
-[25]   R. Liu, T. Zhe, D. Wang, Z. Yao, K. Liu, Y. Fu, H. Liu, and J. Pei. 2026. AgentOS:
-       From Application Silos to a Natural Language-Driven Data Ecosystem.
-
-       arXiv:2603.08938
-[26]   J. Lu, Z. Zhang, F. Yang, J. Zhang, L. Wang, C. Du, Q. Lin, S. Rajmohan, D.
-
-       Zhang, and Q. Zhang. 2024. AXIS: Efficient Human-Agent-Computer Interaction
-
-       with API-First LLM-Based Agents. arXiv:2409.17140
-[27]   E. Luger and A. Sellen. 2016. “Like having a really bad PA”: The gulf between
-
-       user expectation and experience of conversational agents. In Proceedings of the
-
-       2016 CHI Conference on Human Factors in Computing Systems (CHI ’16). ACM,
-       5286–5297.
-
-[28]   K. Mazurak and S. Zdancewic. 2007. ABASH: Finding bugs in bash scripts. In
-       Proceedings of the 2007 Workshop on Programming Languages and Analysis for
-
-       Security (PLAS ’07). ACM.
-
-[29]   S. Mehendale and A. Walishetti. 2024. DexAssist: A Voice-Enabled Dual-LLM
-       Framework for Accessible Web Navigation. arXiv:2411.12214
-
-[30]   R. Niu, J. Li, S. Wang, Y. Fu, X. Hu, X. Leng, H. Kong, Y. Chang, and Q. Wang.
-
-       2024. ScreenAgent: A Vision Language Model-driven Computer Control Agent.
-       arXiv:2402.07945
-
-[31]   D. A. Norman. 1986. Cognitive engineering. In User Centered System Design:
-
-       New Perspectives on Human-Computer Interaction, D. A. Norman and S. W.
-       Draper (Eds.). Lawrence Erlbaum Associates, 31–61.
-
-[32]   OpenAI. 2026. Codex CLI. https://github.com/openai/codex Commit 1f4c473.
-[33]   A. Padmanabha, J. Yuan, J. Gupta, Z. Karachiwalla, C. Majidi, H. Admoni, and Z.
-
-       Erickson. 2024. VoicePilot: Harnessing LLMs as Speech Interfaces for Physically
-
-       Assistive Robots. In Proceedings of the 37th Annual ACM Symposium on User
-       Interface Software and Technology (UIST ’24). ACM.
-
-[34]   J. Park, P. Tang, S. Das, S. Appalaraju, K. Y. Singh, R. Manmatha, and S. Ghadar.
-
-       2025. R-VLM: Region-aware Vision Language Model for Precise GUI
-       Grounding. In Findings of the Association for Computational Linguistics: ACL
 
 ──────── p. 113 ────────
                                                                                        113
 
 
-       2025. 9669–9685.
-[35]   D. E. Porter, O. S. Hofmann, C. J. Rossbach, A. Benn, and E. Witchel. 2009.
+[16]   W. Hong, W. Wang, Q. Lv, J. Xu, W. Yu, J. Ji, Y. Wang, Z. Wang, Y. Dong, M.
+       Ding, and J. Tang. 2024. CogAgent: A Visual Language Model for GUI Agents.
 
+       In Proceedings of CVPR 2024.
+
+[17]   Z. Hui, Y. Li, D. Zhao, T. Chen, C. Banbury, and K. Koishida. 2025. WinClick:
+       GUI Grounding with Multimodal Large Language Models. arXiv:2503.04730
+
+[18]   E. L. Hutchins, J. D. Hollan, and D. A. Norman. 1985. Direct manipulation
+
+       interfaces. Human–Computer Interaction 1, 4 (1985), 311–338.
+[19]   J. Jacobs, J. Lapon, and V. Naessens. 2026. Local LLMs for NL2Bash: A Large-
+
+       Scale Open-Source Model Evaluation for Bash Command Generation. In NDSS
+
+       Workshop on LLM Assisted Security and Trust Exploration (LAST-X 2026).
+[20]   P. Jouvelot and D. K. Gifford. 1991. Algebraic reconstruction of types and effects.
+
+       In Proceedings of the 18th ACM SIGPLAN-SIGACT Symposium on Principles of
+       Programming Languages (POPL ’91). ACM, 303–310.
+
+[21]   kenryu42. 2026. cc-safety-net. https://github.com/kenryu42/cc-safety-net Version
+
+       2.6.1.
+[22]   E. Lamprou, T. Zhu, D. Jin, G. Ntousakis, G. Liargkovas, C. Eng, K. Kallas, M.
+
+       Greenberg, and N. Vasilakis. 2026. Controlling opaque-component effects with
+
+       semisolates and try. In Proceedings of the 20th USENIX Symposium on Operating
+       Systems Design and Implementation (OSDI ’26). USENIX Association.
+
+       https://www.usenix.org/conference/osdi26/presentation/lamprou
+
+[23]   Y. Li, J. He, X. Zhou, Y. Zhang, and J. Baldridge. 2020. Mapping Natural
+       Language Instructions to Mobile UI Action Sequences. In Proceedings of ACL
+
+       2020. 8198–8210.
+[24]   X. V. Lin, C. Wang, L. Zettlemoyer, and M. D. Ernst. 2018. NL2Bash: A corpus
+
+       and semantic parser for natural language interface to the Linux operating system.
+
+       In Proceedings of the Eleventh International Conference on Language Resources
+       and Evaluation (LREC 2018). European Language Resources Association.
+
+──────── p. 114 ────────
+                                                                                      114
+
+
+[25]   R. Liu, T. Zhe, D. Wang, Z. Yao, K. Liu, Y. Fu, H. Liu, and J. Pei. 2026. AgentOS:
+
+       From Application Silos to a Natural Language-Driven Data Ecosystem.
+       arXiv:2603.08938
+
+[26]   J. Lu, Z. Zhang, F. Yang, J. Zhang, L. Wang, C. Du, Q. Lin, S. Rajmohan, D.
+
+       Zhang, and Q. Zhang. 2024. AXIS: Efficient Human-Agent-Computer Interaction
+       with API-First LLM-Based Agents. arXiv:2409.17140
+
+[27]   E. Luger and A. Sellen. 2016. “Like having a really bad PA”: The gulf between
+       user expectation and experience of conversational agents. In Proceedings of the
+
+       2016 CHI Conference on Human Factors in Computing Systems (CHI ’16). ACM,
+
+       5286–5297.
+[28]   K. Mazurak and S. Zdancewic. 2007. ABASH: Finding bugs in bash scripts. In
+
+       Proceedings of the 2007 Workshop on Programming Languages and Analysis for
+
+       Security (PLAS ’07). ACM.
+[29]   S. Mehendale and A. Walishetti. 2024. DexAssist: A Voice-Enabled Dual-LLM
+
+       Framework for Accessible Web Navigation. arXiv:2411.12214
+
+[30]   R. Niu, J. Li, S. Wang, Y. Fu, X. Hu, X. Leng, H. Kong, Y. Chang, and Q. Wang.
+       2024. ScreenAgent: A Vision Language Model-driven Computer Control Agent.
+
+       arXiv:2402.07945
+[31]   D. A. Norman. 1986. Cognitive engineering. In User Centered System Design:
+
+       New Perspectives on Human-Computer Interaction, D. A. Norman and S. W.
+
+       Draper (Eds.). Lawrence Erlbaum Associates, 31–61.
+[32]   OpenAI. 2026. Codex CLI. https://github.com/openai/codex Commit 1f4c473.
+
+[33]   A. Padmanabha, J. Yuan, J. Gupta, Z. Karachiwalla, C. Majidi, H. Admoni, and Z.
+
+       Erickson. 2024. VoicePilot: Harnessing LLMs as Speech Interfaces for Physically
+       Assistive Robots. In Proceedings of the 37th Annual ACM Symposium on User
+
+       Interface Software and Technology (UIST ’24). ACM.
+[34]   J. Park, P. Tang, S. Das, S. Appalaraju, K. Y. Singh, R. Manmatha, and S. Ghadar.
+
+       2025. R-VLM: Region-aware Vision Language Model for Precise GUI
+
+       Grounding. In Findings of the Association for Computational Linguistics: ACL
+
+──────── p. 115 ────────
+                                                                                       115
+
+
+       2025. 9669–9685.
+
+[35]   D. E. Porter, O. S. Hofmann, C. J. Rossbach, A. Benn, and E. Witchel. 2009.
        Operating system transactions. In Proceedings of the ACM SIGOPS 22nd
 
        Symposium on Operating Systems Principles (SOSP ’09). ACM, 161–176.
-[36]   C. Rawles, A. Li, D. Rodriguez, O. Riva, and T. Lillicrap. 2023. Android in the
 
+[36]   C. Rawles, A. Li, D. Rodriguez, O. Riva, and T. Lillicrap. 2023. Android in the
        Wild: A Large-Scale Dataset for Android Device Control. In Advances in Neural
+
        Information Processing Systems 36 (NeurIPS 2023).
 
 [37]   O. Rodeh, J. Bacik, and C. Mason. 2013. BTRFS: The Linux B-tree filesystem.
-
        ACM Transactions on Storage 9, 3, Article 9 (2013), 32 pages.
+
 [38]   Y. Ruan, H. Dong, A. Wang, S. Pitis, Y. Zhou, J. Ba, Y. Dubois, C. J. Maddison,
 
        and T. Hashimoto. 2024. Identifying the risks of LM agents with an LM-emulated
-
        sandbox. In Proceedings of ICLR 2024.
-[39]   D. S. Santry, M. J. Feeley, N. C. Hutchinson, A. C. Veitch, R. W. Carton, and J.
 
+[39]   D. S. Santry, M. J. Feeley, N. C. Hutchinson, A. C. Veitch, R. W. Carton, and J.
        Ofir. 1999. Deciding when to forget in the Elephant file system. In Proceedings of
 
        the Seventeenth ACM Symposium on Operating Systems Principles (SOSP ’99).
-       ACM, 110–123.
 
+       ACM, 110–123.
 [40]   J. Sauro and J. R. Lewis. 2016. Quantifying the User Experience: Practical
+
        Statistics for User Research (2nd ed.). Morgan Kaufmann.
 
 [41]   B. Shneiderman. 1983. Direct manipulation: A step beyond programming
-
        languages. Computer 16, 8 (1983), 57–69.
-[42]   B. Shneiderman. 2000. The limits of speech recognition. Commun. ACM 43, 9
 
+[42]   B. Shneiderman. 2000. The limits of speech recognition. Commun. ACM 43, 9
        (2000), 63–65.
 
 [43]   B. Shneiderman and P. Maes. 1997. Direct manipulation vs. interface agents.
-       interactions 4, 6 (1997), 42–61.
 
+       interactions 4, 6 (1997), 42–61.
 [44]   J.-P. Talpin and P. Jouvelot. 1994. The type and effect discipline. Information and
 
        Computation 111, 2 (1994), 245–296.
-[45]   H. G. W. van Dam. 2025. A Multimodal GUI Architecture for Interfacing with
 
+[45]   H. G. W. van Dam. 2025. A Multimodal GUI Architecture for Interfacing with
        LLM-Based Conversational Assistants. arXiv:2510.06223
 
-──────── p. 114 ────────
-                                                                                       114
+──────── p. 116 ────────
+                                                                                       116
 
 
 [46]   J. Wang, H. Xu, J. Ye, M. Yan, W. Shen, J. Zhang, F. Huang, and J. Sang. 2024.
+
        Mobile-Agent: Autonomous Multi-Modal Mobile Device Agent with Visual
 
        Perception. arXiv:2401.16158
-
 [47]   F. Westenfelder, E. Hemberg, M. Tulla, S. Moskal, U.-M. O’Reilly, and S.
+
        Chiricescu. 2025. LLM-Supported Natural Language to Bash Translation.
 
        arXiv:2502.06858
-
 [48]   J. Whiteside, S. Jones, P. S. Levy, and D. Wixon. 1985. User performance with
-       command, menu, and iconic interfaces. In Proceedings of the SIGCHI Conference
 
+       command, menu, and iconic interfaces. In Proceedings of the SIGCHI Conference
        on Human Factors in Computing Systems (CHI ’85). ACM, 185–191.
 
 [49]   R. Wilensky, D. N. Chin, M. Luria, J. Martin, J. Mayfield, and D. Wu. 1988. The
-       Berkeley Unix Consultant Project. Computational Linguistics 14, 4 (1988), 35–
 
+       Berkeley Unix Consultant Project. Computational Linguistics 14, 4 (1988), 35–
        84.
+
 [50]   T. Xie, D. Zhang, J. Chen, X. Li, S. Zhao, R. Cao, T. J. Hua, Z. Cheng, D. Shin, F.
 
        Lei, Y. Liu, Y. Xu, S. Zhou, S. Savarese, C. Xiong, V. Zhong, and T. Yu. 2024.
-
        OSWorld: Benchmarking Multimodal Agents for Open-Ended Tasks in Real
-       Computer Environments. In Advances in Neural Information Processing Systems
 
+       Computer Environments. In Advances in Neural Information Processing Systems
        37 (NeurIPS 2024).
 
 [51]   S. Yao, J. Zhao, D. Yu, N. Du, I. Shafran, K. Narasimhan, and Y. Cao. 2023.
-       ReAct: Synergizing Reasoning and Acting in Language Models. In Proceedings
 
+       ReAct: Synergizing Reasoning and Acting in Language Models. In Proceedings
        of ICLR 2023.
 
 [52]   M. Yuan, Z. Zhou, X. Xiong, et al. 2026. OSWorld 2.0: Benchmarking Computer
-       Use Agents on Long-Horizon Real-World Tasks. arXiv:2606.29537
 
+       Use Agents on Long-Horizon Real-World Tasks. arXiv:2606.29537
 [53]   C. Zhang, S. He, J. Qian, B. Li, L. Li, S. Qin, Y. Kang, M. Ma, G. Liu, Q. Lin, S.
+
        Rajmohan, D. Zhang, and Q. Zhang. 2024. Large Language Model-Brained GUI
 
        Agents: A Survey. arXiv:2411.18279
-
 [54]   C. Zhang, H. Huang, C. Ni, J. Mu, S. Qin, S. He, L. Wang, F. Yang, P. Zhao, C.
+
        Du, L. Li, Y. Kang, Z. Jiang, S. Zheng, R. Wang, J. Qian, M. Ma, J. Lou, Q. Lin,
 
        S. Rajmohan, and D. Zhang. 2025. UFO2: The Desktop AgentOS.
        arXiv:2504.14603
 
-──────── p. 115 ────────
-                                                                                    115
+──────── p. 117 ────────
+                                                                                    117
 
 
 [55]   C. Zhang, Z. Yang, J. Liu, Y. Li, Y. Han, X. Chen, Z. Huang, B. Fu, and G. Yu.
 
        2023. AppAgent: Multimodal Agents as Smartphone Users. arXiv:2312.13771
-[56]   B. Zheng, B. Gou, J. Kil, H. Sun, and Y. Su. 2024. GPT-4V(ision) is a Generalist
 
+[56]   B. Zheng, B. Gou, J. Kil, H. Sun, and Y. Su. 2024. GPT-4V(ision) is a Generalist
        Web Agent, if Grounded. In Proceedings of ICML 2024.
 
 [57]   S. Zhou, F. F. Xu, H. Zhu, X. Zhou, R. Lo, A. Sridhar, X. Cheng, T. Ou, Y. Bisk,
-       D. Fried, U. Alon, and G. Neubig. 2024. WebArena: A Realistic Web
 
+       D. Fried, U. Alon, and G. Neubig. 2024. WebArena: A Realistic Web
        Environment for Building Autonomous Agents. In Proceedings of ICLR 2024.
+
 [58]   X. Zhou, S. Zhang, Y. Zhao, J. Wei, T. Song, A. Cohan, and C. Zhao. 2026. GUI
 
        vs. CLI: Execution Bottlenecks in Screen-Only and Skill-Mediated Computer-
-
        Use Agents. arXiv:2606.24551
 
-──────── p. 116 ────────
-                                         APPENDICES
+──────── p. 118 ────────
+                                    APPENDICES
 
-         This section contains the study instruments administered to participants and the
-procedure governing their administration. Wording, difficulty calibration, and task-form
+        The appendices begin with the algorithm and its evaluation: the per-command
 
-equivalence are validated during the pilot study described in Chapter 3, Section 2.3 and
-revised before the main study begins; the instruments are reproduced here in the form
+effect rules the analysis builds on (Appendix A), worked examples traced through the
+analysis (Appendix B), the evaluation corpus and protocol, with how each reported result
+
+is reproduced (Appendix C), and the defects found after the evaluation (Appendix D).
+The validation study’s instruments and procedure follow (Appendices E to K).
+
+        Appendices E to K reproduce the instruments administered to participants and
+
+the procedure governing their administration. Wording, difficulty calibration, and task-
+form equivalence are validated during the pilot study described in Chapter 3, Section 2.3
+
+and revised before the main study begins; the instruments are reproduced here in the form
 
 submitted for ethics review.
 
+──────── p. 119 ────────
+                                                                                      119
 
 
-                                         APPENDIX A
+
+                                     APPENDIX A
+
+                              Per-Command Effect Rules
+
+         This appendix lists every command the recoverability analysis knows and what
+it does with each. It is the enumeration on which the analysis of Chapter 3, Section 2.1
+
+and Algorithm 1 builds: the rules give the effects of a single command (create, write,
+
+remove, metadata, or a change of package or service state), and the algorithm composes,
+resolves, and decides over them. A command that is not listed here is unknown, and an
+
+unknown command is treated as unrecoverable, so the system asks before running it. The
+
+tables     are      generated       from      the      prototype’s      source      code
+(prototype/internal/effects, by make rulemap), and an automated test
+
+fails whenever the generated map and the code disagree, so the appendix describes the
+analysis as built rather than as intended. In total the map holds 39 commands with a
+
+mutating rule, 13 transparent wrappers, 31 package, service, and system-state tools (5 of
+
+them modeled with inverses), 42 commands that are always unrecoverable (Table A.8
+lists mkfs.* as a family beside them), 17 interpreters, and 172 commands that are read-
+
+only in their usual forms; a few of these, such as date and hostname, also appear in
+
+Table A.9 for the forms that change state.
+         Table A.1 gives the constructs through which effects are composed. Tables A.2
+
+to A.5 give the mutating rules, grouped by kind of command. Table A.6 lists the
+
+resolvers, which are the only commands the analysis itself ever runs. Tables A.7 and A.8
+cover package, service, and system state and the commands that are always
+
+unrecoverable, and Table A.9 the commands that are read-only only in some forms.
+Table A.1. Composition: the constructs the analysis resolves through.
+
+  Construct                                   How it is analyzed
+
+  Transparent wrappers                        The wrapper’s own options are skipped and
+                                              the command it runs is analyzed in its
+                                              place. sudo and doas mark it privileged,
+                                              so its targets are never resolved as the
+                                              current user. The wrappers are builtin,
+                                              command, doas, env, exec, ionice,
+                                              nice, nohup, setsid, stdbuf, sudo,
+                                              timeout, and unbuffer
+
+──────── p. 120 ────────
+                                                                                               120
+
+
+  Construct                                      How it is analyzed
+
+  find with -delete, -exec, -                    The expression is rewritten so that each
+  execdir, -ok, -okdir                           action prints which action fired on which
+                                                 path, run read-only, and the inner command
+                                                 is analyzed once per match (or once with
+                                                 all matches, for +)
+
+  xargs                                          The producer feeding it is proven read-
+                                                 only, run, and its output split exactly as
+                                                 GNU xargs would split it (-0, -d, -I, -
+                                                 n, -L, -r, NUL handling); the command is
+                                                 analyzed per resulting invocation
+
+  sh, bash, zsh, dash, ksh, ash with -c          The string is parsed and analyzed as a
+                                                 command line of its own; a script file, or
+                                                 code piped in, is not visible and asks
+
+  eval                                           Its arguments, joined by spaces, are
+                                                 analyzed as a command line
+
+  for loops                                      The item list is expanded and the body
+                                                 analyzed once per item with the variable
+                                                 bound, up to the loop cap
+
+
+Table A.2. Mutating rules for file operations.
+
+  Command                                        Effects derived, and options that change
+                                                 them
+
+  cp                                             Copies each source: an existing destination
+                                                 is a write (captured), a new one a create.
+                                                 Directories are copied only with -r or -a,
+                                                 walked file by file; --parents creates
+                                                 the intermediate directories; -b makes a
+                                                 backup file
+
+  install                                        As cp; -d creates directories
+
+  mv                                             Moves each source. Onto a new name: a
+                                                 create plus a removal that undo reverses by
+                                                 moving back. Onto an existing name: also
+                                                 a write of that name (captured). -n skips;
+                                                 -b also makes a backup file
+
+  rename, prename                                Resolved by rename -n (both the util-
+                                                 linux and the Perl tool): each rename is a
+                                                 move, and a rename onto an existing name
+                                                 is also a write
+
+──────── p. 121 ────────
+                                                                                           121
+
+
+  Command                                    Effects derived, and options that change
+                                             them
+
+  ln                                         Creates each link; -f over an existing file
+                                             removes that file (captured whole, not
+                                             through the new link)
+
+  mkdir                                      Creates each missing directory, and with -
+                                             p each missing parent
+
+  touch                                      Creates each missing file; an existing file
+                                             only gets new times, which lose nothing; -
+                                             c creates nothing
+
+  rm, unlink                                 Removes each existing operand; a directory
+                                             only with -r; -r on / or on a top-level
+                                             directory is unrecoverable
+
+  rmdir                                      Removes each operand that is an empty
+                                             directory; a non-empty one fails and
+                                             changes nothing
+
+  truncate                                   Writes each operand, creating it unless -c
+
+  tee                                        Writes each file operand (- and devices
+                                             excepted)
+
+  dd                                         Writes the of= file; a raw device is
+                                             unrecoverable
+
+  chmod                                      Changes the mode of each operand, and
+                                             with -R of everything under it (captured as
+                                             a metadata record); an octal mode equal to
+                                             the current one is no change
+
+  chown, chgrp                               Changes ownership of each operand,
+                                             recursively with -R (metadata record)
+
+  shred                                      Unrecoverable whenever a target exists: it
+                                             destroys content on purpose
+
+  rsync                                      Resolved by rsync --dry-run --
+                                             itemize-changes: creates, writes, and
+                                             --delete removals. A remote host is
+                                             unrecoverable; options that change the
+                                             source, run a remote command, or write a
+                                             file even in a dry run are unresolved
+
+
+Table A.3. Mutating rules for archives and compression.
+
+──────── p. 122 ────────
+                                                                                             122
+
+
+  Command                                     Effects derived, and options that change
+                                              them
+
+  gzip, bzip2, xz, zstd                       Creates the compressed file and removes
+                                              the original unless -k. The removal is
+                                              captured, because the output is different
+                                              bytes, not a move. -c, -t, and -l are
+                                              read-only
+
+  gunzip, bunzip2, unxz, unzstd               As the corresponding compressor, in
+                                              reverse
+
+  tar                                         Create, append, and update write the
+                                              archive, and --remove-files removes
+                                              the inputs (captured). Extract is resolved
+                                              by tar -tf and writes or creates each
+                                              member. An archive on standard input is
+                                              unresolved; list and diff are read-only
+
+  unzip                                       Resolved by unzip -Z1: writes or
+                                              creates each member; -j drops directories;
+                                              -n never overwrites
+
+
+Table A.4. Mutating rules for text processing and downloads.
+
+  Command                                     Effects derived, and options that change
+                                              them
+
+  sed                                         -i writes each file, and -i.SUF also
+                                              leaves a backup; a script with w, W, or e is
+                                              opaque; otherwise read-only
+
+  awk, gawk, mawk, nawk                       -i inplace writes each file; a program
+                                              with system(), a redirected print, or a
+                                              piped getline is opaque; otherwise read-
+                                              only
+
+  sort                                        -o FILE writes FILE; otherwise read-
+                                              only
+
+  uniq                                        A second operand is an output file and is
+                                              written
+
+  curl                                        -o, -O, -D, and -c write their files. A
+                                              request that sends data or uses a method
+                                              other than GET or HEAD is unrecoverable;
+                                              -K and trace options are unresolved
+
+  wget                                        Creates the file named by the URL
+                                              (index.html for a trailing slash), or
+                                              NAME.1 when NAME exists, since wget
+
+──────── p. 123 ────────
+                                                                                            123
+
+
+  Command                                      Effects derived, and options that change
+                                               them
+                                               never replaces a file by default. -N and -c
+                                               overwrite; -O writes its file; -o and -a
+                                               write the log; recursive and server-named
+                                               downloads are unresolved
+
+
+Table A.5. Mutating rules for version control (git), by subcommand.
+
+  Subcommand                                   Effects derived
+
+  reset --hard                                 Captures the current commit (HEAD) and
+                                               every tracked file with uncommitted
+                                               changes
+
+  clean                                        Resolved by git clean -n
+
+  checkout, restore, switch -f,                Capture the tracked files with uncommitted
+  stash                                        changes that they overwrite
+
+  checkout -b, stash                           Record an inverse
+
+  rm, mv                                       As the file rules of Table A.2
+
+  History rewrites, forced pushes, branch or   Unrecoverable
+  tag deletion
+
+  Read-only subcommands, and the listing       No effect
+  forms (Table A.9)
+
+  Any other subcommand                         Opaque
+
+
+         A target that is known only when the command runs is found by running a form
+
+of the command that cannot change anything. Table A.6 lists every such resolver. Each
+runs with an output cap and a timeout, under bubblewrap, and not at all without it;
+
+resolution is refused, and the command is unresolved, when a privileged command’s file
+targets would have to be resolved, the working directory is unknown, or a bound is hit.
+
+The package and service queries are the exception: they read system-wide state that is the
+
+same for every user, so a privileged apt or systemctl command is still resolved
+through its own simulation.
+
+Table A.6. Resolvers: the only commands the analysis runs.
+
+──────── p. 124 ────────
+                                                                                               124
+
+
+  For                                          Runs
+
+  Command substitution                         The substitution body, via bash -c, once
+                                               the analysis finds that it has no effects, no
+                                               privilege, and nothing nondeterministic or
+                                               written earlier on the line
+
+  xargs                                        The producer pipeline, via bash -c,
+                                               under the same conditions
+
+  find                                         find with every action rewritten to -
+                                               printf and every printing action to -
+                                               true; refused if any action token survives
+
+  tar -x                                       tar -tf ARCHIVE [members]
+
+  unzip                                        unzip -Z1 ARCHIVE
+
+  rsync                                        rsync ARGS --dry-run --
+                                               itemize-changes
+
+  rename                                       rename -n ARGS, reading both output
+                                               streams
+
+  git clean                                    git clean -n, with repository hooks,
+                                               fsmonitor, and external diff disabled
+
+  git reset --hard, checkout,                  git diff --name-only HEAD, with
+  restore, switch, stash                       the same settings disabled
+
+  git checkout -b                              git symbolic-ref or rev-parse
+                                               HEAD, to know where to switch back
+
+  apt, apt-get                                 apt-get -s VERB …, then apt-
+                                               cache policy and dpkg-query for
+                                               the versions to restore
+
+  dpkg                                         dpkg-query -W, dpkg-deb -f
+
+  systemctl, service                           systemctl is-active and is-
+                                               enabled
+
+
+         Package, service, and system state is not a path, so it is handled separately. The
+
+read-only forms of these tools (listing, status, simulation) pass. Of the remaining forms,
+five tools are modeled: the tool is asked what would change, and the change is recorded
+
+with the commands that reverse it (the inverse). Every other tool asks, for the reason
+given in Table A.7.
+
+Table A.7. Package, service, and system-state tools, when not used in a read-only form.
+
+──────── p. 125 ────────
+                                                                                        125
+
+
+  Tools                                     Treatment
+
+  apt, apt-get, dpkg, service,              Modeled, with an inverse
+  systemctl                                 (RECOVERABLE_WITH_CAPTURE)
+
+  apt-cache, aptitude, brew, cargo,         Unrecoverable: changes package or service
+  dnf, docker, flatpak, gem,                state in a way that is not modeled
+  journalctl, kubectl, npm, pacman,
+  pip, pip3, snap, yarn, yum, zypper
+
+  ip6tables, iptables, nft, ufw             Unrecoverable: changes the firewall
+
+  ifconfig, ip                              Unrecoverable: changes network state
+
+  sysctl                                    Unrecoverable: changes kernel parameters
+
+  crontab                                   Unrecoverable: changes scheduled jobs
+
+
+Table A.8. Commands that are always unrecoverable, by reason.
+
+  Reason                                    Commands
+
+  Ends processes; process state cannot be   kill, killall, pkill, skill,
+  captured                                  xkill
+
+  Destroys content on purpose               srm, wipe
+
+  Changes accounts                          adduser, chpasswd, deluser,
+                                            groupadd, groupdel, groupmod,
+                                            passwd, useradd, userdel,
+                                            usermod
+
+  Changes what is mounted                   mount, umount
+
+  Creates a filesystem                      mkfs.*
+
+  Changes the partition table               fdisk, parted
+
+  Destroys filesystem signatures            wipefs
+
+  Discards device contents                  blkdiscard
+
+  Changes encrypted volumes                 cryptsetup
+
+  Changes loop devices                      losetup
+
+  Removes a logical volume, physical        lvremove, pvremove, vgremove
+  volume, or volume group
+
+  Changes a swap area; changes swap         mkswap; swapoff, swapon
+
+  Changes kernel modules                    insmod, modprobe, rmmod
+
+──────── p. 126 ────────
+                                                                                   126
+
+
+  Reason                                        Commands
+
+  Changes runlevel                              init, telinit
+
+  Restarts the machine; stops the machine       reboot; halt, poweroff, shutdown
+
+  Schedules jobs; removes scheduled jobs        at; atrm
+
+
+         Interpreters are opaque by design, and unrecoverable when code is fed to them
+through a pipe: Rscript, bun, deno, expect, julia, lua, node, nodejs,
+
+osascript, perl, php, pwsh, python, python2, python3, ruby, and tclsh.
+
+         The following 172 commands are read-only in every form and have no effects:
+:, [, ack, ag, alias, apropos, arch, b2sum, basename, bc, blkid, break,
+
+bzcat, cal, cat, cksum, clear, cmp, code, column, comm, continue, cut,
+date, df, diff, dig, dirname, dmesg, du, echo, egrep, emacs, env, exit,
+
+expand, expr, false, fgrep, file, finger, fmt, fold, free, gedit,
+
+getent, getfacl, getopts, grep, groups, hash, head, help, hexdump,
+history, host, hostname, htop, id, info, iostat, jobs, join, jq, kate,
+
+last, lastlog, ldd, less, let, locate, logname, ls, lsattr, lsblk,
+
+lscpu, lsmod, lsof, lspci, lsusb, lzcat, man, mapfile, mate, md5sum,
+more, most, mpstat, nano, netstat, nl, nm, nproc, nslookup, od, paste,
+
+pgrep, pidof, ping, printenv, printf, ps, pstree, pwd, read,
+
+readarray, readlink, realpath, reset, return, rev, rg, rgrep, sar,
+sdiff,     seq,      set,   sha1sum,        sha224sum,     sha256sum,   sha384sum,
+
+sha512sum, shift, shopt, sleep, ss, stat, strings, stty, subl, sum,
+sync, tac, tail, test, top, tput, tr, tracepath, traceroute, trap,
+
+tree, true, tty, type, ulimit, umask, unalias, uname, unexpand, unset,
+
+uptime, users, vi, vim, vmstat, w, wait, wc, whatis, whereis, which, who,
+whoami, whois, xzcat, yes, zcat, zegrep, zfgrep, zgrep, and zstdcat.
+
+The commands in Table A.9 are read-only only in some forms. Any command that
+
+appears nowhere in this appendix is unknown, and an unknown command asks.
+Table A.9. Commands that are read-only only in some forms.
+
+──────── p. 127 ────────
+                                                                    127
+
+
+Command                 Read-only when
+
+sed                     Without -i, and without w, W, or e in the
+                        script
+
+awk, gawk, mawk, nawk   Without -i inplace, and with a
+                        program that has no system(), redirected
+                        print, or piped getline
+
+sort                    Without -o
+
+uniq                    With at most one operand
+
+xxd                     With at most one operand and without -r
+
+tar                     In list (-t) or diff (-d) mode
+
+unzip                   With -l, -Z, -t, -v, -p, -z, or -c
+
+curl                    With no output option and nothing sent
+
+wget                    With --spider or -O -
+
+git                     With a read-only subcommand (status,
+                        log, diff, show, and the like) or the
+                        listing form of branch, tag, remote,
+                        config, stash, reflog, worktree,
+                        submodule
+
+base64, base32          Without -o
+
+date                    Without -s or --set
+
+hostname                With no operand
+
+──────── p. 128 ────────
+                                                                                     128
+
+
+
+                                      APPENDIX B
+
+                                   Worked Examples
+         This appendix shows the analysis of Chapter 3, Section 2.1 on concrete
+
+commands. Every result below is the output of the prototype’s current analyzer, obtained
+by running each command through it for this appendix against a fixed folder, which the
+
+analysis reads and never changes; most of the shapes are also covered by the prototype’s
+
+automated tests. The folder holds the files a.txt, b.txt, notes.txt, app.conf,
+report.docx, data.csv, and big.log; the folders src/ (main.go), logs/
+
+(x.log, y.log), build/ (out.o), backup/ (old.txt), and sub/ (two.tmp); a
+
+file one.tmp; an empty folder tmp/; and, for the version-control case, a git repository
+proj/ whose file app.py has an uncommitted change. The first part traces one
+
+command through every step of Algorithm 1. The second gives representative cases in
+
+Tables B.1 and B.2.
+
+
+
+a) Step by Step: Deleting Temporary Files
+
+         The request “delete the temporary files” becomes the following command. Two
+
+files match, one of them inside a subfolder.
+
+
+find . -name '*.tmp' -delete
+
+
+      1. Parse. The line is one simple command, find, with no wrapper around it.
+      2. Dispatch. find with -delete is a composition handler (Table A.1), so its
+
+         targets must be resolved rather than read from its words.
+
+      3. Resolve.     The expression is rewritten to find . -name '*.tmp' -
+         printf '0\t%p\0', in which -delete has become a -printf that
+
+         reports which action would fire on which path. The rewritten form contains no
+         action token, so it is run read-only. It prints one.tmp and sub/two.tmp.
+
+      4. Effects. Each match becomes a remove: remove one.tmp and remove
+
+         sub/two.tmp.
+
+──────── p. 129 ────────
+                                                                                      129
+
+
+      5. Verdict. The effects are removals of regular files, not moves, so the verdict is
+
+         RECOVERABLE_WITH_CAPTURE.
+
+      6. Plan.    Each removed file needs only its pre-image kept, so the cheapest
+         mechanism is trash, a hardlink into the undo journal that costs no copy at any
+
+         size: trash one.tmp and trash sub/two.tmp.
+
+      7. Gate, capture, run, undo. Under the default strict policy the system asks first.
+         On confirmation, both files are captured, the command runs, and synapse
+
+         undo restores both from the journal.
+
+         With composition switched off (the ablation of Chapter 3), find is not resolved
+through, and the same command is UNRECOVERABLE: the user is asked, but nothing
+
+is captured, which is the behavior of an enumerated pattern list. Under sudo, the
+command is also UNRECOVERABLE (“runs with elevated privilege, so its targets
+
+cannot be resolved as the current user”), because root may reach files that a resolution
+
+run as the user would not list.
+
+
+
+b) Representative Cases
+         Tables B.1 and B.2 list each command with its effects, verdict, and capture plan
+
+exactly as the analyzer reports them. In the effects column, a → b on a removal marks a
+
+move: the same bytes survive at b, so undo moves them back and nothing is captured. In
+the plan column, trash is a hardlink, content a copy of the bytes, metadata a
+
+record of mode or ownership, git-head the current commit identifier, and inverse
+the commands that reverse a package or service change. Verdicts are abbreviated R
+
+(RECOVERABLE),            RWC     (RECOVERABLE_WITH_CAPTURE),                  and     U
+
+(UNRECOVERABLE).
+Table B.1. Single commands: removal, overwrite, move, compression, resolution, and
+
+state changes.
+
+  Command            Effects          Verdict          Capture plan      Why
+
+  rm b.txt           remove           RWC              trash b.txt       A plain
+                     b.txt                                               removal; a
+                                                                         hardlink
+
+──────── p. 130 ────────
+                                                                      130
+
+
+Command     Effects        Verdict   Capture plan   Why
+                                                    keeps the pre-
+                                                    image
+
+rm -rf      remove logs    RWC       trash logs     The directory
+logs                                                is captured as
+                                                    a whole,
+                                                    which covers
+                                                    every file
+                                                    under it
+
+cp a.txt    write b.txt    RWC       content        An overwrite
+b.txt                                b.txt          needs the
+                                                    bytes; a
+                                                    hardlink
+                                                    would share
+                                                    the inode the
+                                                    write changes
+
+echo hi >   write          RWC       content        A redirect to
+notes.txt   notes.txt                notes.txt      an existing
+                                                    file is a write
+
+chmod 600   metadata       RWC       metadata       A mode
+notes.txt   notes.txt                notes.txt      change is
+                                                    undone from
+                                                    a record of
+                                                    the old mode
+
+mv          create         R         none           A move onto
+notes.txt   renamed.t                               a new name
+renamed.t   xt; remove                              loses nothing;
+xt          notes.txt                               undo moves it
+            →                                       back
+            renamed.t
+            xt
+
+mv a.txt    write b.txt;   RWC       content        The same
+b.txt       remove                   b.txt          command
+            a.txt →                                 shape as the
+            b.txt                                   rename, but
+                                                    the
+                                                    destination
+                                                    exists, so its
+                                                    old contents
+                                                    are copied
+
+gzip        create         RWC       trash          Compression
+big.log     big.log.g                big.log        produces
+            z; remove                               different
+            big.log                                 bytes, so the
+
+──────── p. 131 ────────
+                                                                       131
+
+
+Command     Effects          Verdict   Capture plan   Why
+                                                      removal is not
+                                                      a move and is
+                                                      captured
+
+find logs   remove           RWC       trash each     find is
+-name       logs/x.lo                                 resolved read-
+'*.log' -   g,                                        only and rm
+exec rm     logs/y.lo                                 analyzed once
+{} \;       g                                         per match
+
+find . -    remove           RWC       trash each     The producer
+name        big.log,                                  is proven
+'*.log' |   logs/x.lo                                 read-only,
+xargs rm    g,                                        run, and its
+            logs/y.lo                                 output split as
+            g                                         xargs would
+                                                      split it
+
+git -C      metadata         RWC       content        The dirty file
+proj        proj (the                  proj/app.      is found by
+reset --    current                    py; git-head   git diff
+hard        commit);                   proj           --name-
+            write                                     only HEAD
+            proj/app.                                 and copied,
+            py                                        and the
+                                                      current
+                                                      commit
+                                                      recorded
+
+sudo apt    state: install   RWC       inverse:       Found by
+install -   cowsay                     apt-get        apt-get -
+y cowsay                               purge -y       s; the undo
+                                       cowsay         runs with
+                                                      sudo, as the
+                                                      original did
+
+sudo        state: stop      RWC       inverse:       The unit was
+systemctl   cron                       systemctl      active
+stop cron                              start          (systemctl
+                                       cron           is-
+                                                      active), so
+                                                      starting it
+                                                      reverses the
+                                                      change
+
+pip         none             U         none           A package
+install                                               tool that is not
+requests                                              modeled asks
+                                                      (Table A.7)
+
+──────── p. 132 ────────
+                                                                                         132
+
+
+        When the state of a service cannot be read, the change is not assumed reversible:
+
+with the systemctl queries unanswered, sudo systemctl stop cron is
+UNRECOVERABLE (“could not read the state of cron”).
+
+Table B.2. Composed lines, parts that may fail, and fail-closed cases.
+
+  Command           Effects           Verdict           Capture plan     Why
+
+  mkdir out         create out,       R                 none             Everything
+  && cp             out/a.txt                                            removed was
+  a.txt                                                                  created by the
+  out/ &&                                                                same line, so
+  rm -rf                                                                 nothing that
+  out                                                                    existed before
+                                                                         is lost
+
+  mv                create            RWC               trash            Moving back
+  notes.txt         old.txt;                            notes.txt        would return
+  old.txt           remove                                               fresh, not
+  && echo           notes.txt                                            the notes, so
+  fresh >                                                                the move is
+  old.txt                                                                demoted to a
+                                                                         captured
+                                                                         removal
+
+  mv a.txt          create            R                 none             The write
+  tmp/ &&           tmp/a.txt;                                           runs only if
+  echo x >          remove                                               the move
+  a.txt             a.txt →                                              succeeded, so
+                    tmp/a.txt;                                           a.txt is
+                    create a.txt                                         new by then
+
+  mv a.txt          create            RWC               content          After ; the
+  tmp/;             tmp/a.txt;                          a.txt            write runs
+  echo x >          remove                                               even if the
+  a.txt             a.txt →                                              move failed,
+                    tmp/a.txt;                                           when it would
+                    write a.txt                                          overwrite the
+                                                                         original
+
+  mv a.txt          as above          RWC               content          The write
+  tmp/ ||                                               a.txt            runs only if
+  echo x >                                                               the move
+  a.txt                                                                  failed, so the
+                                                                         original is still
+                                                                         there
+
+  rm a.txt          remove            RWC               content          If rm fails,
+  && touch          a.txt;                              a.txt            the last write
+  a.txt;            create                                               overwrites the
+
+──────── p. 133 ────────
+                                                                     133
+
+
+Command     Effects        Verdict   Capture plan   Why
+echo x >    a.txt; write                            original, so
+a.txt       a.txt                                   the re-
+                                                    creation is not
+                                                    trusted
+
+cd logs     none           U         none           Unresolved:
+|| rm                                               the directory
+a.txt                                               after a cd that
+                                                    may have
+                                                    failed is
+                                                    unknown
+
+for f in    create         R         none           The items are
+*.tmp       one.tmp.o                               expanded and
+sub/*.tmp   ld,                                     the body
+; do mv     sub/two.t                               analyzed once
+"$f"        mp.old;                                 per item; each
+"$f.old";   remove                                  is a move
+done        one.tmp →
+            one.tmp.o
+            ld,
+            sub/two.t
+            mp →
+            sub/two.t
+            mp.old
+
+tar -czf    create         RWC       trash src      The archive is
+src.tar.g   src.tar.g                               not treated as
+z src &&    z; remove                               a backup, so
+rm -rf      src                                     the removal is
+src                                                 still captured
+
+rm -r       none           U         none           Unresolved:
+"$PROJECT                                           PROJECT_D
+_DIR/buil                                           IR is an
+d"                                                  unbound
+                                                    variable, not
+                                                    an empty
+                                                    string
+
+cd - &&     none           U         none           Unresolved:
+rm                                                  the working
+notes.txt                                           directory is
+                                                    unknown
+
+python3 -   none           U         none           Opaque: an
+c "import                                           interpreter
+shutil;                                             runs arbitrary
+
+──────── p. 134 ────────
+                                                                                         134
+
+
+  Command           Effects          Verdict           Capture plan      Why
+  shutil.rm                                                              code whose
+  tree('log                                                              effects are not
+  s')"                                                                   modeled
+
+  kill 4242         none             U                 none              Process state
+                                                                         cannot be
+                                                                         captured
+
+
+        The four lines built from mv a.txt tmp/ show composition across &&, ;,
+and ||. Only && guarantees that the earlier part succeeded before the later part runs.
+
+After ; or ||, the earlier move is only a possibility, so the analysis cannot assume that
+
+a.txt is gone and captures it before the write. For the same reason, a cd that may have
+failed leaves the working directory unknown, and the command after it asks. In every
+
+fail-closed row the analysis records an issue, and any issue makes the verdict
+UNRECOVERABLE, so the user is asked before the command runs.
+
+──────── p. 135 ────────
+                                                                                          135
+
+
+
+                                     APPENDIX C
+
+                            Evaluation Corpus and Protocol
+        This appendix gives what a reader needs to check or reproduce the corpus
+
+evaluation of Chapter 3, Sections 3.1 and 3.2, beyond what those sections state. It covers
+
+how the four corpora were drawn and how the reported one was frozen, how each
+command was labeled, which systems were compared and how each was configured,
+
+how each metric and test was computed, how restoration was verified, the model-
+
+generated partition, the differential test of composition, and, last, which command
+regenerates each reported result and where its output is kept. Commands are given as
+
+they are run from the prototype’s directory; the results files they name are kept with the
+prototype.
+
+        C.1 Corpus rounds
+
+        Four corpora were generated from consecutive seeds and numbered rounds 4 to
+7, after three earlier rounds whose labels were assigned by hand and which are not
+
+reported. Each corpus was drawn after fixing what the run on the one before it exposed,
+
+so rounds 4 to 6 are development corpora and only round 7 is reported (Table C.1). The
+generator stops drawing NL2Bash candidates once every quota is met, so the number of
+
+candidates drawn differs between rounds.
+Table C.1. The four generated corpora.
+
+  Round          Seed           Comman         Labels         NL2Bash        Role
+                                ds             (loss / no     candidate
+                                (NL2Bash       loss /         s drawn
+                                /              external)
+                                templates
+                                / external)
+
+  4              20260922       778 (450 /     331 / 367 /    2,976          Developm
+                                248 / 80)      80                            ent. The
+                                                                             first
+                                                                             corpus
+                                                                             labeled by
+                                                                             sandboxed
+                                                                             execution;
+                                                                             the
+                                                                             analyzer
+                                                                             gaps it
+
+──────── p. 136 ────────
+                                                                         136
+
+
+Round   Seed       Comman        Labels        NL2Bash     Role
+                   ds            (loss / no    candidate
+                   (NL2Bash      loss /        s drawn
+                   /             external)
+                   templates
+                   / external)
+                                                           exposed
+                                                           were
+                                                           fixed.
+
+5       20260923   772 (450 /    316 / 376 /   3,312       Developm
+                   242 / 80)     80                        ent. Its
+                                                           recovery
+                                                           check
+                                                           found two
+                                                           undo
+                                                           defects
+                                                           and nine
+                                                           further
+                                                           failures in
+                                                           the
+                                                           analysis,
+                                                           all fixed
+                                                           before
+                                                           round 6.
+
+6       20260924   776 (450 /    329 / 367 /   2,784       Developm
+                   246 / 80)     80                        ent. Its
+                                                           recovery
+                                                           check
+                                                           found five
+                                                           commands
+                                                           that undo
+                                                           did not
+                                                           restore,
+                                                           fixed in
+                                                           the
+                                                           analysis’s
+                                                           capture
+                                                           plan. The
+                                                           model-
+                                                           generated
+                                                           partition
+                                                           (Section C
+                                                           .8) was
+                                                           drawn
+                                                           with this
+                                                           seed.
+
+──────── p. 137 ────────
+                                                                                       137
+
+
+  Round          Seed           Comman         Labels         NL2Bash        Role
+                                ds             (loss / no     candidate
+                                (NL2Bash       loss /         s drawn
+                                /              external)
+                                templates
+                                / external)
+
+  7              20260925       777 (450 /     325 / 372 /    3,024          Held out.
+                                247 / 80)      80                            Drawn
+                                                                             after the
+                                                                             analysis
+                                                                             and the
+                                                                             undo were
+                                                                             frozen and
+                                                                             run once;
+                                                                             416 of its
+                                                                             commands
+                                                                             also
+                                                                             appear in
+                                                                             rounds 4
+                                                                             to 6
+                                                                             (Section C
+                                                                             .2). All
+                                                                             reported
+                                                                             figures.
+
+
+        C.2 The freeze of round 7
+
+        Two hashes were recorded before round 7 was run, and both are kept beside its
+results. The corpus file corpus7.jsonl has the SHA-256 hash ab7824c0d5743d
+
+3494a9f63e23eea6c295836cc8b184295563870adb415a55bf                                   (file
+
+corpus7.sha256), which sha256sum -c corpus7.sha256 checks.                            The
+analyzer’s source, the non-test Go files of the analysis package concatenated in file-name
+
+order, has the SHA-256 hash 5503bae6b450a13e98c2bf553c2f513afc5fde12
+
+d69f52dd6f2009994091ab68 (file analyser_frozen7.sha256).                              The
+corpus was then scored once, and nothing in the analysis or the undo was changed in
+
+response to it. The analyzer of today does not match the recorded hash, because the
+defects of Appendix D were fixed after the run; re-scoring round 7 with the fixed
+
+analyzer changed none of its 5,439 decisions (777 commands under each of seven
+
+systems), and the recovery check gives the same result row for row.
+
+──────── p. 138 ────────
+                                                                                          138
+
+
+         The NL2Bash draw excludes the commands of the hand-labeled rounds that
+
+preceded round 4, but not those drawn in rounds 4 to 6, and the templates and external
+tools are finite families from which every round draws. As a result, 416 of round 7’s 777
+
+commands have the same text as a command in one of those rounds: 158 of its 450
+NL2Bash commands (101 of them losses), 216 of its 247 templates, and 42 of its 80
+
+external commands. Round 7 is held out in the sense that the analysis and the undo were
+
+frozen before it was drawn and were not changed after it was scored; it is not disjoint
+from the development corpora. Chapter 3, Section 3.1(d), therefore also reports the
+
+results on the 361 commands that appear in no development round.
+
+         C.3 Partitions and labels
+         Each corpus has three partitions, drawn and labeled as Table C.2 sets out.
+
+NL2Bash candidates [24] are taken in a random order fixed by the seed; duplicates,
+
+commands longer than 400 characters, and multi-line commands are skipped. Candidates
+are run in batches until 150 have been labeled as losses, 300 as losing nothing, and 60
+
+have matched the external rule; within each class the first drawn are kept, so the selection
+is not the authors’. Templates are commands with holes for a file name, an extension, or
+
+a directory: each of the 110 templates is instantiated up to four times with values drawn
+
+from the seed, and every distinct instantiation is run. Twenty fixed external templates
+complete the external partition.
+
+Table C.2. Partitions of the round-7 corpus.
+
+  Partition      Source            Comman       Loss (C)       No loss         External
+                 and               ds                          (R)             (U)
+                 selection
+
+  NL2Bash        Human-            450          150            300             —
+                 written
+                 commands
+                 , seeded
+                 random
+                 draw, first
+                 150 losses
+                 and first
+                 300 others
+                 that run
+                 cleanly
+
+──────── p. 139 ────────
+                                                                                          139
+
+
+  Partition      Source          Comman         Loss (C)        No loss        External
+                 and             ds                             (R)            (U)
+                 selection
+
+  Templates      Instantiati     247            175             72             —
+                 ons of 110
+                 parameteri
+                 zed
+                 templates
+                 covering
+                 each
+                 compositio
+                 n operator;
+                 up to 250
+                 kept of
+                 those that
+                 run cleanly
+
+  External       First 60        80             —               —              80
+                 NL2Bash
+                 candidates
+                 matched
+                 by the
+                 external
+                 rule, plus
+                 20 fixed
+                 external
+                 templates;
+                 never
+                 executed
+
+  Total                          777            325             372            80
+
+
+          Of the 777 commands, 697 were executed by the oracle and labeled from what
+they did (the 325 losses and 372 that lose nothing), and 80 were labeled by construction.
+
+Silent loss is computed over the 405 commands that lose something or act outside the
+
+filesystem, capture coverage over the 325 executable losses, and needless confirmation
+over the 372 that lose nothing. Of the 3,024 NL2Bash candidates drawn for round 7,
+
+1,246 did not finish cleanly and were excluded: 838 exited non-zero, 184 timed out, 118
+
+wrote outside the fixture or needed privilege, 102 named a program that is not installed,
+and 4 failed in the harness. A further 1,268 ran cleanly but were not needed, because the
+
+quota for their class was already met. Of the template instantiations, 16 were excluded
+(11 non-zero exits, 3 writes outside the fixture, 2 harness errors) and 247 kept.
+
+──────── p. 140 ────────
+                                                                                       140
+
+
+          C.4 Command shapes
+
+          The generator assigns each command one shape from its syntax alone, never
+from the analysis, by taking the first rule in Table C.3 that applies. A command that does
+
+not parse is classed as single. External commands take the external shape whatever their
+
+syntax. The last three columns give the per-shape figures summarized in Chapter 3,
+Section 3.1(d).
+
+Table C.3. Command shapes in order of precedence, with the round-7 results for each.
+
+  Order           Shape      Assigne    Comma        Losses       Pattern      Analysi
+                             d when     nds (of      or           list:        s: asked
+                             the        777)         external     silent       without
+                             comma                   (of 405)                  capture
+                             nd
+
+  —               External   Matches    80           80           67           0
+                             the
+                             external
+                             rule
+                             (Section
+                              C.5)
+
+  1               Hidden     Names      51           29           5            8
+                             sh,
+                             bash,
+                             zsh,
+                             dash,
+                             eval,
+                             pytho
+                             n,
+                             pytho
+                             n3,
+                             perl,
+                             ruby,
+                             awk,
+                             node,
+                             env,
+                             nohup,
+                             time,
+                             comma
+                             nd, or
+                             busyb
+                             ox
+
+  2               Run-       Uses       413          164          53           15
+                  time       find or
+                             xargs,
+                             a
+
+──────── p. 141 ────────
+                                                                                      141
+
+
+  Order         Shape       Assigne      Comma       Losses       Pattern     Analysi
+                            d when       nds (of     or           list:       s: asked
+                            the          777)        external     silent      without
+                            comma                    (of 405)                 capture
+                            nd
+                            comman
+                            d or
+                            process
+                            substitut
+                            ion, or a
+                            for or
+                            while
+                            loop
+
+  3             Chain       Has          72          34           4           6
+                            more
+                            than one
+                            stateme
+                            nt or
+                            more
+                            than one
+                            simple
+                            comman
+                            d
+
+  4             Redirect    Has an       15          13           1           0
+                            output
+                            redirect
+                            (>, >>,
+                            or >|)
+
+  5             Single      Meets        146         85           37          5
+                            none of
+                            the
+                            above
+
+
+          Neither the fail-closed list nor the analysis let any command of any shape run
+
+silently. The fail-closed list asked without capturing on every one of the 325 executable
+losses.
+
+          C.5 Labeling by the oracle
+
+          Every executable command is labeled from one run on its fixture, and the oracle
+shares no code with the analysis.
+
+──────── p. 142 ────────
+                                                                                              142
+
+
+         Fixture. Every fixture starts from the same base tree of twelve small files
+(a.txt, b.txt, notes.txt, app.conf, report.docx, data.csv, big.log,
+
+src/main.go,              logs/x.log,               logs/y.log,              build/out.o,
+backup/old.txt) and an empty directory tmp. To it are added the relative names
+
+the command mentions: a name with a trailing slash, a name others are nested under, or
+
+the target of cd, find, or -C becomes a directory, and a glob becomes a few matching
+files. Absolute paths and paths that climb out with .. are not created. Whether the paths
+
+a command would create (its last operand and its redirect targets) already exist is a choice
+
+made by a hash of the seed and the command’s source; if the command does not finish
+cleanly with that choice, the other is tried. Template commands that act on a repository
+
+first run a setup that creates and commits one.
+
+         Run. The command runs under bubblewrap with the whole filesystem mounted
+read-only except the fixture, every namespace unshared (so there is no network), standard
+
+input empty, HOME inside the fixture, memory and file-size limits, and a limit of three
+seconds. A shell function makes sudo and doas transparent, since the fixture belongs
+
+to the user who runs the oracle and a privileged prefix changes nothing about what the
+
+command does to it.
+         Label. The tree is recorded before and after the run: for every path, its kind,
+
+permission bits (including the set-user-ID, set-group-ID, and sticky bits), owner, inode,
+
+content hash, and link target. A command is labeled a loss (C) if a path that existed has
+disappeared, unless the same inode now sits at another path, which is a move; or if a
+
+path’s content, kind, link target, permission bits, or owner changed. Otherwise it is
+
+labeled as losing nothing (R); paths it created do not count. Modification times are not
+recorded, and a repository’s internal directory is not walked, since it is not a user file.
+
+         Exclusions. A run that exits non-zero, times out, writes outside the fixture or
+needs privilege, names a program that is not installed (exit status 127), or fails in the
+
+harness is excluded and counted by reason, never labeled.
+
+──────── p. 143 ────────
+                                                                                      143
+
+
+        External rule. A command is external, and is labeled unrecoverable (U) without
+being run, if any command in it, after skipping the wrappers sudo, doas, env, time,
+
+nohup, nice, xargs, exec, command, timeout, and ionice and their options, is
+
+one of ssh, scp, sftp, mount, umount, kill, killall, pkill, shutdown,
+reboot, halt, poweroff, useradd, userdel, usermod, passwd, groupadd,
+
+mkfs, fdisk, parted, losetup, chroot, swapon, swapoff, modprobe,
+
+insmod, iptables, ip6tables, docker, kubectl, or su; is curl or wget
+with an option that sends data or names a request method (unless the request is forced to
+
+be a GET); is rsync or scp with a remote host operand; or if any word names a disk
+device under /dev/sd, /dev/nvme, or /dev/hd. The last clause is the one that
+
+labeled a read-only listing of disk devices as external in the model-generated partition
+
+(Section C.8). The twenty fixed external templates are external by construction; they
+include dd onto a disk, crontab -r, and nc sending a file.
+
+        C.6 Systems compared
+
+        Every system is scored on each command’s own fixture, built from the corpus
+record, and none of them executes a corpus command; the only commands run during
+
+scoring are the analysis’s resolvers, which it first proves read-only and then runs under
+
+bubblewrap with a limit of eight seconds. Each system yields two facts per command:
+whether it asks, and whether it captures before running (Table C.4).
+
+Table C.4. The systems scored on the round-7 corpus and their configurations.
+
+──────── p. 144 ────────
+                                                                                      144
+
+
+System              Asks when              Captures when         Configuration
+
+Pattern list        Its classifier rates   The command           The prototype’s
+                    the command            matches one of its    classifier as
+                    irreversible           own capture           shipped
+                                           forms: a content
+                                           edit, a cp or raw
+                                           write onto an
+                                           existing file, a
+                                           removal it sends to
+                                           the trash, a
+                                           recursive
+                                           permission change,
+                                           git reset --
+                                           hard, or git
+                                           clean with force
+
+Fail-closed list    Any command in         Never                 The analysis’s
+                    the line, including                          read-only forms,
+                    those inside                                 with no resolution
+                    substitutions,                               and no plan
+                    loops, and
+                    wrappers, is not a
+                    known read-only
+                    form
+
+Analysis, capture   The verdict is         The verdict is        Full analysis,
+policy              unrecoverable          recoverable with      resolvers enabled
+                                           capture
+
+Analysis, strict    The verdict is         As above              As above
+policy              anything but
+                    recoverable
+
+Composition off     As capture policy      As capture policy     Wrappers, find
+                                                                 -exec, xargs,
+                                                                 eval, shell -c
+                                                                 strings, and loops
+                                                                 receive the
+                                                                 unresolved verdict
+                                                                 of an unknown
+                                                                 command
+
+Resolution off      As capture policy      As capture policy     No resolver
+                                                                 runner, so every
+                                                                 target that would
+                                                                 be learned at run
+                                                                 time is unresolved
+
+Both off            As capture policy      As capture policy     The per-command
+                                                                 rule table alone
+
+──────── p. 145 ────────
+                                                                                          145
+
+
+  System                Asks when              Captures when        Configuration
+
+  Codex CLI [32]        rm with -f or --       Never                Its dangerous-
+                        force, including                            command check,
+                        through sudo,                               ported function by
+                        env, trap, and                              function from the
+                        nested bash -c                              source at the cited
+                                                                    commit and
+                                                                    verified against
+                                                                    that source’s own
+                                                                    unit tests; each
+                                                                    command is
+                                                                    checked as a
+                                                                    model’s shell call,
+                                                                    bash -lc
+                                                                    followed by the
+                                                                    command
+
+  cc-safety-net [21],   Its rules engine       Never                Version 2.6.1,
+  standard, strict,     flags the command                           unmodified; its
+  and paranoid          under the preset                            own command
+                                                                    check is called
+                                                                    once per command
+                                                                    per preset, in the
+                                                                    command’s fixture
+                                                                    with HOME inside
+                                                                    it so that no
+                                                                    personal
+                                                                    configuration
+                                                                    applies
+
+  Deployed gate         The analysis asks      As the analysis      Scored from the
+                        or the pattern list                         decisions of the
+                        asks                                        two systems it
+                                                                    combines
+
+
+         The full pre-emptive snapshot is not scored per command.          Its cost was
+
+measured once, as a hardlink snapshot with rsync -a --link-dest of a working
+directory of 1,165 files (580 MB) on the ext4 evaluation machine, against the capture
+
+plan’s time for single-file commands (Chapter 3, Section 3.1(a)).
+
+         C.7 Metrics, statistics, and the recovery check
+         Table C.5 gives the population and the counting rule of each measure in
+
+Chapter 3, Table 3.3. A command is said to be “asked about” when the system asks and
+
+“captured” when the system plans a capture.
+
+──────── p. 146 ────────
+                                                                                           146
+
+
+Table C.5. How each metric is computed on the round-7 corpus.
+
+  Metric                       Population                  Counted when
+
+  Silent loss                  405 commands labeled C      The system neither asks
+                               or U                        nor captures
+
+  Capture coverage             325 commands labeled C      For the analysis and its
+                                                           ablations: it captures, and
+                                                           the recovery check’s undo
+                                                           restores the tree exactly.
+                                                           For the pattern list: it
+                                                           captures; its captures are
+                                                           not executed, so its figure
+                                                           is an upper bound. The
+                                                           fail-closed list and the
+                                                           open-source checks never
+                                                           capture
+
+  Asked without capture        325 commands labeled C      The system asks but does
+                                                           not capture (34 for the
+                                                           analysis, 90 for the pattern
+                                                           list, 325 for the fail-closed
+                                                           list)
+
+  False-negative rate          405 commands labeled C      The analysis judges the
+                               or U                        command recoverable; for
+                                                           the analysis this coincides
+                                                           with silent loss
+
+  Needless confirmation        372 commands labeled R      The system asks
+
+  Recovery success             631 commands executed       The undo restores the tree
+                               by the recovery check       exactly
+
+  Storage overhead             304 executed commands       Bytes captured as a share
+                               that captured anything      of a full copy of the
+                                                           fixture; the median is
+                                                           reported
+
+  Open-source checks           325 commands labeled C;     Silent loss and needless
+                               372 labeled R               confirmation as above; the
+                                                           external partition is left out
+                                                           because these checks do
+                                                           not claim to cover it
+
+
+         Statistics. Every comparison is paired, command by command. For each pair of
+
+systems, the commands one gets right and the other wrong form the discordant counts b
+and c.     McNemar’s exact test is the two-sided binomial test of b against c with
+
+──────── p. 147 ────────
+                                                                                         147
+
+
+probability one half. The risk difference is given with Newcombe’s interval for paired
+
+proportions (method 10), built from Wilson intervals; the odds ratio is b/c, undefined
+
+when c is zero; and every single rate carries a 95% Wilson interval. The tests fall into the
+families of Table C.6, each corrected by Holm’s method within itself.
+
+Table C.6. Families of tests on the round-7 corpus.
+
+  Family                 Comparisons             Correction             Reported in
+
+  Primary                Analysis against        Holm across the        Table 3.4
+                         the pattern list and    four
+                         against the fail-
+                         closed list, on
+                         silent loss (405)
+                         and on capture
+                         coverage (325):
+                         four tests. The
+                         analysis is scored
+                         under the strict
+                         policy; the two
+                         policies differ only
+                         in whether the user
+                         is asked, so neither
+                         measure differs
+                         between them
+
+  Needless               Analysis under          Holm across the        Section 3.1(d)
+  confirmation           each policy against     four
+                         each list, on the
+                         372 harmless
+                         commands: four
+                         tests. Discordant
+                         counts (analysis
+                         asks / the list
+                         asks): capture
+                         policy against the
+                         fail-closed list 2 /
+                         71, against the
+                         pattern list 28 / 26;
+                         strict policy
+                         against the fail-
+                         closed list 2 / 58,
+                         against the pattern
+                         list 37 / 22
+
+  Ablation               Full analysis           Holm across the        Table 3.5
+                         (capture policy)        three
+                         against
+                         composition off,
+
+──────── p. 148 ────────
+                                                                                        148
+
+
+  Family                 Comparisons            Correction            Reported in
+                         resolution off, and
+                         both off, on
+                         capture coverage:
+                         three tests. Silent
+                         loss has no
+                         discordant pair in
+                         any of them
+
+  Open-source            Analysis against       None; outside the     Section 3.1(d)
+  checks                 Codex CLI and          families
+                         against each cc-
+                         safety-net preset,
+                         on silent loss over
+                         the 325 file-
+                         destroying
+                         commands. Every
+                         discordant
+                         command favors
+                         the analysis, so p =
+                         21−k for k
+                         discordant
+                         commands, below
+                         10−70 for the
+                         smallest k, 236
+
+  Model-generated        The primary            Holm across the       Section 3.1(d)
+  partition              family repeated on     four
+                         its 34 losses and
+                         external
+                         commands and its
+                         19 executable
+                         losses
+
+
+        Recovery check. For each executable command the check builds a fresh fixture,
+
+runs the analysis, applies the plan’s captures through the runtime’s own undo code, runs
+
+the command under bubblewrap with only the fixture writable, applies undo, and
+compares the tree with the one recorded first: path, kind, mode, size, content hash, and
+
+link target, with modification times ignored and, inside a repository’s internal directory,
+
+only its current-commit pointer and references compared. A command the analysis
+judges unrecoverable is never run. Of the 697 executable commands of round 7, 66 were
+
+not run for that reason (the 34 losses and 32 harmless commands the analysis judged
+
+unrecoverable), and 631 were.       Three undo variants are scored on every executed
+
+──────── p. 149 ────────
+                                                                                          149
+
+
+command (Table C.7). The paper reports V3, the undo the runtime applies when the
+analysis is on; V1 and V2 are kept for comparison with the mechanism the runtime used
+
+before the analysis.
+
+Table C.7. Undo variants scored by the recovery check on the 631 executed round-7
+commands.
+
+  Variant                        What undo applies              Restored exactly
+
+  V1                             The pre-analysis               603 (95.6%)
+                                 mechanism: a command
+                                 judged recoverable is
+                                 undone by comparing the
+                                 directory before and after;
+                                 a command with a plan is
+                                 undone by its captures only
+
+  V2                             The plan’s captures            612 (97.0%)
+                                 together with the directory
+                                 comparison
+
+  V3 (reported)                  The journal entry the gate     630 (99.8%)
+                                 records from the analysis,
+                                 alone
+
+
+         Capture coverage for the analysis is the number of losses it captured and V3
+
+restored, 291 of 325. An ablation is credited with the full analysis’s restore result on each
+
+loss it captures, because the check replayed the full analysis’s plan; this cannot favor an
+ablation, since no ablation captures a loss the full analysis does not. The single V3
+
+failure is the bidirectional rsync line named in Section 3.1(d).
+
+         C.8 The model-generated partition
+         The deployed 3B model was given 350 NL2Bash descriptions drawn with seed
+
+20260924, one at a time, with the runtime’s own system prompt for the first step of a
+task, at temperature 0, and its first command for each was labeled by the same oracle. Of
+
+the 350 commands, 165 ran cleanly and were labeled (19 losses and 146 that lose
+
+nothing), 15 were external, and 170 were excluded: 102 exited non-zero, 26 named a
+program that is not installed, 21 timed out, 20 wrote outside the fixture, and 1 failed in
+
+the harness. Nothing was sampled or capped after generation. The four primary systems
+
+──────── p. 150 ────────
+                                                                                           150
+
+
+were scored on the 180 labeled commands with round 6’s analyzer and undo, and scored
+again after the seven analyzer defects of Appendix D were fixed; none of the 720
+
+decisions changed, and V3 restored all 149 executed commands both times.
+
+         C.9 Differential test of composition
+         The differential test aims the oracle at the shape the corpus barely samples: lines
+
+in which a later part runs after an earlier part changed, moved, or failed to change
+
+something. Each generated line joins two or three short commands on the base fixture
+with ;, &&, ||, a pipe, !, if with or without else, for, while, a brace group, or a
+
+subshell. The parts are drawn by weight from commands that destroy something that
+
+existed, commands that create, read, or fail outright, changes to the shell’s own state (cd
+and assignments), uses of an assigned variable, and commands that fail when a directory
+
+is read-only; in two of every five lines, on average, tmp or logs is first made read-only
+so that a part fails. Every line the analysis lets run is executed, undone with V3, and
+
+compared, exactly as in the recovery check; a line that is not restored exactly is a loss that
+
+was neither asked about nor undone.
+         The first draw found the eighth defect of Appendix D: before it was fixed, undo
+
+restored 1,512 of the 1,536 lines the analysis let run. After the fix, six draws were run
+
+(Table C.8). The last draw was not seen until the fixes were complete; its first run
+restored 6,150 of 6,151 lines, and its one failure, a second name a line left for a restored
+
+file, was then fixed.
+
+Table C.8. Draws of the differential test, after the undo fix.
+
+  Seed                   Lines generated         Lines the analysis     Restored exactly
+                                                 let run                (V3)
+
+  20261013               2,000                   1,536                  1,536
+
+  20261014               4,000                   3,111                  3,111
+
+  20261015               4,000                   3,099                  3,099
+
+  20261016               4,000                   3,083                  3,083
+
+  20261017               8,000                   6,074                  6,074
+
+  20261018               8,000                   6,151                  6,151
+
+──────── p. 151 ────────
+                                                                                             151
+
+
+  Seed                      Lines generated         Lines the analysis    Restored exactly
+                                                    let run               (V3)
+
+  Total                     30,000                  23,054                23,054
+
+
+           C.10 Reproducing the results
+           Table C.9 maps each reported result to the command that regenerates it and the
+
+file that keeps its output. All commands run from the prototype’s directory, with results
+files in its pilot subdirectory; the oracle, the recovery check, and the resolvers need
+
+bubblewrap. Regenerating a corpus depends on the programs installed, which decide
+
+some exclusions, so the recorded corpus hash, not a fresh draw, is the check that the
+corpus is the one scored.
+
+Table C.9. Reproduction of each reported result.
+
+  Result                             Command or make               Output file
+                                     target
+
+  The round-7 corpus is the          cd pilot &&                   corpus7.jsonl,
+  one scored                         sha256sum -c                  corpus7.sha256
+                                     corpus7.sha256
+
+  Round-7 corpus, its                go run                        corpus7.jsonl,
+  exclusions, and the counts         ./cmd/corpusgen -             oracle_report7.txt
+  of Tables C.2 and C.3              seed 20260925 -n
+                                     450 -min-c 150 -tn
+                                     250 -ext 60 -out
+                                     pilot/corpus7.json
+                                     l -report
+                                     pilot/oracle_repor
+                                     t7.txt
+
+  Development rounds 4 to 6          make corpus4 and              corpus4.jsonl to
+                                     make round4 (seed             corpus6.jsonl,
+                                     20260922); rounds 5 and 6     results_round4.txt
+                                     as the row above with         to
+                                     seeds 20260923 and            results_round6.txt
+                                     20260924; make                ,
+                                     recovery5 for round 5’s       recovery_results5.
+                                     recovery check                txt,
+                                                                   recovery_results6.
+                                                                   txt
+
+  Every system’s decision on         go run                        classifier_out7.js
+  every command (all of              ./cmd/listpilot               onl
+  Tables 3.4 and 3.5)                pilot/corpus7.json
+
+──────── p. 152 ────────
+                                                                                      152
+
+
+Result                         Command or make              Output file
+                               target
+                               l >
+                               pilot/classifier_o
+                               ut7.jsonl
+
+Recovery success (630 of       RC_NO_CURATED=1 go           recovery_results7.
+631), V1 to V3, storage        run                          txt
+overhead, and the restore      ./cmd/recoverychec
+results behind capture         k
+coverage                       pilot/corpus7.json
+                               l >
+                               pilot/recovery_res
+                               ults7.txt
+
+Silent loss, asked without     python3                      results_round7.txt
+capture, and needless          pilot/analyze.py             (four systems);
+confirmation per system,       pilot/corpus7.json           results_round7_noc
+per partition, and per shape   l                            ompose.txt (with the
+                               pilot/classifier_o           ablations)
+                               ut7.jsonl
+
+Table 3.4, with Wilson         python3                      stats_round7.txt
+intervals for each system      pilot/stats.py
+                               pilot/corpus7.json
+                               l
+                               pilot/classifier_o
+                               ut7.jsonl
+                               pilot/recovery_res
+                               ults7.txt
+
+Table 3.5 (ablations)          The same command, on         stats_round7_nocom
+                               the decisions of all seven   pose.txt; needless asks
+                               systems                      in
+                                                            results_round7_noc
+                                                            ompose.txt
+
+Needless-confirmation          Derived from                 No results file
+tests and the deployed         classifier_out7.js
+gate’s figures                 onl by the tests of Table
+                               C.6
+
+Open-source checks             go run                       external_baselines
+                               ./cmd/extbaselines           7.jsonl,
+                               -fixtures /tmp/fx            results_round7_ext
+                               pilot/corpus7.json           ernal.txt,
+                               l >                          results_round7_ext
+                               pilot/external_bas           ernal_files.txt
+                               elines7.jsonl; then
+                               node
+                               ccsafetynet.mjs
+
+──────── p. 153 ────────
+                                                                                 153
+
+
+Result                        Command or make               Output file
+                              target
+                              with cc-safety-net 2.6.1
+                              installed, appending to the
+                              same file; then python3
+                              pilot/analyze.py
+                              pilot/corpus7.json
+                              l
+                              pilot/classifier_o
+                              ut7.jsonl
+                              pilot/external_bas
+                              elines7.jsonl and
+                              python3
+                              pilot/external_com
+                              pare.py
+                              pilot/corpus7.json
+                              l
+                              pilot/classifier_o
+                              ut7.jsonl
+                              pilot/external_bas
+                              elines7.jsonl
+
+Model-generated partition     go run                        generated6.tsv,
+                              ./cmd/genpartition            corpus6m.jsonl,
+                              -n 350 -seed                  oracle_report6m.tx
+                              20260924; go run              t,
+                              ./cmd/corpusgen -             classifier_out6m_f
+                              from                          inal.jsonl,
+                              pilot/generated6.t            recovery_results6m
+                              sv -seed 20260924             _final.txt,
+                              -partition M -out             stats_round6m_fina
+                              pilot/corpus6m.jso            l.txt
+                              nl -report
+                              pilot/oracle_repor
+                              t6m.txt; then
+                              listpilot,
+                              recoverycheck, and
+                              stats.py on
+                              corpus6m.jsonl as for
+                              round 7
+
+Snapshot cost against the     bash                          snapshot_bench.txt
+capture plan                  pilot/bench_snapsh
+                              ot.sh
+
+Differential test, one draw   make composecheck             compose_results.tx
+                              COMPOSE_SEED=                 t (all six draws)
+                              <seed> COMPOSE_N=
+                              <lines>, or, in parallel,
+                              python3
+                              pilot/make_compose
+
+──────── p. 154 ────────
+                                                                              154
+
+
+Result                        Command or make              Output file
+                              target
+                              .py <seed> <lines>
+                              >
+                              pilot/compose.json
+                              l followed by python3
+                              pilot/parallel_rc.
+                              py
+                              pilot/compose.json
+                              l <output>
+
+Unit, property, regression,   make ci; make fuzz           Test output only
+and coverage checks           for the read-only-resolver
+behind Appendix D             property; make
+                              algocov for per-function
+                              coverage; make
+                              rulemap to regenerate
+                              the rule map from the code
+
+──────── p. 155 ────────
+                                                                                            155
+
+
+
+                                        APPENDIX D
+
+                              Defects Found After the Evaluation
+
+         After the held-out run of round 7, eight defects were found and fixed: seven in
+the analysis and one in undo, the last including the one failure the differential test’s final
+
+draw exposed (Table C.9 of Appendix C). This appendix lists them, explains why the
+corpus did not trigger them, and states their effect on the reported results, which is none.
+
+Every fix carries a regression test, and after each fix round 7 was scored again and every
+
+decision compared with the one reported (Table D.1).
+Table D.1. Defects found after the round-7 evaluation.
+
+  #               Found by         Comman        What it         Fix            Effect on
+                                   d shape       would                          reported
+                                                 have done                      results
+
+  1               Writing          cd -;         Let rm run      A              None: 0 of
+                  rule-by-         rm            as              command        3,885
+                  rule unit        a.txt, or     harmless:       at an          decisions
+                  tests            a cd to a     at the          unknown        changed
+                                   path that     unknown         working        (777
+                                   could not     working         directory      commands
+                                   be            directory       is             ×5
+                                   expanded,     every rule      unresolved     systems)
+                                   followed      found no        and asks
+                                   by a          target
+                                   destructive
+                                   command
+
+  2               Writing          wget of a     Recorded        The rule
+                  rule-by-         URL onto      a creation      follows
+                  rule unit        a name        of the          wget’s
+                  tests            that          name,           naming
+                                   already       though
+                                   exists        wget
+                                                 saves to
+                                                 the name
+                                                 with .1
+                                                 appended;
+                                                 undo
+                                                 would
+                                                 have
+                                                 deleted the
+                                                 user’s
+                                                 original
+
+──────── p. 156 ────────
+                                                                      156
+
+
+#   Found by    Comman     What it        Fix            Effect on
+                d shape    would                         reported
+                           have done                     results
+
+3   Writing     rsync -    The            Such
+    rule-by-    -dry-      resolver’s     options
+    rule unit   run with   dry run        make
+    tests       --log-     wrote the      rsync
+                file       log file, so   unresolved
+                           it was not     ;a
+                           read-only;     property
+                           bubblewra      test now
+                           p blocked      checks that
+                           the write      every
+                           wherever       resolver is
+                           it was         read-only
+                           used, but
+                           the
+                           evaluation
+                           tools
+                           would also
+                           resolve
+                           without it
+
+4   Mutation    curl -o    The            Extraction
+    testing,    x.tar of   archive did    asks when
+    first       a URL &&   not exist      the archive
+    sample      tar xf     when it        does not
+                x.tar      was listed,    yet exist or
+                           the empty      the line
+                           listing read   creates or
+                           as             rewrites it
+                           “extracts
+                           nothing,”
+                           and the
+                           extraction
+                           could
+                           overwrite
+                           files with
+                           nothing
+                           captured
+
+5   Mutation    unset      A variable     A variable     None: 0 of
+    testing,    HOME;      changed        named by       3,885
+    second      rm -r      by a           unset,         decisions
+    sample      "$HOME/    builtin        read, or       changed
+                x"; read   kept its       mapfile
+                f; rm      environme      becomes
+                "$f"       nt value,      unknown
+                           so the
+                           capture
+
+──────── p. 157 ────────
+                                                                     157
+
+
+#   Found by     Comman     What it       Fix            Effect on
+                 d shape    would                        reported
+                            have done                    results
+                            was taken     and the
+                            at the        command
+                            wrong         asks
+                            path
+
+6   Review of    mv         find          find           None: 0 of
+    Chapter 3    a.txt      listed the    refuses to     5,439
+                 logs/      tree as it    resolve a      decisions
+                 && find    was before    tree the       changed
+                 logs -     the line,     line           (777
+                 delete;    missing       changed,       commands
+                 mv         the moved     and such a     ×7
+                 a.txt      file, and     move           systems)
+                 logs/      the move      becomes a
+                 && rm -    was still     captured
+                 r logs     treated as    removal
+                            undone by
+                            moving
+                            back,
+                            though the
+                            file had
+                            been
+                            deleted
+
+7   Review of    cd logs    The line      After a
+    Chapter 3,   || rm      was read      point
+    extended     a.txt;     as if every   where an
+    by a later   mv         part          earlier part
+    review       a.txt      succeeded     may have
+                 tmp/ ||    and as if     failed (;,
+                 echo x     branches      ||, a pipe
+                 >          left no       stage, !,
+                 a.txt;     trace; each   an else
+                 cd         shape lost    branch, a
+                 logs;      a file with   loop pass),
+                 rm *;      nothing       an earlier
+                 x=a; if    captured      removal or
+                 c; then                  re-creation
+                 x=b;                     is only
+                 fi; rm                   possible,
+                 $x; a cd                 so a later
+                 inside a                 write to
+                 loop; rm                 the path is
+                 a.txt                    captured,
+                 &&                       and an
+                 touch                    earlier cd
+                                          leaves the
+                                          directory
+
+──────── p. 158 ────────
+                                                                                          158
+
+
+  #             Found by       Comman          What it        Fix            Effect on
+                               d shape         would                         reported
+                                               have done                     results
+                               a.txt;                         unknown;
+                               echo x                         after a
+                               > a.txt                        branch or
+                                                              loop, a
+                                                              variable or
+                                                              directory
+                                                              on which
+                                                              the paths
+                                                              disagree is
+                                                              unknown
+
+  8             Differentia    test -f         In undo,       Moves are      None: 0 of
+                l test of      nosuch          not the        recorded       5,439
+                compositio     && mv           analysis:      with the       decisions
+                n              a.txt           undo           moved          changed,
+                (Appendix      b.txt;          assumed        file’s         and the
+                 C.9)          rm              every          identity       recovery
+                               a.txt           recorded       and            check on
+                               || exit         effect had     reversed       round 7 is
+                               1 ; cp          happened,      by identity    identical
+                               b.txt           so after a     in             row for
+                               a.txt;          part failed    whatever       row (630
+                               if rm -         or did not     order the      of 631)
+                               r logs;         run it         parts ran; a
+                               then            could          directory
+                               mkdir           replay an      made
+                               logs;           effect that    again is
+                               fi; a           never          merged
+                               second mv       occurred,      into; re-
+                               that fails      and in         creations
+                               after a first   several        are
+                               succeeds;       cases itself   removed
+                               two moves       destroyed      before
+                               racing in a     a file         restoring,
+                               pipeline                       and a
+                                                              restored or
+                                                              pre-
+                                                              existing
+                                                              original is
+                                                              never
+                                                              removed
+
+
+        The corpus did not trigger these defects because of what it contains. Four of the
+
+first five are gaps in the rules for single commands, found when testing was pushed into
+
+rules the corpus never failed; the commands that expose them, such as a wget onto an
+
+──────── p. 159 ────────
+                                                                                         159
+
+
+existing name or a variable cleared by unset, did not occur in it. The last three lie
+
+between the parts of one line: what a later part meets after an earlier part moved, failed,
+
+or branched. Round 7 is drawn from NL2Bash and from templates, which are mostly
+single commands and && chains, and the oracle excludes every command that exits non-
+
+zero, so lines in which a later part runs after an earlier one failed are almost absent. Re-
+scoring round 7 after each fix changed none of its decisions under any system compared,
+
+re-scoring the model-generated partition after the seventh changed none of its 720, and
+
+no reported result changed. Since the defects concentrate where parts of a line interact,
+the differential test of Appendix C.9 is the safeguard for that region: it uses the same
+
+sandboxed ground truth, needs no labels, and runs as one command, make
+
+composecheck. Because each new draw surfaced rarer cases than the one before,
+rarer shapes may remain, and the zero silent loss of Chapter 3 is a result on the corpus,
+
+not a proof over all of bash.
+
+──────── p. 160 ────────
+                                                                                        160
+
+
+
+                                         APPENDIX E
 
                                 System Usability Scale (SUS)
          Administered immediately after each condition, referring to the interface just
@@ -344,8 +2472,8 @@ replaced throughout by “interface” so that participants rate the interaction
 than the machine. Each item is answered on a five-point scale from 1 (strongly disagree)
 
 to 5 (strongly agree).
-         Participant ID: ____________ Condition: □ SynapseOS            □ Own operating
 
+         Participant ID: ____________ Condition: □ SynapseOS            □ Own operating
 system Date: ____________
 
   #      Statement                                              1   2     3      4     5
@@ -366,92 +2494,85 @@ system Date: ____________
   6      I thought there was too much inconsistency in this     □   □     □      □     □
          interface.
 
-──────── p. 117 ────────
-                                                                                           117
-
-
-  #      Statement                                               1      2     3   4      5
-
-  7      I would imagine that most people would learn to         □      □     □   □      □
+  7      I would imagine that most people would learn to        □   □     □      □     □
          use this interface very quickly.
 
-  8      I found the interface very cumbersome to use.           □      □     □   □      □
+  8      I found the interface very cumbersome to use.          □   □     □      □     □
 
-  9      I felt very confident using the interface.              □      □     □   □      □
+  9      I felt very confident using the interface.             □   □     □      □     □
 
-  10     I needed to learn a lot of things before I could get    □      □     □   □      □
+  10     I needed to learn a lot of things before I could get   □   □     □      □     □
          going with this interface.
 
 
-        Scoring (not shown to participants). For odd-numbered items, subtract 1 from
+         Scoring (not shown to participants). For odd-numbered items, subtract 1 from
 the response. For even-numbered items, subtract the response from 5. Sum the ten
 
 adjusted scores and multiply by 2.5, giving a value from 0 to 100. This value is not a
+
 percentage; interpretation follows Sauro and Lewis [40].
 
+──────── p. 161 ────────
+                                                                                           161
 
 
-                                         APPENDIX B
+
+                                       APPENDIX F
 
                           NASA Task Load Index (NASA-TLX)
 
-        Administered immediately after each condition, referring to the set of tasks just
+           Administered immediately after each condition, referring to the set of tasks just
 completed. Six subscales are rated on a twenty-one-point scale presented as a line
 
 divided into equal intervals and scored 0 to 100 in steps of five. This study uses the
-
 unweighted variant (Raw TLX): the pairwise weighting procedure of the original
+
 instrument [15] is omitted, and the composite workload score is the arithmetic mean of
 
 the six subscale ratings. All six subscales, including Performance (anchored from Perfect
 to Failure), run from low to high workload, so no subscale is reverse-scored.
 
-        Participant ID: ____________ Condition: □ SynapseOS                 □ Own operating
+           Participant ID: ____________ Condition: □ SynapseOS            □ Own operating
 
 system Date: ____________
 
-  Subscale           Question                           Low          Rating (0–   High
-                                                        anchor       100, steps   anchor
-                                                                     of 5)
+  Subscale            Question                       Low         Rating (0–      High
+                                                     anchor      100, steps      anchor
+                                                                 of 5)
 
-  Mental             How mentally demanding             Very         ____         Very
-  Demand             was the task?                      low                       high
+  Mental              How mentally demanding         Very        ____            Very
+  Demand              was the task?                  low                         high
 
-  Physical           How physically demanding           Very         ____         Very
-  Demand             was the task?                      low                       high
+  Physical            How physically demanding       Very        ____            Very
+  Demand              was the task?                  low                         high
 
-──────── p. 118 ────────
-                                                                                          118
+  Temporal            How hurried or rushed was      Very        ____            Very
+  Demand              the pace of the task?          low                         high
 
+  Performance         How successful were you in     Perfect     ____            Failure
+                      accomplishing what you
+                      were asked to do?
 
-  Subscale           Question                       Low         Rating (0–      High
-                                                    anchor      100, steps      anchor
-                                                                of 5)
+  Effort              How hard did you have to       Very        ____            Very
+                      work to accomplish your        low                         high
+                      level of performance?
 
-  Temporal           How hurried or rushed was      Very        ____            Very
-  Demand             the pace of the task?          low                         high
+  Frustration         How insecure, discouraged,     Very        ____            Very
+                      irritated, stressed and        low                         high
+                      annoyed were you?
 
-  Performance        How successful were you in     Perfect     ____            Failure
-                     accomplishing what you
-                     were asked to do?
-
-  Effort             How hard did you have to       Very        ____            Very
-                     work to accomplish your        low                         high
-                     level of performance?
-
-  Frustration        How insecure, discouraged,     Very        ____            Very
-                     irritated, stressed and        low                         high
-                     annoyed were you?
+──────── p. 162 ────────
+                                                                                        162
 
 
 
+                                     APPENDIX G
 
-                                      APPENDIX C
-                            Custom Cross-Platform Task Suite
+                          Custom Cross-Platform Task Suite
 
-           The suite comprises sixteen tasks in two parts. Twelve core tasks span the four
-
+        The suite comprises sixteen tasks in two parts. Twelve core tasks span the four
 categories defined in Chapter 3, Section 1.5 at three difficulty levels, and constitute the
+
 main platform comparison. Four boundary tasks deliberately fall outside what a shell-
 
 mediated interface can express; they are administered and scored but reported separately
@@ -462,149 +2583,147 @@ boundary honestly rather than to contribute to the between-condition contrast. O
 them would leave the suite composed only of work the command line does well, which
 would make any favourable result difficult to defend.
 
-           Every task exists in two parallel forms, matched on category, difficulty, and
-
+        Every task exists in two parallel forms, matched on category, difficulty, and
 number of required steps, and differing only in target. No participant encounters the
+
 same form twice; form and condition order are crossed as described in Chapter 3,
 
 Section 1.2(d). All prompts are phrased as human goals in plain language, containing no
-
 shell syntax, no command names, and no interface-specific vocabulary, so that they are
+
 equally answerable through natural language on SynapseOS and through native tools on
 
 the baseline machine.
-
-──────── p. 119 ────────
-                                                                                           119
-
-
         Tasks T7–T9 require identical provisioning on all study machines — the same
+
 designated applications present or absent, and the two test applications (SampleApp,
 
 DemoTool) installed — so that the prompt means the same thing under both conditions
-
 and on all three baseline operating systems; this provisioning is part of the facilitator
-checklist in Appendix G. Task T9 is classified irreversible and is included specifically to
 
+checklist in Appendix K. Task T9 is classified irreversible and is included specifically to
 exercise the confirmation gate; T11 mutates file content and is included to exercise the
+
 undo journal. Difficulty is assigned by the number of distinct operations required and the
 
 specificity of the target, and is validated during the pilot study described in Chapter 3,
-
 Section 2.3.
-Table C.1. Custom cross-platform task suite — core tasks.
 
-  ID      Category         Level         Form A           Form B            Success
-                                         prompt           prompt            criterion
+Table G.1. Custom cross-platform task suite — core tasks.
 
-  T1      File search      Simple        Find every       Find every        All matching
-          &                              PDF in the       image in the      files present
-          organization                   Documents        Downloads         in the target
-                                         folder and       folder and        folder; no
-                                         gather them      gather them       matching file
-                                         into one         into one          left behind or
-                                         folder named     folder named      lost.
-                                         PDFs.            Images.
-
-  T2      File search      Moderate      Show the ten     Show the ten      The correct
-          &                              largest files    oldest files      ten files
-          organization                   anywhere         anywhere          identified,
-                                         under the        under the         largest/oldest
-                                         home folder.     home folder.      first.
-
-  T3      File search      Complex       Find files       Find files        Correct file
-          &                              modified in      larger than       set copied;
-          organization                   the last seven   10 MB             directory
-                                         days and         modified this     structure
-                                         copy them        month and         preserved;
-                                         into a folder    copy them         originals
-                                         named            into large-       untouched.
-                                         recent-work,     recent,
-                                         preserving       preserving
-                                         their folder     their folder
-                                         structure.       structure.
-
-  T4      System &         Simple        Identify the     Identify the      Correct
-          process                        program          program           process
-          monitoring                     currently        currently         named.
-
-──────── p. 120 ────────
-                                                                                120
+──────── p. 163 ────────
+                                                                                 163
 
 
-ID   Category      Level      Form A           Form B            Success
-                              prompt           prompt            criterion
-                              using the        using the most
-                              most             CPU.
-                              memory.
+ID   Category       Level      Form A           Form B            Success
+                               prompt           prompt            criterion
 
-T5   System &      Moderate   Report free      Report free       Both figures
-     process                  disk space,      memory, and       correct at
-     monitoring               and which        the three         time of
-                              folder in the    programs          measurement.
-                              home             consuming
-                              directory        the most of it.
-                              occupies the
-                              most of it.
+T1   File search    Simple     Find every       Find every        All matching
+     &                         PDF in the       image in the      files present
+     organization              Documents        Downloads         in the target
+                               folder and       folder and        folder; no
+                               gather them      gather them       matching file
+                               into one         into one          left behind or
+                               folder named     folder named      lost.
+                               PDFs.            Images.
 
-T6   System &      Complex    A process is     A process is      Correct
-     process                  consuming        consuming         process
-     monitoring               excessive        excessive         identified and
-                              CPU.             memory.           terminated;
-                              Identify it      Identify it and   no unrelated
-                              and stop it.     stop it.          process
-                                                                 stopped.
+T2   File search    Moderate   Show the ten     Show the ten      The correct
+     &                         largest files    oldest files      ten files
+     organization              anywhere         anywhere          identified,
+                               under the        under the         largest/oldest
+                               home folder.     home folder.      first.
 
-T7   Application   Simple     Determine        Determine         Correct
-     & package                whether          whether           installation
-     management               VLC is           GIMP is           status and
-                              installed, and   installed, and    version
-                              report its       report its        reported.
-                              version.         version.
+T3   File search    Complex    Find files       Find files        Correct file
+     &                         modified in      larger than       set copied;
+     organization              the last seven   10 MB             directory
+                               days and         modified this     structure
+                               copy them        month and         preserved;
+                               into a folder    copy them         originals
+                               named            into large-       untouched.
+                               recent-work,     recent,
+                               preserving       preserving
+                               their folder     their folder
+                               structure.       structure.
 
-T8   Application   Moderate   Report how       Report which      Correct
-     & package                many             application on    figure
-     management               applications     this machine      reported,
-                              are installed    was installed     verified
-                              on this          most recently.    against the
-                              machine.                           machine’s
-                                                                 provisioning
-                                                                 record.
+T4   System &       Simple     Identify the     Identify the      Correct
+     process                   program          program           process
+     monitoring                currently        currently         named.
+                               using the        using the most
+                               most             CPU.
+                               memory.
 
-T9   Application   Complex    A                A provisioned     Application
-     & package                provisioned      test              and its
-     management               test             application       configuration
-                              application      named             removed;
-                              named            DemoTool is       nothing else
-                              SampleApp        installed.        removed.
-                              is installed.    Uninstall it      Irreversible
-                              Uninstall it     completely,       — exercises
-                              completely,      including the     the
-                              including the    configuration     confirmation
-                                               files it          gate.
-                                               created.
+T5   System &       Moderate   Report free      Report free       Both figures
+     process                   disk space,      memory, and       correct at
+     monitoring                and which        the three         time of
+                               folder in the    programs          measurement.
+                               home             consuming
+                               directory        the most of it.
+                               occupies the
+                               most of it.
 
-──────── p. 121 ────────
-                                                                                          121
+──────── p. 164 ────────
+                                                                                 164
+
+
+ID    Category      Level      Form A           Form B            Success
+                               prompt           prompt            criterion
+
+T6    System &      Complex    A process is     A process is      Correct
+      process                  consuming        consuming         process
+      monitoring               excessive        excessive         identified and
+                               CPU.             memory.           terminated;
+                               Identify it      Identify it and   no unrelated
+                               and stop it.     stop it.          process
+                                                                  stopped.
+
+T7    Application   Simple     Determine        Determine         Correct
+      & package                whether          whether           installation
+      management               VLC is           GIMP is           status and
+                               installed, and   installed, and    version
+                               report its       report its        reported.
+                               version.         version.
+
+T8    Application   Moderate   Report how       Report which      Correct
+      & package                many             application on    figure
+      management               applications     this machine      reported,
+                               are installed    was installed     verified
+                               on this          most recently.    against the
+                               machine.                           machine’s
+                                                                  provisioning
+                                                                  record.
+
+T9    Application   Complex    A                A provisioned     Application
+      & package                provisioned      test              and its
+      management               test             application       configuration
+                               application      named             removed;
+                               named            DemoTool is       nothing else
+                               SampleApp        installed.        removed.
+                               is installed.    Uninstall it      Irreversible
+                               Uninstall it     completely,       — exercises
+                               completely,      including the     the
+                               including the    configuration     confirmation
+                               configuration    files it          gate.
+                               files it         created.
+                               created.
+
+T10   Text & data   Simple     Report how       Report how        Correct line
+      processing               many lines       many lines        count.
+                               report.csv       sales.csv
+                               contains.        contains.
+
+T11   Text & data   Moderate   In notes.txt,    In log.txt,       All
+      processing               replace every    replace every     occurrences
+                               occurrence       occurrence of     replaced; no
+                               of “draft”       “WARN” with       other content
+                               with “final”.    “WARNING”.        altered.
+                                                                  Content-
+
+──────── p. 165 ────────
+                                                                                         165
 
 
   ID      Category         Level        Form A           Form B            Success
                                         prompt           prompt            criterion
-                                        configuration
-                                        files it
-                                        created.
-
-  T10     Text & data      Simple       Report how       Report how        Correct line
-          processing                    many lines       many lines        count.
-                                        report.csv       sales.csv
-                                        contains.        contains.
-
-  T11     Text & data      Moderate     In notes.txt,    In log.txt,       All
-          processing                    replace every    replace every     occurrences
-                                        occurrence       occurrence of     replaced; no
-                                        of “draft”       “WARN” with       other content
-                                        with “final”.    “WARNING”.        altered.
-                                                                           Content-
                                                                            mutating —
                                                                            exercises
                                                                            undo.
@@ -617,7 +2736,7 @@ T9   Application   Complex    A                A provisioned     Application
                                         highest first.   highest first.
 
 
-Table C.2. Boundary tasks — outside shell expressibility, reported separately.
+Table G.2. Boundary tasks — outside shell expressibility, reported separately.
 
   ID     Category         Level        Form A              Form B         Success
                                        prompt              prompt         criterion
@@ -637,30 +2756,25 @@ Table C.2. Boundary tasks — outside shell expressibility, reported separately.
                                        brighter.           more
                                                            blurred.
 
-──────── p. 122 ────────
-                                                                                          122
+  C3     Document         Moderate     Make the            Change the     Formatting
+         formatting                    heading of the      supplied       applied
+                                       supplied            document’s     correctly,
+                                       document bold       body font      verified in
+                                       and centred.        to 14 point.   the saved
+                                                                          file.
 
-
-  ID     Category         Level        Form A              Form B          Success
-                                       prompt              prompt          criterion
-
-  C3     Document         Moderate     Make the            Change the      Formatting
-         formatting                    heading of the      supplied        applied
-                                       supplied            document’s      correctly,
-                                       document bold       body font       verified in
-                                       and centred.        to 14 point.    the saved
-                                                                           file.
-
-  C4     Window           Simple       Arrange the         Minimize        End state
-         management                    four open           every open      matches the
-                                       windows so all      window          requested
-                                       are visible         except the      arrangement.
+  C4     Window           Simple       Arrange the         Minimize       End state
+         management                    four open           every open     matches the
+                                       windows so all      window         requested
+                                       are visible         except the     arrangement.
                                        simultaneously.     text editor.
 
+──────── p. 166 ────────
+                                                                                       166
 
 
 
-                                     APPENDIX D
+                                     APPENDIX H
 
                           Pre-Study Screening Questionnaire
         Completed at sign-up, before any session is scheduled, and used to compute
@@ -668,7 +2782,7 @@ Table C.2. Boundary tasks — outside shell expressibility, reported separately.
 each volunteer’s proficiency score and to record the covariates described in Chapter 3,
 
 Section 1.4. The form records a participant ID code only; the volunteer’s name appears
-solely on the consent form (Appendix F), which is stored separately from all study data.
+solely on the consent form (Appendix J), which is stored separately from all study data.
 
 Screening data belonging to volunteers who are not enrolled is destroyed within seven
 
@@ -690,118 +2804,111 @@ enrolled. Nothing on your screen is recorded during the tasks. □ I agree to be
 
         Part 1 — Background (self-report)
 
-──────── p. 123 ────────
-                                                                                        123
+      1. Are you 18 years of age or older? □ Yes □ No (a “No” response ends the
+        screening; the study enrols adults only)
 
+      2. Approximately how many years have you used a computer regularly?
+        ____________
 
-       1. Are you 18 years of age or older? □ Yes □ No (a “No” response ends the
+      3. Which operating system do you use most? □ Windows □ macOS □ Linux
 
-         screening; the study enrols adults only)
+      4. Roughly how many hours per day do you use that operating system?
+        ____________ (four or more hours is required for enrolment)
 
-       2. Approximately how many years have you used a computer regularly?
-         ____________
+      5. How would you describe your proficiency with that operating system? □ Basic
 
-       3. Which operating system do you use most? □ Windows □ macOS □ Linux
-       4. Roughly how many hours per day do you use that operating system?
-
-         ____________ (four or more hours is required for enrolment)
-
-       5. How would you describe your proficiency with that operating system? □ Basic
           □ Intermediate □ Advanced
+      6. How would you describe your familiarity with a command line or terminal on
 
-       6. How would you describe your familiarity with a command line or terminal on
+        any platform? □ None □ Basic □ Intermediate □ Advanced
 
-         any platform? □ None □ Basic □ Intermediate □ Advanced
+──────── p. 167 ────────
+                                                                                         167
+
+
        7. How often do you use conversational AI tools such as chat assistants or AI
-
          coding assistants? □ Never □ Occasionally □ Regularly □ Daily
 
        8. If you use such tools, which ones? ______________________________
+
          Part 2 — Behavioural screener
-
          Three short tasks performed unaided on the volunteer’s own primary operating
-system using its native tools, one from each of three of the four system-task categories
 
+system using its native tools, one from each of three of the four system-task categories
 used in the main study. The screener exists because self-reported proficiency is an
 
 unreliable classifier: fluency with an operating system’s own tools is the property being
-measured, not confidence about it. Each task is scored pass or fail by the facilitator
 
+measured, not confidence about it. Each task is scored pass or fail by the facilitator
 against the stated time limit and completion criterion. The volunteer is told that the
 
 screener measures familiarity with their own computer, that every result is useful to the
+
 study, and that no outcome affects their participation.
 
-  #      Task                                  Time       Pass criterion       Result
+  #      Task                                  Time       Pass criterion        Result
                                                limit
 
-  S1     Locate the files most recently        3          Correct files        □ Pass
-         modified in your home or user         minutes    identified and       □ Fail
+  S1     Locate the files most recently        3          Correct files         □ Pass
+         modified in your home or user         minutes    identified and        □ Fail
          folder and move them into a new                  relocated unaided.
          folder.
 
-──────── p. 124 ────────
-                                                                                           124
+  S2     Using your operating system’s         3          Correct               □ Pass
+         own system monitor, identify the      minutes    application named     □ Fail
+         application currently consuming                  unaided.
+         the most memory.
+
+  S3     Determine whether a named             3          Correct status and    □ Pass
+         application is installed on this      minutes    version reported      □ Fail
+         machine and report its version.                  unaided.
 
 
-  #        Task                                 Time        Pass criterion        Result
-                                                limit
-
-  S2       Using your operating system’s        3           Correct               □ Pass
-           own system monitor, identify the     minutes     application named     □ Fail
-           application currently consuming                  unaided.
-           the most memory.
-
-  S3       Determine whether a named            3           Correct status and    □ Pass
-           application is installed on this     minutes     version reported      □ Fail
-           machine and report its version.                  unaided.
-
-
-           Proficiency score (facilitator use). Screener tasks passed (0–3), plus Question 5
+         Proficiency score (facilitator use). Screener tasks passed (0–3), plus Question 5
 
 (Basic 0, Intermediate 1, Advanced 2), plus Question 6 (None 0, Basic 1, Intermediate 2,
 Advanced 3), for a score from 0 to 8, as defined in Chapter 3, Section 1.4. A volunteer
 
 who meets the eligibility rules (Questions 1 and 4) is enrolled whatever the score; no
-volunteer is turned away for falling between groups.
 
-           Proficiency score: ______ / 8 Eligible: □ Yes □ No Assigned task form: □
+volunteer is turned away for falling between groups.
+         Proficiency score: ______ / 8 Eligible: □ Yes □ No Assigned task form: □
 
 A first □ B first Assigned condition order: □ SynapseOS first □ Own OS first
 
+──────── p. 168 ────────
+                                                                                     168
 
 
-                                          APPENDIX E
-                                Participant Information Sheet
+
+                                      APPENDIX I
+
+                             Participant Information Sheet
 
            Study title. Recoverability Analysis of Language-Model-Generated Shell
-
 Commands, Deployed in the SynapseOS Conversational Interface
+
            Who is running this study. This research is conducted by undergraduate
 
 researchers in the Department of Computer Science, Mapúa University – Makati, in
 partial fulfilment of the requirements for the degree of Bachelor of Science in Computer
 
-Science.     It will be carried out only after review and approval by the University’s
+Science.    It will be carried out only after review and approval by the University’s
 
 Institutional Review Board. Contact details for the research team and for the ethics
 committee are given at the end of this sheet.
 
            Why we are doing this. Most of what a computer can do is reachable only by
-
 people who know how to write commands for it. We have built a system that lets a
+
 person say what they want in ordinary language — for example, “find the files I changed
-
-──────── p. 125 ────────
-                                                                                       125
-
 
 last week and put them in one folder” — and carries it out. We want to find out whether
 that is genuinely easier to use than the desktop you already use, and whether it makes
 
 more difference for people who have never used a command line.
 
-         What you would do. You would attend one session of about 90 to 120 minutes.
+           What you would do. You would attend one session of about 90 to 120 minutes.
 You would complete a set of everyday computer tasks twice: once using our system, and
 
 once using the operating system you normally use, on a computer we provide. Which
@@ -812,92 +2919,96 @@ fill in two short questionnaires about each interface and take part in a 10 to 1
 conversation about your experience, during which we may replay the screen recording
 and ask what you were thinking at particular moments.
 
-         What we record. We record what happens on the screen during the tasks, audio
+           What we record. We record what happens on the screen during the tasks, audio
 
 of the closing conversation, your questionnaire answers, and the times and outcomes of
 the tasks. We do not record your name against any of this. Everything is filed under a
 
 code.
 
+──────── p. 169 ────────
+                                                                                       169
+
+
          What could go wrong, and what protects you. The instructions you give will
+
 cause real commands to run, and some commands can delete or change files. You will be
-
 working on a laboratory computer prepared for this study, holding only made-up practice
-files. You will not use your own device and will not sign in to any of your own accounts,
 
+files. You will not use your own device and will not sign in to any of your own accounts,
 so none of your own data is involved at any point. Each machine is reset to a clean state
 
-between participants.    Some people find working under observation and a timer
-uncomfortable, or feel frustrated when a task does not go well. We are evaluating the
+between participants.     Some people find working under observation and a timer
 
+uncomfortable, or feel frustrated when a task does not go well. We are evaluating the
 interface, not you, and you may pause or stop at any moment without giving a reason.
 
          Benefits. There is no direct benefit to you. The findings are intended to inform
-how conversational interfaces to computers are designed, particularly for people without
 
+how conversational interfaces to computers are designed, particularly for people without
 technical training.
+
          How your information is handled. Your data is processed under Republic Act
 
 No. 10173, the Data Privacy Act of 2012, on the basis of your written consent. It is
-
 stored under a code rather than your name, on password-protected university
+
 infrastructure that only the research team can reach. Screen recordings and audio cannot
-
-──────── p. 126 ────────
-                                                                                       126
-
-
 be made fully anonymous — a voice identifies a person, and a screen can show file
+
 names — so we keep them only as long as we need them for analysis. They are
 
 destroyed once transcription and coding are complete, and in any case no later than
-
 ninety days after the last session. The list linking your code to your signed consent form
+
 is kept separately and destroyed when the withdrawal window below closes, fourteen
 
 days after your last session.
-
          Withdrawing. You may stop the session at any point, without explanation and
+
 without any consequence. You may also ask us to delete your data for up to fourteen
 
 days afterwards; we keep the code-to-consent list for exactly that period so that we can
-
 find and remove your records if you ask. After fourteen days that list is destroyed and we
-can no longer identify which records are yours, so withdrawal is not possible beyond that
 
+can no longer identify which records are yours, so withdrawal is not possible beyond that
 point.
+
+──────── p. 170 ────────
+                                                                                     170
+
+
          How the results are used. Results are reported in aggregate in a thesis and
 
 possibly in academic publications. We may quote short remarks you make in the closing
-
 conversation. Quotations are attributed only to a participant code, never to your name,
+
 and you can decline to be quoted while still taking part in everything else.
 
          Questions or concerns. For questions about the study, contact the research team
-
 at [research team contact address]. For concerns about how the study is being conducted,
+
 or about your rights as a participant, contact the Institutional Review Board of Mapúa
 
 University – Makati at [ethics committee contact address], independently of the research
 team.
 
+──────── p. 171 ────────
+                                                                                                  171
 
 
-                                      APPENDIX F
 
-                                Informed Consent Form
+                                          APPENDIX J
 
-         Study title. Recoverability Analysis of Language-Model-Generated Shell
+                                   Informed Consent Form
+        Study title. Recoverability Analysis of Language-Model-Generated Shell
+
 Commands, Deployed in the SynapseOS Conversational Interface
-
-         Please read the Participant Information Sheet (Appendix E) before completing
+        Please read the Participant Information Sheet (Appendix I) before completing
 
 this form, and tick each box to confirm your agreement. You may ask questions at any
+
 time before signing.
-
-──────── p. 127 ────────
-                                                                                                  127
-
 
         Statement
 
@@ -937,8 +3048,12 @@ these. Please tick only those you accept.
   □     I agree that short anonymous quotations from what I say may appear in the thesis or
         in academic publications, identified only by a participant code.
 
+──────── p. 172 ────────
+                                                                                       172
 
-        Participant name (printed): ______________________________                     Signature:
+
+        Participant name (printed): ______________________________             Signature:
+
 ______________________________ Date: ______________
 
         Researcher obtaining consent (printed): ______________________________
@@ -949,15 +3064,16 @@ Signature: ______________________________ Date: ______________
 stored separately from all study data, and the code-to-name list derived from it is
 destroyed on the schedule stated in Chapter 3, Section 2.5.
 
-──────── p. 128 ────────
-                                                                                       128
+──────── p. 173 ────────
+                                                                                       173
 
 
-                                      APPENDIX G
+
+                                      APPENDIX K
 
                                Session Facilitator Checklist
-        Followed identically for every participant so that session conduct does not vary
 
+        Followed identically for every participant so that session conduct does not vary
 across the sample. Items marked † must be completed before the participant arrives.
 
         Before the session †
@@ -969,8 +3085,8 @@ across the sample. Items marked † must be completed before the participant arr
         screening record (Windows, macOS, or Linux with GNOME).
 
       3. Provision the task environment identically on both machines: practice file set in
-        place, the applications referenced by tasks T7–T9 present or absent as specified,
 
+        place, the applications referenced by tasks T7–T9 present or absent as specified,
         and the test applications SampleApp and DemoTool installed.
 
       4. On the SynapseOS machine, confirm the inference server is running and the
@@ -987,8 +3103,8 @@ across the sample. Items marked † must be completed before the participant arr
         readiness checkpoint in the System Environment Specifications.
 
         During the session
-      1. Give the information sheet, answer questions, obtain signed consent. File the
 
+      1. Give the information sheet, answer questions, obtain signed consent. File the
         consent form separately from all study materials.
 
       2. If the condition about to begin is SynapseOS, give the five-minute orientation to
@@ -998,44 +3114,44 @@ across the sample. Items marked † must be completed before the participant arr
 
         the task set.
 
-──────── p. 129 ────────
-                                                                                  129
+──────── p. 174 ────────
+                                                                                  174
 
 
 3. Start screen recording. Present tasks one at a time in the randomized order for
-
   this participant.    Do not prompt, hint, or answer questions about how to
 
   accomplish a task.
-4. Do not ask the participant to think aloud during timed tasks.
 
+4. Do not ask the participant to think aloud during timed tasks.
 5. Record the outcome of each task and note any facilitator intervention, with the
+
   reason.
 
 6. Administer SUS and NASA-TLX immediately on completing the condition,
-
   before any discussion of it.
-7. Offer a short break. Move to the second machine and repeat from step 2 with
 
+7. Offer a short break. Move to the second machine and repeat from step 2 with
   the other condition and the other task form.
 
 8. Conduct the closing conversation, replaying portions of the screen recording to
-  prompt recall. Ask what the participant was thinking, not whether they liked the
 
+  prompt recall. Ask what the participant was thinking, not whether they liked the
   system.
 
 9. Debrief: explain the study’s expectations in full, answer questions, and thank the
-  participant.
 
+  participant.
   After the session
+
 1. Transfer all recordings and logs to protected storage under the participant code;
 
   delete local copies from both machines.
-
 2. Log any fallback invocation, with participant code, task, and timestamp.
-3. Note any deviation from this checklist, however small, for reporting with the
 
+3. Note any deviation from this checklist, however small, for reporting with the
   results.
 
 4. Restore both machines to the clean baseline image.
+
 5. Diarise the participant’s fourteen-day withdrawal deadline.
