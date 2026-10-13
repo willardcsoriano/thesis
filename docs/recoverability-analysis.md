@@ -834,7 +834,7 @@ All of these run under `make -C prototype ci` unless marked.
 | `internal/gate` | Gate policy, capture, and real round trips: run the command for real, undo, compare | 10 tests, 15 sub-cases |
 | `internal/undo` | Each capture and restore mechanism, and a regression test per undo defect | 68 tests |
 | `internal/oracle`, `internal/recoverycheck` | The ground-truth oracle's labels and the tree comparison used to verify restores | 12 tests |
-| Corpus evaluation (`cmd/listpilot`, `pilot/analyze.py`, `pilot/stats.py`; not in `ci`) | All systems on 777 held-out commands, ground truth from sandboxed execution (`internal/oracle`), which shares no code with the analysis | 777 commands × 5 systems |
+| Corpus evaluation (`cmd/listpilot`, `pilot/analyze.py`, `pilot/stats.py`; not in `ci`) | All systems on 777 held-out commands, ground truth from sandboxed execution (`internal/oracle`), which shares no code with the analysis | 777 commands × 7 systems (four compared, three ablations) |
 | Recovery harness (`cmd/recoverycheck`; not in `ci`) | Each executable corpus command run for real in a sandbox, captured, undone, and compared | 631 executed |
 | External baselines (`cmd/extbaselines`, `pilot/ccsafetynet.mjs`; not in `ci`) | Codex CLI's check (ported, passing Codex's own tests) and cc-safety-net on the same 777 | 3,108 verdicts |
 
@@ -956,9 +956,10 @@ bin/effexplain -dir <folder> -list '<command>'      # trace one command; add -no
 
 cd pilot && sha256sum -c corpus7.sha256 && cd ..    # the reported corpus, unchanged
 go run ./cmd/listpilot pilot/corpus7.jsonl > pilot/classifier_out7.jsonl
-python3 pilot/analyze.py pilot/corpus7.jsonl pilot/classifier_out7.jsonl
-python3 pilot/stats.py                              # McNemar, Newcombe, Holm
-RC_NO_CURATED=1 go run ./cmd/recoverycheck pilot/corpus7.jsonl   # execute, undo, compare
+RC_NO_CURATED=1 go run ./cmd/recoverycheck pilot/corpus7.jsonl > pilot/recovery_results7.txt   # execute, undo, compare
+python3 pilot/analyze.py pilot/corpus7.jsonl pilot/classifier_out7.jsonl > pilot/results_round7.txt
+python3 pilot/stats.py pilot/corpus7.jsonl pilot/classifier_out7.jsonl pilot/recovery_results7.txt > pilot/stats_round7.txt   # McNemar, Newcombe, Holm
+make composecheck COMPOSE_SEED=20261018 COMPOSE_N=8000      # one differential-test draw, to pilot/out/
 make manualtest                                     # then follow manualtest/STORIES.md
 ```
 
