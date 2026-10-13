@@ -13,7 +13,13 @@ Each test is McNemar's exact test on the paired discordant items, with the risk 
 (Newcombe's paired interval, method 10) and the odds ratio b/c. Holm's correction is applied
 across the four. Ablations of the analysis (composition off, runtime-target resolution
 off, both off), when present in classifier_out, are each compared with ALG-capture in a
-separate block at nominal significance. Stdlib only.
+separate block at nominal significance.
+
+A secondary family scores needless confirmation over items labelled R (nothing is lost):
+the system asked. The analysis under each policy (ALG-capture, ALG-strict) is compared with
+each list, making four McNemar tests with Holm's correction across them. The deployed gate,
+which asks when either the analysis or the pattern list (L0) does, is then scored on needless
+confirmation and silent loss without a test. Stdlib only.
 """
 import collections
 import json
@@ -212,3 +218,41 @@ def ablation(title, sysname, short, note):
 for title, sysname, short, note in ABLATIONS:
     if sysname in res:
         ablation(title, sysname, short, note)
+
+# Needless confirmation (paper section 3.1(d)): how often each system asks about a command
+# that loses nothing. Lower is better, so an ALG win is an item the list asks about and the
+# analysis does not.
+harmless = [r for r in truth.values() if r["label"] == "R"]
+
+
+def asks(sysname, r):
+    return res[sysname][r["id"]]["prompted"]
+
+
+print()
+print(f"needless confirmation over {len(harmless)} harmless items (label R)")
+for s in ("L0", "L1", "ALG-strict", "ALG-capture"):
+    k = sum(asks(s, r) for r in harmless)
+    lo, hi = wilson(k, len(harmless))
+    print(f"  {s:12} asks {k:>4}/{len(harmless):<4} = {k / len(harmless):6.1%}  [Wilson {lo:.1%}, {hi:.1%}]")
+needless = []
+for alg in ("ALG-capture", "ALG-strict"):
+    for base in ("L0", "L1"):
+        wins = sum(asks(base, r) and not asks(alg, r) for r in harmless)
+        losses_ = sum(asks(alg, r) and not asks(base, r) for r in harmless)
+        needless.append((alg, base, wins, losses_, mcnemar_exact(wins, losses_)))
+print(f"  {'analysis':12} {'vs':3} {'ALG asks':>8} {'list asks':>9} {'p (exact)':>10} {'p (Holm)':>9}")
+for (alg, base, wins, losses_, p), pa in zip(needless, holm([t[4] for t in needless])):
+    print(f"  {alg:12} {base:3} {losses_:>8} {wins:>9} {p:>10.2g} {pa:>9.2g}")
+print("  discordant counts: 'ALG asks' where only the analysis asks, 'list asks' where only the list does.")
+
+# The deployed gate (paper section 2.1(e)) asks when the analysis or the pattern list asks.
+print()
+print("deployed gate: the analysis, plus the pattern list (L0) consulted alongside it")
+for alg in ("ALG-capture", "ALG-strict"):
+    def gate_asks(r):
+        return asks(alg, r) or asks("L0", r)
+    k = sum(gate_asks(r) for r in harmless)
+    quiet = sum(not gate_asks(r) and not res[alg][r["id"]]["protected"] for r in dangerous)
+    print(f"  {alg:12} needless {k:>4}/{len(harmless):<4} = {k / len(harmless):6.1%}   "
+          f"silent loss {quiet}/{len(dangerous)}")
