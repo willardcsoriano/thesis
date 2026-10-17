@@ -7,16 +7,16 @@ This file tracks every concrete deliverable the methodology chapter (SA3.1) has 
 - [Overview](#overview)
 - [Status Key](#status-key)
 - [Critical Path](#critical-path)
-- [Software — Go Runtime (SynapseOS)](#software-go-runtime-synapseos)
-- [Software — Algorithm Track (Recoverability Analysis)](#software-algorithm-track-recoverability-analysis)
-- [Software — Python Build Pipeline](#software-python-build-pipeline)
-- [Software — Data Collection and Analysis](#software-data-collection-and-analysis)
-- [Study Instruments — Documents](#study-instruments-documents)
-- [Study Instruments — Task Suites](#study-instruments-task-suites)
-- [Infrastructure — Hardware](#infrastructure-hardware)
-- [Infrastructure — Third-Party Setup](#infrastructure-third-party-setup)
-- [Process — Ethics and Recruitment](#process-ethics-and-recruitment)
-- [Process — Study Execution](#process-study-execution)
+- [Software — Go Runtime (SynapseOS)](#software--go-runtime-synapseos)
+- [Software — Algorithm Track (Recoverability Analysis)](#software--algorithm-track-recoverability-analysis)
+- [Software — Python Build Pipeline](#software--python-build-pipeline)
+- [Software — Data Collection and Analysis](#software--data-collection-and-analysis)
+- [Study Instruments — Documents](#study-instruments--documents)
+- [Study Instruments — Task Suites](#study-instruments--task-suites)
+- [Infrastructure — Hardware](#infrastructure--hardware)
+- [Infrastructure — Third-Party Setup](#infrastructure--third-party-setup)
+- [Process — Ethics and Recruitment](#process--ethics-and-recruitment)
+- [Process — Study Execution](#process--study-execution)
 - [Final Thesis Compilation](#final-thesis-compilation)
 
 ## Status Key
@@ -67,6 +67,7 @@ These are features of the SynapseOS binary that the paper explicitly describes. 
   - Condition (A = SynapseOS, B = native OS — always A for this logger)
   - Note: intent parsing accuracy is **not** its own logged field — it's a derived metric, computed offline by the Intent Parsing Accuracy Evaluator (Python Build Pipeline) by cross-referencing the logged command string + task ID against human-annotated ground truth. Section 1.1c's "system performance data... captured automatically" refers to this raw data, not a live accuracy score.
 - `[x]` **Session context manager** — maintains in-memory conversation history; passes prior turns as prompt context to Ollama; rolling window when context approaches the budget; truncates verbose bash output before appending — never stores raw verbose output at full length (D10). **Done Session 29** (`internal/session`, wired into REPL and TUI via `withSessionContext`; one-shot CLI stays stateless by design, D19). Verified live: "rename it to renamed.txt" resolves *it* to the previous turn's file. Adds `context` and `clear` so a user can check what a pronoun would bind to before issuing a destructive follow-up, and announces evicted turns rather than forgetting silently.
+- `[x]` **Answer layer** — after a task's commands run, composes a plain-language answer from their output, and answers greetings, identity, and capability questions locally without a model call (D31). Done 2026-09-15 (`maybeAnswer`, `answerConversational` in `cmd/synapse`); D40 added the attribution and partial-coverage rules. Answers are not yet checked against the executed effects (`open-problems.md` rows 15 and 39)
 - `[x]` **Ollama connectivity check** — verifies Ollama is running at `localhost:11434` on startup; fails gracefully with a user-readable error if not. **Done and validated live 2026-07-12** (`internal/ollama.Client.Ping`, unit-tested against an unreachable server) — see `prototype/build-order.md` M1
 
 ---

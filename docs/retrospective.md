@@ -5,24 +5,59 @@ This is the project's process log — a chronological account of *how* work got 
 ## Table of Contents
 
 - [Overview](#overview)
-- [2026-09-26 — The TUI got a spinner and a louder confirmation prompt, tested through a real pty for the first time](#2026-09-26-the-tui-got-a-spinner-and-a-louder-confirmation-prompt-tested-through-a-real-pty-for-the-first-time)
-- [2026-09-20 — Automating the ground truth, and what the first automated run found](#2026-09-20-automating-the-ground-truth-and-what-the-first-automated-run-found)
-- [2026-09-20 — The effect analysis, a pilot that pointed the other way, and four bugs in undo](#2026-09-20-the-effect-analysis-a-pilot-that-pointed-the-other-way-and-four-bugs-in-undo)
-- [2026-09-20 — F6 decided](#2026-09-20-f6-decided)
-- [2026-09-20 — The algorithm was narrowed by its own pilot](#2026-09-20-the-algorithm-was-narrowed-by-its-own-pilot)
-- [Session 33 — Measuring Before Rewriting, Twice, and Getting It Wrong Once](#session-33-measuring-before-rewriting-twice-and-getting-it-wrong-once)
-- [Session 32 — The First Conversational Test](#session-32-the-first-conversational-test)
-- [Session 31 — M7 Shipped Logging Nothing, and the Shell Underneath Was Lying About Exit Codes](#session-31-m7-shipped-logging-nothing-and-the-shell-underneath-was-lying-about-exit-codes)
-- [Session 30 — M5's First Real Terminal Run Found Two Bugs Every Automated Test Missed](#session-30-m5s-first-real-terminal-run-found-two-bugs-every-automated-test-missed)
-- [Session 29 — A Silent 2048-Token Ceiling, and Milestone Numbers That Described a Plan Nobody Followed](#session-29-a-silent-2048-token-ceiling-and-milestone-numbers-that-described-a-plan-nobody-followed)
-- [Session 28 (second half) — M5 Built End to End (TUI Mode), and a Review That Found a Real Safety Defect](#session-28-second-half-m5-built-end-to-end-tui-mode-and-a-review-that-found-a-real-safety-defect)
-- [Session 28 (first half) — M5 Started (Toolchain + Skeleton), and a Review That Found a Real Safety Defect](#session-28-first-half-m5-started-toolchain-skeleton-and-a-review-that-found-a-real-safety-defect)
-- [Session 27 — M4 Persistent CLI Loop (then numbered M3a), try-it.md Iteration](#session-27-m4-persistent-cli-loop-then-numbered-m3a-try-itmd-iteration)
-- [Sessions 23–26 — Foundational Hardening: Adversarial Classifier Corpus, Live-Model Testing, Typed-Ops Experiment, Guiltless Undo Hardening](#sessions-2326-foundational-hardening-adversarial-classifier-corpus-live-model-testing-typed-ops-experiment-guiltless-undo-hardening)
-- [Session 22 — Manual M1 Testing, Classifier Gap, Undo Log, Doc-Authority Shift](#session-22-manual-m1-testing-classifier-gap-undo-log-doc-authority-shift)
-- [Sessions 20–21 — .gitignore Privacy Rework, PR Shipping, Ollama Client/Loop Tests](#sessions-2021-gitignore-privacy-rework-pr-shipping-ollama-clientloop-tests)
-- [Sessions 17–19 — M1 Built From Scratch: First Live Validation, Classifier/Executor Wiring, D21's Bounded Loop](#sessions-1719-m1-built-from-scratch-first-live-validation-classifierexecutor-wiring-d21s-bounded-loop)
-- [Blockers & Lessons — Quick Reference](#blockers-lessons-quick-reference)
+- [2026-10-17 — Thesis 1 wrap-up: the open-problems register checked row by row](#2026-10-17--thesis-1-wrap-up-the-open-problems-register-checked-row-by-row)
+- [2026-09-26 — The TUI got a spinner and a louder confirmation prompt, tested through a real pty for the first time](#2026-09-26--the-tui-got-a-spinner-and-a-louder-confirmation-prompt-tested-through-a-real-pty-for-the-first-time)
+- [2026-09-20 — Automating the ground truth, and what the first automated run found](#2026-09-20--automating-the-ground-truth-and-what-the-first-automated-run-found)
+- [2026-09-20 — The effect analysis, a pilot that pointed the other way, and four bugs in undo](#2026-09-20--the-effect-analysis-a-pilot-that-pointed-the-other-way-and-four-bugs-in-undo)
+- [2026-09-20 — F6 decided](#2026-09-20--f6-decided)
+- [2026-09-20 — The algorithm was narrowed by its own pilot](#2026-09-20--the-algorithm-was-narrowed-by-its-own-pilot)
+- [Session 33 — Measuring Before Rewriting, Twice, and Getting It Wrong Once](#session-33--measuring-before-rewriting-twice-and-getting-it-wrong-once)
+- [Session 32 — The First Conversational Test](#session-32--the-first-conversational-test)
+- [Session 31 — M7 Shipped Logging Nothing, and the Shell Underneath Was Lying About Exit Codes](#session-31--m7-shipped-logging-nothing-and-the-shell-underneath-was-lying-about-exit-codes)
+- [Session 30 — M5's First Real Terminal Run Found Two Bugs Every Automated Test Missed](#session-30--m5s-first-real-terminal-run-found-two-bugs-every-automated-test-missed)
+- [Session 29 — A Silent 2048-Token Ceiling, and Milestone Numbers That Described a Plan Nobody Followed](#session-29--a-silent-2048-token-ceiling-and-milestone-numbers-that-described-a-plan-nobody-followed)
+- [Session 28 (second half) — M5 Built End to End (TUI Mode), and a Review That Found a Real Safety Defect](#session-28-second-half--m5-built-end-to-end-tui-mode-and-a-review-that-found-a-real-safety-defect)
+- [Session 28 (first half) — M5 Started (Toolchain + Skeleton), and a Review That Found a Real Safety Defect](#session-28-first-half--m5-started-toolchain--skeleton-and-a-review-that-found-a-real-safety-defect)
+- [Session 27 — M4 Persistent CLI Loop (then numbered M3a), try-it.md Iteration](#session-27--m4-persistent-cli-loop-then-numbered-m3a-try-itmd-iteration)
+- [Sessions 23–26 — Foundational Hardening: Adversarial Classifier Corpus, Live-Model Testing, Typed-Ops Experiment, Guiltless Undo Hardening](#sessions-2326--foundational-hardening-adversarial-classifier-corpus-live-model-testing-typed-ops-experiment-guiltless-undo-hardening)
+- [Session 22 — Manual M1 Testing, Classifier Gap, Undo Log, Doc-Authority Shift](#session-22--manual-m1-testing-classifier-gap-undo-log-doc-authority-shift)
+- [Sessions 20–21 — .gitignore Privacy Rework, PR Shipping, Ollama Client/Loop Tests](#sessions-2021--gitignore-privacy-rework-pr-shipping-ollama-clientloop-tests)
+- [Sessions 17–19 — M1 Built From Scratch: First Live Validation, Classifier/Executor Wiring, D21's Bounded Loop](#sessions-1719--m1-built-from-scratch-first-live-validation-classifierexecutor-wiring-d21s-bounded-loop)
+- [Blockers & Lessons — Quick Reference](#blockers--lessons--quick-reference)
+
+## 2026-10-17 — Thesis 1 wrap-up: the open-problems register checked row by row
+
+After the defense and the post-defense revisions (#100, #102), every row of `open-problems.md` was checked against the code, git log, and docs. Fourteen rows no longer described anything open. Many of them were closed by later architecture (D35's effect analysis becoming the default gate, D40's schema-constrained output) and nobody went back to update the register. Their numbers are kept here because code, docs, and pilot outputs cite them. **Lesson: a register is only bounded if closing a row is part of the fix that closes it. Fourteen stale rows made the real twenty harder to see.**
+
+**Resolved from `open-problems.md`:** row 3 (RQ1 answered by "we built it"). After the adviser's reframe, RQ1–RQ5 are all algorithmic and RQ1 is the effect-semantics model. SynapseOS became the validation platform (D32/D34, D35 C4, Chapter 1 §1.4).
+
+**Resolved from `open-problems.md`:** row 5 (no rule for `apt`/`dpkg`/`systemctl`). The effect analysis, which is on by default, models package and service state through `apt-get -s`, `dpkg-query`, and `systemctl is-active` queries. It journals an inverse command for undo and returns an unrecoverable verdict when the old version is gone (D35 C6, `internal/effects/pkgstate.go`, ccc6473). The legacy list path (`SYNAPSE_ANALYSIS=off`) still has no rule.
+
+**Resolved from `open-problems.md`:** row 6 (coding-agent architecture survey). Replaced by targeted surveys of the MCP filesystem server, gemini-cli, Claude Code, and Aider (`prior-art.md`, 2026-09-20). Codex CLI's and cc-safety-net's checks were ported and run as baselines on round 7 (`cmd/extbaselines`). None of them does pre-execution recoverability. Cursor and others remain unchecked (`prior-art.md`).
+
+**Resolved from `open-problems.md`:** row 9 (tview vs Bubble Tea). Settled by building it: M5 shipped on `charm.land/bubbletea/v2` in Session 28, and D26/D38/D41 build on it. No separate decision entry was ever written.
+
+**Resolved from `open-problems.md`:** row 10 (nothing committed since `0dcd217`). Everything is committed and merged through PR #102.
+
+**Resolved from `open-problems.md`:** row 12 (answer layer missing from `scope.md`). Added as a Go runtime deliverable.
+
+**Resolved from `open-problems.md`:** row 13 (conversation never tested). Multi-turn behaviour, pronoun resolution, and session memory have been covered since Session 32 by `internal/session`'s tests, loop-level tests, and the Layer 7/8 live suites. The human-in-a-terminal pass stays open as row 8.
+
+**Resolved from `open-problems.md`:** row 17 (Ollama never populates `tool_calls`). The tolerant parser was built (`internal/toolcall`, b225955) and is still used by the Layer 8 probe (`toolcall_probe_test.go`). D40 took the schema-constrained `format` route for the loop instead, so the tool-calling protocol is not being pursued. Row 4's fix is now a reason field in `stepFormat`.
+
+**Resolved from `open-problems.md`:** row 19 (`ls -d */ | xargs rm -rf` data loss). The effect analysis is the default gate. It resolves runtime-computed targets through read-only dry runs under bubblewrap and captures them; otherwise it marks the command unrecoverable and warns. The list path keeps the 2026-09-15 warning (e137fef).
+
+**Resolved from `open-problems.md`:** row 23 (`find -delete` auto-ran as Reversible). A `find -delete` rule makes it Irreversible and warns that it is unprotected (e137fef). The lesson stands: a pattern list covers only the tokens someone thought to name.
+
+**Resolved from `open-problems.md`:** row 24 (`TrashTargets` returned `{}`/`\;` and literal globs). Placeholders are rejected and globs are expanded with `filepath.Glob` (e137fef), so the unprotected warning is no longer suppressed.
+
+**Resolved from `open-problems.md`:** row 27 (single-annotator pilot). Superseded by D35 C3: ground truth comes from sandboxed execution (`internal/oracle`), and the reported result is round 7's 777 held-out commands. The trade-off is that there is no inter-rater figure (see 2026-09-20, "Automating the ground truth").
+
+**Resolved from `open-problems.md`:** row 36 (`mv` onto an existing file was unrecoverable). Closed on the default path: the effect analysis is on by default, and `internal/gate` captures the overwritten destination. The legacy list path still loses it.
+
+**Resolved from `open-problems.md`:** row 38 (composition/resolution ablation unmeasured). Measured on round 7: 89.5% restored, falling to 35.4% with composition off, 45.5% with resolution off, and 32.0% with both, with silent loss 0 throughout (ee09d72; `recoverability-analysis.md` §10; paper RQ5).
+
+Corrected while checking: row 25 is re-filed as a harness gap. Under D37 the model reaching the real `~/Downloads` was not a defect, but `model-bench.sh` never set `HOME` to the sandbox. Row 43's mechanism was wrong: the cause is `2>` being read as a truncating redirect and an rm path, not `RawWriteOverwriteTarget`. Since no round-7 command contains a `2>` redirect, the reported list-baseline figures are unaffected.
 
 ## 2026-09-26 — The TUI got a spinner and a louder confirmation prompt, tested through a real pty for the first time
 

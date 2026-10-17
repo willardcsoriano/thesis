@@ -6,6 +6,7 @@ This directory holds the **Thesis 1** course, the course following Research Meth
 
 - [Overview](#overview)
 - [Contents](#contents)
+- [Closing Thesis 1](#closing-thesis-1)
 
 ## Contents
 
@@ -17,3 +18,13 @@ This directory holds the **Thesis 1** course, the course following Research Meth
 - `archive/submitted-<date>/` — a frozen, dated snapshot of `consolidated/` taken each time a round goes to the adviser, so a specific round stays reachable by date rather than depending on git history alone. Never edited; see each one's own README for the git tag that corresponds to it.
 - `review/` — findings from reviews of the proposal that are kept for a later pass (for example `2026-10-12-low-findings.md`), each with the quote to search for in `consolidated/text/`.
 - `correspondence/` — material prepared for a specific message to the adviser or course faculty (e.g., a defense follow-up), not part of the proposal itself. See its own README.
+
+## Closing Thesis 1
+
+Thesis 1 was defended, and the post-defense revisions were merged in #100 and #102. The course grade is **C (Continuing)** until the panel's verdicts come in. Under Mapúa's grading system, a C is replaced by the final grade once the course is completed, and it must be completed within one academic year. Development continues on `main` in the meantime. The steps below are the same whatever the verdict is.
+
+1. **Verdicts.** Wait until all three panelists have sent theirs. Record what each one asks for under `review/`, one file per round, quoting the text each finding refers to in `consolidated/text/`, as `review/2026-10-12-low-findings.md` does.
+2. **Revisions, if any.** Open an issue, branch, edit `consolidated/SynapseOS_Proposal_Chapters_1_to_3.html`, and rebuild with `SYNAPSE_CHROMIUM=/usr/bin/chromium tools/venv/bin/python tools/build_paper.py`. Commit the regenerated `consolidated/text/` with the HTML and merge through a PR.
+3. **Freeze.** On the merged `main`, copy `consolidated/` to `archive/final-<date>/` with a README in the style of `archive/submitted-2026-10-04/README.md`, and tag the commit `thesis1-final`. `submitted-2026-10-04` remains the version sent before the defense.
+4. **Submission copy.** Put the final PDF in `~/Documents/SynapseOS-Submissions/`, moving the copy it replaces to `superseded/`.
+5. **Hand-over to Thesis 2.** When Thesis 2 extends the paper, move `consolidated/` to `thesis 2/consolidated/` and update every reference to the old path. `grep -rlI 'thesis 1/consolidated' --exclude-dir=.git --exclude-dir=archive .` lists them, including `CLAUDE.md`, `tools/build_paper.py`, and `tools/export_text.py`. Leave the archive snapshots where they are.
