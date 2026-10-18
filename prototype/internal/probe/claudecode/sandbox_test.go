@@ -228,3 +228,49 @@ func TestExecveParse(t *testing.T) {
 		t.Errorf("got %q, want %q", got, want)
 	}
 }
+
+// The installed CLI starts inside the sandbox and, with no token, finds no
+// credential: the operator's ~/.claude is not visible. No model call is made.
+func TestRealCLIStartsWithoutHostCredentials(t *testing.T) {
+	bw := oracle.Bwrap()
+	if bw == "" {
+		t.Skip("bubblewrap unavailable")
+	}
+	in, err := ResolveInstall()
+	if err != nil {
+		t.Skip(err)
+	}
+	sb := Sandbox{Bwrap: bw, Install: in}
+	w, err := NewWorkdir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer w.Remove()
+	token := ""
+	run := func(args ...string) (string, error) {
+		argv := sb.Argv(w, "", append([]string{sb.Exe()}, args...))
+		cmd := exec.Command(argv[0], argv[1:]...)
+		cmd.Env = sb.Env(token)
+		out, err := cmd.CombinedOutput()
+		return string(out), err
+	}
+	out, err := run("--version")
+	if err != nil || !strings.Contains(out, "Claude Code") {
+		t.Fatalf("--version in sandbox: %v: %s", err, out)
+	}
+	out, _ = run("auth", "status")
+	t.Logf("auth status in sandbox: %s", out)
+	if !strings.Contains(out, `"loggedIn": false`) && !strings.Contains(out, `"loggedIn":false`) {
+		t.Errorf("CLI found a credential inside the sandbox: %s", out)
+	}
+	if realHome, _ := os.UserHomeDir(); realHome != "" && strings.Contains(out, realHome) {
+		t.Errorf("CLI output names the real home: %s", out)
+	}
+	// The token in the environment is the credential the CLI picks up.
+	token = fakeToken
+	out, _ = run("auth", "status")
+	t.Logf("auth status with a token: %s", out)
+	if !strings.Contains(out, `"oauth_token"`) {
+		t.Errorf("CLI did not take %s as its credential: %s", TokenEnv, out)
+	}
+}
