@@ -758,8 +758,11 @@ func unescapeGlobs(words []*syntax.Word) []*syntax.Word {
 }
 
 // nondeterministic matches text whose output differs from one run to the next, so
-// resolving it once and running it later would act on different names.
-var nondeterministic = regexp.MustCompile(`/dev/u?random|\$RANDOM|\$\$|\bshuf\b|\bmktemp\b|\buuidgen\b|\bdate\b|\bopenssl\s+rand\b|\$SRANDOM|\bpgrep\b|\bps\b|\bpidof\b`)
+// resolving it once and running it later would act on different names. Network
+// clients are here too: a resolver runs without the network, so what they fetch is
+// empty then and whatever the server sends when the line runs.
+var nondeterministic = regexp.MustCompile(`/dev/u?random|\$RANDOM|\$\$|\bshuf\b|\bmktemp\b|\buuidgen\b|\bdate\b|\bopenssl\s+rand\b|\$SRANDOM|\bpgrep\b|\bps\b|\bpidof\b|` +
+	`\b(curl|wget|ssh|scp|sftp|ftp|nc|ncat|socat|telnet|aria2c|dig|nslookup|whois)\b`)
 
 // readsWhatTheLineWrites reports whether text mentions a file an earlier part of the
 // same line writes or creates: what it would read now is not what it will read then.

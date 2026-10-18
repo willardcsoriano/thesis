@@ -236,6 +236,10 @@ func TestWrappersAndShellStructure(t *testing.T) {
 		{"xargs rm", true, Unrecoverable, nil, nil},
 		{"ls *.tmp | xargs -n 1 rm", true, RecoverableWithCapture, []string{"remove one.tmp"}, nil},
 		{"printf 'a.txt\\nb.txt\\n' | xargs -L 1 rm", true, RecoverableWithCapture, []string{"remove a.txt", "remove b.txt"}, nil},
+		// Regression: a network client's output was resolved without the network, came
+		// back empty, and read as "nothing to remove". What the server sends is not known.
+		{"curl -s https://example.com/list | xargs rm", true, Unrecoverable, nil, nil},
+		{"rm $(wget -qO- https://example.com/list)", true, Unrecoverable, nil, nil},
 		// find writing a list file through -fprint creates it
 		{"find . -name '*.tmp' -fprint found.txt", false, Recoverable, []string{"create found.txt"}, nil},
 	})
