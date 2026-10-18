@@ -33,10 +33,10 @@ type Task struct {
 	Partition string            `json:"partition"`
 	Category  string            `json:"category"`
 	Fixture   []oracle.Entry    `json:"fixture"`
-	Prompts   map[string]string `json:"prompts"`             // tier -> first message
+	Prompts   map[string]string `json:"prompts"`              // tier -> first message
 	FollowUps []string          `json:"follow_ups,omitempty"` // later turns, persona tasks only
 	Features  []string          `json:"features,omitempty"`   // novice-tier tags, e.g. "pronoun", "taglish"
-	Source    string            `json:"source"`              // provenance of the wording, e.g. "nl2bash:5943", "authored", a URL
+	Source    string            `json:"source"`               // provenance of the wording, e.g. "nl2bash:5943", "authored", a URL
 }
 
 // Kinds of captured step.
