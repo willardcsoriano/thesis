@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -232,15 +233,72 @@ func Execute(ctx context.Context, bwrap, root, cmd string, limit time.Duration) 
 	return ExecuteIn(ctx, bwrap, root, cmd, limit, Sandbox{})
 }
 
-// Sandbox adjusts one run of the Execute sandbox. The zero value is Execute.
+// Sandbox adjusts one run of the Execute sandbox. The zero value is Execute,
+// and its bubblewrap command line is pinned by TestEmptySandboxArgvUnchanged:
+// the corpus results depend on it.
 type Sandbox struct {
 	// Wrap runs inside the sandbox in front of the shell that runs the command,
 	// as in Wrap... bash -c script. The agent command study puts strace here.
+	// Under HideHost its executable must not live under a hidden directory.
 	Wrap []string
 	// Writable are host directories, outside root, bound read-write at the same
 	// path. They are for the wrapper's own output; the command could reach them
-	// too, so they must hold nothing but that output.
+	// too, so they must hold nothing but that output. Under HideHost a path
+	// that names the operator (one under their home, say) becomes visible, so
+	// use WritableAt there.
 	Writable []string
+	// WritableAt are host directories bound read-write at another path inside
+	// the sandbox. The path must be creatable, which in practice means under a
+	// HideHost tmpfs such as /run. Same caveat as Writable on what they hold.
+	WritableAt []Mount
+	// HideHost masks the host from the command, for runs whose output leaves
+	// the machine (the agent command study sends it to a model provider). On
+	// top of the default sandbox:
+	//
+	//   - an empty tmpfs, at most HiddenSize bytes, over each of HiddenDirs
+	//     that exists, so no home, temp file or runtime socket of the host is
+	//     readable, and writes there vanish with the sandbox;
+	//   - root bound at HiddenRoot instead of its host path, and the working
+	//     directory there, so pwd names no host folder; HOME is root's home
+	//     folder, as in the default sandbox, so what a command does to it is
+	//     observed;
+	//   - /etc/passwd and /etc/group naming the uid HiddenUser, and
+	//     /etc/hostname, /etc/hosts and /etc/machine-id replaced where they
+	//     exist; the UTS hostname is HiddenHostname;
+	//   - an environment of fixed variables only (HiddenEnv plus HOME, PWD),
+	//     nothing from the operator's.
+	//
+	// The rest of the host root stays visible read-only (/usr, /etc, /var,
+	// /sys, /opt), and /proc/self/mountinfo shows the mount layout.
+	HideHost bool
+}
+
+// Mount is a host directory and the path it is bound at inside the sandbox.
+type Mount struct{ Host, At string }
+
+// What HideHost puts in place of the host. They are fixed so nothing in a
+// masked sandbox's view varies with, or names, the operator or the machine.
+const (
+	HiddenUser     = "agent"
+	HiddenRoot     = "/home/" + HiddenUser + "/task"
+	HiddenHostname = "agentprobe"
+	HiddenSize     = 256 << 20
+	hiddenMachine  = "00000000000000000000000000000001"
+)
+
+// HiddenDirs are replaced by an empty tmpfs under HideHost: homes, temp
+// folders, runtime sockets (/run/user holds D-Bus and SSH-agent sockets) and
+// removable or site media.
+var HiddenDirs = []string{"/home", "/root", "/tmp", "/run", "/var/tmp", "/mnt", "/media", "/srv"}
+
+// HiddenEnv is the environment under HideHost, before HOME and PWD.
+var HiddenEnv = []string{
+	"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+	"USER=" + HiddenUser,
+	"LOGNAME=" + HiddenUser,
+	"SHELL=/bin/bash",
+	"LANG=C.UTF-8",
+	"TERM=dumb",
 }
 
 // ExecuteIn is Execute with the sandbox adjusted by sb.
@@ -255,12 +313,22 @@ func ExecuteIn(ctx context.Context, bwrap, root, cmd string, limit time.Duration
 		return Outcome{}, err
 	}
 	script := "ulimit -v 4000000 -f 200000 2>/dev/null; " + SudoShim + cmd
-	args := []string{"--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--bind", root, root}
-	for _, w := range sb.Writable {
-		args = append(args, "--bind", w, w)
+	var args []string
+	if sb.HideHost {
+		identity, err := os.MkdirTemp("", "oracle-identity-")
+		if err != nil {
+			return Outcome{}, err
+		}
+		defer os.RemoveAll(identity)
+		if args, err = hiddenArgs(identity, root, sb); err != nil {
+			return Outcome{}, err
+		}
+	} else {
+		args = []string{"--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--bind", root, root}
+		args = appendWritable(args, sb)
+		args = append(args, "--unshare-all", "--die-with-parent",
+			"--chdir", root, "--setenv", "HOME", home, "--setenv", "PWD", root, "--")
 	}
-	args = append(args, "--unshare-all", "--die-with-parent",
-		"--chdir", root, "--setenv", "HOME", home, "--setenv", "PWD", root, "--")
 	args = append(args, sb.Wrap...)
 	args = append(args, "bash", "-c", script)
 	c := exec.CommandContext(ctx, bwrap, args...)
@@ -283,6 +351,65 @@ func ExecuteIn(ctx context.Context, bwrap, root, cmd string, limit time.Duration
 		return out, fmt.Errorf("running the sandbox: %w", err)
 	}
 	return out, nil
+}
+
+func appendWritable(args []string, sb Sandbox) []string {
+	for _, w := range sb.Writable {
+		args = append(args, "--bind", w, w)
+	}
+	for _, m := range sb.WritableAt {
+		args = append(args, "--bind", m.Host, m.At)
+	}
+	return args
+}
+
+// maskedFiles are the /etc files HideHost replaces, in mount order.
+var maskedFiles = []string{"/etc/passwd", "/etc/group", "/etc/hostname", "/etc/hosts", "/etc/machine-id"}
+
+// hiddenArgs is the bubblewrap command line, up to and including "--", of a
+// HideHost run. Order matters: bubblewrap applies mounts in argument order
+// and a later one shadows an earlier one at the same or a parent path, so the
+// tmpfs masks come first and everything that must stay reachable (root, the
+// writable directories, the identity files) is bound after them. identity is
+// an empty host directory for the replacement /etc files.
+func hiddenArgs(identity, root string, sb Sandbox) ([]string, error) {
+	home := HiddenRoot + "/home"
+	uid, gid := os.Getuid(), os.Getgid()
+	content := map[string]string{
+		"/etc/passwd": fmt.Sprintf("root:x:0:0:root:/root:/bin/bash\n%s:x:%d:%d:%s:%s:/bin/bash\nnobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin\n",
+			HiddenUser, uid, gid, HiddenUser, home),
+		"/etc/group":      fmt.Sprintf("root:x:0:\n%s:x:%d:\nnogroup:x:65534:\n", HiddenUser, gid),
+		"/etc/hostname":   HiddenHostname + "\n",
+		"/etc/hosts":      "127.0.0.1\tlocalhost\n127.0.1.1\t" + HiddenHostname + "\n::1\tlocalhost ip6-localhost ip6-loopback\n",
+		"/etc/machine-id": hiddenMachine + "\n",
+	}
+	args := []string{"--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc"}
+	for _, d := range HiddenDirs {
+		if fi, err := os.Lstat(d); err == nil && fi.IsDir() {
+			args = append(args, "--size", strconv.Itoa(HiddenSize), "--tmpfs", d)
+		}
+	}
+	args = append(args, "--bind", root, HiddenRoot)
+	args = appendWritable(args, sb)
+	for _, dst := range maskedFiles {
+		// A replacement can only be bound over a file that exists: the host
+		// root is read-only, so bubblewrap cannot create one there.
+		if fi, err := os.Stat(dst); err != nil || !fi.Mode().IsRegular() {
+			continue
+		}
+		src := filepath.Join(identity, filepath.Base(dst))
+		if err := os.WriteFile(src, []byte(content[dst]), 0o644); err != nil {
+			return nil, err
+		}
+		args = append(args, "--ro-bind", src, dst)
+	}
+	args = append(args, "--unshare-all", "--die-with-parent", "--new-session",
+		"--hostname", HiddenHostname, "--clearenv")
+	for _, kv := range HiddenEnv {
+		k, v, _ := strings.Cut(kv, "=")
+		args = append(args, "--setenv", k, v)
+	}
+	return append(args, "--chdir", HiddenRoot, "--setenv", "HOME", home, "--setenv", "PWD", HiddenRoot, "--"), nil
 }
 
 type limited struct{ b []byte }

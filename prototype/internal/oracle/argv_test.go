@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -58,6 +59,38 @@ func TestEmptySandboxArgvUnchanged(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("argv changed:\n got %q\nwant %q", got, want)
+	}
+}
+
+// TestHideHostMountOrder checks that every mask comes before the binds that
+// must stay reachable: bubblewrap applies mounts in order, so a tmpfs placed
+// after a bind would shadow it.
+func TestHideHostMountOrder(t *testing.T) {
+	_, got := recordedArgv(t, Sandbox{HideHost: true, WritableAt: []Mount{{Host: t.TempDir(), At: "/run/x"}}}, "true")
+	at := func(flag, val string) int {
+		for i := 0; i+1 < len(got); i++ {
+			if got[i] == flag && got[i+1] == val {
+				return i
+			}
+		}
+		return -1
+	}
+	lastMask := -1
+	for _, d := range HiddenDirs {
+		if i := at("--tmpfs", d); i > lastMask {
+			lastMask = i
+		}
+	}
+	if at("--tmpfs", "/tmp") < 0 || at("--tmpfs", "/home") < 0 {
+		t.Fatalf("no tmpfs over /tmp or /home: %q", got)
+	}
+	bindRoot := slices.Index(got, HiddenRoot)
+	bindOut := slices.Index(got, "/run/x")
+	if bindRoot < lastMask || bindOut < lastMask {
+		t.Errorf("a bind precedes a mask and would be shadowed: %q", got)
+	}
+	if at("--hostname", HiddenHostname) < 0 || !slices.Contains(got, "--clearenv") || at("--chdir", HiddenRoot) < 0 {
+		t.Errorf("hostname, clearenv or chdir missing: %q", got)
 	}
 }
 
