@@ -62,7 +62,14 @@ func Strace() string {
 // snapshots root before and after and labels the difference, whatever the exit
 // status: a command that fails half way may still have destroyed something.
 //
+// The sandbox always hides the host (oracle.Sandbox.HideHost): the commands
+// come from a remote model and what they print goes back to its provider, so
+// no home, temp file, username, hostname or environment variable of the
+// operator may be readable. Root is seen at oracle.HiddenRoot, and /tmp is a
+// tmpfs that dies with the run, so a write there is neither kept nor labelled.
+//
 // The trace goes to a private temporary directory outside root, bound writable
+// at traceDir (under the masked /run, after the masks so it is not shadowed)
 // for strace alone, so the task folder's snapshot never contains it. The
 // command could in principle write there too; nothing else is kept in it.
 //
@@ -78,12 +85,14 @@ func Trace(ctx context.Context, bwrap, strace, root, cmd string, limit time.Dura
 	if bwrap == "" || strace == "" {
 		return Traced{}, fmt.Errorf("tracing needs bubblewrap and strace")
 	}
+	if d := hiddenParent(strace); d != "" {
+		return Traced{}, fmt.Errorf("strace at %s is under %s, which the sandbox hides", strace, d)
+	}
 	dir, err := os.MkdirTemp("", "probe-trace-")
 	if err != nil {
 		return Traced{}, err
 	}
 	defer os.RemoveAll(dir)
-	log := filepath.Join(dir, "execve")
 
 	var t Traced
 	if t.Before, err = oracle.Observe(root); err != nil {
@@ -91,8 +100,9 @@ func Trace(ctx context.Context, bwrap, strace, root, cmd string, limit time.Dura
 	}
 	start := time.Now()
 	t.Outcome, err = oracle.ExecuteIn(ctx, bwrap, root, cmd, limit, oracle.Sandbox{
-		Wrap:     []string{strace, "-f", "-qq", "-s", "4096", "-e", "trace=execve", "-e", "signal=none", "-o", log},
-		Writable: []string{dir},
+		Wrap:       []string{strace, "-f", "-qq", "-s", "4096", "-e", "trace=execve", "-e", "signal=none", "-o", traceDir + "/execve"},
+		WritableAt: []oracle.Mount{{Host: dir, At: traceDir}},
+		HideHost:   true,
 	})
 	t.Duration = time.Since(start)
 	if err != nil {
@@ -103,7 +113,7 @@ func Trace(ctx context.Context, bwrap, strace, root, cmd string, limit time.Dura
 	}
 	t.Verdict = oracle.Label(t.Before, t.After)
 
-	f, err := os.Open(log)
+	f, err := os.Open(filepath.Join(dir, "execve"))
 	if err != nil {
 		return Traced{}, fmt.Errorf("reading the trace: %w", err)
 	}
@@ -120,6 +130,24 @@ func Trace(ctx context.Context, bwrap, strace, root, cmd string, limit time.Dura
 		t.Execve = nil
 	}
 	return t, nil
+}
+
+// traceDir is where Trace's log directory is seen inside the sandbox. It is
+// under /run, which HideHost replaces with a tmpfs, so bubblewrap can create it.
+const traceDir = "/run/probe-trace"
+
+// hiddenParent returns the oracle.HiddenDirs entry that p, resolved, lies
+// under, or "" if none: an executable there would be masked in the sandbox.
+func hiddenParent(p string) string {
+	if r, err := filepath.EvalSymlinks(p); err == nil {
+		p = r
+	}
+	for _, d := range oracle.HiddenDirs {
+		if p == d || strings.HasPrefix(p, d+"/") {
+			return d
+		}
+	}
+	return ""
 }
 
 // parseExecve reads strace -f output and returns the basename of argv[0] of
