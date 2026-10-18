@@ -229,6 +229,22 @@ const SudoShim = `sudo() { while [ $# -gt 0 ]; do case "$1" in -u|-g|-h|-p|-C|-D
 // input empty, and a hard time limit. Only root is writable. Where a command
 // writes elsewhere it fails, and the caller excludes it rather than labelling it.
 func Execute(ctx context.Context, bwrap, root, cmd string, limit time.Duration) (Outcome, error) {
+	return ExecuteIn(ctx, bwrap, root, cmd, limit, Sandbox{})
+}
+
+// Sandbox adjusts one run of the Execute sandbox. The zero value is Execute.
+type Sandbox struct {
+	// Wrap runs inside the sandbox in front of the shell that runs the command,
+	// as in Wrap... bash -c script. The agent command study puts strace here.
+	Wrap []string
+	// Writable are host directories, outside root, bound read-write at the same
+	// path. They are for the wrapper's own output; the command could reach them
+	// too, so they must hold nothing but that output.
+	Writable []string
+}
+
+// ExecuteIn is Execute with the sandbox adjusted by sb.
+func ExecuteIn(ctx context.Context, bwrap, root, cmd string, limit time.Duration, sb Sandbox) (Outcome, error) {
 	if bwrap == "" {
 		return Outcome{}, errors.New("bubblewrap is required to run the oracle")
 	}
@@ -239,11 +255,15 @@ func Execute(ctx context.Context, bwrap, root, cmd string, limit time.Duration) 
 		return Outcome{}, err
 	}
 	script := "ulimit -v 4000000 -f 200000 2>/dev/null; " + SudoShim + cmd
-	c := exec.CommandContext(ctx, bwrap,
-		"--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc",
-		"--bind", root, root, "--unshare-all", "--die-with-parent",
-		"--chdir", root, "--setenv", "HOME", home, "--setenv", "PWD", root,
-		"--", "bash", "-c", script)
+	args := []string{"--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--bind", root, root}
+	for _, w := range sb.Writable {
+		args = append(args, "--bind", w, w)
+	}
+	args = append(args, "--unshare-all", "--die-with-parent",
+		"--chdir", root, "--setenv", "HOME", home, "--setenv", "PWD", root, "--")
+	args = append(args, sb.Wrap...)
+	args = append(args, "bash", "-c", script)
+	c := exec.CommandContext(ctx, bwrap, args...)
 	var errBuf limited
 	c.Stderr = &errBuf
 	c.Stdout = io.Discard
