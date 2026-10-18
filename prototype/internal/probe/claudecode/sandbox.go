@@ -227,7 +227,6 @@ func (s Sandbox) Env(token string) []string {
 		"TERM=dumb",
 		"LANG=C.UTF-8", // fixed: the host locale would name the operator's region and vary between machines
 		"DISABLE_AUTOUPDATER=1",
-		"CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1",
 		TokenEnv + "=" + token,
 	}
 }
@@ -244,12 +243,13 @@ func Redacted(env []string) []string {
 	return out
 }
 
-// AllowedTools are approved up front. CLAUDE_CODE_SUBPROCESS_ENV_SCRUB, which
-// keeps the token out of the agent's shell, makes the CLI force permission mode
-// "default" and ignore --dangerously-skip-permissions, and it says to declare
-// allowedTools instead (seen in the first live run, CLI 2.1.302). These are the
-// tools an agent works with locally; a tool left out is denied and the denial
-// is counted, not hidden.
+// AllowedTools are approved up front, as a second line behind
+// --dangerously-skip-permissions. CLAUDE_CODE_SUBPROCESS_ENV_SCRUB is not set:
+// in the first live runs (CLI 2.1.302) it forced permission mode "default" and
+// switched on the CLI's own Bash sandbox, which cannot start inside this one
+// (it wanted socat), so no command ran. The scrub only hid the token from the
+// agent's shell environment, and the agent can read it from /proc regardless
+// (docs/agent-command-study.md, Known gaps); bubblewrap is the isolation.
 var AllowedTools = []string{"Bash", "Read", "Write", "Edit", "NotebookEdit", "Glob", "Grep", "Task", "TodoWrite", "ToolSearch"}
 
 // ClaudeArgs are the CLI's arguments for one turn. Turn 0 fixes the session

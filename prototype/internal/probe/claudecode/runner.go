@@ -199,6 +199,9 @@ func (r Runner) runTurn(ctx context.Context, turn Turn, base probe.Record) ([]pr
 			return nil, false, fmt.Errorf("the CLI could not authenticate (%s); check %s", oneLine(s.Result.Text), TokenEnv)
 		}
 	}
+	if s.PermissionMode != "" && s.PermissionMode != "bypassPermissions" {
+		r.logf("turn %s: CLI reports permission mode %q, not bypassPermissions\n", filepath.Base(turn.Raw), s.PermissionMode)
+	}
 	if s.Result != nil && s.Result.Denials > 0 {
 		r.logf("turn %s: the CLI refused %d tool call(s); see permission_denials in the raw stream\n", filepath.Base(turn.Raw), s.Result.Denials)
 	}

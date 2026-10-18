@@ -31,7 +31,7 @@ These are the facts about the Claude Code CLI that this driver depends on. Each 
 
 ## Environment variables set in the sandbox
 
-- `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` strips credentials from the environment of the Bash commands, hooks and MCP servers the CLI starts. It matches by name or value shape; the docs' table does not list `CLAUDE_CODE_OAUTH_TOKEN` by name, so it is assumed, not shown, to be removed. Source: env-vars ("What the subprocess environment scrub removes").
+- `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` strips credentials from the environment of the Bash commands, hooks and MCP servers the CLI starts. It matches by name or value shape; the docs' table does not list `CLAUDE_CODE_OAUTH_TOKEN` by name, so it is assumed, not shown, to be removed. Source: env-vars ("What the subprocess environment scrub removes"). **Not used by the driver:** in the first live runs (2026-10-18) setting it forced permission mode `default` ("allowed_non_write_users hardening") and turned on the CLI's own Bash sandbox, which failed inside bubblewrap because `socat` is missing, so no command ran.
 - `DISABLE_AUTOUPDATER=1` disables background updates (the install directory is read-only anyway). Source: env-vars.
 - Not set: `DISABLE_TELEMETRY` and `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, because both also turn off feature-flag fetching, which can change behaviour, and the study measures the CLI as people run it. Source: env-vars.
 

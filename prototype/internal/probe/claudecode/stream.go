@@ -25,7 +25,7 @@ type Session struct {
 	SessionID      string // from the init event; the id a follow-up resumes
 	Model          string // exact model id the CLI reports in its init event
 	Version        string // CLI version (init's claude_code_version)
-	PermissionMode string // as the CLI reports it; "default" under the token scrub, with AllowedTools approved
+	PermissionMode string // as the CLI reports it; "bypassPermissions" inside the sandbox
 	Result         *Result
 	Records        []probe.Record
 }
