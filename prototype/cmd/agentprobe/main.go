@@ -3,6 +3,7 @@
 // agent runs.
 //
 //	agentprobe claude -tasks FILE [-tiers technical,novice] [-limit N] [-model M] [-out runs/] [-dry-run]
+//	agentprobe score -tasks FILE -run runs/<run-id>
 //
 // The claude driver runs Claude Code headless inside bubblewrap with
 // permissions skipped, authenticated only by CLAUDE_CODE_OAUTH_TOKEN from the
@@ -37,12 +38,20 @@ func main() {
 }
 
 const usage = `usage: agentprobe claude -tasks FILE [flags]
+       agentprobe score -tasks FILE -run DIR
 
 Drivers:
   claude   Claude Code, sandboxed (see internal/probe/claudecode/NOTES.md)
+
+Scoring:
+  score    shape, interpreters and analysis verdict for every record of a run;
+           writes DIR/scored.jsonl and DIR/report.txt, calls no model
 `
 
 func run(ctx context.Context, args []string, getenv func(string) string, stdout, stderr io.Writer) int {
+	if len(args) > 0 && args[0] == "score" {
+		return score(ctx, args[1:], stdout, stderr)
+	}
 	if len(args) == 0 || args[0] != "claude" {
 		fmt.Fprint(stderr, usage)
 		return 2
