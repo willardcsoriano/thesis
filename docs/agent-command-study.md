@@ -161,9 +161,9 @@ Found while building. Each one is settled before the suite is frozen or before t
 
 **Task suite**
 - `Source` is one field per task, so for S it cannot also say where the novice rewrite came from. It needs a per-tier source.
-- P conversations open in each tier but continue in novice style, so the tier effect on P is measured at turn 0 only. Either state that, or tier the follow-ups.
+- P conversations open in each tier but continue in novice style, so the tier effect on P is measured at turn 0 only. This is stated in `prototype/agentprobe/README.md`; tiering the follow-ups is the alternative.
 - `Features` are per task, not per turn, so a P task's tags pool every turn.
-- S fixtures come from the 3B model's own commands (`oracle.Infer`). A few hold junk paths, and four give another model's command nothing to act on. They are kept for comparability with round 6m. A study-specific fixture would be more realistic but would break that comparison.
+- S fixtures come from the 3B model's own commands (`oracle.Infer`). A few hold junk paths, and six are no-ops on their fixture (M026, M067, M101, M129, M153, M159, listed in `prototype/agentprobe/README.md`). They are kept for comparability with round 6m, except that M041, M044, and M134 now name folders that exist. A study-specific fixture would be more realistic but would break that comparison.
 - `oracle.Entry` has no mtime, so age-based tasks ("older than 15 days") use names, not dates.
 
 **Records**
@@ -173,6 +173,8 @@ Found while building. Each one is settled before the suite is frozen or before t
 - CLI runs give one task-level effect (on the task's last record) and one strace list per turn, not per command.
 - Repeats have no field yet, so a repeated task is a separate run id.
 
-**CLI sandbox**
+**Sandboxes**
+- `probe.Trace` (the API driver's per-step runner) hides the host with `oracle.Sandbox.HideHost`: tmpfs over `/home`, `/root`, `/tmp`, `/run`, and the like, a fake user and hostname, and a cleared environment. The default `oracle.Execute` is unchanged, which a golden argv test pins, so the corpus results still reproduce. Round 7's recovery check gives the same summary. Read-only `/etc`, `/var`, `/sys`, and `/opt` stay visible.
+- `oracle.ExecuteIn` discards stdout. The API driver needs to capture output, because it returns that output to the model.
 - **The agent can read the token.** It runs as the same user, in the CLI's process namespace, with `ptrace_scope` 0, so it can read the token from `/proc/<pid>/environ`, and the network is open. Use a dedicated token for the study and revoke it afterwards. The full fix is a proxy outside the sandbox that holds the token.
 - `--share-net` shares the host's network namespace, so the agent can reach localhost services such as Ollama on port 11434, and the LAN. A separate namespace with outbound-only access (pasta or slirp4netns) would close this.
