@@ -31,6 +31,7 @@ import (
 	"mvdan.cc/sh/v3/syntax"
 
 	"synapseos/internal/oracle"
+	"synapseos/internal/shape"
 )
 
 type item struct {
@@ -247,7 +248,7 @@ func drawNL2Bash(bw string, rng *rand.Rand, seed int64, file, exclude string, nW
 
 // label runs one candidate and returns its item, or nil and the reason it is excluded.
 func label(bw string, seed int64, c candidate) (*item, string) {
-	shape := shapeOf(c.cmd)
+	shp := shape.Of(c.cmd)
 	if isExternal(c.cmd) {
 		return &item{Partition: "E", Src: c.src, Shape: "external", Label: "U", Command: c.cmd, Fx: oracle.Infer(c.cmd, 0),
 			Note: "effects outside the filesystem; labelled by construction, never executed"}, ""
@@ -264,7 +265,7 @@ func label(bw string, seed int64, c candidate) (*item, string) {
 		}
 		last = oc
 		if oc.Clean() {
-			return &item{Partition: c.partition, Src: c.src, Shape: shape, Label: vd.Label, Note: vd.Reason,
+			return &item{Partition: c.partition, Src: c.src, Shape: shp, Label: vd.Label, Note: vd.Reason,
 				Command: c.cmd, Fx: fx, Setup: c.setup}, ""
 		}
 	}
@@ -280,67 +281,7 @@ func label(bw string, seed int64, c candidate) (*item, string) {
 	}
 }
 
-// ---- shape and external partition ----
-
-func shapeOf(cmd string) string {
-	f, err := syntax.NewParser(syntax.Variant(syntax.LangBash)).Parse(strings.NewReader(cmd), "")
-	if err != nil {
-		return "plain"
-	}
-	hidden, runtime, redirect := false, false, false
-	stmts, calls := len(f.Stmts), 0
-	syntax.Walk(f, func(n syntax.Node) bool {
-		switch x := n.(type) {
-		case *syntax.CallExpr:
-			calls++
-			if len(x.Args) > 0 {
-				switch path.Base(lit(x.Args[0])) {
-				case "sh", "bash", "zsh", "dash", "eval", "python", "python3", "perl", "ruby", "awk", "node", "env", "nohup", "time", "command", "busybox":
-					hidden = true
-				case "find", "xargs":
-					runtime = true
-				}
-			}
-		case *syntax.CmdSubst, *syntax.ProcSubst, *syntax.ForClause, *syntax.WhileClause:
-			runtime = true
-		case *syntax.Redirect:
-			if x.Op == syntax.RdrOut || x.Op == syntax.AppOut || x.Op == syntax.RdrClob {
-				redirect = true
-			}
-		}
-		return true
-	})
-	switch {
-	case hidden:
-		return "hidden"
-	case runtime:
-		return "runtime"
-	case stmts > 1 || calls > 1:
-		return "compound"
-	case redirect:
-		return "redirect"
-	}
-	return "plain"
-}
-
-func lit(w *syntax.Word) string {
-	var b strings.Builder
-	for _, p := range w.Parts {
-		switch x := p.(type) {
-		case *syntax.Lit:
-			b.WriteString(x.Value)
-		case *syntax.SglQuoted:
-			b.WriteString(x.Value)
-		case *syntax.DblQuoted:
-			for _, q := range x.Parts {
-				if l, ok := q.(*syntax.Lit); ok {
-					b.WriteString(l.Value)
-				}
-			}
-		}
-	}
-	return b.String()
-}
+// ---- external partition (the shape classifier is internal/shape) ----
 
 // externalTools are tools that change something other than the files in the fixture:
 // another machine, the mount table, another process, a device, an account, the
@@ -377,7 +318,7 @@ func isExternal(cmd string) bool {
 		}
 		words := make([]string, len(call.Args))
 		for i, w := range call.Args {
-			words[i] = lit(w)
+			words[i] = shape.Lit(w)
 		}
 		i := 0
 		for i < len(words) && (wrappers[path.Base(words[i])] || strings.HasPrefix(words[i], "-") || strings.Contains(words[i], "=") && i > 0) {
