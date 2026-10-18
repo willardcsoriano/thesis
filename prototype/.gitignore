@@ -20,3 +20,7 @@ manual-tests/bench-results/
 
 # Raw NL2Bash download (GPL-3.0); fetched locally, never committed
 /pilot/nl2bash_all.*
+
+# Agent command study raw runs (docs/agent-command-study.md): model output and
+# traces, regenerated per run; only the derived report is committed
+/runs/
