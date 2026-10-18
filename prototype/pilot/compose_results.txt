@@ -11,3 +11,6 @@ the one failure (a second name left for a restored file) was then fixed.
 20261016:4000   V3 restored exactly: 3083/3083
 20261017:8000   V3 restored exactly: 6074/6074
 20261018:8000   V3 restored exactly: 6151/6151
+
+2026-10-19, after closing open-problems rows 44 and 45 and defects 9 to 12 (analyzer-defects.md):
+20261015:4000   V3 restored exactly: 3099/3099

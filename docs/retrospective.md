@@ -5,6 +5,7 @@ This is the project's process log — a chronological account of *how* work got 
 ## Table of Contents
 
 - [Overview](#overview)
+- [2026-10-19 — The agent study's two coverage gaps closed, and four defects found on the way](#2026-10-19--the-agent-studys-two-coverage-gaps-closed-and-four-defects-found-on-the-way)
 - [2026-10-17 — Thesis 1 wrap-up: the open-problems register checked row by row](#2026-10-17--thesis-1-wrap-up-the-open-problems-register-checked-row-by-row)
 - [2026-09-26 — The TUI got a spinner and a louder confirmation prompt, tested through a real pty for the first time](#2026-09-26--the-tui-got-a-spinner-and-a-louder-confirmation-prompt-tested-through-a-real-pty-for-the-first-time)
 - [2026-09-20 — Automating the ground truth, and what the first automated run found](#2026-09-20--automating-the-ground-truth-and-what-the-first-automated-run-found)
@@ -24,6 +25,14 @@ This is the project's process log — a chronological account of *how* work got 
 - [Sessions 20–21 — .gitignore Privacy Rework, PR Shipping, Ollama Client/Loop Tests](#sessions-2021--gitignore-privacy-rework-pr-shipping-ollama-clientloop-tests)
 - [Sessions 17–19 — M1 Built From Scratch: First Live Validation, Classifier/Executor Wiring, D21's Bounded Loop](#sessions-1719--m1-built-from-scratch-first-live-validation-classifierexecutor-wiring-d21s-bounded-loop)
 - [Blockers & Lessons — Quick Reference](#blockers--lessons--quick-reference)
+
+## 2026-10-19 — The agent study's two coverage gaps closed, and four defects found on the way
+
+The first agent-study batch found two lines the analysis asked about without a backup, both failing closed. Closing them meant reading `tar`, the compressors, producer resolution, and pipelines against what the tools actually do, and that turned up four soundness defects in code that was already there (`analyzer-defects.md`, defects 9 to 12). One of them, a pipeline race, showed up only intermittently in `make composecheck` and was confirmed on the analyzer from before this change by rerunning the one line sixty times. **Lesson: closing a coverage gap is also a review of the neighbouring rules; budget for what it finds.** Against the frozen round-7 analyzer, 2 of 5,439 decisions changed (N331 gaining a capture), and the paper's numbers stay with the frozen analyzer.
+
+**Resolved from `open-problems.md`:** row 44 (`zip` not in the rule table). `zip` is modelled (`internal/effects/archive.go`): the archive is created or, if it exists, captured and rewritten; `-m` captures the inputs it deletes; any option outside the modelled set is unresolved. The compressors were rebuilt on the same complete-option-set parser. `zip old-logs.zip app.log.1 app.log.2 && unzip -tq old-logs.zip && rm app.log.1 app.log.2 && ls` is now recoverable with capture of the two logs, executed and undone exactly as curated case S41.
+
+**Resolved from `open-problems.md`:** row 45 (`while read` fed by `find -print0` not resolved). A `while read` loop in a later pipeline stage now resolves its producer as `xargs` does, splits the output as `read` would (newline or `-d`, `-r`, IFS trimming), and analyses the body once per record (`internal/effects/whileread.go`). Other `read` forms, unresolvable producers, and a body that creates files where the producer may still be listing stay fail-closed. The study's mirror cleanup is now recoverable with capture of every file outside the pruned `mirror/`, executed and undone exactly as curated case S43.
 
 ## 2026-10-17 — Thesis 1 wrap-up: the open-problems register checked row by row
 

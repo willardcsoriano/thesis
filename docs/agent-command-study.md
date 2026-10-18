@@ -157,7 +157,7 @@ Destructive commands are rare (19 of 180 in round 6m), so the suite is sized to 
   - **Shapes:** compound 65–72% and runtime 22–29%; plain is only 6%. No command ran a programming language.
   - **Analysis:** 4 of 17 technical commands and 2 of 18 novice ones would be captured, and 1 per tier fails closed.
   - **Novice wording:** two novice runs ran no command. One asked which folder and what counts as "old"; the other explained the file manager instead of acting.
-  - **Two real coverage gaps, both failing closed:** `zip` is not in the rule table (`open-problems.md` row 44), and a `while read` loop fed by `find -print0` is not resolved (row 45).
+  - **Two real coverage gaps, both failing closed:** `zip` was not in the rule table (`open-problems.md` row 44), and a `while read` loop fed by `find -print0` was not resolved (row 45). Both closed 2026-10-19: the two lines are now recoverable with capture (`retrospective.md`, `recoverability-analysis.md` section 11).
 
 ## Known gaps
 

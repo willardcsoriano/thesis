@@ -184,10 +184,11 @@ The line is parsed with an adopted parser (writing a shell grammar is not the co
 | Construct | Rule |
 |---|---|
 | `a; b`, `a && b`, `a \|\| b` | union of both sides, since either may run |
-| pipeline `a \| b` | each stage in its own copy of the scope; a stage knows its position, for `xargs` and piped code |
+| pipeline `a \| b` | each stage in its own copy of the scope; a stage knows its position, for `xargs`, `while read`, and piped code; the stages run at once, so a move whose destination an earlier stage overwrites or removes is captured (`racingMoves`) |
 | `( … )`, `{ … }` | walked, the subshell in a copied scope |
 | `if`, `while`, `case` | every branch walked, since any may run |
 | `for x in …` | items expanded and the body walked once per item with `x` bound, up to `MaxLoop` |
+| `producer \| while read [-r] [-d D] x` | the producer resolved as for `xargs`, its output split into records as `read` splits them, and the body walked once per record with `x` bound, up to `MaxLoop`; any other `read` form, or a body that creates files where the producer may still be listing, leaves `x` unbound, which asks |
 | `$( … )`, `<( … )` | analysed where the word is expanded, whether or not the outer command is understood |
 | redirects `>`, `>>`, `&>`, `<>` | a write if the target exists, else a create; a raw device is unrecoverable; `/dev/null` and file descriptors are ignored |
 | `VAR=x`, `export`, `declare` | bound in the scope, so later words expand with them; arrays and computed values unbind |
@@ -219,7 +220,7 @@ When `Compose` is false (the composition ablation), step 3's wrappers, step 4's 
 
 When a target is only known at run time, the analysis finds it by running a form of the command that **cannot change anything**. There are three mechanisms, and section 8 lists every resolver command:
 
-- **Substitutions and `xargs` producers.** The text is run with `bash -c` only if the same analysis finds it has no effects and no issues (`ReadOnly`), it is not privileged, and it is not nondeterministic (`$RANDOM`, `date`, `mktemp`, `/dev/urandom`, `ps`, …) or reading a file the line itself writes. The resolver is proven read-only by the analysis it serves.
+- **Substitutions, and the producers of `xargs` and `while read` loops.** The text is run with `bash -c` only if the same analysis finds it has no effects and no issues (`ReadOnly`), it is not privileged, and it is not nondeterministic (`$RANDOM`, `date`, `mktemp`, `/dev/urandom`, `ps`, network clients such as `curl`, whose fetch the network-less resolver would see as empty, …) or reading a file the line itself writes. The resolver is proven read-only by the analysis it serves.
 - **`find`.** The expression is rewritten so each action that would change something (`-delete`, `-exec`, `-execdir`, `-ok`, `-okdir`) becomes a `-printf` that reports which action fired on which path, and each printing action becomes `-true`. The same expression then lists its own targets. The rewrite is refused if any action token survives.
 - **Fixed dry-run adapters** for `tar -x`, `unzip`, `rsync`, `rename`, `git` (`clean`, `reset --hard`, `checkout`, `restore`, `stash`, `checkout -b`), and for package and service state (`apt-get -s`, `dpkg-query`, `systemctl is-active`). Each is a fixed argument list, never assembled from user text beyond its operands. git runs with repository hooks, fsmonitor, and external diff disabled, so a repository cannot make a query run its own code.
 
@@ -931,6 +932,8 @@ The fixes made on 2026-10-09 and 2026-10-10 (section 11) were each checked again
 
 None of these occurs in the round-7 corpus; re-running it after each fix changed no decision. `analyzer-defects.md` logs all seven, how each was found, and why the last two lie between commands rather than in any rule. That is the argument for targeted rule tests, property tests, mutation testing, and review of the pseudocode alongside a corpus.
 
+**Closed after the agent command study (2026-10-19), with regression tests.** The study's first batch found two coverage gaps, both failing closed (`open-problems.md` rows 44 and 45, now in `retrospective.md`). `zip` and the compressors are now modelled by their complete option sets, an option outside the set being unresolved; and a `while read` loop fed by a pipeline whose producer the analysis can resolve binds its variable to each record (section 4, step 2). The study's two lines, `zip old-logs.zip app.log.1 app.log.2 && unzip -tq old-logs.zip && rm app.log.1 app.log.2 && ls` and the `find -print0 | while IFS= read -r -d '' f` mirror cleanup, are now recoverable with capture. Closing them found four more soundness defects, all fixed (`analyzer-defects.md`, defects 9 to 12): `tar -x` replacing a file with a directory, `tar --remove-files` removals placed wrongly or skipped, network clients resolved to empty output, and a pipeline stage destroying what a concurrent later stage moved. Against the frozen round-7 analyzer, 2 of 5,439 decisions changed, both N331 gaining a capture; silent loss stays 0, and the sandboxed recovery check restores 631 of 632 executed commands (N024 as before). The reported numbers belong to the frozen analyzer and stand.
+
 ## 12. Where the work goes next
 
 Thesis 1 presents the algorithm and a preliminary evaluation on a benchmark. What remains open, in rough order of value:
@@ -974,6 +977,8 @@ make manualtest                                     # then follow manualtest/STO
 | Wrappers, `sh -c`, `find`, `xargs` | `prototype/internal/effects/wrappers.go` |
 | Read-only allowlist, mutating rules, name tables | `prototype/internal/effects/rules.go` |
 | Dry-run adapters: `tar`, `unzip`, `rsync`, `rename`, `git` | `prototype/internal/effects/adapters.go` |
+| Compressors and `zip`, with their full option sets | `prototype/internal/effects/archive.go` |
+| `while read` loops fed by a pipeline | `prototype/internal/effects/whileread.go` |
 | Package and service state, with inverses | `prototype/internal/effects/pkgstate.go` |
 | Verdict and plan | `prototype/internal/effects/verdict.go` |
 | Sandboxed resolver runner | `prototype/internal/effects/runner.go` |
