@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"synapseos/internal/oracle"
@@ -191,12 +192,31 @@ func (r Runner) runTurn(ctx context.Context, turn Turn, base probe.Record) ([]pr
 	case s.Result == nil:
 		r.logf("turn %s: stream ended without a result (exit %v); see the .stderr file\n", filepath.Base(turn.Raw), runErr)
 	case s.Result.IsError:
-		r.logf("turn %s: %s %v\n", filepath.Base(turn.Raw), s.Result.Subtype, s.Result.Errors)
+		r.logf("turn %s: error (%s): %s %v\n", filepath.Base(turn.Raw), s.Result.Subtype, oneLine(s.Result.Text), s.Result.Errors)
+		if authFailure(s.Result.Text) {
+			// Every later task would fail the same way; stop rather than
+			// spend the run producing empty records.
+			return nil, false, fmt.Errorf("the CLI could not authenticate (%s); check %s", oneLine(s.Result.Text), TokenEnv)
+		}
 	}
-	if s.PermissionMode != "" && s.PermissionMode != "bypassPermissions" {
-		r.logf("turn %s: CLI reports permission mode %q, not bypassPermissions\n", filepath.Base(turn.Raw), s.PermissionMode)
+	if s.Result != nil && s.Result.Denials > 0 {
+		r.logf("turn %s: the CLI refused %d tool call(s); see permission_denials in the raw stream\n", filepath.Base(turn.Raw), s.Result.Denials)
 	}
 	return s.Records, !timedOut && s.Result != nil, nil
+}
+
+// authFailure reports whether a result's text is the CLI failing to log in,
+// as it words it ("Failed to authenticate. API Error: 401 ...").
+func authFailure(text string) bool {
+	return strings.Contains(text, "Failed to authenticate") || strings.Contains(text, "API Error: 401")
+}
+
+func oneLine(s string) string {
+	s = strings.Join(strings.Fields(s), " ")
+	if len(s) > 200 {
+		s = s[:200] + "..."
+	}
+	return s
 }
 
 func (r Runner) logf(format string, a ...any) {

@@ -25,7 +25,7 @@ type Session struct {
 	SessionID      string // from the init event; the id a follow-up resumes
 	Model          string // exact model id the CLI reports in its init event
 	Version        string // CLI version (init's claude_code_version)
-	PermissionMode string // as the CLI reports it; "bypassPermissions" inside the sandbox
+	PermissionMode string // as the CLI reports it; "default" under the token scrub, with AllowedTools approved
 	Result         *Result
 	Records        []probe.Record
 }
@@ -37,6 +37,8 @@ type Result struct {
 	IsError  bool     `json:"is_error"`
 	NumTurns int      `json:"num_turns"`
 	Errors   []string `json:"errors,omitempty"`
+	Text     string   `json:"result,omitempty"` // the final message; for an error, what went wrong
+	Denials  int      `json:"-"`                // tool calls the CLI refused (permission_denials)
 }
 
 // event is the subset of a stream-json line this package reads. Unknown
@@ -53,6 +55,8 @@ type event struct {
 	IsError        bool            `json:"is_error"`
 	NumTurns       int             `json:"num_turns"`
 	Errors         []string        `json:"errors"`
+	ResultText     string          `json:"result"`
+	Denials        []any           `json:"permission_denials"`
 }
 
 type message struct {
@@ -176,7 +180,8 @@ func (s *Session) consume(raw []byte, base probe.Record, byID map[string]int) er
 			s.Records[i].Exit = bashExit(b, ev.ToolUseResult, len(blocks) == 1)
 		}
 	case "result":
-		s.Result = &Result{Subtype: ev.Subtype, IsError: ev.IsError, NumTurns: ev.NumTurns, Errors: ev.Errors}
+		s.Result = &Result{Subtype: ev.Subtype, IsError: ev.IsError, NumTurns: ev.NumTurns, Errors: ev.Errors,
+			Text: ev.ResultText, Denials: len(ev.Denials)}
 	}
 	return nil
 }

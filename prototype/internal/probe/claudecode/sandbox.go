@@ -244,13 +244,22 @@ func Redacted(env []string) []string {
 	return out
 }
 
+// AllowedTools are approved up front. CLAUDE_CODE_SUBPROCESS_ENV_SCRUB, which
+// keeps the token out of the agent's shell, makes the CLI force permission mode
+// "default" and ignore --dangerously-skip-permissions, and it says to declare
+// allowedTools instead (seen in the first live run, CLI 2.1.302). These are the
+// tools an agent works with locally; a tool left out is denied and the denial
+// is counted, not hidden.
+var AllowedTools = []string{"Bash", "Read", "Write", "Edit", "NotebookEdit", "Glob", "Grep", "Task", "TodoWrite", "ToolSearch"}
+
 // ClaudeArgs are the CLI's arguments for one turn. Turn 0 fixes the session
 // id; later turns resume it, so follow-ups continue the same conversation.
 func ClaudeArgs(prompt, sessionID string, turn int, model string, maxTurns int) ([]string, error) {
 	if strings.HasPrefix(prompt, "-") {
 		return nil, errors.New("a prompt starting with '-' would be read as a flag")
 	}
-	args := []string{"-p", "--output-format", "stream-json", "--verbose", "--dangerously-skip-permissions"}
+	args := []string{"-p", "--output-format", "stream-json", "--verbose", "--dangerously-skip-permissions",
+		"--allowedTools", strings.Join(AllowedTools, ",")}
 	if model != "" {
 		args = append(args, "--model", model)
 	}
