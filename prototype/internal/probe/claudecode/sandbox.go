@@ -212,15 +212,11 @@ func underHidden(p string) bool {
 func (s Sandbox) Exe() string { return filepath.Join(toolPkg, s.Install.Exe) }
 
 // Env is the CLI's whole environment: nothing from the operator's shell
-// except the token and the locale. bwrap passes it through unchanged.
+// except the token. bwrap passes it through unchanged.
 func (s Sandbox) Env(token string) []string {
 	path := "/usr/local/bin:/usr/bin:/bin"
 	if s.Install.NodePrefix != "" {
 		path = toolNode + "/bin:" + path
-	}
-	lang := os.Getenv("LANG")
-	if lang == "" {
-		lang = "C.UTF-8"
 	}
 	return []string{
 		"PATH=" + path,
@@ -229,7 +225,7 @@ func (s Sandbox) Env(token string) []string {
 		"LOGNAME=" + sandboxUser,
 		"SHELL=/bin/bash",
 		"TERM=dumb",
-		"LANG=" + lang,
+		"LANG=C.UTF-8", // fixed: the host locale would name the operator's region and vary between machines
 		"DISABLE_AUTOUPDATER=1",
 		"CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1",
 		TokenEnv + "=" + token,
