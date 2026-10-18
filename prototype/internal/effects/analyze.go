@@ -332,12 +332,16 @@ func (st *state) stmt(s *syntax.Stmt, sc *scope, pc *pipeCtx) {
 			// Every stage runs in a subshell, at the same time as the others, and any
 			// of them may fail.
 			stages := flattenPipe(x)
+			starts := make([]int, len(stages)+1)
 			for i, stage := range stages {
 				if i > 0 {
 					st.virt.doubt()
 				}
+				starts[i] = len(st.an.Effects)
 				st.stmt(stage, sc.clone(), &pipeCtx{stages: stages, idx: i})
 			}
+			starts[len(stages)] = len(st.an.Effects)
+			st.racingMoves(starts)
 			st.virt.doubt()
 		case syntax.OrStmt:
 			sc.fresh(func() {
@@ -416,6 +420,29 @@ func (st *state) stmt(s *syntax.Stmt, sc *scope, pc *pipeCtx) {
 	}
 	if s.Negated {
 		st.mayHaveFailed(sc) // `! A && B` runs B when A failed
+	}
+}
+
+// racingMoves handles the stages of a pipeline running at the same time: an earlier
+// stage may overwrite or remove the destination of a later stage's move after the move,
+// destroying the moved data, which the stage-by-stage walk (where destroyMoved sees
+// only what comes later) does not see. Such a move is demoted to a captured removal of
+// its source, as destroyMoved does in the other order. starts[i] is the index of stage
+// i's first effect, and starts[len] the end.
+func (st *state) racingMoves(starts []int) {
+	for j := 1; j+1 < len(starts); j++ {
+		for _, mv := range st.an.Effects[starts[j]:starts[j+1]] {
+			if mv.Kind != Remove || mv.MovedTo == "" {
+				continue
+			}
+			for _, e := range st.an.Effects[starts[0]:starts[j]] {
+				if (e.Kind == Write || e.Kind == Remove) && e.Hint == "" &&
+					(e.Path == mv.MovedTo || strings.HasPrefix(mv.MovedTo, e.Path+"/")) {
+					st.demoteMove(mv.Path, mv.MovedTo)
+					break
+				}
+			}
+		}
 	}
 }
 
