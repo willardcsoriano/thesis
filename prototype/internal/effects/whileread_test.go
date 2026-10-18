@@ -78,6 +78,10 @@ func TestWhileReadLoops(t *testing.T) {
 		{`printf 'a.txt\n' | while read f; do rm "$f"; done < list.txt`, true, Unrecoverable, nil, nil},
 		{`printf 'a.txt\n' | while read f; do rm "$f" "$g"; done`, true, Unrecoverable, nil, nil},
 		{`printf 'a.txt\n' | until read f; do rm "$f"; done`, true, Unrecoverable, nil, nil},
+		// When the records cannot be known, a body that only reads still passes, as it
+		// did before loops were resolved (round 7's N257 under the resolution ablation).
+		{`find . -type d | while read -r d; do printf '%s\n' "$d"; done`, false, Recoverable, nil, nil},
+		{`curl -s https://example.com/list | while read f; do echo "$f"; done`, true, Recoverable, nil, nil},
 		// Not in a pipeline, the loop binds nothing it can see, as before.
 		{`while read f; do rm "$f"; done < list.txt`, true, Unrecoverable, nil, nil},
 	})

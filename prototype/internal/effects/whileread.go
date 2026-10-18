@@ -2,7 +2,6 @@ package effects
 
 import (
 	"bytes"
-	"fmt"
 	"strings"
 
 	"mvdan.cc/sh/v3/syntax"
@@ -162,19 +161,16 @@ func (st *state) whileRead(x *syntax.WhileClause, sc *scope, pc *pipeCtx, src st
 	unbound := func() {
 		st.loopBody(x.Do, sc, func(s *scope) { s.drop(rl.name) })
 	}
-	data, producer, ok := st.resolveProducer(c, "the loop", "the loop's")
-	if !ok {
+	// When the records cannot be known, the loop is analysed as before, with the
+	// variable unbound: a body that uses it for anything but reading asks, and a body
+	// that only reads (printf "$f") passes, as it should.
+	data, producer, why := st.resolveProducer(c, "the loop", "the loop's")
+	if why != "" {
 		unbound()
 		return true
 	}
 	items, ok := records(data, rl)
-	switch {
-	case !ok:
-		st.unresolved(c, "the loop's input holds NUL bytes or backslashes that read would change")
-		unbound()
-		return true
-	case len(items) > st.a.MaxLoop:
-		st.unresolved(c, fmt.Sprintf("loop over %d items is too many to analyse one by one", len(items)))
+	if !ok || len(items) > st.a.MaxLoop {
 		unbound()
 		return true
 	}
