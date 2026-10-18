@@ -196,7 +196,7 @@ func (r Runner) runTurn(ctx context.Context, turn Turn, base probe.Record) ([]pr
 		if authFailure(s.Result.Text) {
 			// Every later task would fail the same way; stop rather than
 			// spend the run producing empty records.
-			return nil, false, fmt.Errorf("the CLI could not authenticate (%s); check %s", oneLine(s.Result.Text), TokenEnv)
+			return nil, false, fmt.Errorf("%w: the CLI could not authenticate (%s); check %s", ErrFatal, oneLine(s.Result.Text), TokenEnv)
 		}
 	}
 	if s.PermissionMode != "" && s.PermissionMode != "bypassPermissions" {
@@ -207,6 +207,10 @@ func (r Runner) runTurn(ctx context.Context, turn Turn, base probe.Record) ([]pr
 	}
 	return s.Records, !timedOut && s.Result != nil, nil
 }
+
+// ErrFatal marks a failure every later task would repeat (the login was
+// refused), so the caller stops the run instead of producing empty records.
+var ErrFatal = errors.New("fatal")
 
 // authFailure reports whether a result's text is the CLI failing to log in,
 // as it words it ("Failed to authenticate. API Error: 401 ...").

@@ -1,6 +1,8 @@
 package claudecode
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -45,5 +47,12 @@ func TestClaudeArgsDeclareAllowedTools(t *testing.T) {
 	joined := strings.Join(args, " ")
 	if !strings.Contains(joined, "--allowedTools Bash,Read,Write,Edit") {
 		t.Fatalf("allowedTools not declared: %s", joined)
+	}
+}
+
+func TestAuthErrorIsFatal(t *testing.T) {
+	err := fmt.Errorf("task X: %w", fmt.Errorf("%w: refused", ErrFatal))
+	if !errors.Is(err, ErrFatal) {
+		t.Fatal("a wrapped auth failure must stay recognisable as fatal")
 	}
 }
