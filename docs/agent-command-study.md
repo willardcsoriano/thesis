@@ -18,6 +18,7 @@ This document specifies a study of which shell commands AI agents actually run, 
 - [Analysis plan](#analysis-plan)
 - [Threats to validity](#threats-to-validity)
 - [Status](#status)
+- [Known gaps](#known-gaps)
 
 ## Questions
 
@@ -103,7 +104,7 @@ One JSON object per command or file-tool call, appended to `runs/<run-id>/events
 | `lost` | The oracle's verdict over this step's effect |
 | `analysis` | The analysis verdict for the command: recoverable, captured, or unrecoverable/asks |
 
-`shape` uses the same classifier as the corpora (`shapeOf` in `cmd/corpusgen`). It moves into a shared internal package so both use one copy. Scoring runs afterwards over the stored commands, so a later analyzer can re-score old runs without calling any model again.
+`shape` uses the same classifier as the corpora (`internal/shape`, shared with `cmd/corpusgen`). The classifier reproduces every stored shape in corpus7 and corpus6m. The exception is partition E, which corpusgen labels `external` by a rule that runs before the classifier, so shape mixes are compared with E excluded or with that rule applied to agent commands as well. Scoring runs afterwards over the stored commands, so a later analyzer can re-score old runs without calling any model again.
 
 ## Isolation and secrets
 
@@ -143,9 +144,35 @@ Destructive commands are rare (19 of 180 in round 6m), so the suite is sized to 
 ## Status
 
 - `[x]` Study specified (this file); decision recorded (`decisions.md` D45).
-- `[ ]` Task suite: partitions S, E, and P, with all four tiers, frozen and hashed.
-- `[ ]` `shapeOf` moved to a shared package.
-- `[ ]` API driver: DeepSeek, then Kimi; both tool profiles; execve and snapshot capture.
-- `[ ]` CLI driver: Claude Code, then Gemini CLI, sandboxed.
-- `[ ]` Scoring and report.
+- `[~]` **Task suite:** `prototype/agentprobe/tasks.jsonl`, with 68 tasks (S 22, E 35, P 11), all four tiers, and validated by `internal/probe/suite_test.go`. Of the novice phrasings, 20 of 68 (29%) are based on real text: 13 forum titles and 7 from Layer 7. The other 48 are authored. **Not yet frozen or hashed**, pending the known gaps below. See `prototype/agentprobe/README.md`.
+- `[x]` **Shared shape classifier:** `internal/shape`, with corpusgen switched to it.
+- `[x]` **Scoring and tracing:**
+  - `probe.Score` gets shape, interpreters, and the analysis verdict through `gate.Decide`, with resolvers sandboxed, failing closed without bubblewrap.
+  - `probe.Trace` runs one command in the oracle sandbox under strace, and records the programs launched and the before/after verdict.
+- `[ ]` API driver: DeepSeek, then Kimi; both tool profiles. It will use `probe.Trace` for each step.
+- `[~]` **Claude Code driver:** `internal/probe/claudecode` and `agentprobe claude`. Built and tested, including the real CLI starting in the sandbox with no host credential. **Not yet run live**: that needs the operator's `CLAUDE_CODE_OAUTH_TOKEN`. The verified CLI facts are in its `NOTES.md`.
+- `[ ]` Gemini CLI driver.
+- `[ ]` Report.
 - `[ ]` First run: small, reported in `recoverability-analysis.md`.
+
+## Known gaps
+
+Found while building. Each one is settled before the suite is frozen or before the first reported run.
+
+**Task suite**
+- `Source` is one field per task, so for S it cannot also say where the novice rewrite came from. It needs a per-tier source.
+- P conversations open in each tier but continue in novice style, so the tier effect on P is measured at turn 0 only. Either state that, or tier the follow-ups.
+- `Features` are per task, not per turn, so a P task's tags pool every turn.
+- S fixtures come from the 3B model's own commands (`oracle.Infer`). A few hold junk paths, and four give another model's command nothing to act on. They are kept for comparability with round 6m. A study-specific fixture would be more realistic but would break that comparison.
+- `oracle.Entry` has no mtime, so age-based tasks ("older than 15 days") use names, not dates.
+
+**Records**
+- A nil `Exit` means both "never ran" and "timed out". A timeout should be countable on its own.
+- `Score` analyses each command against the task's starting fixture, not the state the earlier steps left. Later steps need the pre-step state recorded or passed in.
+- The lost paths (`oracle.Verdict.Changed`) are not stored.
+- CLI runs give one task-level effect (on the task's last record) and one strace list per turn, not per command.
+- Repeats have no field yet, so a repeated task is a separate run id.
+
+**CLI sandbox**
+- **The agent can read the token.** It runs as the same user, in the CLI's process namespace, with `ptrace_scope` 0, so it can read the token from `/proc/<pid>/environ`, and the network is open. Use a dedicated token for the study and revoke it afterwards. The full fix is a proxy outside the sandbox that holds the token.
+- `--share-net` shares the host's network namespace, so the agent can reach localhost services such as Ollama on port 11434, and the LAN. A separate namespace with outbound-only access (pasta or slirp4netns) would close this.
