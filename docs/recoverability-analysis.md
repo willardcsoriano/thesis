@@ -646,7 +646,7 @@ plan:       what is captured before it runs
 Every command the analysis knows, and what it does with each. Commands not listed here are unknown, and unknown asks.
 
 <!-- BEGIN GENERATED: rule-map -->
-Generated from `prototype/internal/effects` by `make rulemap`; a test fails when this section and the code disagree. In total: 39 commands with a mutating rule, 13 transparent wrappers, 31 package, service, and system-state tools (5 of them modelled with inverses), 42 commands that are always unrecoverable, 17 interpreters, and 172 commands that are read-only in every form.
+Generated from `prototype/internal/effects` by `make rulemap`; a test fails when this section and the code disagree. In total: 40 commands with a mutating rule, 13 transparent wrappers, 31 package, service, and system-state tools (5 of them modelled with inverses), 42 commands that are always unrecoverable, 17 interpreters, and 172 commands that are read-only in every form.
 
 #### Composition: what the analysis resolves through
 
@@ -666,8 +666,8 @@ Transparent wrappers: `builtin`, `command`, `doas`, `env`, `exec`, `ionice`, `ni
 | Command | Effects derived |
 |---|---|
 | `awk` | -i inplace overwrites each file; a program with system(), a redirected print, or a piped getline is opaque; otherwise read-only |
-| `bunzip2` | as gzip, in reverse |
-| `bzip2` | as gzip |
+| `bunzip2` | as gzip, in reverse; a file with no recognised suffix becomes NAME.out |
+| `bzip2` | as gzip, without -S or -r |
 | `chgrp` | as chown |
 | `chmod` | changes the mode of each operand, and with -R of everything under it (captured as a metadata record); an octal mode equal to the current one is no change |
 | `chown` | changes ownership of each operand, recursively with -R (metadata record) |
@@ -676,8 +676,8 @@ Transparent wrappers: `builtin`, `command`, `doas`, `env`, `exec`, `ionice`, `ni
 | `dd` | writes the of= file; a raw device is unrecoverable |
 | `gawk` | as awk |
 | `git` | per subcommand: reset --hard captures HEAD and every dirty tracked file; clean is resolved by clean -n; checkout, restore, switch -f and stash capture the dirty tracked files they overwrite; checkout -b and stash record an inverse; rm and mv as the file rules; history rewrites, forced pushes, and branch or tag deletion are unrecoverable; an unknown subcommand is opaque |
-| `gunzip` | as gzip, in reverse |
-| `gzip` | writes the compressed file and removes the original unless -k; the removal is captured, because the output is different bytes, not a move; -c, -t, -l are read-only |
+| `gunzip` | as gzip, in reverse: each recognised suffix (.gz, .tgz to .tar, ...) is replaced, and a file with no recognised suffix is skipped |
+| `gzip` | writes the compressed file (NAME.gz, or the -S suffix) and removes the original unless -k; the removal is captured, because the output is different bytes, not a move; -r walks directories, which are otherwise skipped; -c, -t, -l are read-only; -N on decompression and any option not modelled are unresolved |
 | `install` | as cp; -d creates directories |
 | `ln` | creates each link; -f over an existing file removes that file (captured whole, not through the new link) |
 | `mawk` | as awk |
@@ -692,18 +692,19 @@ Transparent wrappers: `builtin`, `command`, `doas`, `env`, `exec`, `ionice`, `ni
 | `sed` | -i overwrites each file, and -i.SUF also leaves a backup; a script with w, W, or e is opaque; otherwise read-only |
 | `shred` | unrecoverable whenever a target exists: it destroys content on purpose |
 | `sort` | -o FILE writes FILE; otherwise read-only |
-| `tar` | create, append, update write the archive, and --remove-files removes the inputs (captured); extract is resolved by tar -tf and writes or creates each member; an archive on standard input is unresolved; list and diff are read-only |
+| `tar` | create, append, update, concatenate and --delete write the archive (and a -g snapshot file), and --remove-files removes the inputs (captured), wherever the archive goes; extract is resolved by tar -tf and writes or creates each member and the directories above it, replacing (and capturing) a file that stands where a directory is extracted; -P, --transform, an archive on standard input, or a list of inputs from a file with --remove-files are unresolved; -I with a program other than a compressor, --to-command and other program hooks are opaque; a remote archive is unrecoverable; list and diff are read-only |
 | `tee` | writes each file operand (- and devices excepted) |
 | `touch` | creates each missing file; an existing file only gets new times, which lose nothing; -c creates nothing |
 | `truncate` | overwrites each operand, creating it unless -c |
 | `uniq` | a second operand is an output file and is written |
 | `unlink` | as rm |
 | `unxz` | as gzip, in reverse |
-| `unzip` | resolved by unzip -Z1: writes or creates each member; -j drops directories; -n never overwrites |
+| `unzip` | resolved by unzip -Z1: writes or creates each member and the directories above it, overwriting with -o and never with -n; -j drops directories; -L and -B rename what they write and are unresolved |
 | `unzstd` | as gzip, in reverse |
 | `wget` | creates the file named by the URL (index.html for a trailing slash), or NAME.1 when NAME exists, since wget never replaces by default; -N and -c overwrite; -O writes its file; -o and -a write the log; recursive and server-named downloads are unresolved |
-| `xz` | as gzip |
-| `zstd` | as gzip |
+| `xz` | as gzip; a --format other than xz or auto, and --files, are unresolved |
+| `zip` | writes the archive (NAME.zip when the name has no suffix): an existing one is rewritten (captured), a new one created; -m deletes the inputs once archived (captured, since the archive is a copy), with -r whole directories; -d deletes entries inside the archive; any other option, and -m with a pattern zip matches itself, are unresolved |
+| `zstd` | as gzip, except that the original is kept unless --rm; -o names the output; output directories and file lists are unresolved |
 
 #### Resolvers: the only commands the analysis runs
 
