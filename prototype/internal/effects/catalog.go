@@ -62,6 +62,7 @@ var compositionHandlers = []struct{ name, how string }{
 	{"sh, bash, zsh, dash, ksh, ash -c", "the string is parsed and analysed as a command line of its own; a script file or code piped in is not visible and asks"},
 	{"eval", "its arguments, joined by spaces, are analysed as a command line"},
 	{"for loops", "the item list is expanded and the body analysed once per item with the variable bound, up to the loop cap"},
+	{"while read loops in a pipeline", "the producer feeding the loop is proven read-only and run, as for xargs, and its output split into records as read would split them (newline or -d, -r, IFS trimming of one variable); the body is analysed once per record with the variable bound, up to the loop cap; other read forms, NUL bytes without -d '', backslashes without -r, and a body creating files where the producer may still be listing are unresolved"},
 }
 
 // readOnlyConditional are the commands readOnlyForm accepts only in some forms.
@@ -84,7 +85,7 @@ var readOnlyConditional = []struct{ name, when string }{
 // dryRunAdapters are the fixed read-only commands the analysis runs to resolve targets.
 var dryRunAdapters = []struct{ forCmd, runs string }{
 	{"command substitution", "the substitution body, via bash -c, once the analysis finds it has no effects, no privilege, and nothing nondeterministic or written earlier on the line"},
-	{"xargs", "the producer pipeline, via bash -c, under the same conditions"},
+	{"xargs, while read loops", "the producer pipeline, via bash -c, under the same conditions; network clients count as nondeterministic"},
 	{"find", "find with every action rewritten to -printf and every printing action to -true; refused if any action token survives"},
 	{"tar -x", "tar -tf ARCHIVE [members]"},
 	{"unzip", "unzip -Z1 ARCHIVE"},

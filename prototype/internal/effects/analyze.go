@@ -373,6 +373,11 @@ func (st *state) stmt(s *syntax.Stmt, sc *scope, pc *pipeCtx) {
 		st.ifClause(x, sc)
 		st.virt.doubt()
 	case *syntax.WhileClause:
+		// `producer | while read v; do ...; done` binds v to each record the producer
+		// gives, when the producer can be resolved (whileread.go).
+		if !x.Until && st.a.Compose && pc != nil && pc.idx > 0 && !readsStdinElsewhere(s) && st.whileRead(x, sc, pc, st.text(s)) {
+			break
+		}
 		st.stmts(x.Cond, sc)
 		st.loopBody(x.Do, sc, nil)
 	case *syntax.ForClause:
@@ -412,6 +417,18 @@ func (st *state) stmt(s *syntax.Stmt, sc *scope, pc *pipeCtx) {
 	if s.Negated {
 		st.mayHaveFailed(sc) // `! A && B` runs B when A failed
 	}
+}
+
+// readsStdinElsewhere reports whether s redirects its standard input, so that a loop
+// in a pipeline does not read the pipe.
+func readsStdinElsewhere(s *syntax.Stmt) bool {
+	for _, r := range s.Redirs {
+		switch r.Op {
+		case syntax.RdrIn, syntax.RdrInOut, syntax.DplIn, syntax.Hdoc, syntax.DashHdoc, syntax.WordHdoc:
+			return true
+		}
+	}
+	return false
 }
 
 // andChain flattens a && b && c, which parses as (a && b) && c, into its parts.

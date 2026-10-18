@@ -496,31 +496,8 @@ scan:
 		}
 		data = b
 	case c.pc != nil && c.pc.idx > 0:
-		producer := st.src[c.pc.stages[0].Pos().Offset():c.pc.stages[c.pc.idx-1].End().Offset()]
-		pa := st.a.analyzeText(st.ctx, producer, c.sc.clone(), st.depth+1, newOverlay())
-		if !pa.ReadOnly() {
-			st.unresolved(c, "the command feeding xargs is not provably read-only, so its output cannot be resolved")
-			return
-		}
-		if st.a.Run == nil {
-			st.unresolved(c, "xargs' input needs resolving and resolution is disabled")
-			return
-		}
-		if c.priv || hasPrivilege(producer) {
-			st.unresolved(c, "runs with elevated privilege, so its input cannot be resolved as the current user")
-			return
-		}
-		if c.sc.wd == unknownWD {
-			st.unresolved(c, errUnknownWD.Error())
-			return
-		}
-		if nondeterministic.MatchString(producer) || st.readsWhatTheLineWrites(producer) {
-			st.unresolved(c, "the command feeding xargs gives different output when the line runs than it does now")
-			return
-		}
-		out, err := st.a.Run(st.ctx, c.sc.wd, []string{"bash", "-c", varPrefix(c.sc) + producer})
-		if err != nil {
-			st.unresolved(c, "could not resolve xargs' input: "+err.Error())
+		out, _, ok := st.resolveProducer(c, "xargs", "xargs'")
+		if !ok {
 			return
 		}
 		data = out
@@ -584,6 +561,41 @@ scan:
 		end := min(k+chunk, len(items))
 		st.dispatch(c.sub(append(append([]string{}, cmd...), items[k:end]...)))
 	}
+}
+
+// resolveProducer runs the stages before c in its pipeline and returns their output and
+// text, but only once the analysis has proven them read-only, unprivileged, and
+// deterministic, and not reading what the line writes. who and whose name the consumer
+// in the reasons recorded when it refuses.
+func (st *state) resolveProducer(c *call, who, whose string) ([]byte, string, bool) {
+	producer := st.src[c.pc.stages[0].Pos().Offset():c.pc.stages[c.pc.idx-1].End().Offset()]
+	pa := st.a.analyzeText(st.ctx, producer, c.sc.clone(), st.depth+1, newOverlay())
+	if !pa.ReadOnly() {
+		st.unresolved(c, "the command feeding "+who+" is not provably read-only, so its output cannot be resolved")
+		return nil, producer, false
+	}
+	if st.a.Run == nil {
+		st.unresolved(c, whose+" input needs resolving and resolution is disabled")
+		return nil, producer, false
+	}
+	if c.priv || hasPrivilege(producer) {
+		st.unresolved(c, "runs with elevated privilege, so its input cannot be resolved as the current user")
+		return nil, producer, false
+	}
+	if c.sc.wd == unknownWD {
+		st.unresolved(c, errUnknownWD.Error())
+		return nil, producer, false
+	}
+	if nondeterministic.MatchString(producer) || st.readsWhatTheLineWrites(producer) {
+		st.unresolved(c, "the command feeding "+who+" gives different output when the line runs than it does now")
+		return nil, producer, false
+	}
+	out, err := st.a.Run(st.ctx, c.sc.wd, []string{"bash", "-c", varPrefix(c.sc) + producer})
+	if err != nil {
+		st.unresolved(c, "could not resolve "+whose+" input: "+err.Error())
+		return nil, producer, false
+	}
+	return out, producer, true
 }
 
 func splitItems(data []byte, null bool, delim string, lines bool) []string {
