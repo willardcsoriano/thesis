@@ -180,17 +180,58 @@ func TestEveryProgramIsInTheManifest(t *testing.T) {
 	}
 }
 
-// scan returns every program name the Go sources start or look up, with
-// where.
+// scan returns every program name the Go sources under prototype/ start or
+// look up, with where.
 func scan(t *testing.T) map[string][]string {
+	t.Helper()
+	return scanRoot(t, prototypeRoot)
+}
+
+// TestScanKnownAnswer runs the scan on testdata/scan, whose programs are
+// known, so a scan that misses a kind of reference (or reports everything)
+// fails here rather than letting a dependency through unlisted.
+func TestScanKnownAnswer(t *testing.T) {
+	refs := scanRoot(t, "testdata/scan")
+	var got []string
+	for n := range refs {
+		got = append(got, n)
+	}
+	sort.Strings(got)
+	want := []string{"prog-abs", "prog-argv", "prog-command", "prog-context", "prog-lookpath", "prog-sbin", "prog-shell",
+		"prog-table", "prog-table2", "prog-test-command", "prog-test-lookpath"}
+	if strings.Join(got, " ") != strings.Join(want, " ") {
+		t.Errorf("scan of testdata/scan found\n\t%s\nwant\n\t%s", strings.Join(got, " "), strings.Join(want, " "))
+	}
+	if at := refs["prog-command"]; len(at) != 1 || at[0] != "fixture.go:16" {
+		t.Errorf("prog-command found at %v, want fixture.go:16", at)
+	}
+}
+
+// The scan of the repository finds programs known to be started there: a
+// scan that silently finds nothing would pass TestEveryProgramIsInTheManifest.
+func TestScanFindsKnownPrograms(t *testing.T) {
+	refs := scan(t)
+	for _, p := range []string{"bwrap", "tar", "strace", "git"} {
+		if len(refs[p]) == 0 {
+			t.Errorf("the repository scan does not find %s, which the code runs", p)
+		}
+	}
+}
+
+// scanRoot is scan over the Go files under root, testdata folders below it
+// skipped.
+func scanRoot(t *testing.T, root string) map[string][]string {
 	t.Helper()
 	refs := map[string][]string{}
 	fset := token.NewFileSet()
-	err := filepath.WalkDir(prototypeRoot, func(p string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
+			if p == root {
+				return nil
+			}
 			if n := d.Name(); n == "testdata" || n == "bin" || (strings.HasPrefix(n, ".") && n != "." && n != "..") {
 				return filepath.SkipDir
 			}
@@ -203,7 +244,7 @@ func scan(t *testing.T) map[string][]string {
 		if err != nil {
 			return err
 		}
-		rel, _ := filepath.Rel(prototypeRoot, p)
+		rel, _ := filepath.Rel(root, p)
 		test := strings.HasSuffix(p, "_test.go")
 		add := func(name string, at token.Pos) {
 			for _, d := range binDirs {
