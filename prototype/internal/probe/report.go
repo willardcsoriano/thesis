@@ -27,7 +27,14 @@ type Group struct {
 	Tools       map[string]int // file and other tool calls, by tool name
 	Shape       map[string]int // shell commands by shape
 	Language    int            // shell commands that ran a programming language
-	Analysis    map[string]int // shell commands by analysis verdict
+	// Analysis counts the verdicts taken on a replayed and verified state
+	// (StateReplayed) only: the headline numbers.
+	Analysis map[string]int
+	// States counts shell commands by AnalysisState ("" for records scored
+	// before states existed), and Other the verdicts of every state but
+	// StateReplayed, by state, so they are never pooled with the headline.
+	States map[string]int
+	Other  map[string]map[string]int
 }
 
 // Summarize groups scored records by model and tier, in a stable order.
@@ -40,7 +47,8 @@ func Summarize(recs []Record) []Group {
 		k := key{r.Model, r.Tier}
 		g := groups[k]
 		if g == nil {
-			g = &Group{Model: r.Model, Tier: r.Tier, Tools: map[string]int{}, Shape: map[string]int{}, Analysis: map[string]int{}}
+			g = &Group{Model: r.Model, Tier: r.Tier, Tools: map[string]int{}, Shape: map[string]int{}, Analysis: map[string]int{},
+				States: map[string]int{}, Other: map[string]map[string]int{}}
 			groups[k], tasks[k], lost[k] = g, map[string]bool{}, map[string]bool{}
 		}
 		tasks[k][r.Task] = true
@@ -53,7 +61,15 @@ func Summarize(recs []Record) []Group {
 		}
 		g.Bash++
 		g.Shape[r.Shape]++
-		g.Analysis[r.Analysis]++
+		g.States[r.AnalysisState]++
+		if r.AnalysisState == StateReplayed {
+			g.Analysis[r.Analysis]++
+		} else {
+			if g.Other[r.AnalysisState] == nil {
+				g.Other[r.AnalysisState] = map[string]int{}
+			}
+			g.Other[r.AnalysisState][r.Analysis]++
+		}
 		if slices.ContainsFunc(r.Interpreters, func(s string) bool { return Languages[s] }) {
 			g.Language++
 		}
@@ -78,15 +94,30 @@ func Summarize(recs []Record) []Group {
 	return out
 }
 
+// verdicts is the reporting order of analysis verdicts.
+var verdicts = []string{AnalysisRecoverable, AnalysisCaptured, AnalysisUnrecoverable}
+
 // WriteReport prints the summary, then every shell command the analysis would
 // not let run unasked (captured or unrecoverable), so the destructive ones can
-// be read alongside the counts.
+// be read alongside the counts, then every step whose verdict was not taken on
+// a replayed and verified state, with the reason.
+//
+// The analysis line counts StateReplayed verdicts only, as a share of those
+// commands. Verdicts on any other state (unverified, diverged, the starting
+// fixture) are printed on their own lines under the state's name and never
+// added to it.
 func WriteReport(w io.Writer, recs []Record) {
 	for _, g := range Summarize(recs) {
 		fmt.Fprintf(w, "== %s / %s: %d tasks, %d lost data, %d shell commands, %d other tool calls\n",
 			g.Model, g.Tier, g.Tasks, g.LostTasks, g.Bash, sum(g.Tools))
 		fmt.Fprintf(w, "   shape:     %s\n", counts(g.Shape, Shapes, g.Bash))
-		fmt.Fprintf(w, "   analysis:  %s\n", counts(g.Analysis, []string{AnalysisRecoverable, AnalysisCaptured, AnalysisUnrecoverable}, g.Bash))
+		fmt.Fprintf(w, "   states:    %s\n", counts(g.States, States, g.Bash))
+		replayed := g.States[StateReplayed]
+		fmt.Fprintf(w, "   analysis:  %s  [on replayed state, %d of %d shell commands]\n",
+			counts(g.Analysis, verdicts, replayed), replayed, g.Bash)
+		for _, st := range stateOrder(g.Other) {
+			fmt.Fprintf(w, "   not headline, %s: %s\n", stateName(st), counts(g.Other[st], verdicts, 0))
+		}
 		fmt.Fprintf(w, "   language:  %s of shell commands ran python/perl/node/...\n", pct(g.Language, g.Bash))
 		if len(g.Tools) > 0 {
 			fmt.Fprintf(w, "   tools:     %s\n", counts(g.Tools, nil, 0))
@@ -95,9 +126,43 @@ func WriteReport(w io.Writer, recs []Record) {
 	fmt.Fprintln(w, "\n== shell commands the analysis would gate (captured or unrecoverable)")
 	for _, r := range recs {
 		if r.Kind == KindBash && (r.Analysis == AnalysisCaptured || r.Analysis == AnalysisUnrecoverable) {
-			fmt.Fprintf(w, "%-13s %-10s %-9s %-13s %s\n", r.Analysis, r.Tier, r.Shape, r.Task, oneLine(r.Command))
+			fmt.Fprintf(w, "%-13s %-17s %-10s %-9s %-13s %s\n", r.Analysis, stateName(r.AnalysisState), r.Tier, r.Shape, r.Task, oneLine(r.Command))
 		}
 	}
+	fmt.Fprintln(w, "\n== steps not analysed on a replayed, verified state")
+	for _, r := range recs {
+		if r.AnalysisState != StateReplayed {
+			fmt.Fprintf(w, "%-17s %-10s %-13s %d.%d %-6s %s\n      %s\n", stateName(r.AnalysisState), r.Tier, r.Task,
+				r.Turn, r.Step, r.Kind, oneLine(r.Command), oneLine(r.AnalysisNote))
+		}
+	}
+}
+
+// stateOrder returns the keys of m in States order, unknown ones last.
+func stateOrder(m map[string]map[string]int) []string {
+	var out []string
+	for _, s := range States {
+		if _, ok := m[s]; ok {
+			out = append(out, s)
+		}
+	}
+	var rest []string
+	for s := range m {
+		if !slices.Contains(States, s) {
+			rest = append(rest, s)
+		}
+	}
+	sort.Strings(rest)
+	return append(out, rest...)
+}
+
+// stateName names a state for printing; records scored before states existed
+// have none.
+func stateName(s string) string {
+	if s == "" {
+		return "(no state)"
+	}
+	return s
 }
 
 func counts(m map[string]int, order []string, total int) string {
