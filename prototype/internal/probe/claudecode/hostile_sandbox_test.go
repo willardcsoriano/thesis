@@ -17,6 +17,7 @@ import (
 
 	"synapseos/internal/oracle"
 	"synapseos/internal/probe"
+	"synapseos/internal/testenv"
 )
 
 // Sandbox escape and process-lifecycle attacks. Each fake CLI below is a
@@ -32,7 +33,7 @@ func needBwrap(t *testing.T) string {
 	t.Helper()
 	bw := oracle.Bwrap()
 	if bw == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	return bw
 }
@@ -59,7 +60,7 @@ func hostileRunner(t *testing.T, script string) Runner {
 func withLimits(t *testing.T, sb *Sandbox) {
 	t.Helper()
 	if sb.Prlimit = Prlimit(); sb.Prlimit == "" {
-		t.Skip("prlimit unavailable")
+		testenv.Unavailable(t, "prlimit unavailable")
 	}
 }
 
@@ -278,7 +279,7 @@ exec -a agentprobe-orphan-`+tag+`-cli sleep 300
 			if withStrace {
 				p, err := exec.LookPath("strace")
 				if err != nil {
-					t.Skip("strace unavailable")
+					testenv.Unavailable(t, "strace unavailable")
 				}
 				r.Sandbox.Strace = p
 			}
@@ -370,7 +371,7 @@ echo "{\"type\":\"result\",\"subtype\":\"error_during_execution\",\"is_error\":t
 			if withStrace {
 				p, err := exec.LookPath("strace")
 				if err != nil {
-					t.Skip("strace unavailable")
+					testenv.Unavailable(t, "strace unavailable")
 				}
 				r.Sandbox.Strace = p
 			}

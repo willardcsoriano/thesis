@@ -16,6 +16,7 @@ import (
 	"synapseos/internal/oracle"
 	"synapseos/internal/probe"
 	"synapseos/internal/probe/claudecode"
+	"synapseos/internal/testenv"
 )
 
 const (
@@ -235,7 +236,7 @@ echo '{"type":"result","status":"success","stats":{"tool_calls":1,"models":{"fak
 func TestRunTaskInRealSandbox(t *testing.T) {
 	bw := oracle.Bwrap()
 	if bw == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	realHome, _ := os.UserHomeDir()
 	for _, tc := range []struct {
@@ -253,7 +254,7 @@ func TestRunTaskInRealSandbox(t *testing.T) {
 			if tc.strace {
 				p, err := exec.LookPath("strace")
 				if err != nil {
-					t.Skip("strace unavailable")
+					testenv.Unavailable(t, "strace unavailable")
 				}
 				sb.Strace = p
 			}
@@ -320,7 +321,7 @@ func installedSandbox(t *testing.T) (Sandbox, claudecode.Workdir) {
 	t.Helper()
 	bw := oracle.Bwrap()
 	if bw == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	in, err := ResolveInstall()
 	if err != nil {

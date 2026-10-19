@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"synapseos/internal/probe/claudecode"
+	"synapseos/internal/testenv"
 )
 
 // The isolated network is claudecode's (claudecode.Network), whose attacks
@@ -17,8 +18,9 @@ var (
 	isoErr  error
 )
 
-// defaultNet is what agentprobe uses by default: isolated, or, where pasta
-// cannot run, the host's network for tests that are not about the network.
+// defaultNet is what agentprobe uses by default, the isolated network. A
+// host where it cannot be built skips the test (fails it under
+// testenv.RequireEnv) rather than quietly running it on the host's network.
 func defaultNet(t *testing.T) claudecode.Network {
 	t.Helper()
 	isoOnce.Do(func() {
@@ -28,8 +30,7 @@ func defaultNet(t *testing.T) claudecode.Network {
 		}
 	})
 	if isoErr != nil {
-		t.Logf("isolated network unavailable (%v); this test runs on the host's network", isoErr)
-		return claudecode.Network{Mode: claudecode.NetHost}
+		testenv.Unavailable(t, "isolated network unavailable: %v", isoErr)
 	}
 	return isoNet
 }

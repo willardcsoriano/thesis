@@ -14,6 +14,7 @@ import (
 	"synapseos/internal/probe"
 	"synapseos/internal/probe/claudecode"
 	"synapseos/internal/probe/geminicli"
+	"synapseos/internal/testenv"
 )
 
 const suite = "../../internal/probe/claudecode/testdata/tasks.jsonl"
@@ -51,7 +52,7 @@ func TestRejectsUnknownDriver(t *testing.T) {
 
 func TestDryRunRedactsAndRunsNothing(t *testing.T) {
 	if oracle.Bwrap() == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	if _, err := claudecode.ResolveInstall(); err != nil {
 		t.Skip(err)
@@ -112,7 +113,7 @@ func TestGeminiRefusesTwoCredentialsAndBadFile(t *testing.T) {
 
 func TestGeminiDryRunRedactsAndRunsNothing(t *testing.T) {
 	if oracle.Bwrap() == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	if _, err := geminicli.ResolveInstall(); err != nil {
 		t.Skip(err)

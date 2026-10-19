@@ -11,6 +11,7 @@ import (
 
 	"synapseos/internal/oracle"
 	"synapseos/internal/probe/claudecode"
+	"synapseos/internal/testenv"
 )
 
 // The dry run prints the whole isolated chain by default: pasta with no
@@ -19,10 +20,10 @@ import (
 // agent can then reach. Both drivers.
 func TestDryRunPrintsTheNetworkChain(t *testing.T) {
 	if oracle.Bwrap() == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	if _, err := exec.LookPath("pasta"); err != nil {
-		t.Skip("pasta not installed")
+		testenv.Unavailable(t, "pasta not installed")
 	}
 	creds := filepath.Join(t.TempDir(), "oauth_creds.json")
 	if err := os.WriteFile(creds, []byte(`{"refresh_token":"1//fake-refresh"}`), 0o600); err != nil {
@@ -87,7 +88,7 @@ func TestRefusesIsolatedWithoutPasta(t *testing.T) {
 	}
 	t.Setenv("PATH", bin)
 	if oracle.Bwrap() == "" {
-		t.Skip("bubblewrap cannot create namespaces here")
+		testenv.Unavailable(t, "bubblewrap cannot create namespaces here")
 	}
 	for _, dryRun := range []bool{false, true} {
 		args := []string{"claude", "-tasks", suite, "-out", t.TempDir()}

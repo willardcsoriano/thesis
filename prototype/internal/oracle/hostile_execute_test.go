@@ -10,6 +10,8 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+
+	"synapseos/internal/testenv"
 	"time"
 )
 
@@ -56,7 +58,7 @@ func noSurvivors(t *testing.T, tag string) {
 func TestExecuteInLeavesNoSurvivors(t *testing.T) {
 	bw := Bwrap()
 	if bw == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	for _, sb := range []Sandbox{{}, {HideHost: true}} {
 		for _, hang := range []bool{false, true} {
@@ -93,7 +95,7 @@ sleep 0.3`, tag)
 func TestHideHostLimits(t *testing.T) {
 	bw := Bwrap()
 	if bw == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	root := t.TempDir()
 	cmd := `python3 -c '

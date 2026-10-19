@@ -13,6 +13,7 @@ import (
 
 	"synapseos/internal/oracle"
 	"synapseos/internal/probe"
+	"synapseos/internal/testenv"
 )
 
 const fakeToken = "sk-ant-oat01-TEST-NOT-A-REAL-TOKEN"
@@ -160,75 +161,80 @@ echo '{"type":"result","subtype":"success","is_error":false,"num_turns":1}'
 func TestRunTaskInRealSandbox(t *testing.T) {
 	bw := oracle.Bwrap()
 	if bw == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
-	nets := []Network{{Mode: NetHost}}
-	if n, err := isolatedNet(); err == nil {
-		nets = append(nets, n)
-	} else {
-		t.Logf("isolated network unavailable (%v); host network only", err)
-	}
+	// Each network with and without strace, as subtests, so a case this
+	// host cannot run is a counted skip rather than one quietly left out.
 	for _, c := range []struct {
+		mode       NetMode
 		withStrace bool
-		net        Network
-	}{{false, nets[0]}, {true, nets[0]}, {false, nets[len(nets)-1]}, {true, nets[len(nets)-1]}} {
-		withStrace := c.withStrace
-		realHome, _ := os.UserHomeDir()
-		sb := testSandbox(t, strings.ReplaceAll(fakeCLI, "$REAL_HOME_PROBE", realHome))
-		sb.Bwrap = bw
-		sb.Net = c.net
-		if withStrace {
-			p, err := exec.LookPath("strace")
+	}{{NetHost, false}, {NetHost, true}, {NetIsolated, false}, {NetIsolated, true}} {
+		name := string(c.mode)
+		if c.withStrace {
+			name += "+strace"
+		}
+		t.Run(name, func(t *testing.T) {
+			withStrace := c.withStrace
+			realHome, _ := os.UserHomeDir()
+			sb := testSandbox(t, strings.ReplaceAll(fakeCLI, "$REAL_HOME_PROBE", realHome))
+			sb.Bwrap = bw
+			sb.Net = Network{Mode: NetHost}
+			if c.mode == NetIsolated {
+				sb.Net = needIsolated(t)
+			}
+			if withStrace {
+				p, err := exec.LookPath("strace")
+				if err != nil {
+					testenv.Unavailable(t, "strace unavailable")
+				}
+				sb.Strace = p
+			}
+			r := testRunner(t, sb)
+			tasks, err := probe.LoadTasks("testdata/tasks.jsonl")
 			if err != nil {
-				continue
+				t.Fatal(err)
 			}
-			sb.Strace = p
-		}
-		r := testRunner(t, sb)
-		tasks, err := probe.LoadTasks("testdata/tasks.jsonl")
-		if err != nil {
-			t.Fatal(err)
-		}
-		recs, err := r.RunTask(context.Background(), tasks[0], probe.TierTechnical)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(recs) != 2 || recs[0].Command != "rm -r old" || recs[0].Turn != 0 || recs[1].Turn != 1 {
-			t.Fatalf("records = %+v", recs)
-		}
-		if recs[0].Lost != nil || recs[1].Lost == nil || !*recs[1].Lost {
-			t.Errorf("whole-task verdict must be on the last record and say lost: %v %v", recs[0].Lost, recs[1].Lost)
-		}
-		if recs[0].Exit == nil || *recs[0].Exit != 0 || recs[0].ModelVersion != "fake-model" || recs[0].Model != "sonnet" {
-			t.Errorf("record 0 = %+v", recs[0])
-		}
-		seen, err := os.ReadFile(filepath.Join(r.Out, "raw", "tiny-1-technical-t0.stderr"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		got := string(seen)
-		for _, want := range []string{"pwd=" + SandboxCwd, "whoami=agent", "host=agentprobe", "homes=agent,", "--session-id", "token-present"} {
-			if !strings.Contains(got, want) {
-				t.Errorf("sandbox view lacks %q: %s", want, got)
+			recs, err := r.RunTask(context.Background(), tasks[0], probe.TierTechnical)
+			if err != nil {
+				t.Fatal(err)
 			}
-		}
-		for _, bad := range []string{"REAL HOME VISIBLE", "USR WRITABLE"} {
-			if strings.Contains(got, bad) {
-				t.Errorf("%s: %s", bad, got)
+			if len(recs) != 2 || recs[0].Command != "rm -r old" || recs[0].Turn != 0 || recs[1].Turn != 1 {
+				t.Fatalf("records = %+v", recs)
 			}
-		}
-		if t1, _ := os.ReadFile(filepath.Join(r.Out, "raw", "tiny-1-technical-t1.stderr")); !strings.Contains(string(t1), "--resume") {
-			t.Errorf("follow-up did not resume: %s", t1)
-		}
-		if withStrace {
-			if !slices.Contains(recs[0].Execve, "rm") {
-				t.Errorf("execve capture missed rm: %v", recs[0].Execve)
+			if recs[0].Lost != nil || recs[1].Lost == nil || !*recs[1].Lost {
+				t.Errorf("whole-task verdict must be on the last record and say lost: %v %v", recs[0].Lost, recs[1].Lost)
 			}
-			tr, _ := os.ReadFile(filepath.Join(r.Out, "raw", "tiny-1-technical-t0.strace"))
-			if strings.Contains(string(tr), fakeToken) {
-				t.Error("token reached the strace file")
+			if recs[0].Exit == nil || *recs[0].Exit != 0 || recs[0].ModelVersion != "fake-model" || recs[0].Model != "sonnet" {
+				t.Errorf("record 0 = %+v", recs[0])
 			}
-		}
+			seen, err := os.ReadFile(filepath.Join(r.Out, "raw", "tiny-1-technical-t0.stderr"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := string(seen)
+			for _, want := range []string{"pwd=" + SandboxCwd, "whoami=agent", "host=agentprobe", "homes=agent,", "--session-id", "token-present"} {
+				if !strings.Contains(got, want) {
+					t.Errorf("sandbox view lacks %q: %s", want, got)
+				}
+			}
+			for _, bad := range []string{"REAL HOME VISIBLE", "USR WRITABLE"} {
+				if strings.Contains(got, bad) {
+					t.Errorf("%s: %s", bad, got)
+				}
+			}
+			if t1, _ := os.ReadFile(filepath.Join(r.Out, "raw", "tiny-1-technical-t1.stderr")); !strings.Contains(string(t1), "--resume") {
+				t.Errorf("follow-up did not resume: %s", t1)
+			}
+			if withStrace {
+				if !slices.Contains(recs[0].Execve, "rm") {
+					t.Errorf("execve capture missed rm: %v", recs[0].Execve)
+				}
+				tr, _ := os.ReadFile(filepath.Join(r.Out, "raw", "tiny-1-technical-t0.strace"))
+				if strings.Contains(string(tr), fakeToken) {
+					t.Error("token reached the strace file")
+				}
+			}
+		})
 	}
 }
 
@@ -254,7 +260,7 @@ func TestExecveParse(t *testing.T) {
 func TestRealCLIStartsWithoutHostCredentials(t *testing.T) {
 	bw := oracle.Bwrap()
 	if bw == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	in, err := ResolveInstall()
 	if err != nil {

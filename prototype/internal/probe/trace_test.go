@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"synapseos/internal/oracle"
+	"synapseos/internal/testenv"
 )
 
 func TestParseExecve(t *testing.T) {
@@ -40,7 +41,7 @@ func traceTools(t *testing.T) (string, string) {
 	t.Helper()
 	bw, st := oracle.Bwrap(), Strace()
 	if bw == "" || st == "" {
-		t.Skip("tracing needs bubblewrap and strace")
+		testenv.Unavailable(t, "tracing needs bubblewrap and strace")
 	}
 	return bw, st
 }

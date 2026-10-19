@@ -17,6 +17,7 @@ import (
 	"synapseos/internal/oracle"
 	"synapseos/internal/probe"
 	"synapseos/internal/probe/claudecode"
+	"synapseos/internal/testenv"
 )
 
 // readStatus reads OUT/status.jsonl, failing on any line that is not whole.
@@ -96,11 +97,11 @@ func fakeRunner(t *testing.T, out, script string) claudecode.Runner {
 	t.Helper()
 	bw := oracle.Bwrap()
 	if bw == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	pl := claudecode.Prlimit()
 	if pl == "" {
-		t.Skip("prlimit unavailable")
+		testenv.Unavailable(t, "prlimit unavailable")
 	}
 	pkg := t.TempDir()
 	os.MkdirAll(filepath.Join(pkg, "bin"), 0o755)
@@ -112,8 +113,8 @@ func fakeRunner(t *testing.T, out, script string) claudecode.Runner {
 		err = n.Probe()
 	}
 	if err != nil {
-		t.Logf("isolated network unavailable (%v); this test runs on the host's network", err)
-		n = claudecode.Network{Mode: claudecode.NetHost}
+		// Never the host's network: a real run would not use it either.
+		testenv.Unavailable(t, "isolated network unavailable: %v", err)
 	}
 	return claudecode.Runner{Sandbox: claudecode.Sandbox{Bwrap: bw, Prlimit: pl, Net: n, Install: claudecode.Install{PackageDir: pkg, Exe: "bin/claude"}},
 		Token: "sk-ant-oat01-TEST-NOT-A-REAL-TOKEN", TurnTimeout: time.Minute, RunID: "test", Out: out}
@@ -251,7 +252,7 @@ func TestFullDiskKeepsEventsWhole(t *testing.T) {
 	}
 	bw := oracle.Bwrap()
 	if bw == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	dir := t.TempDir()
 	cmd := exec.Command(bw, "--dev-bind", "/", "/", "--size", "65536", "--tmpfs", dir, "--unshare-user", "--die-with-parent", "--",
