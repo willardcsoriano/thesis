@@ -3,6 +3,7 @@ apt	bubblewrap	bwrap	yes	runtime: read-only sandbox the analysis' resolvers run 
 apt	bash	bash	yes	runtime: the executor runs every approved command with bash -o pipefail; also the shell of the resolvers and the oracle
 apt	coreutils	rm	yes	runtime: the file commands the analysis reasons about and undo restores after
 apt	coreutils	true	yes	runtime: what bubblewrap starts to prove namespaces work before resolution is sandboxed
+apt	strace	strace	yes	runtime: traces every resolver for sockets, so one that reads the network or a local service is refused, not read as finding nothing (internal/effects/nettrace.go); also agentprobe -strace (probe.Trace) and a corpus command
 apt	coreutils	sleep	yes	runtime: synapseos-session waits for the desktop before laying the TUI over it
 apt	findutils	find	yes	runtime: find and xargs, the wrappers the analysis reasons about; the find resolver
 apt	git	git	yes	runtime: git clean -n, git diff --name-only and rev-parse resolvers; undo's git reset
@@ -33,7 +34,6 @@ apt	iproute2	ip	no	study: routing rules inside the agent command study's isolate
 apt	util-linux	flock	no	study: the lifeline lock that ends the agent command study's isolated namespace
 apt	util-linux	prlimit	no	study: process cap in the agent command study's sandbox (agentprobe refuses to run without it)
 apt	dash	sh	no	study: /bin/sh, the first process of the agent command study's isolated namespace
-apt	strace	strace	no	study: agentprobe -strace, the execve trace of each turn (probe.Trace); also a corpus command
 apt	nodejs	node	no	study: runs Gemini CLI (engines node >=20; Debian 13 ships 20.19) and pilot/ccsafetynet.mjs
 apt	npm	npm	no	study: installs Gemini CLI and cc-safety-net@2.6.1 for pilot/ccsafetynet.mjs
 binary	claude	claude	no	study: Claude Code, an agent CLI under study; curl -fsSL https://claude.ai/install.sh | bash (native binary, needs no Node)

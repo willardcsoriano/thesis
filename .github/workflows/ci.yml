@@ -12,7 +12,7 @@ jobs:
           go-version-file: prototype/go.mod
           cache-dependency-path: prototype/go.sum
       - name: Tools the tests exercise
-        run: sudo apt-get update && sudo apt-get install -y bubblewrap passt jq git rsync rename unzip zip
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap strace passt jq git rsync rename unzip zip
       # Ubuntu 24.04 runners restrict unprivileged user namespaces through
       # AppArmor, so bubblewrap cannot start and every oracle, resolver,
       # recovery and sandbox test skips. CI then passes without having run
