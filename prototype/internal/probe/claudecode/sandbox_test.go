@@ -247,7 +247,7 @@ func TestRealCLIStartsWithoutHostCredentials(t *testing.T) {
 	if err != nil {
 		t.Skip(err)
 	}
-	sb := Sandbox{Bwrap: bw, Install: in}
+	sb := Sandbox{Bwrap: bw, Prlimit: Prlimit(), Install: in} // with the limits a real run gets
 	w, err := NewWorkdir()
 	if err != nil {
 		t.Fatal(err)

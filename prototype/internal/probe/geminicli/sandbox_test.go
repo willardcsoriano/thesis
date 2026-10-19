@@ -328,7 +328,7 @@ func installedSandbox(t *testing.T) (Sandbox, claudecode.Workdir) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { w.Remove() })
-	return Sandbox{Bwrap: bw, Install: in}, w
+	return Sandbox{Bwrap: bw, Prlimit: claudecode.Prlimit(), Install: in}, w // with the limits a real run gets
 }
 
 func runInstalled(t *testing.T, sb Sandbox, w claudecode.Workdir, a Auth, args ...string) (string, string, int) {
