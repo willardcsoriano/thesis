@@ -1,4 +1,4 @@
-.PHONY: build test run task cli repl scratch tui tui-scratch undo ollama-serve ollama-serve-bg ollama-pull ollama-status pilot pilot3 clean ci fmt-check vet corpus4 round4 deps-check deps-hoard manualtest
+.PHONY: build test test-gated run task cli repl scratch tui tui-scratch undo ollama-serve ollama-serve-bg ollama-pull ollama-status pilot pilot3 clean ci fmt-check vet corpus4 round4 deps-check deps-hoard manualtest
 
 # Falls back to the user-local toolchain (no sudo required) if `go` isn't
 # already on PATH — see ../setup.md.
@@ -109,7 +109,19 @@ fmt-check:
 vet:
 	$(GO) vet ./...
 
-ci: fmt-check vet test cover-check
+ci: fmt-check vet test-gated cover-check
+
+# The tests, through the skip gate: go test counts a skip as a pass, so a
+# host without a working sandbox would pass having run none of the sandbox
+# tests. cmd/skipgate fails on any failure and on any skip that
+# ci-allowed-skips.txt does not name with its reason. Set
+# SYNAPSE_REQUIRE_SANDBOX=1 (CI does) to make a missing sandbox tool a
+# failure at the test itself.
+.PHONY: test-gated
+test-gated:
+	@mkdir -p bin
+	@$(GO) test -json ./... > bin/test.json; s=$$?; \
+	$(GO) run ./cmd/skipgate -allow ci-allowed-skips.txt < bin/test.json || s=1; exit $$s
 
 # The analysis's statement coverage (by the effects and gate tests) may not fall
 # below COVER_FLOOR. It was 59% before anyone measured it; see

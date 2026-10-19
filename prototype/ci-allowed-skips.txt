@@ -1,0 +1,22 @@
+# Skips `make ci` accepts. go test counts a skip as a pass, so `make ci` runs
+# the tests through cmd/skipgate, which fails on any skip not listed here and
+# on any entry here that names no test the run saw.
+#
+# One per line: package import path, test name as go test -json reports it
+# (Parent/sub for a subtest), then the reason, which is required. A missing
+# sandbox tool (bubblewrap, pasta, strace, prlimit) is never a reason: CI sets
+# SYNAPSE_REQUIRE_SANDBOX=1, which turns those skips into failures.
+
+# Runs only as the child process TestHostileDriverKilledTakesTheSandbox starts and kills.
+synapseos/internal/probe/claudecode TestHelperDriver helper process only; its parent test runs it
+
+# The real Claude Code and Gemini CLIs. Not installed in CI on purpose: these
+# tests prove that the operator's logged-in CLI finds none of the operator's
+# credentials inside the sandbox, and that the installed version fails fast
+# without a login. A CI runner has no login to leak, so there they would pass
+# without testing anything, and they would test whatever npm serves that day
+# rather than the version the study runs. They run on the study machine, where
+# the CLIs are installed (they ran when this list was written).
+synapseos/internal/probe/claudecode TestRealCLIStartsWithoutHostCredentials needs the real claude CLI, absent in CI by design (see above)
+synapseos/internal/probe/geminicli TestRealCLIStartsWithoutHostCredentials needs the real gemini CLI, absent in CI by design (see above)
+synapseos/internal/probe/geminicli TestRealCLIOAuthWithoutLoginFailsFast needs the real gemini CLI, absent in CI by design (see above)
