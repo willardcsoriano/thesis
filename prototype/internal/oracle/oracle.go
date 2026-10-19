@@ -39,38 +39,111 @@ type Entry struct {
 }
 
 // Materialize creates the fixture under root. Parents are created as needed.
+//
+// It runs on the host, so nothing a fixture says may reach outside root:
+// every operation goes through an os.Root, which refuses a path or a link
+// that resolves outside it, and a file is never written through a link at
+// its own path. A link's target is not checked, since the link itself is
+// fixture data; it is only never followed out. An entry that is malformed
+// (an absolute, parent-relative or empty path, a path too long for Observe
+// to walk, an unknown kind, a mode on a dir or link, mode bits beyond
+// 07777, or a link where something else already is) is an error, never
+// skipped.
+//
+// Mode is a Unix mode: the permission bits plus setuid (04000), setgid
+// (02000) and sticky (01000). Zero means 0644.
 func Materialize(root string, fx []Entry) error {
+	r, err := os.OpenRoot(root)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
 	for _, e := range fx {
-		full := filepath.Join(root, e.Path)
+		rel, err := entryPath(root, e.Path)
+		if err != nil {
+			return err
+		}
+		if e.Kind != "file" && e.Mode != 0 {
+			return fmt.Errorf("fixture %q: a mode is only applied to a file", e.Path)
+		}
+		parent := filepath.Dir(rel)
 		switch e.Kind {
 		case "dir":
-			if err := os.MkdirAll(full, 0o755); err != nil {
+			if err := r.MkdirAll(rel, 0o755); err != nil {
 				return err
 			}
 		case "link":
-			if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			if err := r.MkdirAll(parent, 0o755); err != nil {
 				return err
 			}
-			if err := os.Symlink(e.Target, full); err != nil && !errors.Is(err, fs.ErrExist) {
+			if err := r.Symlink(e.Target, rel); err != nil {
+				if got, rerr := r.Readlink(rel); !errors.Is(err, fs.ErrExist) || rerr != nil || got != e.Target {
+					return err // something else is there already
+				}
+			}
+		case "file":
+			mode, err := unixMode(e.Mode)
+			if err != nil {
+				return fmt.Errorf("fixture %q: %w", e.Path, err)
+			}
+			if err := r.MkdirAll(parent, 0o755); err != nil {
+				return err
+			}
+			f, err := r.OpenFile(rel, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|syscall.O_NOFOLLOW, mode.Perm())
+			if err != nil {
+				return err
+			}
+			_, werr := f.WriteString(e.Data)
+			cerr := f.Chmod(mode) // fchmod: the umask does not apply, and the special bits do
+			if err := errors.Join(werr, cerr, f.Close()); err != nil {
 				return err
 			}
 		default:
-			if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
-				return err
-			}
-			mode := fs.FileMode(0o644)
-			if e.Mode != 0 {
-				mode = fs.FileMode(e.Mode)
-			}
-			if err := os.WriteFile(full, []byte(e.Data), mode); err != nil {
-				return err
-			}
-			if err := os.Chmod(full, mode); err != nil {
-				return err
-			}
+			return fmt.Errorf("fixture %q: unknown kind %q", e.Path, e.Kind)
 		}
 	}
 	return nil
+}
+
+// pathMax is Linux's PATH_MAX: Observe walks by full path, so a longer path
+// could be created (component by component) but never observed.
+const pathMax = 4096
+
+// entryPath is an entry's path, cleaned, relative to root, or why it cannot
+// be one.
+func entryPath(root, p string) (string, error) {
+	c := filepath.Clean(p)
+	switch {
+	case p == "" || c == ".":
+		return "", fmt.Errorf("fixture entry %q: no path", p)
+	case strings.IndexByte(p, 0) >= 0:
+		return "", fmt.Errorf("fixture entry %q: NUL in path", p)
+	case filepath.IsAbs(c):
+		return "", fmt.Errorf("fixture entry %q: absolute path", p)
+	case c == ".." || strings.HasPrefix(c, "../"):
+		return "", fmt.Errorf("fixture entry %q: outside the fixture root", p)
+	case len(root)+1+len(c) >= pathMax:
+		return "", fmt.Errorf("fixture entry %.40q...: path longer than %d bytes", p, pathMax-1)
+	}
+	return c, nil
+}
+
+// unixMode turns an Entry mode into an fs.FileMode, carrying the special
+// bits that fs.FileMode keeps elsewhere.
+func unixMode(m uint32) (fs.FileMode, error) {
+	if m == 0 {
+		return 0o644, nil
+	}
+	if m&^0o7777 != 0 {
+		return 0, fmt.Errorf("mode %o has bits beyond 07777", m)
+	}
+	mode := fs.FileMode(m & 0o777)
+	for bit, fm := range map[uint32]fs.FileMode{0o4000: fs.ModeSetuid, 0o2000: fs.ModeSetgid, 0o1000: fs.ModeSticky} {
+		if m&bit != 0 {
+			mode |= fm
+		}
+	}
+	return mode, nil
 }
 
 // Node is what is observed at one path.
@@ -88,9 +161,20 @@ type Snapshot map[string]Node
 
 // Observe walks root and records every path. Modification times are deliberately
 // not recorded: touching a file changes nothing a user could lose.
+//
+// Nothing is followed out of root: links are recorded, not followed, and
+// every stat and open goes through an os.Root, so a path whose parent was
+// swapped for a link to elsewhere is not read. A file is opened without
+// following a link and without blocking (a FIFO swapped in mid-walk), and
+// hashed only if it is still the file that was stat'ed.
 func Observe(root string) (Snapshot, error) {
+	r, err := os.OpenRoot(root)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
 	s := Snapshot{}
-	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+	err = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil // vanished or unreadable mid-walk; the diff will show it
 		}
@@ -101,7 +185,7 @@ func Observe(root string) (Snapshot, error) {
 		if d.IsDir() && d.Name() == ".git" {
 			return filepath.SkipDir // repository internals are not user files; the working tree is
 		}
-		fi, err := os.Lstat(p)
+		fi, err := r.Lstat(rel)
 		if err != nil {
 			return nil
 		}
@@ -112,12 +196,12 @@ func Observe(root string) (Snapshot, error) {
 		switch m := fi.Mode(); {
 		case m&fs.ModeSymlink != 0:
 			n.Kind = 'l'
-			n.Target, _ = os.Readlink(p)
+			n.Target, _ = r.Readlink(rel)
 		case m.IsDir():
 			n.Kind = 'd'
 		case m.IsRegular():
 			n.Kind = 'f'
-			n.Hash = hashFile(p)
+			n.Hash = hashFile(r, rel, fi)
 		default:
 			n.Kind = 'o'
 		}
@@ -127,12 +211,26 @@ func Observe(root string) (Snapshot, error) {
 	return s, err
 }
 
-func hashFile(p string) string {
-	f, err := os.Open(p)
+// hashFile is the SHA-256 of the regular file fi describes. A file the
+// operator may not read is identified by its size and change time instead,
+// so a rewrite of it still differs (the change time cannot be set back);
+// anything that touches it then counts as a change, which errs towards a
+// loss. A file that is no longer the one stat'ed, or cannot be read for
+// another reason, is "?".
+func hashFile(r *os.Root, rel string, fi fs.FileInfo) string {
+	f, err := r.OpenFile(rel, os.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_NONBLOCK, 0)
+	if errors.Is(err, fs.ErrPermission) {
+		if st, ok := fi.Sys().(*syscall.Stat_t); ok {
+			return fmt.Sprintf("unreadable:%d:%d.%09d", st.Size, st.Ctim.Sec, st.Ctim.Nsec)
+		}
+	}
 	if err != nil {
 		return "?"
 	}
 	defer f.Close()
+	if now, err := f.Stat(); err != nil || !now.Mode().IsRegular() || !os.SameFile(now, fi) {
+		return "?"
+	}
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
 		return "?"
