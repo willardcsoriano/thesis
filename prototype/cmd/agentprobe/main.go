@@ -96,12 +96,13 @@ func commonFlags(fs *flag.FlagSet, maxTurnsHelp string) *common {
 
 // setup is what every driver needs once its flags are parsed.
 type setup struct {
-	tasks  []probe.Task
-	tiers  []string
-	bwrap  string
-	strace string // empty unless -strace
-	runID  string
-	out    string // OUT/<run-id>
+	tasks   []probe.Task
+	tiers   []string
+	bwrap   string
+	strace  string // empty unless -strace
+	prlimit string
+	runID   string
+	out     string // OUT/<run-id>
 }
 
 // load validates the common flags and loads the suite. A non-zero code means
@@ -132,6 +133,10 @@ func (c *common) host(driver string, stderr io.Writer) (setup, int) {
 	var s setup
 	if s.bwrap = oracle.Bwrap(); s.bwrap == "" {
 		fmt.Fprintln(stderr, "agentprobe: bubblewrap (bwrap) is missing or cannot create namespaces; the CLI never runs unsandboxed")
+		return s, 1
+	}
+	if s.prlimit = claudecode.Prlimit(); s.prlimit == "" {
+		fmt.Fprintln(stderr, "agentprobe: prlimit (util-linux) is missing or under a directory the sandbox hides; it caps the sandbox's processes")
 		return s, 1
 	}
 	if c.strace {
@@ -175,7 +180,7 @@ func runClaude(ctx context.Context, args []string, getenv func(string) string, s
 		fmt.Fprintln(stderr, "agentprobe:", err)
 		return 1
 	}
-	sb := claudecode.Sandbox{Bwrap: s.bwrap, Strace: s.strace, Install: install}
+	sb := claudecode.Sandbox{Bwrap: s.bwrap, Strace: s.strace, Prlimit: s.prlimit, Install: install}
 	r := claudecode.Runner{Sandbox: sb, Token: token, Model: c.model, MaxTurns: c.maxTurns, TurnTimeout: c.timeout,
 		RunID: s.runID, Out: s.out, Log: stderr}
 
@@ -245,7 +250,7 @@ func runGemini(ctx context.Context, args []string, getenv func(string) string, s
 		fmt.Fprintln(stderr, "agentprobe:", err)
 		return 1
 	}
-	sb := geminicli.Sandbox{Bwrap: s.bwrap, Strace: s.strace, Install: install}
+	sb := geminicli.Sandbox{Bwrap: s.bwrap, Strace: s.strace, Prlimit: s.prlimit, Install: install}
 	r := geminicli.Runner{Sandbox: sb, Auth: auth, Model: c.model, MaxTurns: c.maxTurns, Debug: *debug,
 		TurnTimeout: c.timeout, RunID: s.runID, Out: s.out, Log: stderr}
 

@@ -10,6 +10,7 @@ import (
 
 	"synapseos/internal/oracle"
 	"synapseos/internal/probe"
+	"synapseos/internal/probe/claudecode"
 )
 
 // TestLiveTinyTask runs the real CLI, sandboxed, on the tiny test task. It
@@ -42,7 +43,7 @@ func TestLiveTinyTask(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := Runner{Sandbox: Sandbox{Bwrap: bw, Install: in}, Auth: a, Model: os.Getenv("AGENTPROBE_MODEL"),
+	r := Runner{Sandbox: Sandbox{Bwrap: bw, Prlimit: claudecode.Prlimit(), Install: in}, Auth: a, Model: os.Getenv("AGENTPROBE_MODEL"),
 		MaxTurns: 8, Debug: os.Getenv("AGENTPROBE_GEMINI_DEBUG") != "", TurnTimeout: 5 * time.Minute,
 		RunID: "live-test", Out: t.TempDir(), Log: testLog{t}}
 	recs, err := r.RunTask(context.Background(), tasks[0], probe.TierTechnical)
