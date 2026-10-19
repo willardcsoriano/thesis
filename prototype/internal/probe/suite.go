@@ -3,8 +3,11 @@ package probe
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"regexp"
+	"strings"
 )
 
 // Tiers lists every tier in reporting order.
@@ -43,9 +46,52 @@ func LoadTasks(path string) ([]Task, error) {
 	return tasks, sc.Err()
 }
 
+// ErrIncomplete marks a task run whose last turn did not finish (it timed
+// out, or its stream had no result event). Its records are kept, but the
+// task is not a completed one.
+var ErrIncomplete = errors.New("a turn did not finish")
+
+// ErrInterrupted marks a task run the operator interrupted.
+var ErrInterrupted = errors.New("interrupted")
+
+var safeID = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`)
+
+// CheckID refuses an id that cannot be used as one file name component:
+// task and run ids name files and folders under the run's output, so a '/'
+// or a leading '.' would write outside it (../../x).
+func CheckID(kind, id string) error {
+	if !safeID.MatchString(id) {
+		return fmt.Errorf("%s id %q: want 1 to 128 of A-Z a-z 0-9 . _ -, starting with a letter or digit", kind, id)
+	}
+	return nil
+}
+
+// MaxArg is the longest single argument Linux passes to a program
+// (MAX_ARG_STRLEN, 128 KiB including the terminating NUL). A longer prompt
+// would fail at exec with "argument list too long".
+const MaxArg = 128<<10 - 1
+
+// CheckPrompt refuses a prompt that cannot reach a CLI intact as one
+// argument: one starting with '-' (read as a flag), one holding a NUL (exec
+// refuses it), or one longer than MaxArg.
+func CheckPrompt(p string) error {
+	switch {
+	case strings.HasPrefix(p, "-"):
+		return errors.New("a prompt starting with '-' would be read as a flag")
+	case strings.IndexByte(p, 0) >= 0:
+		return errors.New("a prompt holds a NUL byte, which no argument can carry")
+	case len(p) > MaxArg:
+		return fmt.Errorf("a prompt of %d bytes is longer than one argument may be (%d)", len(p), MaxArg)
+	}
+	return nil
+}
+
 func (t Task) validate() error {
 	if t.ID == "" {
 		return fmt.Errorf("task without id")
+	}
+	if err := CheckID("task", t.ID); err != nil {
+		return err
 	}
 	switch t.Partition {
 	case PartitionNL2Bash, PartitionEveryday, PartitionPersona:
@@ -55,6 +101,14 @@ func (t Task) validate() error {
 	for _, tier := range Tiers {
 		if t.Prompts[tier] == "" {
 			return fmt.Errorf("task %s: no %s prompt", t.ID, tier)
+		}
+		if err := CheckPrompt(t.Prompts[tier]); err != nil {
+			return fmt.Errorf("task %s %s: %w", t.ID, tier, err)
+		}
+	}
+	for i, f := range t.FollowUps {
+		if err := CheckPrompt(f); err != nil {
+			return fmt.Errorf("task %s follow-up %d: %w", t.ID, i+1, err)
 		}
 	}
 	if t.Source == "" {
