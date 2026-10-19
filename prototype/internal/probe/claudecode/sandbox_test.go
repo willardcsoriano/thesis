@@ -2,6 +2,7 @@ package claudecode
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,7 +28,7 @@ func testSandbox(t *testing.T, exe string) Sandbox {
 			t.Fatal(err)
 		}
 	}
-	return Sandbox{Bwrap: "/usr/bin/bwrap", Install: Install{PackageDir: pkg, Exe: "bin/claude"}}
+	return Sandbox{Bwrap: "/usr/bin/bwrap", Prlimit: "/usr/bin/prlimit", Install: Install{PackageDir: pkg, Exe: "bin/claude"}}
 }
 
 func testRunner(t *testing.T, sb Sandbox) Runner {
@@ -87,8 +88,14 @@ func TestArgvKeepsHomeHiddenAndTokenOut(t *testing.T) {
 		if at("--chdir", SandboxCwd) < 0 || at("--ro-bind", "/") < 0 || !slices.Contains(argv, "--share-net") || !slices.Contains(argv, "--unshare-all") {
 			t.Errorf("missing sandbox flags: %v", argv)
 		}
+		// bwrap's "--", then prlimit setting the limits and its own "--".
 		sep := slices.Index(argv, "--")
-		if sep < 0 || argv[sep+1] != toolPkg+"/bin/claude" {
+		n := fmt.Sprint(MaxProcs)
+		if sep < 0 || !slices.Equal(argv[sep+1:sep+5], []string{"/usr/bin/prlimit", "--nproc=" + n + ":" + n, "--core=0:0", "--"}) {
+			t.Fatalf("limits not set inside the sandbox: %v", argv)
+		}
+		sep += 4
+		if argv[sep+1] != toolPkg+"/bin/claude" {
 			t.Errorf("inner command not after --: %v", argv)
 		}
 		inner := argv[sep+1:]
@@ -240,7 +247,7 @@ func TestRealCLIStartsWithoutHostCredentials(t *testing.T) {
 	if err != nil {
 		t.Skip(err)
 	}
-	sb := Sandbox{Bwrap: bw, Install: in}
+	sb := Sandbox{Bwrap: bw, Prlimit: Prlimit(), Install: in} // with the limits a real run gets
 	w, err := NewWorkdir()
 	if err != nil {
 		t.Fatal(err)

@@ -3,12 +3,17 @@ package claudecode
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
+	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
+
+	"synapseos/internal/probe"
 )
 
 // TokenEnv is the variable that carries the long-lived token from
@@ -151,32 +156,79 @@ func (w Workdir) Remove() error {
 type Sandbox struct {
 	Bwrap   string // bubblewrap binary
 	Strace  string // strace binary; empty disables execve capture
+	Prlimit string // prlimit binary, which applies Limits inside the sandbox; RunTask refuses to run without it
 	Install Install
+	// Mask are further host directories hidden behind an empty tmpfs, for
+	// what lies outside the hidden directories yet must not be readable:
+	// the runner adds its own output folder, whose raw streams hold earlier
+	// tasks' traffic.
+	Mask []string
 }
 
-// Argv is the full host command line: optionally strace, then bwrap, then
-// inner (the program and its arguments, paths as seen inside the sandbox).
-// It never contains a secret; the token goes in Env.
-//
-// Mounts, in order: the host root read-only; a fresh /dev and /proc; an
-// empty tmpfs over every hidden directory that exists; resolv.conf's target
-// re-exposed if it lived under one; the workdir's home read-write at
-// SandboxHome; synthetic passwd and group; the CLI's package read-only. All
-// namespaces are unshared except the network, which the CLI needs.
+// Argv is the full host command line (see Jail.Argv) with the CLI's
+// package, and node when the CLI is a script, mounted read-only. It never
+// contains a secret; the token goes in Env.
 func (s Sandbox) Argv(w Workdir, straceOut string, inner []string) []string {
+	ro := []Mount{{s.Install.PackageDir, toolPkg}}
+	if s.Install.NodePrefix != "" {
+		ro = append(ro, Mount{s.Install.NodePrefix, toolNode})
+	}
+	return Jail{Bwrap: s.Bwrap, Strace: s.Strace, Prlimit: s.Prlimit, Mask: s.Mask, ReadOnly: ro}.Argv(w, straceOut, inner)
+}
+
+// Mount is a host path bound at another path inside the sandbox.
+type Mount struct{ Host, At string }
+
+// Limits inside the sandbox. They are set in the sandbox's own user
+// namespace, where RLIMIT_NPROC counts only the sandbox's processes and
+// threads, not the operator's (set on bubblewrap from outside it would
+// count every process the operator runs).
+const (
+	MaxProcs  = 1024      // processes and threads: a fork bomb stops here
+	TmpfsSize = 256 << 20 // bytes in each tmpfs the sandbox mounts, so filling one cannot fill the host's memory
+)
+
+// Jail is the sandbox both CLI drivers share: everything but the CLI's own
+// files, which come in ReadOnly.
+type Jail struct {
+	Bwrap, Strace, Prlimit string
+	Mask                   []string
+	ReadOnly               []Mount
+}
+
+// Argv is the full host command line: optionally strace, then bwrap, then,
+// inside, prlimit and inner (the program and its arguments, paths as seen
+// inside the sandbox).
+//
+// Mounts, in order: the host root read-only; a fresh /dev, read-only but
+// for a size-capped /dev/shm; a fresh /proc; a size-capped empty tmpfs over
+// every hidden directory that exists and every Mask directory outside them;
+// resolv.conf's target re-exposed if it lived under one; the workdir's home
+// read-write at SandboxHome; synthetic passwd and group; ReadOnly. All
+// namespaces are unshared except the network, which the CLI needs, and the
+// sandbox cannot create further user namespaces, so it cannot remount its
+// view. prlimit caps processes at MaxProcs and core dumps at zero bytes, so
+// a crash cannot write the CLI's memory, token included, to disk.
+func (j Jail) Argv(w Workdir, straceOut string, inner []string) []string {
 	var argv []string
-	if s.Strace != "" && straceOut != "" {
+	if j.Strace != "" && straceOut != "" {
 		// No -v: without it strace abbreviates envp to a count, so the
 		// token never reaches the trace file. -s 256 keeps argv[0] whole.
-		argv = append(argv, s.Strace, "-f", "-qq", "-s", "256", "-e", "trace=execve", "-o", straceOut, "--")
+		argv = append(argv, j.Strace, "-f", "-qq", "-s", "256", "-e", "trace=execve", "-o", straceOut, "--")
 	}
-	argv = append(argv, s.Bwrap,
+	size := strconv.Itoa(TmpfsSize)
+	argv = append(argv, j.Bwrap,
 		"--ro-bind", "/", "/",
 		"--dev", "/dev",
+		"--size", size, "--tmpfs", "/dev/shm",
+		"--remount-ro", "/dev",
 		"--proc", "/proc")
-	for _, d := range hidden {
+	for _, d := range append(slices.Clone(hidden), j.Mask...) {
+		if d != filepath.Clean(d) || !filepath.IsAbs(d) || d == "/" || underHidden(d) && !slices.Contains(hidden, d) {
+			continue // relative, unclean, the root itself, or already hidden
+		}
 		if fi, err := os.Lstat(d); err == nil && fi.IsDir() {
-			argv = append(argv, "--tmpfs", d)
+			argv = append(argv, "--size", size, "--tmpfs", d)
 		}
 	}
 	if t, err := filepath.EvalSymlinks("/etc/resolv.conf"); err == nil && t != "/etc/resolv.conf" && underHidden(t) {
@@ -185,18 +237,52 @@ func (s Sandbox) Argv(w Workdir, straceOut string, inner []string) []string {
 	argv = append(argv,
 		"--bind", w.Home(), SandboxHome,
 		"--ro-bind", w.etc("passwd"), "/etc/passwd",
-		"--ro-bind", w.etc("group"), "/etc/group",
-		"--ro-bind", s.Install.PackageDir, toolPkg)
-	if s.Install.NodePrefix != "" {
-		argv = append(argv, "--ro-bind", s.Install.NodePrefix, toolNode)
+		"--ro-bind", w.etc("group"), "/etc/group")
+	for _, m := range j.ReadOnly {
+		argv = append(argv, "--ro-bind", m.Host, m.At)
 	}
 	argv = append(argv,
 		"--unshare-all", "--share-net",
+		"--unshare-user", "--disable-userns",
 		"--hostname", sandboxHost,
 		"--die-with-parent", "--new-session",
 		"--chdir", SandboxCwd,
 		"--")
+	if j.Prlimit != "" {
+		n := strconv.Itoa(MaxProcs)
+		argv = append(argv, j.Prlimit, "--nproc="+n+":"+n, "--core=0:0", "--")
+	}
 	return append(argv, inner...)
+}
+
+// Prlimit is the prlimit binary, or empty when it is not installed. It runs
+// inside the sandbox, so it must not live under a hidden directory.
+func Prlimit() string {
+	p, err := exec.LookPath("prlimit")
+	if err != nil {
+		return ""
+	}
+	if r, err := filepath.EvalSymlinks(p); err == nil && underHidden(r) {
+		return ""
+	}
+	return p
+}
+
+// MaskFor is the absolute, symlink-resolved form of dir for Sandbox.Mask,
+// or "" when it is already hidden (it lies under a hidden directory) or
+// cannot be resolved.
+func MaskFor(dir string) string {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return ""
+	}
+	if r, err := filepath.EvalSymlinks(abs); err == nil {
+		abs = r
+	}
+	if underHidden(abs) {
+		return ""
+	}
+	return abs
 }
 
 func underHidden(p string) bool {
@@ -255,8 +341,11 @@ var AllowedTools = []string{"Bash", "Read", "Write", "Edit", "NotebookEdit", "Gl
 // ClaudeArgs are the CLI's arguments for one turn. Turn 0 fixes the session
 // id; later turns resume it, so follow-ups continue the same conversation.
 func ClaudeArgs(prompt, sessionID string, turn int, model string, maxTurns int) ([]string, error) {
-	if strings.HasPrefix(prompt, "-") {
-		return nil, errors.New("a prompt starting with '-' would be read as a flag")
+	if err := probe.CheckPrompt(prompt); err != nil {
+		return nil, err
+	}
+	if err := CheckFlagValue("model", model); err != nil {
+		return nil, err
 	}
 	args := []string{"-p", "--output-format", "stream-json", "--verbose", "--dangerously-skip-permissions",
 		"--allowedTools", strings.Join(AllowedTools, ",")}
@@ -274,16 +363,48 @@ func ClaudeArgs(prompt, sessionID string, turn int, model string, maxTurns int) 
 	return append(args, prompt), nil
 }
 
+// CheckFlagValue refuses a flag's value that the CLI would misread: one
+// starting with '-' (taken as the next flag) or holding a NUL.
+func CheckFlagValue(flag, v string) error {
+	if strings.HasPrefix(v, "-") || strings.IndexByte(v, 0) >= 0 {
+		return fmt.Errorf("--%s %q would not reach the CLI as a value", flag, v)
+	}
+	return nil
+}
+
 // ShellQuote renders argv for display.
 func ShellQuote(argv []string) string {
 	q := make([]string, len(argv))
 	for i, a := range argv {
-		if a != "" && strings.IndexFunc(a, func(r rune) bool {
+		switch {
+		case a != "" && strings.IndexFunc(a, func(r rune) bool {
 			return !(r == '/' || r == '-' || r == '_' || r == '.' || r == '=' || r == ':' || r == ',' ||
 				r >= '0' && r <= '9' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z')
-		}) < 0 {
+		}) < 0:
 			q[i] = a
-		} else {
+		case strings.IndexFunc(a, func(r rune) bool { return r == utf8.RuneError || unicode.IsControl(r) || unicode.Is(unicode.Cf, r) }) >= 0:
+			// Bash's $'...' with every unprintable character escaped, so a
+			// prompt cannot drive the terminal a dry run is printed to and
+			// the line still pastes back as the same argument.
+			var b strings.Builder
+			b.WriteString("$'")
+			for j := 0; j < len(a); {
+				r, n := utf8.DecodeRuneInString(a[j:])
+				switch {
+				case r == utf8.RuneError && n <= 1:
+					fmt.Fprintf(&b, `\x%02x`, a[j])
+				case r == '\'' || r == '\\':
+					b.WriteByte('\\')
+					b.WriteRune(r)
+				case unicode.IsControl(r) || unicode.Is(unicode.Cf, r):
+					fmt.Fprintf(&b, `\u%04x`, r)
+				default:
+					b.WriteString(a[j : j+n])
+				}
+				j += n
+			}
+			q[i] = b.String() + "'"
+		default:
 			q[i] = "'" + strings.ReplaceAll(a, "'", `'\''`) + "'"
 		}
 	}

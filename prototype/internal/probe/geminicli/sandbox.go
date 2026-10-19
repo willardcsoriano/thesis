@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"synapseos/internal/probe"
 	"synapseos/internal/probe/claudecode"
 )
 
@@ -39,11 +40,6 @@ const (
 	sandboxUser = "agent"
 	sandboxHost = "agentprobe"
 )
-
-// hidden are host directories replaced by an empty tmpfs: the operator's
-// homes (and with them ~/.gemini and the nvm install), other sessions' temp
-// files, runtime sockets, and removable media.
-var hidden = []string{"/home", "/root", "/tmp", "/run", "/var/tmp", "/mnt", "/media", "/srv"}
 
 // Install is where the host's Gemini CLI lives, resolved from PATH.
 type Install struct {
@@ -124,6 +120,25 @@ type Auth struct {
 	APIKey     string // GEMINI_API_KEY, placed in the child's environment only
 	OAuthCreds []byte // contents of an oauth_creds.json, copied into each task's throwaway home
 	Project    string // GOOGLE_CLOUD_PROJECT, optional
+}
+
+// Secrets are the values the run must never write to disk: the API key,
+// and the tokens inside the OAuth credential (what the agent would print if
+// it read the file).
+func (a Auth) Secrets() []string {
+	var out []string
+	if a.APIKey != "" {
+		out = append(out, a.APIKey)
+	}
+	var creds map[string]any
+	if json.Unmarshal(a.OAuthCreds, &creds) == nil {
+		for _, k := range []string{"access_token", "refresh_token", "id_token"} {
+			if v, ok := creds[k].(string); ok && v != "" {
+				out = append(out, v)
+			}
+		}
+	}
+	return out
 }
 
 // Type is the auth type the CLI is told to use, or "" when none is set.
@@ -216,63 +231,21 @@ func PrepareHome(w claudecode.Workdir, a Auth, maxTurns int) error {
 type Sandbox struct {
 	Bwrap   string // bubblewrap binary
 	Strace  string // strace binary; empty disables execve capture
+	Prlimit string // prlimit binary (claudecode.Prlimit); RunTask refuses to run without it
 	Install Install
+	Mask    []string // further host directories hidden behind an empty tmpfs; see claudecode.Sandbox
 }
 
-// Argv is the full host command line: optionally strace, then bwrap, then
-// inner (the program and its arguments, paths as seen inside the sandbox).
-// It never contains a secret; the API key goes in Env and the OAuth
-// credential in the throwaway home.
-//
-// Mounts, in order: the host root read-only; a fresh /dev and /proc; an
-// empty tmpfs over every hidden directory that exists; resolv.conf's target
-// re-exposed if it lived under one; the workdir's home read-write at
-// SandboxHome; synthetic passwd and group; the CLI's package and the node
-// binary read-only. All namespaces are unshared except the network, which
-// the CLI needs.
+// Argv is the full host command line (claudecode.Jail.Argv: the same
+// sandbox as the Claude Code driver's) with the CLI's package and the node
+// binary mounted read-only. It never contains a secret; the API key goes in
+// Env and the OAuth credential in the throwaway home.
 func (s Sandbox) Argv(w claudecode.Workdir, straceOut string, inner []string) []string {
-	var argv []string
-	if s.Strace != "" && straceOut != "" {
-		// No -v: without it strace abbreviates envp to a count, so the
-		// API key never reaches the trace file. -s 256 keeps argv[0] whole.
-		argv = append(argv, s.Strace, "-f", "-qq", "-s", "256", "-e", "trace=execve", "-o", straceOut, "--")
-	}
-	argv = append(argv, s.Bwrap,
-		"--ro-bind", "/", "/",
-		"--dev", "/dev",
-		"--proc", "/proc")
-	for _, d := range hidden {
-		if fi, err := os.Lstat(d); err == nil && fi.IsDir() {
-			argv = append(argv, "--tmpfs", d)
-		}
-	}
-	if t, err := filepath.EvalSymlinks("/etc/resolv.conf"); err == nil && t != "/etc/resolv.conf" && underHidden(t) {
-		argv = append(argv, "--ro-bind", t, t)
-	}
-	argv = append(argv,
-		"--bind", w.Home(), SandboxHome,
-		"--ro-bind", filepath.Join(w.Root, "etc", "passwd"), "/etc/passwd",
-		"--ro-bind", filepath.Join(w.Root, "etc", "group"), "/etc/group",
-		"--ro-bind", s.Install.PackageDir, toolPkg)
+	ro := []claudecode.Mount{{Host: s.Install.PackageDir, At: toolPkg}}
 	if s.Install.Node != "" {
-		argv = append(argv, "--ro-bind", s.Install.Node, toolNode)
+		ro = append(ro, claudecode.Mount{Host: s.Install.Node, At: toolNode})
 	}
-	argv = append(argv,
-		"--unshare-all", "--share-net",
-		"--hostname", sandboxHost,
-		"--die-with-parent", "--new-session",
-		"--chdir", SandboxCwd,
-		"--")
-	return append(argv, inner...)
-}
-
-func underHidden(p string) bool {
-	for _, d := range hidden {
-		if p == d || strings.HasPrefix(p, d+"/") {
-			return true
-		}
-	}
-	return false
+	return claudecode.Jail{Bwrap: s.Bwrap, Strace: s.Strace, Prlimit: s.Prlimit, Mask: s.Mask, ReadOnly: ro}.Argv(w, straceOut, inner)
 }
 
 // Command is the CLI's invocation inside the sandbox, before its arguments:
@@ -330,8 +303,11 @@ func Redacted(env []string) []string {
 // refuses to start in an untrusted folder. debug adds -d, which makes the
 // shell tool's result carry its exit code (NOTES.md, "Stream schema").
 func GeminiArgs(prompt, sessionID string, turn int, model string, debug bool) ([]string, error) {
-	if strings.HasPrefix(prompt, "-") {
-		return nil, errors.New("a prompt starting with '-' would be read as a flag")
+	if err := probe.CheckPrompt(prompt); err != nil {
+		return nil, err
+	}
+	if err := claudecode.CheckFlagValue("model", model); err != nil {
+		return nil, err
 	}
 	args := []string{"--output-format", "stream-json", "--approval-mode", "yolo", "--skip-trust"}
 	if model != "" {

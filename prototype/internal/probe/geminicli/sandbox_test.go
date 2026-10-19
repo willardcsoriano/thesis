@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -36,7 +37,7 @@ func testSandbox(t *testing.T, exe string) Sandbox {
 			t.Fatal(err)
 		}
 	}
-	return Sandbox{Bwrap: "/usr/bin/bwrap", Install: Install{PackageDir: pkg, Exe: "bundle/gemini.js", Version: "0.0.1"}}
+	return Sandbox{Bwrap: "/usr/bin/bwrap", Prlimit: "/usr/bin/prlimit", Install: Install{PackageDir: pkg, Exe: "bundle/gemini.js", Version: "0.0.1"}}
 }
 
 func testRunner(t *testing.T, sb Sandbox, a Auth) Runner {
@@ -108,8 +109,14 @@ func TestArgvKeepsHomeHiddenAndSecretsOut(t *testing.T) {
 			at("--ro-bind", "/usr/bin/node-placeholder") < 0 || !slices.Contains(argv, "--share-net") || !slices.Contains(argv, "--unshare-all") {
 			t.Errorf("missing sandbox flags: %v", argv)
 		}
+		// bwrap's "--", then prlimit setting the limits and its own "--".
 		sep := slices.Index(argv, "--")
-		if sep < 0 || argv[sep+1] != toolNode || argv[sep+2] != toolPkg+"/bundle/gemini.js" {
+		n := strconv.Itoa(claudecode.MaxProcs)
+		if sep < 0 || !slices.Equal(argv[sep+1:sep+5], []string{"/usr/bin/prlimit", "--nproc=" + n + ":" + n, "--core=0:0", "--"}) {
+			t.Fatalf("limits not set inside the sandbox: %v", argv)
+		}
+		sep += 4
+		if argv[sep+1] != toolNode || argv[sep+2] != toolPkg+"/bundle/gemini.js" {
 			t.Errorf("inner command not node + entry after --: %v", argv)
 		}
 		inner := argv[sep+1:]
@@ -321,7 +328,7 @@ func installedSandbox(t *testing.T) (Sandbox, claudecode.Workdir) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { w.Remove() })
-	return Sandbox{Bwrap: bw, Install: in}, w
+	return Sandbox{Bwrap: bw, Prlimit: claudecode.Prlimit(), Install: in}, w // with the limits a real run gets
 }
 
 func runInstalled(t *testing.T, sb Sandbox, w claudecode.Workdir, a Auth, args ...string) (string, string, int) {

@@ -3,6 +3,7 @@ package probe
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -150,8 +151,18 @@ func hiddenParent(p string) string {
 	return ""
 }
 
-// parseExecve reads strace -f output and returns the basename of argv[0] of
-// every execve that returned 0, in order. Lines look like
+// parseExecve is ParseExecve with each argv[0] reduced to its basename.
+func parseExecve(r io.Reader) ([]string, error) {
+	out, err := ParseExecve(r)
+	for i, a := range out {
+		out[i] = path.Base(a)
+	}
+	return out, err
+}
+
+// ParseExecve reads strace -f output and returns argv[0] of every execve
+// that returned 0, in order, or the path when argv is empty or unreadable.
+// Lines look like
 //
 //	7  execve("/usr/bin/python3", ["python3", "-c", "pass"], 0x55e... /* 67 vars */) = 0
 //
@@ -159,36 +170,75 @@ func hiddenParent(p string) string {
 //
 //	7  execve("/usr/bin/python3", ["python3", "-c", "pass"], 0x55e... <unfinished ...>
 //	7  <... execve resumed>) = 0
-func parseExecve(r io.Reader) ([]string, error) {
-	sc := bufio.NewScanner(r)
-	sc.Buffer(make([]byte, 1<<20), 1<<20)
+//
+// A line can be megabytes long (strace shows up to 4096 arguments, each up
+// to its -s length), so lines are not read whole: only their start, which
+// holds the pid and argv[0], and their end, which holds the result, are
+// kept. Lines that are neither (garbage, or the last one cut off when
+// strace was killed) are skipped.
+func ParseExecve(r io.Reader) ([]string, error) {
 	pending := map[string]string{} // pid -> argv[0] of an unfinished execve
 	var out []string
-	for sc.Scan() {
-		pid, rest, ok := strings.Cut(strings.TrimSpace(sc.Text()), " ")
+	err := eachLine(r, func(head, tail string) {
+		pid, rest, ok := strings.Cut(strings.TrimSpace(head), " ")
 		if !ok {
-			continue
+			return
 		}
 		rest = strings.TrimSpace(rest)
+		tail = strings.TrimSpace(tail)
 		switch {
 		case strings.HasPrefix(rest, "execve("):
 			name := argv0(rest)
-			if strings.HasSuffix(rest, "<unfinished ...>") {
+			if strings.HasSuffix(tail, "<unfinished ...>") {
 				pending[pid] = name
-				continue
+				return
 			}
-			if succeeded(rest) {
+			if succeeded(tail) {
 				out = append(out, name)
 			}
 		case strings.HasPrefix(rest, "<... execve resumed>"):
 			name, had := pending[pid]
 			delete(pending, pid)
-			if had && succeeded(rest) {
+			if had && succeeded(tail) {
 				out = append(out, name)
 			}
 		}
+	})
+	return out, err
+}
+
+// Bounds of what eachLine keeps of a line.
+const (
+	lineHead = 64 << 10 // more than any argv[0] strace prints (-s 4096, escaped)
+	lineTail = 256      // more than any result: ") = -1 ENOENT (No such file or directory)"
+)
+
+// eachLine calls fn with the first lineHead and the last lineTail bytes of
+// every line of r (both the whole line when it is short), in constant
+// memory however long the line.
+func eachLine(r io.Reader, fn func(head, tail string)) error {
+	br := bufio.NewReaderSize(r, lineHead)
+	for {
+		frag, err := br.ReadSlice('\n')
+		head := string(frag)
+		tail := head
+		for errors.Is(err, bufio.ErrBufferFull) {
+			frag, err = br.ReadSlice('\n')
+			tail += string(frag)
+			if len(tail) > lineTail {
+				tail = tail[len(tail)-lineTail:]
+			}
+		}
+		if len(head) > 0 {
+			fn(strings.TrimSuffix(head, "\n"), strings.TrimSuffix(tail, "\n"))
+		}
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
 	}
-	return out, sc.Err()
 }
 
 // succeeded reports whether a completed syscall line returned 0.
@@ -197,18 +247,18 @@ func succeeded(line string) bool {
 	return i >= 0 && strings.HasPrefix(line[i+len(") = "):], "0")
 }
 
-// argv0 returns the basename of argv[0] from an execve line, falling back to the
-// path argument when argv is empty or unreadable.
+// argv0 returns argv[0] from an execve line, falling back to the path
+// argument when argv is empty or unreadable.
 func argv0(line string) string {
 	s := strings.TrimPrefix(line, "execve(")
 	file, s := cString(s)
 	s = strings.TrimPrefix(s, ", ")
 	if strings.HasPrefix(s, "[") {
 		if a, _ := cString(s[1:]); a != "" {
-			return path.Base(a)
+			return a
 		}
 	}
-	return path.Base(file)
+	return file
 }
 
 // cString reads one strace-quoted string from the start of s and returns it
