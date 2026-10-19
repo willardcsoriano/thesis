@@ -112,7 +112,7 @@ func (r Runner) RunTask(ctx context.Context, t probe.Task, tier string) ([]probe
 	if err != nil {
 		return nil, err
 	}
-	base := probe.Record{Run: r.RunID, Driver: "cli", Model: r.Model, Profile: "native",
+	base := probe.Record{Run: r.RunID, Driver: "cli", Agent: probe.AgentClaudeCode, Model: r.Model, Profile: "native",
 		Task: t.ID, Partition: t.Partition, Category: t.Category, Tier: tier, Features: t.Features}
 	var all []probe.Record
 	var turnErr error

@@ -164,12 +164,16 @@ func (s *Session) consume(raw []byte, base probe.Record, pending map[string][]in
 		rec.Step = len(s.Records)
 		if ev.ToolName == ShellTool {
 			var in struct {
-				Command string `json:"command"`
+				Command string  `json:"command"`
+				DirPath *string `json:"dir_path"`
 			}
 			if err := json.Unmarshal(ev.Parameters, &in); err != nil {
 				return fmt.Errorf("%s parameters: %w", ShellTool, err)
 			}
 			rec.Kind, rec.Command = probe.KindBash, in.Command
+			// Each call runs in a fresh subshell at dir_path (or the
+			// workspace), so replay needs it to know where the command ran.
+			rec.Dir = in.DirPath
 		} else {
 			rec.Kind, rec.Command = ev.ToolName, compact(ev.Parameters)
 		}

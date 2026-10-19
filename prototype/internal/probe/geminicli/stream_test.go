@@ -164,3 +164,19 @@ func TestParseMalformedIsError(t *testing.T) {
 		}
 	}
 }
+
+// Each Gemini shell call runs at its dir_path, so the record must keep it;
+// without it replay cannot place the command.
+func TestShellCallKeepsDirPath(t *testing.T) {
+	stream := `{"type":"init","session_id":"s","model":"gemini-x"}
+{"type":"tool_use","tool_name":"run_shell_command","tool_id":"1","parameters":{"command":"ls","dir_path":"logs"}}
+{"type":"tool_use","tool_name":"run_shell_command","tool_id":"2","parameters":{"command":"pwd"}}
+`
+	s, err := ParseSession(strings.NewReader(stream), probe.Record{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s.Records) != 2 || s.Records[0].Dir == nil || *s.Records[0].Dir != "logs" || s.Records[1].Dir != nil {
+		t.Fatalf("dir_path not kept: %+v", s.Records)
+	}
+}
