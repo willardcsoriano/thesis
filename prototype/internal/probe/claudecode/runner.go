@@ -13,8 +13,6 @@ import (
 	"slices"
 	"strings"
 	"time"
-	"unicode"
-	"unicode/utf8"
 
 	"synapseos/internal/oracle"
 	"synapseos/internal/probe"
@@ -315,28 +313,9 @@ func authFailure(text string) bool {
 	return strings.Contains(text, "Failed to authenticate") || strings.Contains(text, "API Error: 401")
 }
 
-// OneLine makes text from the CLI, which the agent can steer, safe to print
-// to the operator's terminal: whitespace runs become one space, control and
-// format characters (terminal escapes, bidirectional overrides) are shown
-// escaped, and it is cut to 200 bytes on a character boundary.
-func OneLine(s string) string {
-	s = strings.Join(strings.Fields(s), " ")
-	var b strings.Builder
-	for _, r := range s {
-		switch {
-		case r == utf8.RuneError:
-			b.WriteString(`�`)
-		case unicode.IsControl(r) || unicode.Is(unicode.Cf, r):
-			fmt.Fprintf(&b, `\u%04x`, r)
-		default:
-			b.WriteRune(r)
-		}
-		if b.Len() > 200 {
-			return b.String() + "..."
-		}
-	}
-	return b.String()
-}
+// OneLine is probe.OneLine, cut at 200 bytes: text from the CLI, which the
+// agent can steer, made safe to print to the operator's terminal.
+func OneLine(s string) string { return probe.OneLine(s, 200) }
 
 func (r Runner) logf(format string, a ...any) {
 	if r.Log != nil {

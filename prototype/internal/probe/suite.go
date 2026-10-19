@@ -8,6 +8,8 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 // Tiers lists every tier in reporting order.
@@ -84,6 +86,30 @@ func CheckPrompt(p string) error {
 		return fmt.Errorf("a prompt of %d bytes is longer than one argument may be (%d)", len(p), MaxArg)
 	}
 	return nil
+}
+
+// OneLine makes text an agent can steer (a command, a CLI's message) safe
+// to print to the operator's terminal: whitespace runs become one space,
+// control and format characters (terminal escapes, bidirectional
+// overrides) are shown as \uXXXX, invalid UTF-8 as U+FFFD, and the result is
+// cut after max bytes on a character boundary, marked "...".
+func OneLine(s string, max int) string {
+	s = strings.Join(strings.Fields(s), " ")
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r == utf8.RuneError:
+			b.WriteRune(utf8.RuneError)
+		case unicode.IsControl(r) || unicode.Is(unicode.Cf, r):
+			fmt.Fprintf(&b, `\u%04x`, r)
+		default:
+			b.WriteRune(r)
+		}
+		if b.Len() > max {
+			return b.String() + "..."
+		}
+	}
+	return b.String()
 }
 
 func (t Task) validate() error {
