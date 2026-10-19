@@ -48,7 +48,7 @@ Doc links below are pinned to the installed version: `https://github.com/google-
 
 ### Risk of the copied credential
 
-The agent runs shell commands as the same uid inside the sandbox, so it can read `~/.gemini/oauth_creds.json`, just as the Claude driver's agent can read its token from `/proc`. This one is broader. It is a refresh token with `cloud-platform` scope over the operator's Google account, valid until revoked, and it can call any Google Cloud API that account can reach, not only model requests. The network is shared. To reduce the risk:
+The agent runs shell commands as the same uid inside the sandbox, so it can read `~/.gemini/oauth_creds.json`, just as the Claude driver's agent can read its token from `/proc`. This one is broader. It is a refresh token with `cloud-platform` scope over the operator's Google account, valid until revoked, and it can call any Google Cloud API that account can reach, not only model requests. The sandbox's network reaches only the internet by default (`-net isolated`), but that is where the credential works. To reduce the risk:
 
 - Sign in with a Google account used only for the study, and do it under a separate config root so the everyday login stays out of it: `GEMINI_CLI_HOME=$HOME/.agentprobe-gemini gemini`. The file is then `$HOME/.agentprobe-gemini/.gemini/oauth_creds.json`.
 - Revoke the CLI's access in the Google account's security settings after the study.

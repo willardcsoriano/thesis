@@ -5,6 +5,7 @@ This is the project's process log — a chronological account of *how* work got 
 ## Table of Contents
 
 - [Overview](#overview)
+- [2026-10-19 — The agent sandboxes got a network of their own](#2026-10-19--the-agent-sandboxes-got-a-network-of-their-own)
 - [2026-10-19 — Scoring measured each step against the wrong state, and the study's tools under attack](#2026-10-19--scoring-measured-each-step-against-the-wrong-state-and-the-studys-tools-under-attack)
 - [2026-10-19 — The agent study's two coverage gaps closed, and four defects found on the way](#2026-10-19--the-agent-studys-two-coverage-gaps-closed-and-four-defects-found-on-the-way)
 - [2026-10-17 — Thesis 1 wrap-up: the open-problems register checked row by row](#2026-10-17--thesis-1-wrap-up-the-open-problems-register-checked-row-by-row)
@@ -26,6 +27,12 @@ This is the project's process log — a chronological account of *how* work got 
 - [Sessions 20–21 — .gitignore Privacy Rework, PR Shipping, Ollama Client/Loop Tests](#sessions-2021--gitignore-privacy-rework-pr-shipping-ollama-clientloop-tests)
 - [Sessions 17–19 — M1 Built From Scratch: First Live Validation, Classifier/Executor Wiring, D21's Bounded Loop](#sessions-1719--m1-built-from-scratch-first-live-validation-classifierexecutor-wiring-d21s-bounded-loop)
 - [Blockers & Lessons — Quick Reference](#blockers--lessons--quick-reference)
+
+## 2026-10-19 — The agent sandboxes got a network of their own
+
+With pasta installed, the CLI sandboxes now run in their own network namespace, and `agentprobe` defaults to it (`-net isolated`). The agent reaches the internet, which is all the CLIs need, and nothing of the host or the LAN. pasta cannot filter destinations itself, so the namespace's own root adds `ip rule` prohibit rules before bubblewrap starts. These are policy rules, not routes, so they win over the subnet route that pasta copies in. nftables was not needed. The first design added `setpriv --pdeathsig KILL` so the sandbox would die with pasta. The timeout test then took 12 s instead of 2 s, which showed that it never did. The process pasta starts is the first process of its own PID namespace, its parent lies outside it, and the parent-death signal never arrived. An earlier hand experiment had looked like it worked only because the lock holder died with pasta. The design now relies on that lock alone (`<workdir>/lifeline`). The driver releases it when it kills a turn, and the kernel releases it when the driver dies, which a test checks by SIGKILLing a helper driver. Every new test failed when pointed at the host network, so each one detects the gap it guards. **Lesson: a mechanism that seems to work in a hand experiment may be working by accident. A test that times the mechanism alone, such as the 12 s timeout, shows which part is really doing the work.**
+
+**Resolved from `open-problems.md`:** row 47 (the CLI sandboxes reach the host's loopback and LAN through `--share-net`). The sandboxes now run in a namespace of their own, built by pasta with no port forwarded in either direction and nothing mapped to the host. Rules refuse private, link-local, CGNAT, multicast and NAT64 ranges and the host's own addresses at once. The only resolver is pasta's forwarder, and only on port 53. Without pasta agentprobe refuses to start, and `-net host` must be asked for (`claudecode.Network`, `agent-command-study.md` Known gaps). `TestKnownGapHostLoopbackReachable` became `TestHostileNetworkHostUnreachable`. Still reachable: any public address, including a router's own public address, which NAT loopback may send back into the LAN; the host's nameserver, on port 53 only; and a public address the host gains mid-run. IPv6 has not been run live here.
 
 ## 2026-10-19 — Scoring measured each step against the wrong state, and the study's tools under attack
 
