@@ -381,6 +381,7 @@ const (
 	HiddenRoot     = "/home/" + HiddenUser + "/task"
 	HiddenHostname = "agentprobe"
 	HiddenSize     = 256 << 20
+	HiddenProcs    = 1024 // processes and threads, counted in the sandbox's own user namespace
 	hiddenMachine  = "00000000000000000000000000000001"
 )
 
@@ -413,6 +414,10 @@ func ExecuteIn(ctx context.Context, bwrap, root, cmd string, limit time.Duration
 	script := "ulimit -v 4000000 -f 200000 2>/dev/null; " + SudoShim + cmd
 	var args []string
 	if sb.HideHost {
+		// A process cap, set inside the sandbox's user namespace so that it
+		// counts only the command's processes. The default sandbox's script
+		// is pinned (TestEmptySandboxArgvUnchanged), so only HideHost has it.
+		script = fmt.Sprintf("ulimit -u %d || exit 126; ", HiddenProcs) + script
 		identity, err := os.MkdirTemp("", "oracle-identity-")
 		if err != nil {
 			return Outcome{}, err
@@ -481,7 +486,9 @@ func hiddenArgs(identity, root string, sb Sandbox) ([]string, error) {
 		"/etc/hosts":      "127.0.0.1\tlocalhost\n127.0.1.1\t" + HiddenHostname + "\n::1\tlocalhost ip6-localhost ip6-loopback\n",
 		"/etc/machine-id": hiddenMachine + "\n",
 	}
-	args := []string{"--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc"}
+	// /dev is read-only but for a size-capped /dev/shm: both are otherwise
+	// unsized tmpfs mounts the command could fill host memory through.
+	args := []string{"--ro-bind", "/", "/", "--dev", "/dev", "--size", strconv.Itoa(HiddenSize), "--tmpfs", "/dev/shm", "--remount-ro", "/dev", "--proc", "/proc"}
 	for _, d := range HiddenDirs {
 		if fi, err := os.Lstat(d); err == nil && fi.IsDir() {
 			args = append(args, "--size", strconv.Itoa(HiddenSize), "--tmpfs", d)
@@ -501,7 +508,7 @@ func hiddenArgs(identity, root string, sb Sandbox) ([]string, error) {
 		}
 		args = append(args, "--ro-bind", src, dst)
 	}
-	args = append(args, "--unshare-all", "--die-with-parent", "--new-session",
+	args = append(args, "--unshare-all", "--unshare-user", "--disable-userns", "--die-with-parent", "--new-session",
 		"--hostname", HiddenHostname, "--clearenv")
 	for _, kv := range HiddenEnv {
 		k, v, _ := strings.Cut(kv, "=")
