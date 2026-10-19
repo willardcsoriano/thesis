@@ -604,7 +604,7 @@ func TestIsolatedArgv(t *testing.T) {
 	withStrace := sb.Argv(w, "/out/x.strace", []string{sb.Exe()})
 	joined := strings.Join(argv, " ")
 	for _, want := range []string{
-		"/usr/bin/pasta --config-net --quiet -t none -u none -T none -U none --map-host-loopback none --map-guest-addr none --dns-forward " + DNSForward + " -- /bin/sh -c ",
+		"/usr/bin/pasta --config-net --quiet -t none -u none -T none -U none --no-map-gw --dns-forward " + DNSForward + " -- /bin/sh -c ",
 		"to 169.254.0.0/16 prohibit", "to 192.168.0.0/16 prohibit", "to fc00::/7 prohibit", "to 203.0.113.7/32 prohibit", "to 2001:db8::/64 prohibit",
 		"to " + DNSForward + " ipproto udp dport 53 lookup main",
 		" sh /w/lifeline /usr/bin/bwrap ",

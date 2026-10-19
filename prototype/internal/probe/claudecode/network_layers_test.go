@@ -15,9 +15,9 @@ import (
 // The isolated network is several defences in depth: the prohibit rules for
 // private ranges (blocked), the rules for the host's own addresses
 // (Network.Host), and pasta told to map nothing to the host
-// (--map-host-loopback none, --map-guest-addr none). The hostile tests in
+// (--no-map-gw). The hostile tests in
 // hostile_network_test.go attack them together, so with one layer gone the
-// others still pass them: removing the Host rules or --map-host-loopback none
+// others still pass them: removing the Host rules or --no-map-gw
 // failed only TestIsolatedArgv. The tests here take the other layers away
 // (Network.chain with fewer rules, pasta's argv with a flag dropped) and show
 // that each layer stops what it is for on its own, against a control run
@@ -28,18 +28,17 @@ import (
 // (docker0's included, which pasta reaches when no rule refuses it) and
 // TestHostileNetworkPrivateRangesFailFast wants a refusal, not a timeout.
 //
-// --map-guest-addr none has no behavioural test, because on the host this
-// was written on (Debian passt 0.0~git20250503) it changes nothing observable: with or
-// without it, and with or without --map-host-loopback none, a probe of the
-// host's own address reaches the namespace's copy of it and nothing on the
-// host. pasta's manual says its default follows --map-host-loopback, which
-// none already disables. It stays as defence in depth for a pasta whose
-// default differs, pinned only by TestIsolatedArgv: an argv check, not
-// evidence that it is needed.
+// --map-guest-addr is no longer passed. Older pasta (Ubuntu 24.04's, which
+// CI runs) rejects it as unknown, and on the release this was written on
+// (Debian passt 0.0~git20250503) passing "none" changed nothing observable,
+// because its default is already none.
 
 // layerProbe runs python3 in the namespace that n.chain(lifeline, refuse)
 // builds, with the pasta flags in drop (each followed by its value) left
 // out, and returns what each probe saw, as probeScript reports it.
+// valueless are the pasta flags in the chain that take no value.
+var valueless = map[string]bool{"--no-map-gw": true}
+
 func layerProbe(t *testing.T, n Network, refuse []netip.Prefix, drop []string, ps []netProbe) map[string]probeResult {
 	t.Helper()
 	py, err := exec.LookPath("python3")
@@ -54,14 +53,19 @@ func layerProbe(t *testing.T, n Network, refuse []netip.Prefix, drop []string, p
 	defer h.Close()
 	var argv []string
 	full := n.chain(lifeline, refuse)
+	removed := 0
 	for i := 0; i < len(full); i++ {
 		if slices.Contains(drop, full[i]) {
-			i++ // and its value
+			removed++
+			if !valueless[full[i]] {
+				i++ // and its value
+				removed++
+			}
 			continue
 		}
 		argv = append(argv, full[i])
 	}
-	if len(argv) != len(full)-2*len(drop) {
+	if len(argv) != len(full)-removed || removed == 0 && len(drop) > 0 {
 		t.Fatalf("not every flag in %v is in the chain: %v", drop, full)
 	}
 	js, _ := json.Marshal(ps)
@@ -120,7 +124,7 @@ func TestNetworkHostRulesRefuseOnTheirOwn(t *testing.T) {
 	}
 }
 
-// --map-host-loopback none on its own keeps the host's loopback out of
+// --no-map-gw on its own keeps the host's loopback out of
 // reach. pasta's default maps the namespace's default gateway to the host's
 // 127.0.0.1, so a service bound there (Ollama by default) answers an agent
 // that dials the gateway. The gateway is in a private range blocked covers,
@@ -142,12 +146,12 @@ func TestNetworkNoHostLoopbackMapOnItsOwn(t *testing.T) {
 	res := layerProbe(t, n, nil, nil, ps)[key(ps[0])]
 	time.Sleep(100 * time.Millisecond)
 	if res.ok || lo.hits.Load() != 0 {
-		t.Errorf("with --map-host-loopback none and no private-range rule, the gateway %s reached the host's loopback: %+v, %d hits", gws[0], res, lo.hits.Load())
+		t.Errorf("with --no-map-gw and no private-range rule, the gateway %s reached the host's loopback: %+v, %d hits", gws[0], res, lo.hits.Load())
 	}
 	before := lo.hits.Load()
-	ctl := layerProbe(t, n, nil, []string{"--map-host-loopback"}, ps)[key(ps[0])]
+	ctl := layerProbe(t, n, nil, []string{"--no-map-gw"}, ps)[key(ps[0])]
 	time.Sleep(100 * time.Millisecond)
 	if !ctl.ok || lo.hits.Load() == before {
-		t.Errorf("control: without --map-host-loopback none the gateway %s did not reach the host's loopback (%+v); this host cannot show the layer", gws[0], ctl)
+		t.Errorf("control: without --no-map-gw the gateway %s did not reach the host's loopback (%+v); this host cannot show the layer", gws[0], ctl)
 	}
 }

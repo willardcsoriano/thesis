@@ -49,7 +49,7 @@ func TestDryRunPrintsTheNetworkChain(t *testing.T) {
 				t.Fatalf("exit %d: %s", code, e)
 			}
 			for _, want := range []string{"# note: -net isolated:", "<workdir>/lifeline",
-				"pasta --config-net --quiet -t none -u none -T none -U none --map-host-loopback none --map-guest-addr none --dns-forward " + claudecode.DNSForward,
+				"pasta --config-net --quiet -t none -u none -T none -U none --no-map-gw --dns-forward " + claudecode.DNSForward,
 				"to 169.254.0.0/16 prohibit", "--ro-bind '<workdir>/etc/resolv.conf' ", "--cap-drop ALL"} {
 				if !strings.Contains(s, want) {
 					t.Errorf("isolated dry run lacks %q:\n%s", want, s)

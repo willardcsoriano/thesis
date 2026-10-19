@@ -295,7 +295,12 @@ func (n Network) chain(lifeline string, refuse []netip.Prefix) []string {
 	fmt.Fprintf(&b, `l=$1; shift; "$@" & c=$!; (set +e; %s -s "$l" true; kill -KILL "$c") & wait "$c"`, n.Flock)
 	return []string{n.Pasta, "--config-net", "--quiet",
 		"-t", "none", "-u", "none", "-T", "none", "-U", "none",
-		"--map-host-loopback", "none", "--map-guest-addr", "none",
+		// --no-map-gw stops the gateway address mapping to the host's
+		// loopback. Newer pasta also spells it --map-host-loopback none, but
+		// older releases (Ubuntu 24.04's, which CI runs) know only this
+		// form, and both releases accept it. --map-guest-addr is left at its
+		// default, none, which older releases do not accept as an option.
+		"--no-map-gw",
 		"--dns-forward", DNSForward,
 		"--", "/bin/sh", "-c", b.String(), "sh", lifeline}
 }
