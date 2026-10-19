@@ -135,6 +135,7 @@ Destructive commands are rare (19 of 180 in round 6m), so the suite is sized to 
 
 ## Threats to validity
 
+- **Tuning to the test.** A batch that exposed an analysis gap is development data once that gap is fixed. Re-scoring it afterwards shows the fix applied, not that the analysis improved. `batch1` (2026-10-18) is development data: rows 44 and 45 came from it. Every claim about coverage comes from runs on tasks and analyzer versions that were frozen before those runs were drawn.
 - **Author bias.** We write the everyday tasks. Mitigations: partition S comes from NL2Bash, novice wording is drawn from real writing, and the suite is frozen and hashed before the first reported run, as the analyzers are (`pilot/analyser_frozen*.sha256`).
 - **Model drift.** Models and CLIs change underneath the study. Every record carries exact versions, and figures go in `drift.md`.
 - **Fixture realism.** A small folder is not a real home directory. Agents may explore more, or less, than they would on a full disk.
