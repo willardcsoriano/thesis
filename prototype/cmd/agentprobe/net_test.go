@@ -25,6 +25,7 @@ func TestDryRunPrintsTheNetworkChain(t *testing.T) {
 	if _, err := exec.LookPath("pasta"); err != nil {
 		testenv.Unavailable(t, "pasta not installed")
 	}
+	fakeInstalls(t)
 	creds := filepath.Join(t.TempDir(), "oauth_creds.json")
 	if err := os.WriteFile(creds, []byte(`{"refresh_token":"1//fake-refresh"}`), 0o600); err != nil {
 		t.Fatal(err)
@@ -32,15 +33,11 @@ func TestDryRunPrintsTheNetworkChain(t *testing.T) {
 	for _, d := range []struct {
 		driver string
 		args   []string
-		skip   func() error
 	}{
-		{"claude", nil, func() error { _, err := claudecode.ResolveInstall(); return err }},
-		{"gemini", []string{"-oauth-creds", creds}, func() error { _, err := exec.LookPath("gemini"); return err }},
+		{"claude", nil},
+		{"gemini", []string{"-oauth-creds", creds}},
 	} {
 		t.Run(d.driver, func(t *testing.T) {
-			if err := d.skip(); err != nil {
-				t.Skip(err)
-			}
 			dry := func(extra ...string) (string, int, string) {
 				var out, errb bytes.Buffer
 				args := append(append([]string{d.driver, "-tasks", suite, "-tiers", "technical", "-limit", "1", "-dry-run", "-out", t.TempDir()}, d.args...), extra...)
