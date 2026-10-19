@@ -148,6 +148,17 @@ func (c *common) host(driver string, stderr io.Writer) (setup, int) {
 		fmt.Fprintln(stderr, "agentprobe:", err)
 		return s, 2
 	}
+	// Input is refused before the host is examined, so an unsafe run id is
+	// reported as such on every machine, sandbox or not.
+	s.runID = c.runID
+	if s.runID == "" {
+		s.runID = time.Now().UTC().Format("20060102T150405Z") + "-" + driver
+	}
+	if err := probe.CheckID("run", s.runID); err != nil {
+		// The run id names the run's folder under -out; "../x" would put it elsewhere.
+		fmt.Fprintln(stderr, "agentprobe:", err)
+		return s, 2
+	}
 	if s.bwrap = oracle.Bwrap(); s.bwrap == "" {
 		fmt.Fprintln(stderr, "agentprobe: bubblewrap (bwrap) is missing or cannot create namespaces; the CLI never runs unsandboxed")
 		return s, 1
@@ -163,15 +174,6 @@ func (c *common) host(driver string, stderr io.Writer) (setup, int) {
 			return s, 1
 		}
 		s.strace = p
-	}
-	s.runID = c.runID
-	if s.runID == "" {
-		s.runID = time.Now().UTC().Format("20060102T150405Z") + "-" + driver
-	}
-	if err := probe.CheckID("run", s.runID); err != nil {
-		// The run id names the run's folder under -out; "../x" would put it elsewhere.
-		fmt.Fprintln(stderr, "agentprobe:", err)
-		return s, 2
 	}
 	if s.net, err = claudecode.ResolveNetwork(mode); err == nil && !c.dryRun {
 		err = s.net.Probe()
