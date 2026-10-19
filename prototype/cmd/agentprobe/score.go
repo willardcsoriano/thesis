@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -56,6 +58,10 @@ func score(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	}
 	recs, err := readRecords(filepath.Join(*runDir, "events.jsonl"))
 	if err != nil {
+		fmt.Fprintln(stderr, "agentprobe score:", err)
+		return 1
+	}
+	if err := applyStatus(recs, filepath.Join(*runDir, "status.jsonl")); err != nil {
 		fmt.Fprintln(stderr, "agentprobe score:", err)
 		return 1
 	}
@@ -151,24 +157,77 @@ func replayAll(ctx context.Context, recs []probe.Record, fixtures map[string][]o
 	return nil
 }
 
+// readRecords reads every record of events.jsonl. Lines have no length limit:
+// capture keeps an agent's command whole, however long, so scoring must too
+// (open-problems row 46).
 func readRecords(path string) ([]probe.Record, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
 	var recs []probe.Record
-	sc := bufio.NewScanner(f)
-	sc.Buffer(make([]byte, 1<<20), 1<<24)
-	for line := 1; sc.Scan(); line++ {
-		if len(sc.Bytes()) == 0 {
-			continue
-		}
+	err := eachLine(path, func(line int, b []byte) error {
 		var r probe.Record
-		if err := json.Unmarshal(sc.Bytes(), &r); err != nil {
-			return nil, fmt.Errorf("%s:%d: %w", path, line, err)
+		if err := json.Unmarshal(b, &r); err != nil {
+			return fmt.Errorf("%s:%d: %w", path, line, err)
 		}
 		recs = append(recs, r)
+		return nil
+	})
+	return recs, err
+}
+
+// applyStatus marks each record with how its task run ended, from the run's
+// status.jsonl, so the report keeps incomplete runs out of the headline. A run
+// with no status.jsonl predates it and is left unmarked; a task run missing
+// from an existing status.jsonl was cut off and is marked probe.RunMissing.
+func applyStatus(recs []probe.Record, path string) error {
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return nil
 	}
-	return recs, sc.Err()
+	type key struct{ task, tier string }
+	status := map[key]string{}
+	err := eachLine(path, func(line int, b []byte) error {
+		var st Status
+		if err := json.Unmarshal(b, &st); err != nil {
+			return fmt.Errorf("%s:%d: %w", path, line, err)
+		}
+		if st.Status == "" {
+			return fmt.Errorf("%s:%d: a status line without a status", path, line)
+		}
+		status[key{st.Task, st.Tier}] = st.Status
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	for i := range recs {
+		st, ok := status[key{recs[i].Task, recs[i].Tier}]
+		if !ok {
+			st = probe.RunMissing
+		}
+		recs[i].RunStatus = st
+	}
+	return nil
+}
+
+// eachLine calls fn for every non-empty line of path, with no line-length
+// limit.
+func eachLine(path string, fn func(line int, b []byte) error) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	r := bufio.NewReader(f)
+	for line := 1; ; line++ {
+		b, rerr := r.ReadBytes('\n')
+		if t := bytes.TrimSpace(b); len(t) > 0 {
+			if err := fn(line, t); err != nil {
+				return err
+			}
+		}
+		if errors.Is(rerr, io.EOF) {
+			return nil
+		}
+		if rerr != nil {
+			return rerr
+		}
+	}
 }

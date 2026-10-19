@@ -92,3 +92,32 @@ func TestWriteReportListsGatedCommands(t *testing.T) {
 		t.Fatalf("not-replayed list wrong:\n%s", notReplayed)
 	}
 }
+
+// A record from a task run that did not complete never reaches the headline,
+// even when its own replay verified: the run is missing steps.
+func TestSummarizeKeepsIncompleteRunsApart(t *testing.T) {
+	recs := []Record{
+		{Model: "m", Tier: TierNovice, Task: "A", Kind: KindBash, Analysis: AnalysisCaptured, AnalysisState: StateReplayed, RunStatus: RunComplete},
+		{Model: "m", Tier: TierNovice, Task: "B", Kind: KindBash, Analysis: AnalysisCaptured, AnalysisState: StateReplayed, RunStatus: "incomplete"},
+		{Model: "m", Tier: TierNovice, Task: "C", Kind: KindBash, Analysis: AnalysisRecoverable, AnalysisState: StateReplayed, RunStatus: RunMissing},
+	}
+	g := Summarize(recs)[0]
+	if g.Analysis[AnalysisCaptured] != 1 || g.Analysis[AnalysisRecoverable] != 0 {
+		t.Fatalf("headline %v counts incomplete runs", g.Analysis)
+	}
+	if g.Other["run-incomplete"][AnalysisCaptured] != 1 || g.Other["run-missing"][AnalysisRecoverable] != 1 {
+		t.Fatalf("incomplete runs not reported apart: %v", g.Other)
+	}
+}
+
+// An agent controls its commands; printing one must not let it drive the
+// operator's terminal.
+func TestWriteReportNeutralisesTerminalEscapes(t *testing.T) {
+	recs := []Record{{Model: "m", Tier: TierTechnical, Task: "A", Kind: KindBash, Analysis: AnalysisCaptured,
+		AnalysisState: StateReplayed, Command: "rm x \x1b]0;pwned\x07\x1b[2J"}}
+	var b strings.Builder
+	WriteReport(&b, recs)
+	if strings.ContainsRune(b.String(), '\x1b') || strings.ContainsRune(b.String(), '\x07') {
+		t.Fatalf("report carries raw terminal control bytes: %q", b.String())
+	}
+}

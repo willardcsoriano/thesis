@@ -5,6 +5,7 @@ This is the project's process log — a chronological account of *how* work got 
 ## Table of Contents
 
 - [Overview](#overview)
+- [2026-10-19 — Scoring measured each step against the wrong state, and the study's tools under attack](#2026-10-19--scoring-measured-each-step-against-the-wrong-state-and-the-studys-tools-under-attack)
 - [2026-10-19 — The agent study's two coverage gaps closed, and four defects found on the way](#2026-10-19--the-agent-studys-two-coverage-gaps-closed-and-four-defects-found-on-the-way)
 - [2026-10-17 — Thesis 1 wrap-up: the open-problems register checked row by row](#2026-10-17--thesis-1-wrap-up-the-open-problems-register-checked-row-by-row)
 - [2026-09-26 — The TUI got a spinner and a louder confirmation prompt, tested through a real pty for the first time](#2026-09-26--the-tui-got-a-spinner-and-a-louder-confirmation-prompt-tested-through-a-real-pty-for-the-first-time)
@@ -25,6 +26,12 @@ This is the project's process log — a chronological account of *how* work got 
 - [Sessions 20–21 — .gitignore Privacy Rework, PR Shipping, Ollama Client/Loop Tests](#sessions-2021--gitignore-privacy-rework-pr-shipping-ollama-clientloop-tests)
 - [Sessions 17–19 — M1 Built From Scratch: First Live Validation, Classifier/Executor Wiring, D21's Bounded Loop](#sessions-1719--m1-built-from-scratch-first-live-validation-classifierexecutor-wiring-d21s-bounded-loop)
 - [Blockers & Lessons — Quick Reference](#blockers--lessons--quick-reference)
+
+## 2026-10-19 — Scoring measured each step against the wrong state, and the study's tools under attack
+
+The scorer had been analysing every agent command against the task's starting folder. A command that ran after a `cd`, or after earlier steps had changed files, was judged against a place it never ran in. On batch1 that made a novice `zip ... && rm` look recoverable when it was not. The scorer, the measuring instrument, was what was wrong, so the scorer was fixed. Each task run is now replayed in the host-hiding sandbox and each step is analysed against the state the earlier steps left. Every verdict says which state it was taken on, and only replayed, verified verdicts reach the headline. On batch1, which is development data, two verdicts changed from recoverable to captured. A second round of adversarial tests on the study's tools found about thirty defects, each fixed in the code (`agent-command-study.md`, Known gaps). **Lesson: test the measuring instrument as hard as the thing it measures. A scorer that is quietly wrong produces confident numbers about nothing.**
+
+**Resolved from `open-problems.md`:** row 46 (agent study scoring). The report prints agent-steered text through `probe.OneLine`, so terminal escapes are neutralised and no character is cut in half. `readRecords` reads lines of any length. Scoring reads `status.jsonl` and reports every record of an incomplete, interrupted, failed, or cut-off task run under `run-<status>`, outside the headline. Each fix has a test that fails without it.
 
 ## 2026-10-19 — The agent study's two coverage gaps closed, and four defects found on the way
 

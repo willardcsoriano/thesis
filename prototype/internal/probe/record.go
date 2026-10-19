@@ -60,6 +60,13 @@ type Record struct {
 	// the way that CLI does; records without it are recognised by model name.
 	Agent string `json:"agent,omitempty"`
 
+	// RunStatus is how the task run this record belongs to ended, from the
+	// run's status.jsonl ("complete", "incomplete", "interrupted", "error",
+	// "fatal"), or RunMissing when status.jsonl exists but has no line for the
+	// run (the driver was killed during it). Empty when the run predates
+	// status.jsonl. Filled by scoring.
+	RunStatus string `json:"run_status,omitempty"`
+
 	// Which task, and how it was asked.
 	Task      string   `json:"task"`
 	Partition string   `json:"partition"`
@@ -107,3 +114,9 @@ func Append(w io.Writer, r Record) error {
 	_, err = w.Write(append(b, '\n'))
 	return err
 }
+
+// Task-run statuses as scoring records them (RunStatus).
+const (
+	RunComplete = "complete"
+	RunMissing  = "missing"
+)

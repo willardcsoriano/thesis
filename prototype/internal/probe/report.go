@@ -61,14 +61,15 @@ func Summarize(recs []Record) []Group {
 		}
 		g.Bash++
 		g.Shape[r.Shape]++
-		g.States[r.AnalysisState]++
-		if r.AnalysisState == StateReplayed {
+		st := effectiveState(r)
+		g.States[st]++
+		if st == StateReplayed {
 			g.Analysis[r.Analysis]++
 		} else {
-			if g.Other[r.AnalysisState] == nil {
-				g.Other[r.AnalysisState] = map[string]int{}
+			if g.Other[st] == nil {
+				g.Other[st] = map[string]int{}
 			}
-			g.Other[r.AnalysisState][r.Analysis]++
+			g.Other[st][r.Analysis]++
 		}
 		if slices.ContainsFunc(r.Interpreters, func(s string) bool { return Languages[s] }) {
 			g.Language++
@@ -92,6 +93,18 @@ func Summarize(recs []Record) []Group {
 		return tierRank(out[i].Tier) < tierRank(out[j].Tier)
 	})
 	return out
+}
+
+// effectiveState is the state a record's verdict counts under. A record from
+// a task run that did not complete (status.jsonl says incomplete,
+// interrupted, error, fatal, or has no line for it) is reported under
+// "run-<status>" whatever its replay state: the run is missing steps, so its
+// verdicts are not headline evidence.
+func effectiveState(r Record) string {
+	if r.RunStatus != "" && r.RunStatus != RunComplete {
+		return "run-" + r.RunStatus
+	}
+	return r.AnalysisState
 }
 
 // verdicts is the reporting order of analysis verdicts.
@@ -211,10 +224,6 @@ func sum(m map[string]int) int {
 	return n
 }
 
-func oneLine(s string) string {
-	s = strings.Join(strings.Fields(s), " ")
-	if len(s) > 160 {
-		s = s[:160] + "..."
-	}
-	return s
-}
+// oneLine prints agent-steered text with terminal escapes neutralised and
+// never cuts a character in half (open-problems row 46).
+func oneLine(s string) string { return OneLine(s, 160) }
