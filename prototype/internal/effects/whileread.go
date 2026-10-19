@@ -41,7 +41,9 @@ func (st *state) readLoopSpec(cond []*syntax.Stmt, sc *scope) (readLoop, bool) {
 		return rl, false
 	}
 	ifs := " \t\n" // bash does not take IFS from the environment
-	if v, ok := sc.vars["IFS"]; ok {
+	if v, set, ok := sc.lookup("IFS", nil); !ok {
+		return rl, false
+	} else if set {
 		ifs = v
 	}
 	for _, as := range ce.Assigns {
@@ -159,7 +161,7 @@ func (st *state) whileRead(x *syntax.WhileClause, sc *scope, pc *pipeCtx, src st
 	}
 	c := &call{src: src, sc: sc, pc: pc}
 	unbound := func() {
-		st.loopBody(x.Do, sc, func(s *scope) { s.drop(rl.name) })
+		st.loopBody(x.Do, sc, func(s *scope) { s.forget(rl.name) })
 	}
 	// When the records cannot be known, the loop is analysed as before, with the
 	// variable unbound: a body that uses it for anything but reading asks, and a body
@@ -181,11 +183,13 @@ func (st *state) whileRead(x *syntax.WhileClause, sc *scope, pc *pipeCtx, src st
 			if i > 0 {
 				st.mayHaveFailed(sc) // the pass before may have failed part-way
 			}
-			sc.set(rl.name, it)
+			st.assign(sc, rl.name, it, false)
 			st.stmts(x.Do, sc)
 		}
 	})
-	sc.drop(rl.name) // the read that ends the loop empties the variable
+	// The read that ends the loop empties the variable, or leaves a final record
+	// that had no delimiter in it.
+	sc.forget(rl.name)
 	if len(items) > 0 {
 		st.virt.doubt()
 	}

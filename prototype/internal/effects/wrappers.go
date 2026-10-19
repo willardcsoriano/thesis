@@ -577,6 +577,11 @@ func (st *state) resolveProducer(c *call, who, whose string) (out []byte, produc
 	if st.a.Run == nil {
 		return nil, producer, whose + " input needs resolving and resolution is disabled"
 	}
+	for _, stage := range c.pc.stages[:c.pc.idx] {
+		if v := readsUnknown(stage, c.sc); v != "" {
+			return nil, producer, "the command feeding " + who + " reads " + unknownVarError(v).Error()
+		}
+	}
 	if c.priv || hasPrivilege(producer) {
 		return nil, producer, "runs with elevated privilege, so its input cannot be resolved as the current user"
 	}
