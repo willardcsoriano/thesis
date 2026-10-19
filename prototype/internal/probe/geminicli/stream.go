@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"synapseos/internal/probe"
 )
@@ -92,26 +93,39 @@ func Parse(stream io.Reader, base probe.Record) ([]probe.Record, error) {
 // name with its parameters JSON as Command, so scoring can choose what to
 // count.
 //
-// A line that is not JSON is an error: a truncated stream must be noticed,
-// not silently shortened. Empty lines and unknown event types are skipped.
-func ParseSession(stream io.Reader, base probe.Record) (Session, error) {
-	var s Session
-	byID := map[string]int{} // tool_id -> index in s.Records
+// A line that is not a JSON object in valid UTF-8 is an error, as is a
+// second result event, a tool_use without a tool name, or shell parameters
+// that are not an object: a truncated or corrupted stream must be noticed,
+// not silently shortened. The records parsed before the bad line are
+// returned with the error. Empty lines and unknown event types are skipped.
+//
+// A tool_result goes to the oldest call with its id that has none yet, so a
+// repeated id cannot move a result onto a later call; an empty id names no
+// call.
+func ParseSession(stream io.Reader, base probe.Record) (s Session, err error) {
+	// Records are returned with an error too, completed with the model: a
+	// turn that went bad half way still made the calls before.
+	defer s.fill()
+	pending := map[string][]int{} // tool_id -> calls still waiting for their result, oldest first
 	r := bufio.NewReader(stream)
 	for line := 1; ; line++ {
-		raw, err := r.ReadBytes('\n')
+		raw, rerr := r.ReadBytes('\n')
 		if t := bytes.TrimSpace(raw); len(t) > 0 {
-			if perr := s.consume(t, base, byID); perr != nil {
+			if perr := s.consume(t, base, pending); perr != nil {
 				return s, fmt.Errorf("stream line %d: %w", line, perr)
 			}
 		}
-		if errors.Is(err, io.EOF) {
-			break
+		if errors.Is(rerr, io.EOF) {
+			return s, nil
 		}
-		if err != nil {
-			return s, err
+		if rerr != nil {
+			return s, rerr
 		}
 	}
+}
+
+// fill gives every record the model the stream reported.
+func (s *Session) fill() {
 	model := s.Model
 	if s.Result != nil && len(s.Result.Models) == 1 && (model == "" || strings.HasPrefix(model, "auto")) {
 		// The init event names the configured model, which may be a
@@ -126,10 +140,15 @@ func ParseSession(stream io.Reader, base probe.Record) (Session, error) {
 			s.Records[i].Model = s.Records[i].ModelVersion
 		}
 	}
-	return s, nil
 }
 
-func (s *Session) consume(raw []byte, base probe.Record, byID map[string]int) error {
+func (s *Session) consume(raw []byte, base probe.Record, pending map[string][]int) error {
+	if !utf8.Valid(raw) {
+		return errors.New("not valid UTF-8")
+	}
+	if raw[0] != '{' {
+		return errors.New("not a JSON object")
+	}
 	var ev event
 	if err := json.Unmarshal(raw, &ev); err != nil {
 		return err
@@ -138,6 +157,9 @@ func (s *Session) consume(raw []byte, base probe.Record, byID map[string]int) er
 	case "init":
 		s.SessionID, s.Model = ev.SessionID, ev.Model
 	case "tool_use":
+		if ev.ToolName == "" {
+			return errors.New("tool_use without a tool_name")
+		}
 		rec := base
 		rec.Step = len(s.Records)
 		if ev.ToolName == ShellTool {
@@ -152,21 +174,28 @@ func (s *Session) consume(raw []byte, base probe.Record, byID map[string]int) er
 			rec.Kind, rec.Command = ev.ToolName, compact(ev.Parameters)
 		}
 		if ev.ToolID != "" {
-			byID[ev.ToolID] = len(s.Records)
+			pending[ev.ToolID] = append(pending[ev.ToolID], len(s.Records))
 		}
 		s.Records = append(s.Records, rec)
 	case "tool_result":
 		if ev.Error != nil && ev.Error.Type == "policy_violation" {
 			s.Denials++
 		}
-		i, ok := byID[ev.ToolID]
-		if !ok || s.Records[i].Kind != probe.KindBash {
-			return nil
+		waiting := pending[ev.ToolID]
+		if len(waiting) == 0 {
+			return nil // no call with that id is waiting: unknown, early, or answered already
 		}
-		s.Records[i].Exit = shellExit(ev)
+		i := waiting[0]
+		pending[ev.ToolID] = waiting[1:]
+		if s.Records[i].Kind == probe.KindBash {
+			s.Records[i].Exit = shellExit(ev)
+		}
 	case "error":
 		s.Warnings = append(s.Warnings, ev.Severity+": "+ev.Message)
 	case "result":
+		if s.Result != nil {
+			return errors.New("a second result event")
+		}
 		res := &Result{Status: ev.Status}
 		if ev.Error != nil {
 			res.ErrorType, res.Message = ev.Error.Type, ev.Error.Message
