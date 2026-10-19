@@ -79,9 +79,6 @@ func TestHostileEscapesKeptExact(t *testing.T) {
 }
 
 func TestHostileHugeLine(t *testing.T) {
-	if testing.Short() {
-		t.Skip("allocates a 50 MB line")
-	}
 	cmd := "echo " + strings.Repeat("A", 50<<20)
 	s, err := parseHostile(t, lines(initLine,
 		`{"type":"tool_use","tool_name":"run_shell_command","tool_id":"a","parameters":{"command":"`+cmd+`"}}`,

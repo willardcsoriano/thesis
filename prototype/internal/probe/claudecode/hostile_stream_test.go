@@ -93,9 +93,6 @@ func TestHostileEscapesKeptExact(t *testing.T) {
 
 // A 50 MB command on one line is parsed whole, not cut at a buffer size.
 func TestHostileHugeLine(t *testing.T) {
-	if testing.Short() {
-		t.Skip("allocates a 50 MB line")
-	}
 	cmd := "echo " + strings.Repeat("A", 50<<20)
 	s, err := parseHostile(t, lines(initLine,
 		`{"type":"assistant","message":{"content":[{"type":"tool_use","id":"a","name":"Bash","input":{"command":"`+cmd+`"}}]}}`,
