@@ -72,7 +72,14 @@ func (s *scope) forgetInt(k string) {
 
 // unknownName reports whether the value of k is not known.
 func (s *scope) unknownName(k string) bool {
-	return s.everything || s.unknown[k] != 0 || bashOwn[k] || isDigits(k)
+	if s.everything || s.unknown[k] != 0 || bashOwn[k] || isDigits(k) {
+		return true
+	}
+	if s.envUnknown {
+		_, in := s.vars[k]
+		return !in && !s.unset[k] && k != "IFS" && k != "PWD" // bash sets these itself
+	}
+	return false
 }
 
 // lookup returns the value k has, as the analysis knows it, from env when the line

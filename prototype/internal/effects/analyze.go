@@ -183,6 +183,9 @@ type scope struct {
 	fixed map[string]byte
 	// funcs holds the names of functions the line (or the environment) defines.
 	funcs map[string]bool
+	// envUnknown is set for a command run with an environment cleared or reset (env
+	// -i, sudo): a variable the line did not give it a value is not known.
+	envUnknown bool
 	// changed says why the shell no longer expands or finds commands as the analysis
 	// models (shopt, set -f, PATH); every later command is unresolved.
 	changed string
@@ -211,6 +214,7 @@ func (s *scope) join(alts ...*scope) {
 		}
 		cded = cded || a.cded
 		n.everything = n.everything || a.everything
+		n.envUnknown = n.envUnknown || a.envUnknown
 		if n.changed == "" {
 			n.changed = a.changed
 		}
@@ -265,6 +269,7 @@ func (s *scope) join(alts ...*scope) {
 	}
 	s.wd, s.vars, s.unset, s.unknown, s.cded = wd, n.vars, n.unset, n.unknown, cded
 	s.everything, s.fixed, s.funcs, s.changed = n.everything, n.fixed, n.funcs, n.changed
+	s.envUnknown = n.envUnknown
 }
 
 // fresh runs f with the record of cd commands cleared and then restores it. A failure
@@ -278,7 +283,7 @@ func (s *scope) fresh(f func()) {
 }
 
 func (s *scope) clone() *scope {
-	n := &scope{wd: s.wd, cded: s.cded, everything: s.everything, changed: s.changed,
+	n := &scope{wd: s.wd, cded: s.cded, everything: s.everything, changed: s.changed, envUnknown: s.envUnknown,
 		vars: make(map[string]string, len(s.vars)), unset: make(map[string]bool, len(s.unset)),
 		unknown: make(map[string]unknownKind, len(s.unknown)), fixed: make(map[string]byte, len(s.fixed)),
 		funcs: make(map[string]bool, len(s.funcs))}
