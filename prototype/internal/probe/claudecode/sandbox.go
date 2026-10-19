@@ -10,6 +10,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"synapseos/internal/probe"
 )
@@ -374,12 +376,35 @@ func CheckFlagValue(flag, v string) error {
 func ShellQuote(argv []string) string {
 	q := make([]string, len(argv))
 	for i, a := range argv {
-		if a != "" && strings.IndexFunc(a, func(r rune) bool {
+		switch {
+		case a != "" && strings.IndexFunc(a, func(r rune) bool {
 			return !(r == '/' || r == '-' || r == '_' || r == '.' || r == '=' || r == ':' || r == ',' ||
 				r >= '0' && r <= '9' || r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z')
-		}) < 0 {
+		}) < 0:
 			q[i] = a
-		} else {
+		case strings.IndexFunc(a, func(r rune) bool { return r == utf8.RuneError || unicode.IsControl(r) || unicode.Is(unicode.Cf, r) }) >= 0:
+			// Bash's $'...' with every unprintable character escaped, so a
+			// prompt cannot drive the terminal a dry run is printed to and
+			// the line still pastes back as the same argument.
+			var b strings.Builder
+			b.WriteString("$'")
+			for j := 0; j < len(a); {
+				r, n := utf8.DecodeRuneInString(a[j:])
+				switch {
+				case r == utf8.RuneError && n <= 1:
+					fmt.Fprintf(&b, `\x%02x`, a[j])
+				case r == '\'' || r == '\\':
+					b.WriteByte('\\')
+					b.WriteRune(r)
+				case unicode.IsControl(r) || unicode.Is(unicode.Cf, r):
+					fmt.Fprintf(&b, `\u%04x`, r)
+				default:
+					b.WriteString(a[j : j+n])
+				}
+				j += n
+			}
+			q[i] = b.String() + "'"
+		default:
 			q[i] = "'" + strings.ReplaceAll(a, "'", `'\''`) + "'"
 		}
 	}

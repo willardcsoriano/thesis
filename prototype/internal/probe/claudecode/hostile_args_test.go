@@ -6,13 +6,34 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"synapseos/internal/probe"
 )
+
+// A dry run prints every argv with ShellQuote. A prompt holding terminal
+// escapes, bidirectional overrides, invalid UTF-8 or quotes is printed
+// with nothing the terminal would act on, and bash reads it back as the
+// same bytes.
+func TestShellQuoteIsInertAndExact(t *testing.T) {
+	for _, a := range []string{
+		"plain", "it's", "new\nline", "\x1b]52;c;cm0gLXJmIH4=\x07", "‮evil", "\xff\xfe raw", `back\slash 'q'`, "tab\tand ✓", "",
+	} {
+		q := ShellQuote([]string{a})
+		if strings.ContainsAny(q, "\x1b\x07\n\t") || strings.Contains(q, "‮") || !utf8.ValidString(q) {
+			t.Errorf("%q quoted as %q", a, q)
+		}
+		out, err := exec.Command("bash", "-c", "printf %s "+q).Output()
+		if err != nil || string(out) != a {
+			t.Errorf("%q round-trips as %q (%v)", a, out, err)
+		}
+	}
+}
 
 // Arguments and ids an operator's suite or flags could carry.
 
