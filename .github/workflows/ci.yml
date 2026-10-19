@@ -13,8 +13,15 @@ jobs:
           cache-dependency-path: prototype/go.sum
       - name: Tools the tests exercise
         run: sudo apt-get update && sudo apt-get install -y bubblewrap passt jq git rsync rename unzip zip
+      # Ubuntu 24.04 runners restrict unprivileged user namespaces through
+      # AppArmor, so bubblewrap cannot start and every oracle, resolver,
+      # recovery and sandbox test skips. CI then passes without having run
+      # them. Lift the restriction, and fail the job if the sandbox still does
+      # not work, instead of skipping silently.
+      - name: Allow unprivileged user namespaces
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - name: Sandbox works on this runner
-        run: bwrap --ro-bind / / --unshare-all --die-with-parent true || echo "bubblewrap unavailable; oracle and resolver tests will skip"
+        run: bwrap --ro-bind / / --unshare-all --die-with-parent true && pasta --config-net --quiet -- true
       - name: Format, vet, test
         run: make -C prototype ci
       - name: Guard hook tests
