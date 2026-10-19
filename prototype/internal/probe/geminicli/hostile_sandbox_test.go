@@ -42,6 +42,7 @@ func hostileRunner(t *testing.T, a Auth, script string) Runner {
 	}
 	sb := testSandbox(t, "#!/bin/bash\n"+script)
 	sb.Bwrap = bw
+	sb.Net = defaultNet(t)
 	if sb.Prlimit = claudecode.Prlimit(); sb.Prlimit == "" {
 		t.Skip("prlimit unavailable")
 	}

@@ -89,7 +89,15 @@ func fakeRunner(t *testing.T, out, script string) claudecode.Runner {
 	if err := os.WriteFile(filepath.Join(pkg, "bin", "claude"), []byte("#!/bin/bash\n"+script), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	return claudecode.Runner{Sandbox: claudecode.Sandbox{Bwrap: bw, Prlimit: pl, Install: claudecode.Install{PackageDir: pkg, Exe: "bin/claude"}},
+	n, err := claudecode.ResolveNetwork(claudecode.NetIsolated)
+	if err == nil {
+		err = n.Probe()
+	}
+	if err != nil {
+		t.Logf("isolated network unavailable (%v); this test runs on the host's network", err)
+		n = claudecode.Network{Mode: claudecode.NetHost}
+	}
+	return claudecode.Runner{Sandbox: claudecode.Sandbox{Bwrap: bw, Prlimit: pl, Net: n, Install: claudecode.Install{PackageDir: pkg, Exe: "bin/claude"}},
 		Token: "sk-ant-oat01-TEST-NOT-A-REAL-TOKEN", TurnTimeout: time.Minute, RunID: "test", Out: out}
 }
 

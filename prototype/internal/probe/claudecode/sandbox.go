@@ -109,11 +109,14 @@ func isELF(path string) bool {
 //
 //	Root/home        mounted read-write at SandboxHome (the CLI's HOME)
 //	Root/home/task   the fixture, the CLI's working directory
-//	Root/etc         passwd and group naming the uid "agent"
+//	Root/etc         passwd and group naming the uid "agent", and the
+//	                 isolated network's resolv.conf
+//	Root/lifeline    locked by the driver while an isolated sandbox runs
 type Workdir struct{ Root string }
 
-func (w Workdir) Home() string    { return filepath.Join(w.Root, "home") }
-func (w Workdir) Fixture() string { return filepath.Join(w.Root, "home", "task") }
+func (w Workdir) Home() string     { return filepath.Join(w.Root, "home") }
+func (w Workdir) Fixture() string  { return filepath.Join(w.Root, "home", "task") }
+func (w Workdir) Lifeline() string { return filepath.Join(w.Root, "lifeline") }
 func (w Workdir) etc(f string) string {
 	return filepath.Join(w.Root, "etc", f)
 }
@@ -137,6 +140,9 @@ func NewWorkdir() (Workdir, error) {
 	if err := os.WriteFile(w.etc("passwd"), []byte(passwd), 0o644); err != nil {
 		return w, err
 	}
+	if err := os.WriteFile(w.etc("resolv.conf"), []byte("nameserver "+DNSForward+"\n"), 0o644); err != nil {
+		return w, err
+	}
 	return w, os.WriteFile(w.etc("group"), []byte(group), 0o644)
 }
 
@@ -154,9 +160,10 @@ func (w Workdir) Remove() error {
 
 // Sandbox is how the CLI is run.
 type Sandbox struct {
-	Bwrap   string // bubblewrap binary
-	Strace  string // strace binary; empty disables execve capture
-	Prlimit string // prlimit binary, which applies Limits inside the sandbox; RunTask refuses to run without it
+	Bwrap   string  // bubblewrap binary
+	Strace  string  // strace binary; empty disables execve capture
+	Prlimit string  // prlimit binary, which applies Limits inside the sandbox; RunTask refuses to run without it
+	Net     Network // the zero value is isolated, which RunTask refuses until ResolveNetwork has filled it
 	Install Install
 	// Mask are further host directories hidden behind an empty tmpfs, for
 	// what lies outside the hidden directories yet must not be readable:
@@ -173,7 +180,7 @@ func (s Sandbox) Argv(w Workdir, straceOut string, inner []string) []string {
 	if s.Install.NodePrefix != "" {
 		ro = append(ro, Mount{s.Install.NodePrefix, toolNode})
 	}
-	return Jail{Bwrap: s.Bwrap, Strace: s.Strace, Prlimit: s.Prlimit, Mask: s.Mask, ReadOnly: ro}.Argv(w, straceOut, inner)
+	return Jail{Bwrap: s.Bwrap, Strace: s.Strace, Prlimit: s.Prlimit, Net: s.Net, Mask: s.Mask, ReadOnly: ro}.Argv(w, straceOut, inner)
 }
 
 // Mount is a host path bound at another path inside the sandbox.
@@ -192,25 +199,36 @@ const (
 // files, which come in ReadOnly.
 type Jail struct {
 	Bwrap, Strace, Prlimit string
+	Net                    Network
 	Mask                   []string
 	ReadOnly               []Mount
 }
 
-// Argv is the full host command line: optionally strace, then bwrap, then,
-// inside, prlimit and inner (the program and its arguments, paths as seen
-// inside the sandbox).
+// Argv is the full host command line: with the isolated network, pasta's
+// namespace and its setup (Network.wrap), then optionally strace, then
+// bwrap, then, inside, prlimit and inner (the program and its arguments,
+// paths as seen inside the sandbox). An isolated sandbox lives only while
+// the caller holds w.Lifeline() (HoldLifeline); Exec does.
 //
 // Mounts, in order: the host root read-only; a fresh /dev, read-only but
 // for a size-capped /dev/shm; a fresh /proc; a size-capped empty tmpfs over
 // every hidden directory that exists and every Mask directory outside them;
-// resolv.conf's target re-exposed if it lived under one; the workdir's home
-// read-write at SandboxHome; synthetic passwd and group; ReadOnly. All
-// namespaces are unshared except the network, which the CLI needs, and the
-// sandbox cannot create further user namespaces, so it cannot remount its
-// view. prlimit caps processes at MaxProcs and core dumps at zero bytes, so
-// a crash cannot write the CLI's memory, token included, to disk.
+// with the host network, resolv.conf's target re-exposed if it lived under
+// one, and with the isolated network, the workdir's resolv.conf naming
+// DNSForward in its place; the workdir's home read-write at SandboxHome;
+// synthetic passwd and group; ReadOnly. All namespaces are unshared except
+// the network, which is pasta's (isolated) or the host's, and the sandbox
+// cannot create further user namespaces, so it cannot remount its view.
+// Isolated, bwrap runs as root of pasta's user namespace, so it is told the
+// operator's uid and gid for the agent and to drop every capability.
+// prlimit caps processes at MaxProcs and core dumps at zero bytes, so a
+// crash cannot write the CLI's memory, token included, to disk.
 func (j Jail) Argv(w Workdir, straceOut string, inner []string) []string {
 	var argv []string
+	isolated := j.Net.Isolated()
+	if isolated {
+		argv = j.Net.wrap(w.Lifeline())
+	}
 	if j.Strace != "" && straceOut != "" {
 		// No -v: without it strace abbreviates envp to a count, so the
 		// token never reaches the trace file. -s 256 keeps argv[0] whole.
@@ -231,7 +249,17 @@ func (j Jail) Argv(w Workdir, straceOut string, inner []string) []string {
 			argv = append(argv, "--size", size, "--tmpfs", d)
 		}
 	}
-	if t, err := filepath.EvalSymlinks("/etc/resolv.conf"); err == nil && t != "/etc/resolv.conf" && underHidden(t) {
+	t, err := filepath.EvalSymlinks("/etc/resolv.conf")
+	switch {
+	case isolated:
+		// Over the file the resolver reads, which is the link's target
+		// when /etc/resolv.conf is a link.
+		dst := "/etc/resolv.conf"
+		if err == nil {
+			dst = t
+		}
+		argv = append(argv, "--ro-bind", w.etc("resolv.conf"), dst)
+	case err == nil && t != "/etc/resolv.conf" && underHidden(t):
 		argv = append(argv, "--ro-bind", t, t)
 	}
 	argv = append(argv,
@@ -243,7 +271,11 @@ func (j Jail) Argv(w Workdir, straceOut string, inner []string) []string {
 	}
 	argv = append(argv,
 		"--unshare-all", "--share-net",
-		"--unshare-user", "--disable-userns",
+		"--unshare-user", "--disable-userns")
+	if isolated {
+		argv = append(argv, "--uid", strconv.Itoa(os.Getuid()), "--gid", strconv.Itoa(os.Getgid()), "--cap-drop", "ALL")
+	}
+	argv = append(argv,
 		"--hostname", sandboxHost,
 		"--die-with-parent", "--new-session",
 		"--chdir", SandboxCwd,

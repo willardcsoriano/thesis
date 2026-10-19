@@ -37,7 +37,10 @@ func testSandbox(t *testing.T, exe string) Sandbox {
 			t.Fatal(err)
 		}
 	}
-	return Sandbox{Bwrap: "/usr/bin/bwrap", Prlimit: "/usr/bin/prlimit", Install: Install{PackageDir: pkg, Exe: "bundle/gemini.js", Version: "0.0.1"}}
+	// The host network, so the argv tests see bwrap first; tests that run
+	// the sandbox set defaultNet.
+	return Sandbox{Bwrap: "/usr/bin/bwrap", Prlimit: "/usr/bin/prlimit", Net: claudecode.Network{Mode: claudecode.NetHost},
+		Install: Install{PackageDir: pkg, Exe: "bundle/gemini.js", Version: "0.0.1"}}
 }
 
 func testRunner(t *testing.T, sb Sandbox, a Auth) Runner {
@@ -328,11 +331,18 @@ func installedSandbox(t *testing.T) (Sandbox, claudecode.Workdir) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { w.Remove() })
-	return Sandbox{Bwrap: bw, Prlimit: claudecode.Prlimit(), Install: in}, w // with the limits a real run gets
+	return Sandbox{Bwrap: bw, Prlimit: claudecode.Prlimit(), Net: defaultNet(t), Install: in}, w // with the limits and the network a real run gets
 }
 
 func runInstalled(t *testing.T, sb Sandbox, w claudecode.Workdir, a Auth, args ...string) (string, string, int) {
 	t.Helper()
+	if l := claudecode.Lifeline(sb.Net, w); l != "" {
+		h, err := claudecode.HoldLifeline(l)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer h.Close()
+	}
 	argv := sb.Argv(w, "", append(sb.Command(), args...))
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()

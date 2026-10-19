@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"os"
 	"os/exec"
 	"os/user"
@@ -44,11 +43,12 @@ var oneTurnTask = probe.Task{ID: "hostile-1", Partition: probe.PartitionEveryday
 	Prompts: map[string]string{probe.TierTechnical: "do it"}}
 
 // hostileRunner is a runner whose CLI is script, in the real sandbox with
-// the limits a real run gets.
+// the limits and the network a real run gets.
 func hostileRunner(t *testing.T, script string) Runner {
 	t.Helper()
 	sb := testSandbox(t, "#!/bin/bash\n"+script)
 	sb.Bwrap = needBwrap(t)
+	sb.Net = defaultNet(t)
 	withLimits(t, &sb)
 	r := testRunner(t, sb)
 	r.TurnTimeout = 30 * time.Second
@@ -428,40 +428,6 @@ func TestHostileTokenNotInHostCmdline(t *testing.T) {
 		if p := processesWith(fakeToken); len(p) > 0 {
 			t.Fatalf("token on a host command line: %v", p)
 		}
-	}
-}
-
-// Known gap, asserted so a fix flips it: the sandbox shares the host's
-// network namespace (--share-net), so the agent reaches services listening
-// on the host's loopback (Ollama on 11434, say). Closing it needs a network
-// namespace with outbound-only access (pasta or slirp4netns), neither of
-// which is installed. docs/agent-command-study.md, Known gaps.
-func TestKnownGapHostLoopbackReachable(t *testing.T) {
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Skip(err)
-	}
-	defer ln.Close()
-	go func() {
-		for {
-			c, err := ln.Accept()
-			if err != nil {
-				return
-			}
-			c.Write([]byte("host-service\n"))
-			c.Close()
-		}
-	}()
-	port := ln.Addr().(*net.TCPAddr).Port
-	r := hostileRunner(t, streamInit+fmt.Sprintf(`
-line=$(bash -c 'exec 3<>/dev/tcp/127.0.0.1/%d && head -n 1 <&3' 2>/dev/null) && echo "FOUND loopback: $line" >&2
-`, port)+streamResult)
-	_, err, seen := runHostile(t, r)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(seen, "FOUND loopback: host-service") {
-		t.Errorf("the host's loopback is no longer reachable: the --share-net gap may be closed; update this test and the Known gaps: %s", seen)
 	}
 }
 

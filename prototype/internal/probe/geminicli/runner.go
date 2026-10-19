@@ -39,10 +39,11 @@ type Runner struct {
 
 // Turn is one planned CLI invocation of a task.
 type Turn struct {
-	N      int
-	Prompt string
-	Argv   []string // host command line
-	Raw    string   // where the stream is saved
+	N        int
+	Prompt   string
+	Argv     []string // host command line
+	Raw      string   // where the stream is saved
+	Lifeline string   // held by claudecode.Exec while Argv runs; empty with the host network
 }
 
 // Plan lays out every turn of a task on one tier: the first prompt, then
@@ -74,7 +75,7 @@ func (r Runner) Plan(t probe.Task, tier string, w claudecode.Workdir, sessionID 
 			trace = stem + ".strace"
 		}
 		inner := append(sb.Command(), args...)
-		turns[i] = Turn{N: i, Prompt: p, Raw: stem + ".jsonl", Argv: sb.Argv(w, trace, inner)}
+		turns[i] = Turn{N: i, Prompt: p, Raw: stem + ".jsonl", Argv: sb.Argv(w, trace, inner), Lifeline: claudecode.Lifeline(sb.Net, w)}
 	}
 	return turns, nil
 }
@@ -94,6 +95,9 @@ func (r Runner) RunTask(ctx context.Context, t probe.Task, tier string) ([]probe
 	}
 	if r.Sandbox.Prlimit == "" {
 		return nil, fmt.Errorf("%w: prlimit is required to cap the sandbox's processes", ErrFatal)
+	}
+	if err := r.Sandbox.Net.Check(); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrFatal, err)
 	}
 	if err := os.MkdirAll(filepath.Join(r.Out, "raw"), 0o755); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrFatal, err)
@@ -179,7 +183,7 @@ var fatalResult = map[string]string{
 // value is redacted from what is saved (claudecode.Exec).
 func (r Runner) runTurn(ctx context.Context, turn Turn, base probe.Record) ([]probe.Record, bool, error) {
 	secrets := r.Auth.Secrets()
-	res, err := claudecode.Exec(ctx, turn.Argv, r.Sandbox.Env(r.Auth), turn.Raw, r.TurnTimeout, secrets)
+	res, err := claudecode.Exec(ctx, turn.Argv, r.Sandbox.Env(r.Auth), turn.Raw, r.TurnTimeout, secrets, turn.Lifeline)
 	if err != nil {
 		return nil, false, err
 	}

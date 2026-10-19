@@ -2,7 +2,7 @@
 // it gives each task of a suite to a real agent and records every command the
 // agent runs.
 //
-//	agentprobe claude -tasks FILE [-tiers technical,novice] [-limit N] [-model M] [-out runs/] [-dry-run]
+//	agentprobe claude -tasks FILE [-tiers technical,novice] [-limit N] [-model M] [-out runs/] [-net isolated|host] [-dry-run]
 //	agentprobe gemini -tasks FILE [-oauth-creds FILE] [same flags]
 //	agentprobe score -tasks FILE -run runs/<run-id>
 //
@@ -12,6 +12,12 @@
 // with approvals off, authenticated by a copy of one OAuth credential file the
 // operator names (the personal subscription) or by GEMINI_API_KEY. Records go
 // to OUT/<run-id>/events.jsonl and each turn's raw stream to OUT/<run-id>/raw/.
+//
+// Both sandboxes get their own network namespace by default (-net isolated,
+// claudecode.Network): the CLI reaches its API over the internet, but not
+// the host's loopback, the host's other addresses or the LAN. It needs pasta
+// (Debian package passt); without it agentprobe refuses to start rather
+// than fall back. -net host shares the host's network instead.
 package main
 
 import (
@@ -75,10 +81,10 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 
 // common holds the flags every driver takes.
 type common struct {
-	tasksPath, tiers, model, out, runID string
-	limit, maxTurns                     int
-	timeout                             time.Duration
-	strace, dryRun                      bool
+	tasksPath, tiers, model, out, runID, net string
+	limit, maxTurns                          int
+	timeout                                  time.Duration
+	strace, dryRun                           bool
 }
 
 func commonFlags(fs *flag.FlagSet, maxTurnsHelp string) *common {
@@ -93,6 +99,7 @@ func commonFlags(fs *flag.FlagSet, maxTurnsHelp string) *common {
 	fs.StringVar(&c.runID, "run-id", "", "run id (default: UTC timestamp plus the driver name)")
 	fs.BoolVar(&c.strace, "strace", false, "capture every execve with strace (records argv[0] list per turn)")
 	fs.BoolVar(&c.dryRun, "dry-run", false, "print the sandbox command lines and exit without running anything")
+	fs.StringVar(&c.net, "net", string(claudecode.NetIsolated), "sandbox network: isolated (own namespace through pasta: internet yes, host loopback and LAN no) or host (the host's network, loopback services and LAN included)")
 	return c
 }
 
@@ -103,6 +110,7 @@ type setup struct {
 	bwrap   string
 	strace  string // empty unless -strace
 	prlimit string
+	net     claudecode.Network
 	runID   string
 	out     string // OUT/<run-id>
 }
@@ -130,9 +138,16 @@ func (c *common) load(stderr io.Writer) ([]probe.Task, []string, int) {
 	return tasks, tiers, 0
 }
 
-// host finds bubblewrap and, if asked for, strace, and fixes the run id.
+// host finds bubblewrap, prlimit, the network's tools and, if asked for,
+// strace, and fixes the run id. The isolated network is also built once
+// with nothing in it, except in a dry run, which runs nothing.
 func (c *common) host(driver string, stderr io.Writer) (setup, int) {
 	var s setup
+	mode, err := claudecode.ParseNetMode(c.net)
+	if err != nil {
+		fmt.Fprintln(stderr, "agentprobe:", err)
+		return s, 2
+	}
 	if s.bwrap = oracle.Bwrap(); s.bwrap == "" {
 		fmt.Fprintln(stderr, "agentprobe: bubblewrap (bwrap) is missing or cannot create namespaces; the CLI never runs unsandboxed")
 		return s, 1
@@ -157,6 +172,13 @@ func (c *common) host(driver string, stderr io.Writer) (setup, int) {
 		// The run id names the run's folder under -out; "../x" would put it elsewhere.
 		fmt.Fprintln(stderr, "agentprobe:", err)
 		return s, 2
+	}
+	if s.net, err = claudecode.ResolveNetwork(mode); err == nil && !c.dryRun {
+		err = s.net.Probe()
+	}
+	if err != nil {
+		fmt.Fprintln(stderr, "agentprobe: -net "+c.net+":", err)
+		return s, 1
 	}
 	s.out = filepath.Join(c.out, s.runID)
 	return s, 0
@@ -187,12 +209,12 @@ func runClaude(ctx context.Context, args []string, getenv func(string) string, s
 		fmt.Fprintln(stderr, "agentprobe:", err)
 		return 1
 	}
-	sb := claudecode.Sandbox{Bwrap: s.bwrap, Strace: s.strace, Prlimit: s.prlimit, Install: install}
+	sb := claudecode.Sandbox{Bwrap: s.bwrap, Strace: s.strace, Prlimit: s.prlimit, Net: s.net, Install: install}
 	r := claudecode.Runner{Sandbox: sb, Token: token, Model: c.model, MaxTurns: c.maxTurns, TurnTimeout: c.timeout,
 		RunID: s.runID, Out: s.out, Log: stderr}
 
 	if c.dryRun {
-		var notes []string
+		notes := netNotes(s.net)
 		if token == "" {
 			notes = append(notes, claudecode.TokenEnv+" is not set; a real run would refuse to start")
 		}
@@ -257,12 +279,12 @@ func runGemini(ctx context.Context, args []string, getenv func(string) string, s
 		fmt.Fprintln(stderr, "agentprobe:", err)
 		return 1
 	}
-	sb := geminicli.Sandbox{Bwrap: s.bwrap, Strace: s.strace, Prlimit: s.prlimit, Install: install}
+	sb := geminicli.Sandbox{Bwrap: s.bwrap, Strace: s.strace, Prlimit: s.prlimit, Net: s.net, Install: install}
 	r := geminicli.Runner{Sandbox: sb, Auth: auth, Model: c.model, MaxTurns: c.maxTurns, Debug: *debug,
 		TurnTimeout: c.timeout, RunID: s.runID, Out: s.out, Log: stderr}
 
 	if c.dryRun {
-		var notes, files []string
+		notes, files := netNotes(s.net), []string(nil)
 		switch auth.Type() {
 		case "":
 			notes = append(notes, "no credential is configured; a real run would refuse to start")
@@ -304,6 +326,17 @@ const geminiAuthHelp = `The Gemini CLI gets exactly one credential. Pick one:
 
 Then run this agentprobe command again.
 `
+
+// netNotes says in a dry run what the network chain does beyond its argv.
+func netNotes(n claudecode.Network) []string {
+	if !n.Isolated() {
+		return []string{"-net host: the sandbox shares the host's network; the agent can reach services on the host's loopback (Ollama, dev servers) and the LAN"}
+	}
+	return []string{
+		"-net isolated: pasta gives the sandbox its own network namespace; the ip rules below refuse private, link-local, CGNAT and multicast ranges and the host's own addresses, and resolv.conf names only " + claudecode.DNSForward + ", pasta's DNS forwarder",
+		"the driver holds an exclusive lock on <workdir>/lifeline while each turn runs and releases it when it kills the turn; the namespace kills the sandbox once it can take the lock",
+	}
+}
 
 // taskFunc runs one task on one tier.
 type taskFunc func(ctx context.Context, t probe.Task, tier string) ([]probe.Record, error)

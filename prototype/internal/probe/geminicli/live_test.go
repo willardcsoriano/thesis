@@ -43,7 +43,14 @@ func TestLiveTinyTask(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := Runner{Sandbox: Sandbox{Bwrap: bw, Prlimit: claudecode.Prlimit(), Install: in}, Auth: a, Model: os.Getenv("AGENTPROBE_MODEL"),
+	n, err := claudecode.ResolveNetwork(claudecode.NetIsolated)
+	if err == nil {
+		err = n.Probe()
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := Runner{Sandbox: Sandbox{Bwrap: bw, Prlimit: claudecode.Prlimit(), Net: n, Install: in}, Auth: a, Model: os.Getenv("AGENTPROBE_MODEL"),
 		MaxTurns: 8, Debug: os.Getenv("AGENTPROBE_GEMINI_DEBUG") != "", TurnTimeout: 5 * time.Minute,
 		RunID: "live-test", Out: t.TempDir(), Log: testLog{t}}
 	recs, err := r.RunTask(context.Background(), tasks[0], probe.TierTechnical)

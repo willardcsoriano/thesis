@@ -28,7 +28,9 @@ func testSandbox(t *testing.T, exe string) Sandbox {
 			t.Fatal(err)
 		}
 	}
-	return Sandbox{Bwrap: "/usr/bin/bwrap", Prlimit: "/usr/bin/prlimit", Install: Install{PackageDir: pkg, Exe: "bin/claude"}}
+	// The host network, so the argv tests see bwrap first; tests that run
+	// the sandbox set defaultNet or needIsolated.
+	return Sandbox{Bwrap: "/usr/bin/bwrap", Prlimit: "/usr/bin/prlimit", Net: Network{Mode: NetHost}, Install: Install{PackageDir: pkg, Exe: "bin/claude"}}
 }
 
 func testRunner(t *testing.T, sb Sandbox) Runner {
@@ -160,10 +162,21 @@ func TestRunTaskInRealSandbox(t *testing.T) {
 	if bw == "" {
 		t.Skip("bubblewrap unavailable")
 	}
-	for _, withStrace := range []bool{false, true} {
+	nets := []Network{{Mode: NetHost}}
+	if n, err := isolatedNet(); err == nil {
+		nets = append(nets, n)
+	} else {
+		t.Logf("isolated network unavailable (%v); host network only", err)
+	}
+	for _, c := range []struct {
+		withStrace bool
+		net        Network
+	}{{false, nets[0]}, {true, nets[0]}, {false, nets[len(nets)-1]}, {true, nets[len(nets)-1]}} {
+		withStrace := c.withStrace
 		realHome, _ := os.UserHomeDir()
 		sb := testSandbox(t, strings.ReplaceAll(fakeCLI, "$REAL_HOME_PROBE", realHome))
 		sb.Bwrap = bw
+		sb.Net = c.net
 		if withStrace {
 			p, err := exec.LookPath("strace")
 			if err != nil {
@@ -247,7 +260,8 @@ func TestRealCLIStartsWithoutHostCredentials(t *testing.T) {
 	if err != nil {
 		t.Skip(err)
 	}
-	sb := Sandbox{Bwrap: bw, Prlimit: Prlimit(), Install: in} // with the limits a real run gets
+	// With the limits and the network a real run gets.
+	sb := Sandbox{Bwrap: bw, Prlimit: Prlimit(), Net: defaultNet(t), Install: in}
 	w, err := NewWorkdir()
 	if err != nil {
 		t.Fatal(err)
@@ -255,6 +269,13 @@ func TestRealCLIStartsWithoutHostCredentials(t *testing.T) {
 	defer w.Remove()
 	token := ""
 	run := func(args ...string) (string, error) {
+		if l := Lifeline(sb.Net, w); l != "" {
+			h, err := HoldLifeline(l)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer h.Close()
+		}
 		argv := sb.Argv(w, "", append([]string{sb.Exe()}, args...))
 		cmd := exec.Command(argv[0], argv[1:]...)
 		cmd.Env = sb.Env(token)

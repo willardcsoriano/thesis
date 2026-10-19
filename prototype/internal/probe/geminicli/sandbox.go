@@ -229,9 +229,10 @@ func PrepareHome(w claudecode.Workdir, a Auth, maxTurns int) error {
 
 // Sandbox is how the CLI is run.
 type Sandbox struct {
-	Bwrap   string // bubblewrap binary
-	Strace  string // strace binary; empty disables execve capture
-	Prlimit string // prlimit binary (claudecode.Prlimit); RunTask refuses to run without it
+	Bwrap   string             // bubblewrap binary
+	Strace  string             // strace binary; empty disables execve capture
+	Prlimit string             // prlimit binary (claudecode.Prlimit); RunTask refuses to run without it
+	Net     claudecode.Network // see claudecode.Sandbox.Net
 	Install Install
 	Mask    []string // further host directories hidden behind an empty tmpfs; see claudecode.Sandbox
 }
@@ -245,7 +246,7 @@ func (s Sandbox) Argv(w claudecode.Workdir, straceOut string, inner []string) []
 	if s.Install.Node != "" {
 		ro = append(ro, claudecode.Mount{Host: s.Install.Node, At: toolNode})
 	}
-	return claudecode.Jail{Bwrap: s.Bwrap, Strace: s.Strace, Prlimit: s.Prlimit, Mask: s.Mask, ReadOnly: ro}.Argv(w, straceOut, inner)
+	return claudecode.Jail{Bwrap: s.Bwrap, Strace: s.Strace, Prlimit: s.Prlimit, Net: s.Net, Mask: s.Mask, ReadOnly: ro}.Argv(w, straceOut, inner)
 }
 
 // Command is the CLI's invocation inside the sandbox, before its arguments:
