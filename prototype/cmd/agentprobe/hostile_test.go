@@ -17,6 +17,7 @@ import (
 	"synapseos/internal/oracle"
 	"synapseos/internal/probe"
 	"synapseos/internal/probe/claudecode"
+	"synapseos/internal/testenv"
 )
 
 // readStatus reads OUT/status.jsonl, failing on any line that is not whole.
@@ -56,19 +57,37 @@ func jsonLines(t *testing.T, p string) [][]byte {
 	return out
 }
 
-// A run id is a folder name under -out; one that is a path is refused.
+// A run id is a folder name under -out; one that is a path is refused, as
+// such, whatever the host has. The "no sandbox" case puts a bwrap that
+// cannot start first on PATH (oracle.Bwrap resolves it there), so the check
+// is proved to come before the host is examined on every machine, including
+// one where bubblewrap works: CI once passed only because it lacked one.
 func TestRunIDCannotLeaveTheOutput(t *testing.T) {
-	out := t.TempDir()
-	for _, id := range []string{"../escape", "a/b", "..", "/abs", ".hidden"} {
-		var stdout, stderr bytes.Buffer
-		code := run(context.Background(), []string{"claude", "-tasks", suite, "-out", filepath.Join(out, "runs"), "-run-id", id, "-dry-run"},
-			env(nil), &stdout, &stderr)
-		if code != 2 || !strings.Contains(stderr.String(), "run id") {
-			t.Errorf("run id %q: exit %d: %s", id, code, stderr.String())
-		}
-	}
-	if ents, _ := os.ReadDir(out); len(ents) != 0 {
-		t.Errorf("something was created: %v", ents)
+	for _, host := range []string{"this host", "no sandbox"} {
+		t.Run(host, func(t *testing.T) {
+			if host == "no sandbox" {
+				stub := t.TempDir()
+				if err := os.WriteFile(filepath.Join(stub, "bwrap"), []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				t.Setenv("PATH", stub+string(os.PathListSeparator)+os.Getenv("PATH"))
+				if oracle.Bwrap() != "" {
+					t.Fatal("the bwrap stub did not take the place of the real one")
+				}
+			}
+			out := t.TempDir()
+			for _, id := range []string{"../escape", "a/b", "..", "/abs", ".hidden"} {
+				var stdout, stderr bytes.Buffer
+				code := run(context.Background(), []string{"claude", "-tasks", suite, "-out", filepath.Join(out, "runs"), "-run-id", id, "-dry-run"},
+					env(nil), &stdout, &stderr)
+				if code != 2 || !strings.Contains(stderr.String(), "run id") {
+					t.Errorf("run id %q: exit %d: %s", id, code, stderr.String())
+				}
+			}
+			if ents, _ := os.ReadDir(out); len(ents) != 0 {
+				t.Errorf("something was created: %v", ents)
+			}
+		})
 	}
 }
 
@@ -78,11 +97,11 @@ func fakeRunner(t *testing.T, out, script string) claudecode.Runner {
 	t.Helper()
 	bw := oracle.Bwrap()
 	if bw == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	pl := claudecode.Prlimit()
 	if pl == "" {
-		t.Skip("prlimit unavailable")
+		testenv.Unavailable(t, "prlimit unavailable")
 	}
 	pkg := t.TempDir()
 	os.MkdirAll(filepath.Join(pkg, "bin"), 0o755)
@@ -94,8 +113,8 @@ func fakeRunner(t *testing.T, out, script string) claudecode.Runner {
 		err = n.Probe()
 	}
 	if err != nil {
-		t.Logf("isolated network unavailable (%v); this test runs on the host's network", err)
-		n = claudecode.Network{Mode: claudecode.NetHost}
+		// Never the host's network: a real run would not use it either.
+		testenv.Unavailable(t, "isolated network unavailable: %v", err)
 	}
 	return claudecode.Runner{Sandbox: claudecode.Sandbox{Bwrap: bw, Prlimit: pl, Net: n, Install: claudecode.Install{PackageDir: pkg, Exe: "bin/claude"}},
 		Token: "sk-ant-oat01-TEST-NOT-A-REAL-TOKEN", TurnTimeout: time.Minute, RunID: "test", Out: out}
@@ -233,7 +252,7 @@ func TestFullDiskKeepsEventsWhole(t *testing.T) {
 	}
 	bw := oracle.Bwrap()
 	if bw == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	dir := t.TempDir()
 	cmd := exec.Command(bw, "--dev-bind", "/", "/", "--size", "65536", "--tmpfs", dir, "--unshare-user", "--die-with-parent", "--",

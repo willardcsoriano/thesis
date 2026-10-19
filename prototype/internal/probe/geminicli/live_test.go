@@ -11,6 +11,7 @@ import (
 	"synapseos/internal/oracle"
 	"synapseos/internal/probe"
 	"synapseos/internal/probe/claudecode"
+	"synapseos/internal/testenv"
 )
 
 // TestLiveTinyTask runs the real CLI, sandboxed, on the tiny test task. It
@@ -33,7 +34,7 @@ func TestLiveTinyTask(t *testing.T) {
 	}
 	bw := oracle.Bwrap()
 	if bw == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	in, err := ResolveInstall()
 	if err != nil {

@@ -86,7 +86,7 @@ Run from `prototype/`. The Makefile finds Go on `PATH` or at `~/.local/go/bin/go
 | `make ollama-serve` / `ollama-serve-bg` / `ollama-pull` / `ollama-status` | Start Ollama in the foreground or detached on `OLLAMA_PORT`; pull `qwen2.5-coder:3b`; check reachability |
 | `make pilot` | Re-run the list-versus-analysis pilot, round 2 (below) |
 | `make corpus4` / `make round4` | Regenerate the automated development corpus (`SEED=20260922`, `pilot/corpus4.jsonl`) from sandboxed execution; score L0, L1, and the analysis against it. A held-out corpus is a fresh seed (`20260923`, `pilot/corpus5.jsonl`) |
-| `make ci` | `fmt-check`, `vet`, and `test`: what CI runs |
+| `make ci` | `fmt-check`, `vet`, the tests through the skip gate (`test-gated`: fails on any skip `ci-allowed-skips.txt` does not name), and `cover-check`: what CI runs, with `SYNAPSE_REQUIRE_SANDBOX=1` so a missing sandbox tool fails instead of skipping |
 | `make fmt-check` / `make vet` | The formatting check (`gofmt -l`) and `go vet` on their own |
 | `make deps-check` / `make deps-hoard` | List missing dependencies and the one install line (`../distro/check.sh`); download every dependency into `../distro/hoard/` (`../distro/hoard.sh --all`) |
 | `make recoverycheck` | Execute-and-diff proof, in a sandbox, that the capture plan restores the prior state |

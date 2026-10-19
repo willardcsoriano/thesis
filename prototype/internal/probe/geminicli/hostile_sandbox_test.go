@@ -18,6 +18,7 @@ import (
 	"synapseos/internal/oracle"
 	"synapseos/internal/probe"
 	"synapseos/internal/probe/claudecode"
+	"synapseos/internal/testenv"
 )
 
 // Sandbox attacks for the Gemini driver. It runs in claudecode's sandbox
@@ -38,13 +39,13 @@ func hostileRunner(t *testing.T, a Auth, script string) Runner {
 	t.Helper()
 	bw := oracle.Bwrap()
 	if bw == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	sb := testSandbox(t, "#!/bin/bash\n"+script)
 	sb.Bwrap = bw
 	sb.Net = defaultNet(t)
 	if sb.Prlimit = claudecode.Prlimit(); sb.Prlimit == "" {
-		t.Skip("prlimit unavailable")
+		testenv.Unavailable(t, "prlimit unavailable")
 	}
 	r := testRunner(t, sb, a)
 	r.TurnTimeout = 30 * time.Second

@@ -12,6 +12,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+
+	"synapseos/internal/testenv"
 	"time"
 )
 
@@ -24,7 +26,7 @@ import (
 func TestSandboxesCannotReachTheHost(t *testing.T) {
 	bw := Bwrap()
 	if bw == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	var hits atomic.Int32
 	type target struct {

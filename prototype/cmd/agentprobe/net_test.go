@@ -11,6 +11,7 @@ import (
 
 	"synapseos/internal/oracle"
 	"synapseos/internal/probe/claudecode"
+	"synapseos/internal/testenv"
 )
 
 // The dry run prints the whole isolated chain by default: pasta with no
@@ -19,11 +20,12 @@ import (
 // agent can then reach. Both drivers.
 func TestDryRunPrintsTheNetworkChain(t *testing.T) {
 	if oracle.Bwrap() == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
 	if _, err := exec.LookPath("pasta"); err != nil {
-		t.Skip("pasta not installed")
+		testenv.Unavailable(t, "pasta not installed")
 	}
+	fakeInstalls(t)
 	creds := filepath.Join(t.TempDir(), "oauth_creds.json")
 	if err := os.WriteFile(creds, []byte(`{"refresh_token":"1//fake-refresh"}`), 0o600); err != nil {
 		t.Fatal(err)
@@ -31,15 +33,11 @@ func TestDryRunPrintsTheNetworkChain(t *testing.T) {
 	for _, d := range []struct {
 		driver string
 		args   []string
-		skip   func() error
 	}{
-		{"claude", nil, func() error { _, err := claudecode.ResolveInstall(); return err }},
-		{"gemini", []string{"-oauth-creds", creds}, func() error { _, err := exec.LookPath("gemini"); return err }},
+		{"claude", nil},
+		{"gemini", []string{"-oauth-creds", creds}},
 	} {
 		t.Run(d.driver, func(t *testing.T) {
-			if err := d.skip(); err != nil {
-				t.Skip(err)
-			}
 			dry := func(extra ...string) (string, int, string) {
 				var out, errb bytes.Buffer
 				args := append(append([]string{d.driver, "-tasks", suite, "-tiers", "technical", "-limit", "1", "-dry-run", "-out", t.TempDir()}, d.args...), extra...)
@@ -51,7 +49,7 @@ func TestDryRunPrintsTheNetworkChain(t *testing.T) {
 				t.Fatalf("exit %d: %s", code, e)
 			}
 			for _, want := range []string{"# note: -net isolated:", "<workdir>/lifeline",
-				"pasta --config-net --quiet -t none -u none -T none -U none --map-host-loopback none --map-guest-addr none --dns-forward " + claudecode.DNSForward,
+				"pasta --config-net --quiet -t none -u none -T none -U none --no-map-gw --dns-forward " + claudecode.DNSForward,
 				"to 169.254.0.0/16 prohibit", "--ro-bind '<workdir>/etc/resolv.conf' ", "--cap-drop ALL"} {
 				if !strings.Contains(s, want) {
 					t.Errorf("isolated dry run lacks %q:\n%s", want, s)
@@ -87,7 +85,7 @@ func TestRefusesIsolatedWithoutPasta(t *testing.T) {
 	}
 	t.Setenv("PATH", bin)
 	if oracle.Bwrap() == "" {
-		t.Skip("bubblewrap cannot create namespaces here")
+		testenv.Unavailable(t, "bubblewrap cannot create namespaces here")
 	}
 	for _, dryRun := range []bool{false, true} {
 		args := []string{"claude", "-tasks", suite, "-out", t.TempDir()}

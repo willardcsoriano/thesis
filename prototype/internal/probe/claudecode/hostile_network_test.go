@@ -16,6 +16,8 @@ import (
 	"sync/atomic"
 	"syscall"
 	"testing"
+
+	"synapseos/internal/testenv"
 	"time"
 )
 
@@ -47,21 +49,18 @@ func needIsolated(t *testing.T) Network {
 	t.Helper()
 	n, err := isolatedNet()
 	if err != nil {
-		t.Skipf("isolated network unavailable: %v", err)
+		testenv.Unavailable(t, "isolated network unavailable: %v", err)
 	}
 	return n
 }
 
-// defaultNet is what agentprobe uses by default: isolated, or, where pasta
-// cannot run, the host's network for tests that are not about the network.
+// defaultNet is what agentprobe uses by default, the isolated network. A
+// host where it cannot be built skips the test (fails it under
+// testenv.RequireEnv) rather than quietly running it on the host's network,
+// which a real run never does.
 func defaultNet(t *testing.T) Network {
 	t.Helper()
-	n, err := isolatedNet()
-	if err != nil {
-		t.Logf("isolated network unavailable (%v); this test runs on the host's network", err)
-		return Network{Mode: NetHost}
-	}
-	return n
+	return needIsolated(t)
 }
 
 // isolatedRunner is hostileRunner on the isolated network, never the host's.
@@ -605,7 +604,7 @@ func TestIsolatedArgv(t *testing.T) {
 	withStrace := sb.Argv(w, "/out/x.strace", []string{sb.Exe()})
 	joined := strings.Join(argv, " ")
 	for _, want := range []string{
-		"/usr/bin/pasta --config-net --quiet -t none -u none -T none -U none --map-host-loopback none --map-guest-addr none --dns-forward " + DNSForward + " -- /bin/sh -c ",
+		"/usr/bin/pasta --config-net --quiet -t none -u none -T none -U none --no-map-gw --dns-forward " + DNSForward + " -- /bin/sh -c ",
 		"to 169.254.0.0/16 prohibit", "to 192.168.0.0/16 prohibit", "to fc00::/7 prohibit", "to 203.0.113.7/32 prohibit", "to 2001:db8::/64 prohibit",
 		"to " + DNSForward + " ipproto udp dport 53 lookup main",
 		" sh /w/lifeline /usr/bin/bwrap ",
@@ -713,16 +712,13 @@ func TestHostileDriverKilledTakesTheSandbox(t *testing.T) {
 	}
 	needBwrap(t)
 	if Prlimit() == "" {
-		t.Skip("prlimit unavailable")
+		testenv.Unavailable(t, "prlimit unavailable")
 	}
-	modes := []NetMode{NetHost}
-	if _, err := isolatedNet(); err == nil {
-		modes = append(modes, NetIsolated)
-	} else {
-		t.Logf("isolated network unavailable (%v); host network only", err)
-	}
-	for _, mode := range modes {
+	for _, mode := range []NetMode{NetHost, NetIsolated} {
 		t.Run(string(mode), func(t *testing.T) {
+			if mode == NetIsolated {
+				needIsolated(t)
+			}
 			tag := strconv.FormatInt(time.Now().UnixNano(), 36)
 			cmd := exec.Command(os.Args[0], "-test.run=^TestHelperDriver$", "-test.v")
 			cmd.Env = append(os.Environ(), "AGENTPROBE_TEST_DRIVER="+string(mode), "AGENTPROBE_TEST_TAG="+tag)

@@ -72,6 +72,37 @@ func TestApplyStatusLeavesOldRunsUnmarked(t *testing.T) {
 	}
 }
 
+// runTasks writes one status line per task run, so a second line for the
+// same task and tier is a corrupt or mixed file. Neither line may win
+// silently: the later "complete" would put an interrupted run in the
+// headline, the earlier would hide a rerun.
+func TestApplyStatusRefusesADuplicateTaskRun(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "status.jsonl")
+	writeLines(t, path,
+		Status{Task: "A", Tier: "technical", Status: "interrupted"},
+		Status{Task: "A", Tier: "novice", Status: "complete"},
+		Status{Task: "A", Tier: "technical", Status: "complete"})
+	recs := []probe.Record{{Task: "A", Tier: "technical"}}
+	err := applyStatus(recs, path)
+	if err == nil || !strings.Contains(err.Error(), ":3:") || !strings.Contains(err.Error(), "second status line") {
+		t.Fatalf("err = %v, want the duplicate on line 3 named", err)
+	}
+	if recs[0].RunStatus != "" {
+		t.Errorf("a refused file still marked the record %q", recs[0].RunStatus)
+	}
+}
+
+// The duplicate's only source in the driver: a tier given twice would run
+// every task twice on it. It is refused before anything runs.
+func TestParseTiersRefusesADuplicate(t *testing.T) {
+	if _, err := parseTiers("technical,novice,technical"); err == nil || !strings.Contains(err.Error(), "twice") {
+		t.Errorf("err = %v", err)
+	}
+	if got, err := parseTiers("technical, novice"); err != nil || strings.Join(got, ",") != "technical,novice" {
+		t.Errorf("got %v, %v", got, err)
+	}
+}
+
 func TestApplyStatusRefusesAMalformedLine(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "status.jsonl")
 	writeLines(t, path, map[string]string{"task": "A", "tier": "technical"})

@@ -14,11 +14,52 @@ import (
 	"synapseos/internal/probe"
 	"synapseos/internal/probe/claudecode"
 	"synapseos/internal/probe/geminicli"
+	"synapseos/internal/testenv"
 )
 
 const suite = "../../internal/probe/claudecode/testdata/tasks.jsonl"
 
 func env(m map[string]string) func(string) string { return func(k string) string { return m[k] } }
+
+// fakeInstalls puts a fake Claude Code and a fake Gemini CLI first on PATH,
+// each a package directory as npm lays it out, and a node for their
+// scripts. None of them can run: the tests that use them plan a run and
+// execute nothing, so they need no real CLI and run on every host. It
+// returns the two package directories.
+func fakeInstalls(t *testing.T) (claudePkg, geminiPkg string) {
+	t.Helper()
+	root := t.TempDir()
+	bin := filepath.Join(root, "bin")
+	claudePkg, geminiPkg = filepath.Join(root, "claude-code"), filepath.Join(root, "gemini-cli")
+	files := map[string]string{
+		filepath.Join(claudePkg, "package.json"):        `{"name":"@anthropic-ai/claude-code","version":"0.0.0-test"}`,
+		filepath.Join(claudePkg, "cli.js"):              "#!/usr/bin/env node\nprocess.exit(1)\n",
+		filepath.Join(geminiPkg, "package.json"):        `{"name":"@google/gemini-cli","version":"0.0.0-test"}`,
+		filepath.Join(geminiPkg, "bundle", "gemini.js"): "#!/usr/bin/env node\nprocess.exit(1)\n",
+		filepath.Join(bin, "node"):                      "#!/bin/sh\nexit 1\n",
+	}
+	for p, body := range files {
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(body), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for name, target := range map[string]string{"claude": filepath.Join(claudePkg, "cli.js"), "gemini": filepath.Join(geminiPkg, "bundle", "gemini.js")} {
+		if err := os.Symlink(target, filepath.Join(bin, name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	if in, err := claudecode.ResolveInstall(); err != nil || in.PackageDir != claudePkg {
+		t.Fatalf("the fake claude did not resolve: %+v %v", in, err)
+	}
+	if in, err := geminicli.ResolveInstall(); err != nil || in.PackageDir != geminiPkg {
+		t.Fatalf("the fake gemini did not resolve: %+v %v", in, err)
+	}
+	return claudePkg, geminiPkg
+}
 
 func TestRefusesWithoutToken(t *testing.T) {
 	var out, errb bytes.Buffer
@@ -51,11 +92,9 @@ func TestRejectsUnknownDriver(t *testing.T) {
 
 func TestDryRunRedactsAndRunsNothing(t *testing.T) {
 	if oracle.Bwrap() == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
-	if _, err := claudecode.ResolveInstall(); err != nil {
-		t.Skip(err)
-	}
+	pkg, _ := fakeInstalls(t)
 	const secret = "sk-ant-oat01-SECRET-TEST"
 	var out, errb bytes.Buffer
 	dir := t.TempDir()
@@ -68,7 +107,7 @@ func TestDryRunRedactsAndRunsNothing(t *testing.T) {
 	if strings.Contains(s, secret) || strings.Contains(errb.String(), secret) {
 		t.Fatal("dry run printed the token")
 	}
-	for _, want := range []string{claudecode.TokenEnv + "=<redacted>", "bwrap", "--tmpfs /home", "--chdir " + claudecode.SandboxCwd,
+	for _, want := range []string{claudecode.TokenEnv + "=<redacted>", "bwrap", "--ro-bind " + pkg + " ", "--tmpfs /home", "--chdir " + claudecode.SandboxCwd,
 		"--dangerously-skip-permissions", "--model sonnet", "--resume '<session-uuid>'", "tiny-1 novice turn 1"} {
 		if !strings.Contains(s, want) {
 			t.Errorf("dry run lacks %q:\n%s", want, s)
@@ -112,11 +151,9 @@ func TestGeminiRefusesTwoCredentialsAndBadFile(t *testing.T) {
 
 func TestGeminiDryRunRedactsAndRunsNothing(t *testing.T) {
 	if oracle.Bwrap() == "" {
-		t.Skip("bubblewrap unavailable")
+		testenv.Unavailable(t, "bubblewrap unavailable")
 	}
-	if _, err := geminicli.ResolveInstall(); err != nil {
-		t.Skip(err)
-	}
+	_, pkg := fakeInstalls(t)
 	const secret = "AIzaSECRET-TEST"
 	dir := t.TempDir()
 	creds := filepath.Join(dir, "oauth_creds.json")
@@ -144,7 +181,7 @@ func TestGeminiDryRunRedactsAndRunsNothing(t *testing.T) {
 					t.Fatal("dry run printed a credential")
 				}
 			}
-			for _, want := range append([]string{"bwrap", "--tmpfs /home", "--chdir " + geminicli.SandboxCwd, "NO_BROWSER=true",
+			for _, want := range append([]string{"bwrap", "--ro-bind " + pkg + " ", "--tmpfs /home", "--chdir " + geminicli.SandboxCwd, "NO_BROWSER=true",
 				"--approval-mode yolo", "--skip-trust", "--model gemini-2.5-pro", "--resume '<session-uuid>'", "tiny-1 novice turn 1", `"maxSessionTurns": 25`}, tc.want...) {
 				if !strings.Contains(s, want) {
 					t.Errorf("dry run lacks %q:\n%s", want, s)

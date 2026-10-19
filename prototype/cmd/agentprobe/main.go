@@ -478,6 +478,10 @@ func parseTiers(s string) ([]string, error) {
 		if !slices.Contains(probe.Tiers, t) {
 			return nil, fmt.Errorf("unknown tier %q (want one of %s)", t, strings.Join(probe.Tiers, ","))
 		}
+		if slices.Contains(out, t) {
+			// It would run every task twice on that tier, into one record set.
+			return nil, fmt.Errorf("tier %q given twice", t)
+		}
 		out = append(out, t)
 	}
 	if len(out) == 0 {

@@ -270,7 +270,12 @@ func minusBlocked(ps []netip.Prefix) []netip.Prefix {
 // The rules belong to the namespace's owner; the agent, a non-root user
 // with no capabilities in a user namespace nested below it, cannot change
 // them (TestHostileNetworkCannotBeChanged).
-func (n Network) wrap(lifeline string) []string {
+func (n Network) wrap(lifeline string) []string { return n.chain(lifeline, blocked) }
+
+// chain is wrap with refuse in place of blocked, so a test can take one
+// layer of the isolation away and show that another holds on its own
+// (network_layers_test.go). Everything else calls wrap.
+func (n Network) chain(lifeline string, refuse []netip.Prefix) []string {
 	var b strings.Builder
 	ip := n.IP
 	b.WriteString("set -e; ")
@@ -278,7 +283,7 @@ func (n Network) wrap(lifeline string) []string {
 		fmt.Fprintf(&b, "%s -4 rule add priority %d to %s ipproto %s dport 53 lookup main; ", ip, 100+i, DNSForward, proto)
 	}
 	var v6 strings.Builder
-	for _, p := range append(slices.Clone(blocked), n.Host...) {
+	for _, p := range append(slices.Clone(refuse), n.Host...) {
 		if p.Addr().Is4() {
 			fmt.Fprintf(&b, "%s -4 rule add priority 200 to %s prohibit; ", ip, p)
 		} else {
@@ -290,7 +295,12 @@ func (n Network) wrap(lifeline string) []string {
 	fmt.Fprintf(&b, `l=$1; shift; "$@" & c=$!; (set +e; %s -s "$l" true; kill -KILL "$c") & wait "$c"`, n.Flock)
 	return []string{n.Pasta, "--config-net", "--quiet",
 		"-t", "none", "-u", "none", "-T", "none", "-U", "none",
-		"--map-host-loopback", "none", "--map-guest-addr", "none",
+		// --no-map-gw stops the gateway address mapping to the host's
+		// loopback. Newer pasta also spells it --map-host-loopback none, but
+		// older releases (Ubuntu 24.04's, which CI runs) know only this
+		// form, and both releases accept it. --map-guest-addr is left at its
+		// default, none, which older releases do not accept as an option.
+		"--no-map-gw",
 		"--dns-forward", DNSForward,
 		"--", "/bin/sh", "-c", b.String(), "sh", lifeline}
 }

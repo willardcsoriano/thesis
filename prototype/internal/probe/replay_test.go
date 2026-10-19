@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"synapseos/internal/oracle"
+	"synapseos/internal/testenv"
 )
 
 func TestAgentPathsMatchOracle(t *testing.T) {
@@ -25,7 +26,7 @@ func replayBwrap(t *testing.T) string {
 	t.Helper()
 	bw := oracle.Bwrap()
 	if bw == "" {
-		t.Skip("replay needs bubblewrap")
+		testenv.Unavailable(t, "replay needs bubblewrap")
 	}
 	return bw
 }
