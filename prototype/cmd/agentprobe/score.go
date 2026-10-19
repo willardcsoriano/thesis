@@ -177,6 +177,9 @@ func readRecords(path string) ([]probe.Record, error) {
 // status.jsonl, so the report keeps incomplete runs out of the headline. A run
 // with no status.jsonl predates it and is left unmarked; a task run missing
 // from an existing status.jsonl was cut off and is marked probe.RunMissing.
+// runTasks writes one line per task run, once, into a file it creates, so a
+// second line for the same task and tier means the file was edited or two
+// runs were mixed: an error, rather than letting either line win.
 func applyStatus(recs []probe.Record, path string) error {
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		return nil
@@ -191,7 +194,11 @@ func applyStatus(recs []probe.Record, path string) error {
 		if st.Status == "" {
 			return fmt.Errorf("%s:%d: a status line without a status", path, line)
 		}
-		status[key{st.Task, st.Tier}] = st.Status
+		k := key{st.Task, st.Tier}
+		if _, dup := status[k]; dup {
+			return fmt.Errorf("%s:%d: a second status line for task %s, tier %s; one run writes one per task run", path, line, st.Task, st.Tier)
+		}
+		status[k] = st.Status
 		return nil
 	})
 	if err != nil {
