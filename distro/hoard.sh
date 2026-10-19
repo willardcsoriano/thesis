@@ -3,17 +3,18 @@
 # be assembled without the network. Needs no elevated privilege: apt-get download
 # and go mod download write only to the current directory.
 #   bash distro/hoard.sh --debs --gomod --toolchain --models     (or --all)
-# Layout: hoard/debs/*.deb  hoard/gomod/  hoard/toolchain/  hoard/models/  hoard/SHA256SUMS
+#   bash distro/hoard.sh --pip      # the PDF build's wheels (tools/requirements.txt); needs tools/venv
+# Layout: hoard/debs/*.deb  hoard/gomod/  hoard/toolchain/  hoard/models/  hoard/pip/  hoard/SHA256SUMS
 set -euo pipefail
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 repo=$(cd "$here/.." && pwd)
 out="$here/hoard"; mkdir -p "$out"
-want_debs=0; want_go=0; want_tc=0; want_models=0; want_ollama=0
+want_debs=0; want_go=0; want_tc=0; want_models=0; want_ollama=0; want_pip=0
 for a in "$@"; do case "$a" in
-  --debs) want_debs=1;; --gomod) want_go=1;; --toolchain) want_tc=1;; --models) want_models=1;; --ollama) want_ollama=1;;
+  --debs) want_debs=1;; --gomod) want_go=1;; --toolchain) want_tc=1;; --models) want_models=1;; --ollama) want_ollama=1;; --pip) want_pip=1;;
   --all) want_debs=1; want_go=1; want_tc=1; want_models=1;;
   *) echo "unknown option $a" >&2; exit 2;; esac; done
-[ $((want_debs+want_go+want_tc+want_models+want_ollama)) -gt 0 ] || { echo "nothing selected; pass --all" >&2; exit 2; }
+[ $((want_debs+want_go+want_tc+want_models+want_ollama+want_pip)) -gt 0 ] || { echo "nothing selected; pass --all" >&2; exit 2; }
 
 manifest() { awk -F'\t' -v k="$1" 'NR>1 && $1==k {print $2}' "$here/manifest.tsv"; }
 
@@ -75,6 +76,16 @@ if [ $want_ollama -eq 1 ]; then
   mkdir -p "$out/toolchain"
   curl -fsSL https://ollama.com/download/ollama-linux-amd64.tar.zst -o "$out/toolchain/ollama-linux-amd64.tar.zst" \
     || echo "ollama archive not fetched; the installer script at https://ollama.com/install.sh is the fallback" >&2
+fi
+
+if [ $want_pip -eq 1 ]; then
+  # The pip-kind rows are the top-level names in tools/requirements.txt, which pins the
+  # rest; it is the source of truth, so the wheels come from it rather than the manifest.
+  pip="$repo/tools/venv/bin/pip"
+  [ -x "$pip" ] || { echo "no tools/venv; create it: python3 -m venv tools/venv" >&2; exit 1; }
+  mkdir -p "$out/pip"
+  "$pip" download -r "$repo/tools/requirements.txt" -d "$out/pip"
+  echo "pip wheels hoarded in $out/pip"
 fi
 
 (cd "$out" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
