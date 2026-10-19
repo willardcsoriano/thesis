@@ -15,7 +15,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -151,6 +153,11 @@ func (c *common) host(driver string, stderr io.Writer) (setup, int) {
 	if s.runID == "" {
 		s.runID = time.Now().UTC().Format("20060102T150405Z") + "-" + driver
 	}
+	if err := probe.CheckID("run", s.runID); err != nil {
+		// The run id names the run's folder under -out; "../x" would put it elsewhere.
+		fmt.Fprintln(stderr, "agentprobe:", err)
+		return s, 2
+	}
 	s.out = filepath.Join(c.out, s.runID)
 	return s, 0
 }
@@ -200,7 +207,7 @@ func runClaude(ctx context.Context, args []string, getenv func(string) string, s
 		}
 		return dry(stdout, notes, claudecode.Redacted(sb.Env("unset")), nil, tasks, tiers, plan)
 	}
-	// The claude driver reports a failed login as a task error and keeps going.
+	// A refused login, or output that cannot be written, would repeat for every task.
 	stop := func(err error) bool { return errors.Is(err, claudecode.ErrFatal) }
 	return runTasks(ctx, r.RunTask, s.out, tasks, tiers, stop, stderr)
 }
@@ -301,54 +308,129 @@ Then run this agentprobe command again.
 // taskFunc runs one task on one tier.
 type taskFunc func(ctx context.Context, t probe.Task, tier string) ([]probe.Record, error)
 
+// Status is one line of OUT/status.jsonl: how one task run on one tier
+// ended. events.jsonl holds the records; a task run is complete only when a
+// status line says so. A line is written after the task's records, so a run
+// killed outright leaves the task it was on without one.
+type Status struct {
+	Task    string `json:"task"`
+	Tier    string `json:"tier"`
+	Records int    `json:"records"`
+	// Status is "complete", "incomplete" (a turn timed out or ended without
+	// a result), "interrupted" (the operator stopped the run), "error", or
+	// "fatal" (an error that ended the run).
+	Status string `json:"status"`
+	Error  string `json:"error,omitempty"`
+}
+
 // runTasks runs every task on every tier, appending records to
-// OUT/events.jsonl. stop, when set, says which errors end the run at once
-// (a failure every later task would repeat); other errors are counted and
-// the run goes on.
+// OUT/events.jsonl and one Status per task run to OUT/status.jsonl. stop,
+// when set, says which errors end the run at once (a failure every later
+// task would repeat); other errors are counted and the run goes on. An
+// interrupt ends the run after the task in progress has been recorded.
 func runTasks(ctx context.Context, runTask taskFunc, out string, tasks []probe.Task, tiers []string, stop func(error) bool, stderr io.Writer) int {
 	if err := os.MkdirAll(out, 0o755); err != nil {
 		fmt.Fprintln(stderr, "agentprobe:", err)
 		return 1
 	}
-	eventsPath := filepath.Join(out, "events.jsonl")
-	events, err := os.OpenFile(eventsPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
-	if err != nil {
-		fmt.Fprintf(stderr, "agentprobe: %v (pick a new -run-id rather than mixing two runs)\n", err)
-		return 1
+	eventsPath, statusPath := filepath.Join(out, "events.jsonl"), filepath.Join(out, "status.jsonl")
+	var files [2]*os.File
+	for i, p := range []string{eventsPath, statusPath} {
+		f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		if err != nil {
+			fmt.Fprintf(stderr, "agentprobe: %v (pick a new -run-id rather than mixing two runs)\n", err)
+			return 1
+		}
+		defer f.Close()
+		files[i] = f
 	}
-	defer events.Close()
+	events, status := files[0], files[1]
 
-	failed := 0
+	failed, incomplete := 0, 0
 	for _, t := range tasks {
 		for _, tier := range tiers {
 			if ctx.Err() != nil {
-				fmt.Fprintln(stderr, "agentprobe: interrupted")
+				fmt.Fprintf(stderr, "agentprobe: interrupted; completed task runs are listed in %s\n", statusPath)
 				return 1
 			}
 			fmt.Fprintf(stderr, "%s %s ...\n", t.ID, tier)
 			recs, err := runTask(ctx, t, tier)
 			for _, rec := range recs {
-				if aerr := probe.Append(events, rec); aerr != nil {
+				var line bytes.Buffer
+				if aerr := probe.Append(&line, rec); aerr != nil {
 					fmt.Fprintln(stderr, "agentprobe:", aerr)
 					return 1
 				}
-			}
-			if err != nil {
-				failed++
-				fmt.Fprintln(stderr, "agentprobe:", err)
-				if stop != nil && stop(err) {
-					fmt.Fprintf(stderr, "agentprobe: stopping the run; records so far in %s\n", eventsPath)
+				if aerr := appendWhole(events, line.Bytes()); aerr != nil {
+					fmt.Fprintf(stderr, "agentprobe: %v; records so far in %s\n", aerr, eventsPath)
 					return 1
 				}
 			}
+			st := Status{Task: t.ID, Tier: tier, Records: len(recs), Status: "complete"}
+			fatal := false
+			switch {
+			case err == nil:
+			case errors.Is(err, probe.ErrInterrupted) || ctx.Err() != nil:
+				st.Status = "interrupted"
+			case stop != nil && stop(err):
+				st.Status, fatal = "fatal", true
+			case errors.Is(err, probe.ErrIncomplete):
+				st.Status = "incomplete"
+			default:
+				st.Status = "error"
+			}
+			if err != nil {
+				st.Error = err.Error()
+			}
+			b, _ := json.Marshal(st) // plain strings and ints: cannot fail
+			if serr := appendWhole(status, append(b, '\n')); serr != nil {
+				fmt.Fprintln(stderr, "agentprobe:", serr)
+				return 1
+			}
+			switch st.Status {
+			case "incomplete":
+				incomplete++
+				fmt.Fprintln(stderr, "agentprobe:", err)
+			case "error", "fatal":
+				failed++
+				fmt.Fprintln(stderr, "agentprobe:", err)
+			}
+			if fatal {
+				fmt.Fprintf(stderr, "agentprobe: stopping the run; records so far in %s\n", eventsPath)
+				return 1
+			}
 		}
 	}
-	fmt.Fprintf(stderr, "records in %s\n", eventsPath)
+	if ctx.Err() != nil {
+		fmt.Fprintf(stderr, "agentprobe: interrupted; completed task runs are listed in %s\n", statusPath)
+		return 1
+	}
+	fmt.Fprintf(stderr, "records in %s, task status in %s\n", eventsPath, statusPath)
+	if incomplete > 0 {
+		fmt.Fprintf(stderr, "agentprobe: %d task runs did not finish (timed out or no result)\n", incomplete)
+	}
 	if failed > 0 {
 		fmt.Fprintf(stderr, "agentprobe: %d task runs failed\n", failed)
 		return 1
 	}
 	return 0
+}
+
+// appendWhole appends line to f so the file is never left holding part of
+// it: a short write (a full disk) is cut back to where the line began, so
+// the file stays whole JSON lines.
+func appendWhole(f *os.File, line []byte) error {
+	at, err := f.Seek(0, io.SeekEnd)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(line); err != nil {
+		if terr := f.Truncate(at); terr != nil {
+			return fmt.Errorf("%w (and cutting the partial line failed: %v)", err, terr)
+		}
+		return err
+	}
+	return nil
 }
 
 func parseTiers(s string) ([]string, error) {
