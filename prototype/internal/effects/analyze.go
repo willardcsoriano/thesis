@@ -332,12 +332,16 @@ func (st *state) stmt(s *syntax.Stmt, sc *scope, pc *pipeCtx) {
 			// Every stage runs in a subshell, at the same time as the others, and any
 			// of them may fail.
 			stages := flattenPipe(x)
+			starts := make([]int, len(stages)+1)
 			for i, stage := range stages {
 				if i > 0 {
 					st.virt.doubt()
 				}
+				starts[i] = len(st.an.Effects)
 				st.stmt(stage, sc.clone(), &pipeCtx{stages: stages, idx: i})
 			}
+			starts[len(stages)] = len(st.an.Effects)
+			st.racingMoves(starts)
 			st.virt.doubt()
 		case syntax.OrStmt:
 			sc.fresh(func() {
@@ -373,6 +377,11 @@ func (st *state) stmt(s *syntax.Stmt, sc *scope, pc *pipeCtx) {
 		st.ifClause(x, sc)
 		st.virt.doubt()
 	case *syntax.WhileClause:
+		// `producer | while read v; do ...; done` binds v to each record the producer
+		// gives, when the producer can be resolved (whileread.go).
+		if !x.Until && st.a.Compose && pc != nil && pc.idx > 0 && !readsStdinElsewhere(s) && st.whileRead(x, sc, pc, st.text(s)) {
+			break
+		}
 		st.stmts(x.Cond, sc)
 		st.loopBody(x.Do, sc, nil)
 	case *syntax.ForClause:
@@ -412,6 +421,41 @@ func (st *state) stmt(s *syntax.Stmt, sc *scope, pc *pipeCtx) {
 	if s.Negated {
 		st.mayHaveFailed(sc) // `! A && B` runs B when A failed
 	}
+}
+
+// racingMoves handles the stages of a pipeline running at the same time: an earlier
+// stage may overwrite or remove the destination of a later stage's move after the move,
+// destroying the moved data, which the stage-by-stage walk (where destroyMoved sees
+// only what comes later) does not see. Such a move is demoted to a captured removal of
+// its source, as destroyMoved does in the other order. starts[i] is the index of stage
+// i's first effect, and starts[len] the end.
+func (st *state) racingMoves(starts []int) {
+	for j := 1; j+1 < len(starts); j++ {
+		for _, mv := range st.an.Effects[starts[j]:starts[j+1]] {
+			if mv.Kind != Remove || mv.MovedTo == "" {
+				continue
+			}
+			for _, e := range st.an.Effects[starts[0]:starts[j]] {
+				if (e.Kind == Write || e.Kind == Remove) && e.Hint == "" &&
+					(e.Path == mv.MovedTo || strings.HasPrefix(mv.MovedTo, e.Path+"/")) {
+					st.demoteMove(mv.Path, mv.MovedTo)
+					break
+				}
+			}
+		}
+	}
+}
+
+// readsStdinElsewhere reports whether s redirects its standard input, so that a loop
+// in a pipeline does not read the pipe.
+func readsStdinElsewhere(s *syntax.Stmt) bool {
+	for _, r := range s.Redirs {
+		switch r.Op {
+		case syntax.RdrIn, syntax.RdrInOut, syntax.DplIn, syntax.Hdoc, syntax.DashHdoc, syntax.WordHdoc:
+			return true
+		}
+	}
+	return false
 }
 
 // andChain flattens a && b && c, which parses as (a && b) && c, into its parts.
@@ -758,8 +802,11 @@ func unescapeGlobs(words []*syntax.Word) []*syntax.Word {
 }
 
 // nondeterministic matches text whose output differs from one run to the next, so
-// resolving it once and running it later would act on different names.
-var nondeterministic = regexp.MustCompile(`/dev/u?random|\$RANDOM|\$\$|\bshuf\b|\bmktemp\b|\buuidgen\b|\bdate\b|\bopenssl\s+rand\b|\$SRANDOM|\bpgrep\b|\bps\b|\bpidof\b`)
+// resolving it once and running it later would act on different names. Network
+// clients are here too: a resolver runs without the network, so what they fetch is
+// empty then and whatever the server sends when the line runs.
+var nondeterministic = regexp.MustCompile(`/dev/u?random|\$RANDOM|\$\$|\bshuf\b|\bmktemp\b|\buuidgen\b|\bdate\b|\bopenssl\s+rand\b|\$SRANDOM|\bpgrep\b|\bps\b|\bpidof\b|` +
+	`\b(curl|wget|ssh|scp|sftp|ftp|nc|ncat|socat|telnet|aria2c|dig|nslookup|whois)\b`)
 
 // readsWhatTheLineWrites reports whether text mentions a file an earlier part of the
 // same line writes or creates: what it would read now is not what it will read then.

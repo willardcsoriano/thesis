@@ -1,36 +1,67 @@
 kind	name	probe	required	purpose
-apt	bubblewrap	bwrap	yes	read-only sandbox for resolution and for the corpus oracle; also the study-machine isolation
-apt	git	git	yes	version control; git clean -n and git diff --name-only resolvers
-apt	rsync	rsync	yes	rsync -n resolver
-apt	jq	jq	yes	config tooling and the guard hook
-apt	findutils	find	yes	find and xargs, the wrappers the analysis reasons about
-apt	coreutils	rm	yes	the commands under analysis
-apt	tar	tar	yes	tar -t resolver
-apt	unzip	unzip	yes	unzip -Z1 resolver
-apt	zip	zip	no	archive creation in corpus templates
-apt	gzip	gzip	yes	compression, which replaces the original
-apt	bzip2	bzip2	no	compression templates
-apt	xz-utils	xz	no	compression templates
-apt	sed	sed	yes	sed -i in place editing
-apt	gawk	gawk	no	awk one-liners in the corpus
-apt	perl	perl	yes	perl one-liners and the rename tool
-apt	rename	rename	yes	rename -n resolver (one corpus command needs it)
-apt	pv	pv	no	pipe viewer used by corpus commands
-apt	dos2unix	dos2unix	no	in-place conversion used by corpus commands
-apt	ed	ed	no	scripted editor used by corpus commands
-apt	strace	strace	no	tracing used by corpus commands
-apt	sqlite3	sqlite3	no	database commands in the corpus
-apt	shellcheck	shellcheck	no	lints the shell scripts in tools/ and distro/
-apt	make	make	yes	build and test entry points
-apt	python3	python3	yes	corpus analysis, config patching, PDF export
-apt	python3-venv	python3	no	virtual environment for the PDF export
-apt	chromium	chromium	no	renders the paper to PDF (SYNAPSE_CHROMIUM)
-apt	curl	curl	yes	fetching the toolchain and the model
-apt	apt	apt-get	yes	package simulation (apt-get -s) for the package-state model
-apt	dpkg	dpkg-query	yes	dpkg-query and dpkg-deb for the package-state model
-apt	systemd	systemctl	yes	is-active and is-enabled for the service-state model
-toolchain	go	go	yes	Go 1.25.0, the version prototype/go.mod requires (hoarded as a tarball)
-gomod	mvdan.cc/sh/v3	-	yes	shell parser and expander (v3.13.1; v3.14 needs Go 1.26)
-model	qwen2.5-coder:3b	-	yes	the local model the prototype runs on (about 1.9 GB)
-model	qwen2.5-coder:1.5b	-	no	the smaller model kept for comparison
-binary	ollama	ollama	yes	model runtime (installer script; hoarded by hoard.sh --ollama)
+apt	bubblewrap	bwrap	yes	runtime: read-only sandbox the analysis' resolvers run in; also the corpus oracle's and the agent command study's sandbox
+apt	bash	bash	yes	runtime: the executor runs every approved command with bash -o pipefail; also the shell of the resolvers and the oracle
+apt	coreutils	rm	yes	runtime: the file commands the analysis reasons about and undo restores after
+apt	coreutils	true	yes	runtime: what bubblewrap starts to prove namespaces work before resolution is sandboxed
+apt	coreutils	sleep	yes	runtime: synapseos-session waits for the desktop before laying the TUI over it
+apt	findutils	find	yes	runtime: find and xargs, the wrappers the analysis reasons about; the find resolver
+apt	git	git	yes	runtime: git clean -n, git diff --name-only and rev-parse resolvers; undo's git reset
+apt	rsync	rsync	yes	runtime: rsync -n resolver
+apt	tar	tar	yes	runtime: tar -t resolver
+apt	unzip	unzip	yes	runtime: unzip -Z1 resolver
+apt	rename	rename	yes	runtime: rename -n resolver (Debian's Perl rename)
+apt	perl	perl	yes	runtime: interpreter of the rename tool and of perl one-liners the analysis models
+apt	gzip	gzip	yes	runtime: compression, which replaces the original; modelled by the analysis
+apt	sed	sed	yes	runtime: sed -i in-place editing, modelled by the analysis
+apt	apt	apt-get	yes	runtime: apt-get -s simulation for the package-state model, and the apt-get inverses undo runs
+apt	apt	apt-cache	yes	runtime: apt-cache policy for the package-state model
+apt	dpkg	dpkg-query	yes	runtime: dpkg-query status, version and conffiles for the package-state model
+apt	dpkg	dpkg-deb	yes	runtime: dpkg-deb -f for a local .deb in the package-state model
+apt	systemd	systemctl	yes	runtime: is-active and is-enabled for the service-state model, and the systemctl inverses undo runs
+apt	sudo	sudo	yes	runtime: undo runs the inverses of package and service changes through sudo
+apt	xfce4	xfce4-panel	yes	runtime: the ordinary XFCE desktop under the GUI session (D27); the probe is one of its parts
+apt	xfce4-session	xfce4-session	yes	runtime: started by synapseos-session
+apt	xfce4-terminal	xfce4-terminal	yes	runtime: the fullscreen frame the GUI-mode TUI runs in
+apt	lightdm	lightdm	yes	runtime: display manager that offers the SynapseOS session at login
+apt	lightdm-gtk-greeter	lightdm-gtk-greeter	yes	runtime: lightdm's login screen, where the session is chosen
+apt	xserver-xorg	Xorg	yes	runtime: the X server the session runs on
+apt	xclip	xclip	no	runtime: ctrl+v paste in the TUI, through atotto/clipboard (xsel or wl-clipboard also work)
+model	qwen2.5-coder:3b	-	yes	runtime: the local model the prototype runs on (about 1.9 GB)
+binary	ollama	ollama	yes	runtime: model runtime (installer script; hoarded by hoard.sh --ollama)
+apt	passt	pasta	no	study: the agent command study's isolated network namespace (agentprobe -net isolated, the default)
+apt	iproute2	ip	no	study: routing rules inside the agent command study's isolated namespace
+apt	util-linux	flock	no	study: the lifeline lock that ends the agent command study's isolated namespace
+apt	util-linux	prlimit	no	study: process cap in the agent command study's sandbox (agentprobe refuses to run without it)
+apt	dash	sh	no	study: /bin/sh, the first process of the agent command study's isolated namespace
+apt	strace	strace	no	study: agentprobe -strace, the execve trace of each turn (probe.Trace); also a corpus command
+apt	nodejs	node	no	study: runs Gemini CLI (engines node >=20; Debian 13 ships 20.19) and pilot/ccsafetynet.mjs
+apt	npm	npm	no	study: installs Gemini CLI and cc-safety-net@2.6.1 for pilot/ccsafetynet.mjs
+binary	claude	claude	no	study: Claude Code, an agent CLI under study; curl -fsSL https://claude.ai/install.sh | bash (native binary, needs no Node)
+binary	gemini	gemini	no	study: Gemini CLI, an agent CLI under study; npm install -g @google/gemini-cli
+model	qwen2.5-coder:1.5b	-	no	study: the smaller model kept for comparison
+apt	zip	zip	no	study: archive creation in corpus templates and the archive tests' fixtures
+apt	bzip2	bzip2	no	study: compression templates in the corpus
+apt	xz-utils	xz	no	study: compression templates in the corpus
+apt	gawk	gawk	no	study: awk one-liners in the corpus
+apt	pv	pv	no	study: pipe viewer used by corpus commands
+apt	dos2unix	dos2unix	no	study: in-place conversion used by corpus commands
+apt	ed	ed	no	study: scripted editor used by corpus commands
+apt	sqlite3	sqlite3	no	study: database commands in the corpus
+apt	bc	bc	no	study: arithmetic in pilot/bench_snapshot.sh and manual-tests/model-bench.sh
+apt	python3	python3	no	study: pilot analysis and corpus scripts; also the PDF build and probe's trace test
+apt	python3-venv	python3	no	build: tools/venv, the virtual environment of the PDF build
+pip	playwright	-	no	build: drives Chromium for the PDF build in tools/venv (tools/requirements.txt pins it; no Debian package)
+pip	pypdf	-	no	build: page stamping in tools/venv (tools/requirements.txt; Debian's python3-pypdf is not visible in the venv)
+pip	reportlab	-	no	build: page numbers in tools/venv (tools/requirements.txt; Debian's python3-reportlab is not visible in the venv)
+apt	chromium	chromium	no	build: renders the paper to PDF (SYNAPSE_CHROMIUM=/usr/bin/chromium)
+apt	poppler-utils	pdftotext	no	build: page labels and the per-chapter text of the paper (tools/pagelabels.py, tools/export_text.py)
+apt	make	make	no	build: build and test entry points
+apt	curl	curl	no	build: fetches the Go toolchain, the Ollama archive and installer, and the Claude Code installer
+apt	jq	jq	no	build: hoard.sh's toolchain checksum and model manifests; the guard hook and its tests
+apt	shellcheck	shellcheck	no	build: lints the shell scripts in tools/ and distro/
+apt	gcc	gcc	no	build: cgo for go test -race (prototype/setup.md)
+toolchain	go	go	no	build: Go 1.25.0, the version prototype/go.mod requires (hoarded as a tarball)
+gomod	mvdan.cc/sh/v3	-	no	build: shell parser and expander compiled into synapse (v3.13.1; v3.14 needs Go 1.26)
+gomod	charm.land/bubbletea/v2	-	no	build: the TUI's event loop, compiled into synapse
+gomod	charm.land/bubbles/v2	-	no	build: the TUI's text input and spinner, compiled into synapse
+gomod	charm.land/lipgloss/v2	-	no	build: the TUI's styling, compiled into synapse

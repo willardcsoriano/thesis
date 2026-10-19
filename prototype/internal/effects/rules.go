@@ -492,7 +492,7 @@ func init() {
 		"tee": ruleTee, "dd": ruleDd, "shred": ruleShred, "sort": ruleSort, "uniq": ruleUniq,
 		"gzip": ruleCompress, "gunzip": ruleCompress, "bzip2": ruleCompress, "bunzip2": ruleCompress, "xz": ruleCompress,
 		"unxz": ruleCompress, "zstd": ruleCompress, "unzstd": ruleCompress,
-		"curl": ruleCurl, "wget": ruleWget, "tar": ruleTar, "unzip": ruleUnzip, "rsync": ruleRsync, "git": ruleGit,
+		"curl": ruleCurl, "wget": ruleWget, "tar": ruleTar, "unzip": ruleUnzip, "zip": ruleZip, "rsync": ruleRsync, "git": ruleGit,
 		"rename": ruleRename, "prename": ruleRename,
 	}
 }
@@ -1068,43 +1068,6 @@ func ruleUniq(st *state, c *call) {
 	o := parseOpts(c.args, "fsw", "skip-fields", "skip-chars", "check-chars")
 	if len(o.operands) >= 2 {
 		st.writeTo(c, c.abs(o.operands[1]))
-	}
-}
-
-var compressExt = map[string]string{"gzip": ".gz", "gunzip": ".gz", "bzip2": ".bz2", "bunzip2": ".bz2", "xz": ".xz", "unxz": ".xz", "zstd": ".zst", "unzstd": ".zst"}
-
-func ruleCompress(st *state, c *call) {
-	if !st.needArgs(c) {
-		return
-	}
-	o := parseOpts(c.args, "S", "suffix")
-	if o.has("c", "stdout", "to-stdout", "t", "test", "l", "list") {
-		return
-	}
-	decompress := strings.HasPrefix(c.name, "un") || strings.HasPrefix(c.name, "gun") || strings.HasPrefix(c.name, "bun") || o.has("d", "decompress", "uncompress")
-	ext := compressExt[c.name]
-	keep := o.has("k", "keep")
-	for _, op := range o.operands {
-		p := c.abs(op)
-		if _, ok := st.lstat(p); !ok {
-			continue
-		}
-		var out string
-		if decompress {
-			if !strings.HasSuffix(p, ext) {
-				continue
-			}
-			out = strings.TrimSuffix(p, ext)
-		} else {
-			out = p + ext
-		}
-		st.writeTo(c, out)
-		if !keep {
-			// Not a move: the bytes at the destination are a transformation of the
-			// original, so moving it back would return compressed data. The original
-			// has to be captured like any other deletion.
-			st.add(c, Effect{Kind: Remove, Path: p})
-		}
 	}
 }
 

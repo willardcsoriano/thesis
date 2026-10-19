@@ -184,10 +184,11 @@ The line is parsed with an adopted parser (writing a shell grammar is not the co
 | Construct | Rule |
 |---|---|
 | `a; b`, `a && b`, `a \|\| b` | union of both sides, since either may run |
-| pipeline `a \| b` | each stage in its own copy of the scope; a stage knows its position, for `xargs` and piped code |
+| pipeline `a \| b` | each stage in its own copy of the scope; a stage knows its position, for `xargs`, `while read`, and piped code; the stages run at once, so a move whose destination an earlier stage overwrites or removes is captured (`racingMoves`) |
 | `( … )`, `{ … }` | walked, the subshell in a copied scope |
 | `if`, `while`, `case` | every branch walked, since any may run |
 | `for x in …` | items expanded and the body walked once per item with `x` bound, up to `MaxLoop` |
+| `producer \| while read [-r] [-d D] x` | the producer resolved as for `xargs`, its output split into records as `read` splits them, and the body walked once per record with `x` bound, up to `MaxLoop`; any other `read` form, or a body that creates files where the producer may still be listing, leaves `x` unbound, which asks |
 | `$( … )`, `<( … )` | analysed where the word is expanded, whether or not the outer command is understood |
 | redirects `>`, `>>`, `&>`, `<>` | a write if the target exists, else a create; a raw device is unrecoverable; `/dev/null` and file descriptors are ignored |
 | `VAR=x`, `export`, `declare` | bound in the scope, so later words expand with them; arrays and computed values unbind |
@@ -219,7 +220,7 @@ When `Compose` is false (the composition ablation), step 3's wrappers, step 4's 
 
 When a target is only known at run time, the analysis finds it by running a form of the command that **cannot change anything**. There are three mechanisms, and section 8 lists every resolver command:
 
-- **Substitutions and `xargs` producers.** The text is run with `bash -c` only if the same analysis finds it has no effects and no issues (`ReadOnly`), it is not privileged, and it is not nondeterministic (`$RANDOM`, `date`, `mktemp`, `/dev/urandom`, `ps`, …) or reading a file the line itself writes. The resolver is proven read-only by the analysis it serves.
+- **Substitutions, and the producers of `xargs` and `while read` loops.** The text is run with `bash -c` only if the same analysis finds it has no effects and no issues (`ReadOnly`), it is not privileged, and it is not nondeterministic (`$RANDOM`, `date`, `mktemp`, `/dev/urandom`, `ps`, network clients such as `curl`, whose fetch the network-less resolver would see as empty, …) or reading a file the line itself writes. The resolver is proven read-only by the analysis it serves.
 - **`find`.** The expression is rewritten so each action that would change something (`-delete`, `-exec`, `-execdir`, `-ok`, `-okdir`) becomes a `-printf` that reports which action fired on which path, and each printing action becomes `-true`. The same expression then lists its own targets. The rewrite is refused if any action token survives.
 - **Fixed dry-run adapters** for `tar -x`, `unzip`, `rsync`, `rename`, `git` (`clean`, `reset --hard`, `checkout`, `restore`, `stash`, `checkout -b`), and for package and service state (`apt-get -s`, `dpkg-query`, `systemctl is-active`). Each is a fixed argument list, never assembled from user text beyond its operands. git runs with repository hooks, fsmonitor, and external diff disabled, so a repository cannot make a query run its own code.
 
@@ -646,7 +647,7 @@ plan:       what is captured before it runs
 Every command the analysis knows, and what it does with each. Commands not listed here are unknown, and unknown asks.
 
 <!-- BEGIN GENERATED: rule-map -->
-Generated from `prototype/internal/effects` by `make rulemap`; a test fails when this section and the code disagree. In total: 39 commands with a mutating rule, 13 transparent wrappers, 31 package, service, and system-state tools (5 of them modelled with inverses), 42 commands that are always unrecoverable, 17 interpreters, and 172 commands that are read-only in every form.
+Generated from `prototype/internal/effects` by `make rulemap`; a test fails when this section and the code disagree. In total: 40 commands with a mutating rule, 13 transparent wrappers, 31 package, service, and system-state tools (5 of them modelled with inverses), 42 commands that are always unrecoverable, 17 interpreters, and 172 commands that are read-only in every form.
 
 #### Composition: what the analysis resolves through
 
@@ -658,6 +659,7 @@ Generated from `prototype/internal/effects` by `make rulemap`; a test fails when
 | sh, bash, zsh, dash, ksh, ash -c | the string is parsed and analysed as a command line of its own; a script file or code piped in is not visible and asks |
 | eval | its arguments, joined by spaces, are analysed as a command line |
 | for loops | the item list is expanded and the body analysed once per item with the variable bound, up to the loop cap |
+| while read loops in a pipeline | the producer feeding the loop is proven read-only and run, as for xargs, and its output split into records as read would split them (newline or -d, -r, IFS trimming of one variable); the body is analysed once per record with the variable bound, up to the loop cap; other read forms, NUL bytes without -d '', backslashes without -r, and a body creating files where the producer may still be listing are unresolved |
 
 Transparent wrappers: `builtin`, `command`, `doas`, `env`, `exec`, `ionice`, `nice`, `nohup`, `setsid`, `stdbuf`, `sudo`, `timeout`, `unbuffer`.
 
@@ -666,8 +668,8 @@ Transparent wrappers: `builtin`, `command`, `doas`, `env`, `exec`, `ionice`, `ni
 | Command | Effects derived |
 |---|---|
 | `awk` | -i inplace overwrites each file; a program with system(), a redirected print, or a piped getline is opaque; otherwise read-only |
-| `bunzip2` | as gzip, in reverse |
-| `bzip2` | as gzip |
+| `bunzip2` | as gzip, in reverse; a file with no recognised suffix becomes NAME.out |
+| `bzip2` | as gzip, without -S or -r |
 | `chgrp` | as chown |
 | `chmod` | changes the mode of each operand, and with -R of everything under it (captured as a metadata record); an octal mode equal to the current one is no change |
 | `chown` | changes ownership of each operand, recursively with -R (metadata record) |
@@ -676,8 +678,8 @@ Transparent wrappers: `builtin`, `command`, `doas`, `env`, `exec`, `ionice`, `ni
 | `dd` | writes the of= file; a raw device is unrecoverable |
 | `gawk` | as awk |
 | `git` | per subcommand: reset --hard captures HEAD and every dirty tracked file; clean is resolved by clean -n; checkout, restore, switch -f and stash capture the dirty tracked files they overwrite; checkout -b and stash record an inverse; rm and mv as the file rules; history rewrites, forced pushes, and branch or tag deletion are unrecoverable; an unknown subcommand is opaque |
-| `gunzip` | as gzip, in reverse |
-| `gzip` | writes the compressed file and removes the original unless -k; the removal is captured, because the output is different bytes, not a move; -c, -t, -l are read-only |
+| `gunzip` | as gzip, in reverse: each recognised suffix (.gz, .tgz to .tar, ...) is replaced, and a file with no recognised suffix is skipped |
+| `gzip` | writes the compressed file (NAME.gz, or the -S suffix) and removes the original unless -k; the removal is captured, because the output is different bytes, not a move; -r walks directories, which are otherwise skipped; -c, -t, -l are read-only; -N on decompression and any option not modelled are unresolved |
 | `install` | as cp; -d creates directories |
 | `ln` | creates each link; -f over an existing file removes that file (captured whole, not through the new link) |
 | `mawk` | as awk |
@@ -692,25 +694,26 @@ Transparent wrappers: `builtin`, `command`, `doas`, `env`, `exec`, `ionice`, `ni
 | `sed` | -i overwrites each file, and -i.SUF also leaves a backup; a script with w, W, or e is opaque; otherwise read-only |
 | `shred` | unrecoverable whenever a target exists: it destroys content on purpose |
 | `sort` | -o FILE writes FILE; otherwise read-only |
-| `tar` | create, append, update write the archive, and --remove-files removes the inputs (captured); extract is resolved by tar -tf and writes or creates each member; an archive on standard input is unresolved; list and diff are read-only |
+| `tar` | create, append, update, concatenate and --delete write the archive (and a -g snapshot file), and --remove-files removes the inputs (captured), wherever the archive goes; extract is resolved by tar -tf and writes or creates each member and the directories above it, replacing (and capturing) a file that stands where a directory is extracted; -P, --transform, an archive on standard input, or a list of inputs from a file with --remove-files are unresolved; -I with a program other than a compressor, --to-command and other program hooks are opaque; a remote archive is unrecoverable; list and diff are read-only |
 | `tee` | writes each file operand (- and devices excepted) |
 | `touch` | creates each missing file; an existing file only gets new times, which lose nothing; -c creates nothing |
 | `truncate` | overwrites each operand, creating it unless -c |
 | `uniq` | a second operand is an output file and is written |
 | `unlink` | as rm |
 | `unxz` | as gzip, in reverse |
-| `unzip` | resolved by unzip -Z1: writes or creates each member; -j drops directories; -n never overwrites |
+| `unzip` | resolved by unzip -Z1: writes or creates each member and the directories above it, overwriting with -o and never with -n; -j drops directories; -L and -B rename what they write and are unresolved |
 | `unzstd` | as gzip, in reverse |
 | `wget` | creates the file named by the URL (index.html for a trailing slash), or NAME.1 when NAME exists, since wget never replaces by default; -N and -c overwrite; -O writes its file; -o and -a write the log; recursive and server-named downloads are unresolved |
-| `xz` | as gzip |
-| `zstd` | as gzip |
+| `xz` | as gzip; a --format other than xz or auto, and --files, are unresolved |
+| `zip` | writes the archive (NAME.zip when the name has no suffix): an existing one is rewritten (captured), a new one created; -m deletes the inputs once archived (captured, since the archive is a copy), with -r whole directories; -d deletes entries inside the archive; any other option, and -m with a pattern zip matches itself, are unresolved |
+| `zstd` | as gzip, except that the original is kept unless --rm; -o names the output; output directories and file lists are unresolved |
 
 #### Resolvers: the only commands the analysis runs
 
 | For | Runs |
 |---|---|
 | command substitution | the substitution body, via bash -c, once the analysis finds it has no effects, no privilege, and nothing nondeterministic or written earlier on the line |
-| xargs | the producer pipeline, via bash -c, under the same conditions |
+| xargs, while read loops | the producer pipeline, via bash -c, under the same conditions; network clients count as nondeterministic |
 | find | find with every action rewritten to -printf and every printing action to -true; refused if any action token survives |
 | tar -x | tar -tf ARCHIVE [members] |
 | unzip | unzip -Z1 ARCHIVE |
@@ -929,6 +932,8 @@ The fixes made on 2026-10-09 and 2026-10-10 (section 11) were each checked again
 
 None of these occurs in the round-7 corpus; re-running it after each fix changed no decision. `analyzer-defects.md` logs all seven, how each was found, and why the last two lie between commands rather than in any rule. That is the argument for targeted rule tests, property tests, mutation testing, and review of the pseudocode alongside a corpus.
 
+**Closed after the agent command study (2026-10-19), with regression tests.** The study's first batch found two coverage gaps, both failing closed (`open-problems.md` rows 44 and 45, now in `retrospective.md`). `zip` and the compressors are now modelled by their complete option sets, an option outside the set being unresolved; and a `while read` loop fed by a pipeline whose producer the analysis can resolve binds its variable to each record (section 4, step 2). The study's two lines, `zip old-logs.zip app.log.1 app.log.2 && unzip -tq old-logs.zip && rm app.log.1 app.log.2 && ls` and the `find -print0 | while IFS= read -r -d '' f` mirror cleanup, are now recoverable with capture. Closing them found four more soundness defects, all fixed (`analyzer-defects.md`, defects 9 to 12): `tar -x` replacing a file with a directory, `tar --remove-files` removals placed wrongly or skipped, network clients resolved to empty output, and a pipeline stage destroying what a concurrent later stage moved. Against the frozen round-7 analyzer, 2 of 5,439 decisions changed, both N331 gaining a capture; silent loss stays 0, and the sandboxed recovery check restores 631 of 632 executed commands (N024 as before). The reported numbers belong to the frozen analyzer and stand.
+
 ## 12. Where the work goes next
 
 Thesis 1 presents the algorithm and a preliminary evaluation on a benchmark. What remains open, in rough order of value:
@@ -972,6 +977,8 @@ make manualtest                                     # then follow manualtest/STO
 | Wrappers, `sh -c`, `find`, `xargs` | `prototype/internal/effects/wrappers.go` |
 | Read-only allowlist, mutating rules, name tables | `prototype/internal/effects/rules.go` |
 | Dry-run adapters: `tar`, `unzip`, `rsync`, `rename`, `git` | `prototype/internal/effects/adapters.go` |
+| Compressors and `zip`, with their full option sets | `prototype/internal/effects/archive.go` |
+| `while read` loops fed by a pipeline | `prototype/internal/effects/whileread.go` |
 | Package and service state, with inverses | `prototype/internal/effects/pkgstate.go` |
 | Verdict and plan | `prototype/internal/effects/verdict.go` |
 | Sandboxed resolver runner | `prototype/internal/effects/runner.go` |

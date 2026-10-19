@@ -423,6 +423,15 @@ var curated = []Case{
 	{ID: "S38-move-then-write-same-name", Cmd: "mv a.txt tmp/; echo x > a.txt"},
 	{ID: "S39-move-or-write", Setup: "chmod 555 tmp", Cmd: "mv a.txt tmp/ || echo x > a.txt"},
 	{ID: "S40-loop-assignment-outlives-loop", Cmd: "x=a.txt; for f in b.txt; do x=$f; done; rm $x"},
+	// The agent command study's two lines (open-problems rows 44 and 45), and the tar
+	// extraction that replaces a file with a directory.
+	{ID: "S41-zip-test-then-rm", Setup: "echo one > app.log.1 && echo two > app.log.2",
+		Cmd: "zip old-logs.zip app.log.1 app.log.2 && unzip -tq old-logs.zip && rm app.log.1 app.log.2 && ls"},
+	{ID: "S42-zip-move", Cmd: "zip -qrm logs.zip logs"},
+	{ID: "S43-while-read-mirror", Setup: "mkdir -p mirror/src && cp a.txt mirror/ && cp src/main.go mirror/src/",
+		Cmd: `find . -path ./mirror -prune -o -type f -print0 | while IFS= read -r -d '' f; do [ -e "mirror/${f#./}" ] || { rm -v -- "$f"; }; done`},
+	{ID: "S44-ls-while-read-rm", Cmd: `ls *.txt | while read f; do rm "$f"; done`},
+	{ID: "S45-tar-dir-over-file", Setup: "mkdir -p t/d && echo x > t/d/f && tar -cf t.tar -C t d && rm -r t && echo precious > d", Cmd: "tar -xf t.tar"},
 }
 
 type corpusRow struct {

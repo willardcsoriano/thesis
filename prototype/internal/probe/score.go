@@ -42,16 +42,18 @@ var interpreterRe = regexp.MustCompile(`^(sh|bash|dash|zsh|ksh|mksh|ash|busybox|
 // resolveTimeout bounds each read-only resolver the analysis runs, as listpilot does.
 const resolveTimeout = 8 * time.Second
 
-// Score fills the scoring fields of r from what capture stored: Shape,
-// Interpreters and Analysis. It reads r.Kind, r.Command and r.Execve and
-// overwrites the three fields, so re-scoring an old run with a newer analyzer is
-// just calling it again.
+// Score fills the scoring fields of r from what capture stored, analysing a
+// shell command against the task's starting fixture: Shape, Interpreters,
+// Analysis, and AnalysisState = StateInitial with AnalysisCwd the task root.
+// It reads r.Kind, r.Command and r.Execve and overwrites those fields.
 //
-// fx is the fixture of r's task. The analysis resolves the command against it,
-// materialized in a fresh temporary directory with HOME at its home folder, the
-// way the oracle runs commands. That is the task's starting state, not the state
-// after the agent's earlier steps; a step that depends on what an earlier step
-// made is analysed against the fixture alone.
+// This is the old scorer, kept behind agentprobe score -initial-state. A step
+// that depends on what an earlier step did (a cd, a file made, moved or
+// deleted) is analysed against the wrong state here; ScoreReplayed analyses it
+// against the replayed pre-step state instead and is the default.
+//
+// fx is the fixture of r's task, materialized in a fresh temporary directory
+// with HOME at its home folder, the way the oracle runs commands.
 //
 // Resolution (the read-only commands the analysis runs to learn run-time
 // targets) uses effects.DefaultRunner only when bubblewrap works, so resolvers
@@ -62,19 +64,28 @@ const resolveTimeout = 8 * time.Second
 // File-tool records (Kind other than KindBash) are not shell commands: Shape and
 // Analysis are left empty, and Interpreters comes from Execve alone.
 func Score(ctx context.Context, r *Record, fx []oracle.Entry) error {
-	r.Shape, r.Analysis = "", ""
-	names := append([]string(nil), r.Execve...)
+	scoreStatic(r)
+	r.Analysis, r.AnalysisNote = "", ""
+	r.AnalysisState, r.AnalysisCwd = StateInitial, agentRoot
 	if r.Kind == KindBash {
-		r.Shape = shape.Of(r.Command)
-		names = append(names, callNames(r.Command)...)
 		a, err := analyse(ctx, r.Command, fx)
 		if err != nil {
 			return err
 		}
 		r.Analysis = a
 	}
-	r.Interpreters = interpreters(names)
 	return nil
+}
+
+// scoreStatic fills Shape and Interpreters, which depend on the record alone.
+func scoreStatic(r *Record) {
+	r.Shape = ""
+	names := append([]string(nil), r.Execve...)
+	if r.Kind == KindBash {
+		r.Shape = shape.Of(r.Command)
+		names = append(names, callNames(r.Command)...)
+	}
+	r.Interpreters = interpreters(names)
 }
 
 // analyse returns the analysis verdict for cmd on a fresh copy of fx.
@@ -91,8 +102,15 @@ func analyse(ctx context.Context, cmd string, fx []oracle.Entry) (string, error)
 	if err := os.MkdirAll(home, 0o755); err != nil {
 		return "", err
 	}
+	return analyseAt(ctx, cmd, wd, append(withoutHome(os.Environ()), "HOME="+home))
+}
+
+// analyseAt returns the analysis verdict for cmd run from wd with env. The
+// analysis never runs cmd; its resolvers run under the read-only sandbox when
+// bubblewrap works and are off otherwise, which fails closed.
+func analyseAt(ctx context.Context, cmd, wd string, env []string) (string, error) {
 	an := effects.New(wd)
-	an.Env = append(withoutHome(an.Env), "HOME="+home)
+	an.Env = env
 	if effects.SandboxAvailable() {
 		an.Run = effects.DefaultRunner(resolveTimeout)
 	}

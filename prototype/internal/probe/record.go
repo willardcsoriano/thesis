@@ -55,6 +55,17 @@ type Record struct {
 	ModelVersion string `json:"model_version,omitempty"`
 	ToolVersion  string `json:"tool_version,omitempty"` // CLI version for the cli driver
 	Profile      string `json:"profile"`                // "bash", "bash+files", or the CLI's own tool set ("native")
+	// Agent names the CLI behind a cli-driver record (AgentClaudeCode,
+	// AgentGeminiCLI). Replay needs it to track the shell's working directory
+	// the way that CLI does; records without it are recognised by model name.
+	Agent string `json:"agent,omitempty"`
+
+	// RunStatus is how the task run this record belongs to ended, from the
+	// run's status.jsonl ("complete", "incomplete", "interrupted", "error",
+	// "fatal"), or RunMissing when status.jsonl exists but has no line for the
+	// run (the driver was killed during it). Empty when the run predates
+	// status.jsonl. Filled by scoring.
+	RunStatus string `json:"run_status,omitempty"`
 
 	// Which task, and how it was asked.
 	Task      string   `json:"task"`
@@ -68,8 +79,14 @@ type Record struct {
 	Step int `json:"step"` // order within the agent's own loop for that turn
 
 	// Capture.
-	Kind       string   `json:"kind"`
-	Command    string   `json:"command"`
+	Kind    string `json:"kind"`
+	Command string `json:"command"`
+	// Dir is the shell call's own working-directory argument as the agent gave
+	// it (the Gemini CLI's dir_path, "" when the call had none). Nil means the
+	// driver did not record it, so the directory of a Gemini shell call is
+	// unknown and its replay stops there. Claude Code's Bash has no such
+	// argument and leaves it nil.
+	Dir        *string  `json:"dir,omitempty"`
 	Exit       *int     `json:"exit,omitempty"` // nil when the step never ran or reported no code
 	DurationMS int64    `json:"duration_ms,omitempty"`
 	Execve     []string `json:"execve,omitempty"` // argv[0] of every program launched, in order
@@ -79,6 +96,13 @@ type Record struct {
 	Shape        string   `json:"shape,omitempty"`
 	Interpreters []string `json:"interpreters,omitempty"`
 	Analysis     string   `json:"analysis,omitempty"`
+	// Which filesystem state Analysis was taken on (StateReplayed,
+	// StateUnverified, StateDiverged, StateUnreconstructable, StateInitial),
+	// the directory it ran from as the agent saw it, and why the state is
+	// not StateReplayed. Only StateReplayed verdicts are headline numbers.
+	AnalysisState string `json:"analysis_state,omitempty"`
+	AnalysisCwd   string `json:"analysis_cwd,omitempty"`
+	AnalysisNote  string `json:"analysis_note,omitempty"`
 }
 
 // Append writes r as one JSON line.
@@ -90,3 +114,9 @@ func Append(w io.Writer, r Record) error {
 	_, err = w.Write(append(b, '\n'))
 	return err
 }
+
+// Task-run statuses as scoring records them (RunStatus).
+const (
+	RunComplete = "complete"
+	RunMissing  = "missing"
+)

@@ -458,3 +458,34 @@ func TestGitStashAndNewBranchHaveInverses(t *testing.T) {
 		t.Fatalf("forcing a branch: %v", v.Class)
 	}
 }
+
+// TestPipelineStageMayDestroyALaterMove: pipeline stages run at the same time, so an
+// earlier stage can remove or overwrite what a later stage moved into place after the
+// move. Found by the differential test of composition (K1343 of seed 20261015, lost in
+// about one run in thirty): the move was undone by moving back, from a file rm had
+// already deleted. The source must be captured instead.
+func TestPipelineStageMayDestroyALaterMove(t *testing.T) {
+	for _, tc := range []struct{ cmd, src string }{
+		{"rm -f b.txt | mv a.txt b.txt", "a.txt"},
+		{"echo x > b.txt | mv a.txt b.txt", "a.txt"},
+		{"rm -rf logs | mv a.txt logs/", "a.txt"},
+		{"rm -f b.txt | cat | mv a.txt b.txt", "a.txt"},
+	} {
+		t.Run(tc.cmd, func(t *testing.T) {
+			wd := fixture(t)
+			a := analyze(t, wd, tc.cmd, false)
+			for _, c := range a.Plan().Captures {
+				if c.Path == filepath.Join(wd, tc.src) {
+					return
+				}
+			}
+			t.Fatalf("%s is not captured: plan %+v", tc.src, a.Plan().Captures)
+		})
+	}
+	// A plain move in a pipeline with nothing destroying its destination still needs
+	// no capture: undo moves it back.
+	wd := fixture(t)
+	if p := analyze(t, wd, "ls | mv a.txt renamed.txt", false).Plan(); len(p.Captures) != 0 {
+		t.Fatalf("a rename in a pipeline is undone by moving back: %+v", p.Captures)
+	}
+}

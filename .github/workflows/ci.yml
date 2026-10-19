@@ -12,10 +12,23 @@ jobs:
           go-version-file: prototype/go.mod
           cache-dependency-path: prototype/go.sum
       - name: Tools the tests exercise
-        run: sudo apt-get update && sudo apt-get install -y bubblewrap jq git rsync rename unzip zip
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap passt strace jq git rsync rename unzip zip
+      # Ubuntu 24.04 runners restrict unprivileged user namespaces through
+      # AppArmor, so bubblewrap cannot start and every oracle, resolver,
+      # recovery and sandbox test skips. CI then passes without having run
+      # them. Lift the restriction, and fail the job if the sandbox still does
+      # not work, instead of skipping silently.
+      - name: Allow unprivileged user namespaces
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - name: Sandbox works on this runner
-        run: bwrap --ro-bind / / --unshare-all --die-with-parent true || echo "bubblewrap unavailable; oracle and resolver tests will skip"
-      - name: Format, vet, test
+        run: bwrap --ro-bind / / --unshare-all --die-with-parent true && pasta --config-net --quiet -- true
+      # SYNAPSE_REQUIRE_SANDBOX=1 makes a test that finds no working
+      # bubblewrap, pasta, strace or prlimit fail rather than skip, and make
+      # ci runs the tests through cmd/skipgate, which fails on any skip not
+      # named in prototype/ci-allowed-skips.txt with its reason.
+      - name: Format, vet, test, skip gate
+        env:
+          SYNAPSE_REQUIRE_SANDBOX: "1"
         run: make -C prototype ci
       - name: Guard hook tests
         run: bash tools/claude-hardening/test-guard.sh

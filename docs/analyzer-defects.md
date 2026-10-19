@@ -1,6 +1,6 @@
 ## Overview
 
-This is the log of every soundness defect found in the recoverability analysis (`prototype/internal/effects`) after the round-7 corpus was frozen on 2026-10-09: seven so far, each with how it was found, the command shape that triggered it, what it would have cost a user, the fix, and its effect on the reported results. Every one has been fixed with a regression test, and none changed a single decision on the round-7 corpus, so no number in the paper moved. The pattern matters more than any single entry. The per-command rules held up; every defect from the fifth on lies where parts of one command line interact (an earlier part changes what a later part sees, or may fail before it), a shape the corpus almost never contains. The log ends with why that happened and the test that would find the next one before a reviewer does: differential testing of generated compound lines against the sandbox.
+This is the log of every soundness defect found in the recoverability analysis (`prototype/internal/effects`) after the round-7 corpus was frozen on 2026-10-09: eleven so far, plus one in undo (defect 8), each with how it was found, the command shape that triggered it, what it would have cost a user, the fix, and its effect on the reported results. Every one has been fixed with a regression test, and none changed a single decision on the round-7 corpus, so no number in the paper moved. The pattern matters more than any single entry. The per-command rules held up; every defect from the fifth on lies where parts of one command line interact (an earlier part changes what a later part sees, or may fail before it), a shape the corpus almost never contains. The log ends with why that happened and the test that would find the next one before a reviewer does: differential testing of generated compound lines against the sandbox.
 
 ## Table of Contents
 
@@ -10,6 +10,8 @@ This is the log of every soundness defect found in the recoverability analysis (
 - [Effect on the reported results](#effect-on-the-reported-results)
 - [Why there were seven](#why-there-were-seven)
 - [What would find the next one first](#what-would-find-the-next-one-first)
+- [Defect 8: undo, found by the differential test (2026-10-13)](#defect-8-undo-found-by-the-differential-test-2026-10-13)
+- [Defects 9 to 12: found while closing the agent study's gaps (2026-10-19)](#defects-9-to-12-found-while-closing-the-agent-studys-gaps-2026-10-19)
 
 ## The defects
 
@@ -70,4 +72,17 @@ The differential test proposed above was built (`prototype/pilot/make_compose.py
 | `mv b.txt tmp/ \| mv a.txt b.txt` (pipeline stages race) | removed a's file as a leftover |
 
 Fix (branch `test/compose-differential`): moves are recorded with the moved file's identity and go back by identity, along chains and whatever order the parts ran; a directory made again is merged into; re-creations are removed before restoring, and a restored or pre-existing original is never removed; a content restore is separated from a file restored from trash. Eleven regression tests in `internal/undo/partial_test.go`, most confirmed to fail on the old code. Result: every compound line the analysis let run was restored exactly, 23,054 of 23,054 across six draws (`prototype/pilot/compose_results.txt`), with round 7 unchanged (0 of 5,439 decisions, recovery rows identical). The last draw was unseen until the fixes were done: its first run restored 6,150 of 6,151, and the one failure, a second name the line left for a restored file, was then fixed (twelve regression tests in all). Each fresh draw had surfaced rarer cases than the one before, so rare shapes may remain; the test is now one command, `make composecheck`.
+
+## Defects 9 to 12: found while closing the agent study's gaps (2026-10-19)
+
+Closing `open-problems.md` rows 44 (`zip` not modelled) and 45 (`while read` loops not resolved) meant reading `tar`, the compressors, the producer resolution, and pipelines against what the tools do. Four shapes lost a file with nothing captured:
+
+| # | Found by | Shape | What it would have done | Fix |
+|---|---|---|---|---|
+| 9 | Running GNU tar on a fixture | `tar -xf a.tar` where the archive has a directory `d/` and a file `d` exists | tar replaces the file with the directory; the analysis saw only the members and recorded nothing for `d` | A file or symlink standing where a directory is extracted is a captured removal; the directories extraction makes are recorded (`855e5a1`) |
+| 10 | Reading the tar rule | `tar -c dir --remove-files \| gzip > x.tgz`, `tar -cf x.tar a.txt -C src b --remove-files`, an absolute input | The removals were skipped without `-f`, placed under the last `-C` for every name, or joined under the working directory | Removals are captured wherever the archive goes, each `-C` applies to the names after it, absolute names stay absolute (`855e5a1`) |
+| 11 | A while-read test whose producer was `curl` | `curl -s URL \| xargs rm`, `rm $(wget -qO- URL)` | The resolver runs without the network, so the producer's output was empty and read as "nothing to remove" | Network clients count as nondeterministic, so their output is never resolved (`cc783cf`) |
+| 12 | `make composecheck` (seed 20261015, K1343), intermittently | `rm -f b.txt \| mv a.txt b.txt` | The stages run at once; when `mv` won, `rm` deleted the moved data and undo moved back from nothing (about one run in thirty to sixty, on the analyzer before this change as well) | A move whose destination an earlier stage overwrites or removes is a captured removal of its source (`cb492c2`) |
+
+Effect on round 7, against the frozen analyzer: 2 of 5,439 decisions differ, both N331 (`find ... \| while read UNDOFILE; do ...; rm "$UNDOFILE"; done`), which ALG strict and capture now protect with a capture instead of asking. None of the four fixes changed a decision. Silent loss stays 0; the sandboxed recovery check restores 631 of 632 executed commands (630 of 631 before, N331 now executed and restored, N024 as before); `make composecheck` on seed 20261015 restores 3,099 of 3,099. The paper's numbers belong to the frozen analyzer and are not changed. Defects 9 to 11 are single-command rule gaps again, found only because new rules sent the work back into old ones; defect 12 is another interaction between parts of a line, and was found by the differential test, as the section "What would find the next one first" predicted.
 

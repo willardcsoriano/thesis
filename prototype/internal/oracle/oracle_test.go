@@ -3,6 +3,8 @@ package oracle
 import (
 	"context"
 	"testing"
+
+	"synapseos/internal/testenv"
 	"time"
 )
 
@@ -10,7 +12,7 @@ func label(t *testing.T, cmd string, v Variant) (Verdict, Outcome) {
 	t.Helper()
 	bw := Bwrap()
 	if bw == "" {
-		t.Skip("bubblewrap not available")
+		testenv.Unavailable(t, "bubblewrap not available")
 	}
 	vd, oc, err := Run(context.Background(), bw, Infer(cmd, v), "", cmd, 5*time.Second)
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -48,179 +49,335 @@ func lines(b []byte) []string {
 
 // ---- tar ----
 
-// tarArgs finds the mode letter, archive file, -C directory, and remaining operands.
-func tarArgs(args []string) (mode byte, file, dir string, rest []string) {
+// tarOperand is a name on a tar command line and the -C directory in effect where it
+// appears (empty for the working directory). GNU tar applies each -C to what follows it.
+type tarOperand struct{ name, dir string }
+
+// tarCmd is a parsed tar command line.
+type tarCmd struct {
+	mode     byte // c x t r u d A, or D for --delete
+	file     string
+	dir      string // the last -C
+	operands []tarOperand
+	short    map[byte]string   // short options seen, with their values
+	long     map[string]string // long options seen, with their values
+	strip    int               // --strip-components; -1 when it could not be read
+}
+
+// tarValueLetters are GNU tar's short options that take a value.
+const tarValueLetters = "fCTXbHIKLNVFg"
+
+// parseTar reads a GNU tar command line: the old bundled first argument (cvzf a.tar),
+// short clusters, and long options, each -C in order.
+func parseTar(args []string) tarCmd {
+	t := tarCmd{short: map[byte]string{}, long: map[string]string{}}
 	setMode := func(ch byte) {
 		if strings.IndexByte("cxtrudA", ch) >= 0 {
-			mode = ch
+			t.mode = ch
+		}
+	}
+	short := func(ch byte, v string) {
+		t.short[ch] = v
+		switch ch {
+		case 'f':
+			t.file = v
+		case 'C':
+			if t.dir != "" && !filepath.IsAbs(v) {
+				v = filepath.Join(t.dir, v)
+			}
+			t.dir = v
+		default:
+			setMode(ch)
 		}
 	}
 	i := 0
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		idx := 1
 		for j := 0; j < len(args[0]); j++ {
-			switch ch := args[0][j]; ch {
-			case 'f':
-				if idx < len(args) {
-					file = args[idx]
-					idx++
-				}
-			case 'C':
-				if idx < len(args) {
-					dir = args[idx]
-					idx++
-				}
-			default:
-				setMode(ch)
+			ch := args[0][j]
+			v := ""
+			if strings.IndexByte(tarValueLetters, ch) >= 0 && idx < len(args) {
+				v = args[idx]
+				idx++
 			}
+			short(ch, v)
 		}
 		i = idx
 	}
+	longValue := setOf(`file directory files-from exclude-from exclude transform xform strip-components to-command
+use-compress-program checkpoint-action info-script new-volume-script rsh-command rmt-command listed-incremental
+blocking-factor format label owner group mode mtime newer after-date newer-mtime tape-length`)
 	for ; i < len(args); i++ {
 		a := args[i]
 		switch {
 		case a == "--":
-			rest = append(rest, args[i+1:]...)
-			return
-		case a == "--file" || a == "-f":
-			if i+1 < len(args) {
-				i++
-				file = args[i]
+			for _, r := range args[i+1:] {
+				t.operands = append(t.operands, tarOperand{r, t.dir})
 			}
-		case strings.HasPrefix(a, "--file="):
-			file = strings.TrimPrefix(a, "--file=")
-		case a == "--directory" || a == "-C":
-			if i+1 < len(args) {
-				i++
-				dir = args[i]
-			}
-		case strings.HasPrefix(a, "--directory="):
-			dir = strings.TrimPrefix(a, "--directory=")
-		case a == "--create":
-			mode = 'c'
-		case a == "--extract" || a == "--get":
-			mode = 'x'
-		case a == "--list":
-			mode = 't'
-		case a == "--append":
-			mode = 'r'
-		case a == "--update":
-			mode = 'u'
-		case a == "--diff" || a == "--compare":
-			mode = 'd'
+			i = len(args)
 		case strings.HasPrefix(a, "--"):
+			name, val, has := strings.Cut(a[2:], "=")
+			if !has && longValue[name] && i+1 < len(args) {
+				i++
+				val = args[i]
+			}
+			t.long[name] = val
+			switch name {
+			case "file":
+				t.file = val
+			case "directory":
+				short('C', val)
+			case "create":
+				t.mode = 'c'
+			case "extract", "get":
+				t.mode = 'x'
+			case "list":
+				t.mode = 't'
+			case "append":
+				t.mode = 'r'
+			case "update":
+				t.mode = 'u'
+			case "diff", "compare":
+				t.mode = 'd'
+			case "concatenate", "catenate":
+				t.mode = 'A'
+			case "delete":
+				t.mode = 'D'
+			}
 		case len(a) > 1 && a[0] == '-':
 			for j := 1; j < len(a); j++ {
-				switch ch := a[j]; ch {
-				case 'f', 'C', 'T', 'X':
-					// The value is what is left of this cluster, or the next argument.
-					v := a[j+1:]
-					if v == "" && i+1 < len(args) {
-						i++
-						v = args[i]
-					}
-					switch ch {
-					case 'f':
-						file = v
-					case 'C':
-						dir = v
-					}
-					j = len(a)
-				default:
-					setMode(ch)
+				ch := a[j]
+				if strings.IndexByte(tarValueLetters, ch) < 0 {
+					short(ch, "")
+					continue
 				}
+				// The value is what is left of this cluster, or the next argument.
+				v := a[j+1:]
+				if v == "" && i+1 < len(args) {
+					i++
+					v = args[i]
+				}
+				short(ch, v)
+				j = len(a)
 			}
 		default:
-			rest = append(rest, a)
+			t.operands = append(t.operands, tarOperand{a, t.dir})
 		}
 	}
-	return
+	if v, ok := t.long["strip-components"]; ok {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 0 {
+			n = -1
+		}
+		t.strip = n
+	}
+	return t
 }
 
-func stripComponents(args []string) int {
-	for _, a := range args {
-		if strings.HasPrefix(a, "--strip-components=") {
-			n := 0
-			for _, ch := range strings.TrimPrefix(a, "--strip-components=") {
-				if ch < '0' || ch > '9' {
-					return 0
+// tarArgs finds the mode letter, archive file, -C directory, and remaining operands.
+func tarArgs(args []string) (mode byte, file, dir string, rest []string) {
+	t := parseTar(args)
+	for _, o := range t.operands {
+		rest = append(rest, o.name)
+	}
+	return t.mode, t.file, t.dir, rest
+}
+
+func (t tarCmd) has(short byte, long ...string) bool {
+	if _, ok := t.short[short]; ok && short != 0 {
+		return true
+	}
+	for _, l := range long {
+		if _, ok := t.long[l]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+// compressorNames are the programs tar -I may name without the analysis asking: each
+// only filters standard input to standard output when tar runs it.
+var compressorNames = setOf(`gzip pigz bzip2 pbzip2 lbzip2 xz pixz zstd pzstd lz4 lzip plzip lzop lzma brotli`)
+
+func ruleTar(st *state, c *call) {
+	if !st.needArgs(c) {
+		return
+	}
+	t := parseTar(c.args)
+	if t.mode == 0 || t.mode == 't' || t.mode == 'd' {
+		return
+	}
+	// Options that make tar run another program, whose effects are not visible here.
+	for _, l := range []string{"to-command", "info-script", "new-volume-script", "rsh-command", "rmt-command"} {
+		if _, ok := t.long[l]; ok {
+			st.opaque(c, "tar --"+l+" runs a program whose effects are not modelled")
+			return
+		}
+	}
+	if _, ok := t.short['F']; ok {
+		st.opaque(c, "tar -F runs a script whose effects are not modelled")
+		return
+	}
+	if strings.Contains(t.long["checkpoint-action"], "exec") {
+		st.opaque(c, "tar --checkpoint-action=exec runs a command whose effects are not modelled")
+		return
+	}
+	prog, isProg := t.short['I']
+	if v, ok := t.long["use-compress-program"]; ok {
+		prog, isProg = v, true
+	}
+	if f := strings.Fields(prog); isProg && (len(f) == 0 || !compressorNames[filepath.Base(f[0])]) {
+		st.opaque(c, "tar -I runs a program that is not a known compressor")
+		return
+	}
+	if t.file != "" && t.file != "-" && !t.has(0, "force-local") {
+		if host, _, remote := strings.Cut(t.file, ":"); remote && !strings.Contains(host, "/") {
+			st.unrec(c, "the archive is on a remote host")
+			return
+		}
+	}
+	at := func(o tarOperand) string {
+		if o.dir == "" {
+			return c.abs(o.name)
+		}
+		return absIn(&scope{wd: c.abs(o.dir)}, o.name)
+	}
+	switch t.mode {
+	case 'c', 'r', 'u', 'A', 'D':
+		if t.file != "" && t.file != "-" {
+			st.writeTo(c, c.abs(t.file))
+		}
+		if g, ok := t.short['g']; ok && g != "" {
+			st.writeTo(c, c.abs(g))
+		} else if g, ok := t.long["listed-incremental"]; ok && g != "" {
+			st.writeTo(c, c.abs(g))
+		}
+		if t.mode == 'c' || t.mode == 'r' || t.mode == 'u' {
+			if t.has(0, "remove-files") {
+				if t.has('T', "files-from") {
+					st.unresolved(c, "tar --remove-files with names read from a file: which files it deletes cannot be listed")
+					return
 				}
-				n = n*10 + int(ch-'0')
+				// Whatever the archive goes to (a file, standard output, the default
+				// device), the inputs are deleted once archived. The archive holds a
+				// copy, not the same bytes, so each removal is captured.
+				for _, o := range t.operands {
+					if p := at(o); st.exists(p) {
+						st.add(c, Effect{Kind: Remove, Path: p})
+					}
+				}
 			}
-			return n
 		}
+	case 'x':
+		if t.file == "" || t.file == "-" {
+			st.unresolved(c, "the archive comes from standard input")
+			return
+		}
+		if t.has('P', "absolute-names") || t.has(0, "transform", "xform") || t.strip < 0 {
+			st.unresolved(c, "tar rewrites or keeps the member names, so where it extracts cannot be listed")
+			return
+		}
+		if !st.archiveReadable(c, c.abs(t.file)) {
+			return
+		}
+		var members []string
+		for _, o := range t.operands {
+			members = append(members, o.name)
+		}
+		out, ok := st.dry(c, append([]string{"tar", "-tf", c.abs(t.file)}, members...))
+		if !ok {
+			return
+		}
+		base := c.sc.wd
+		if t.dir != "" {
+			base = c.abs(t.dir)
+		}
+		if t.has('O', "to-stdout") {
+			return // members go to standard output
+		}
+		keep := t.has('k', "keep-old-files", "skip-old-files")
+		st.extractInto(c, base, lines(out), extractOpts{strip: t.strip, noClobber: keep, replaces: true, recursiveUnlink: t.has(0, "recursive-unlink")})
+	default:
+		st.opaque(c, "tar mode not modelled")
 	}
-	return 0
 }
 
-func (st *state) extractInto(c *call, base string, names []string, strip int, junk, noClobber bool) {
+// extractOpts says how an extractor places members.
+type extractOpts struct {
+	strip     int  // leading components dropped (tar --strip-components)
+	junk      bool // directories dropped (unzip -j)
+	noClobber bool // existing files are kept (tar -k, unzip -n)
+	// replaces is set for tar, which replaces a file or symlink where the archive has a
+	// directory; unzip refuses instead.
+	replaces bool
+	// recursiveUnlink: tar removes a directory tree where the archive has a file.
+	recursiveUnlink bool
+}
+
+func (st *state) extractInto(c *call, base string, names []string, o extractOpts) {
+	st.makeDirs(c, base)
 	for _, name := range names {
 		isDir := strings.HasSuffix(name, "/")
 		name = strings.TrimSuffix(name, "/")
-		if junk {
-			name = filepath.Base(name)
-		}
-		if strip > 0 {
-			parts := strings.Split(name, "/")
-			if len(parts) <= strip {
+		if o.junk {
+			if isDir {
 				continue
 			}
-			name = strings.Join(parts[strip:], "/")
+			name = filepath.Base(name)
+		}
+		if o.strip > 0 {
+			parts := strings.Split(name, "/")
+			if len(parts) <= o.strip {
+				continue
+			}
+			name = strings.Join(parts[o.strip:], "/")
 		}
 		if name == "" || name == "." {
 			continue
 		}
 		p := filepath.Join(base, name)
+		st.makeDirs(c, filepath.Dir(p))
+		fi, exists := st.lstat(p)
 		if isDir {
-			if !st.exists(p) {
+			if exists && !fi.IsDir() && o.replaces {
+				// tar removes a file or symlink that stands where the archive has a
+				// directory: that is a deletion, and is captured.
+				st.add(c, Effect{Kind: Remove, Path: p})
+				exists = false
+			}
+			if !exists {
 				st.add(c, Effect{Kind: Create, Path: p, Dir: true})
 			}
 			continue
 		}
-		if noClobber && st.exists(p) {
+		if exists && fi.IsDir() {
+			// A directory where the archive has a file: tar removes it only when it is
+			// empty, or with --recursive-unlink; otherwise the member fails.
+			if o.replaces && (o.recursiveUnlink || emptyDir(p)) {
+				st.add(c, Effect{Kind: Remove, Path: p})
+				st.add(c, Effect{Kind: Create, Path: p})
+			}
+			continue
+		}
+		if o.noClobber && exists {
 			continue
 		}
 		st.writeTo(c, p)
 	}
 }
 
-func ruleTar(st *state, c *call) {
-	if !st.needArgs(c) {
-		return
+// makeDirs records the creation of each missing directory down to p, which an
+// extractor makes as it goes. Undo removes them again.
+func (st *state) makeDirs(c *call, p string) {
+	var missing []string
+	for q := p; q != "/" && q != "."; q = filepath.Dir(q) {
+		if st.exists(q) {
+			break
+		}
+		missing = append(missing, q)
 	}
-	mode, file, dir, rest := tarArgs(c.args)
-	base := c.sc.wd
-	if dir != "" {
-		base = c.abs(dir)
-	}
-	switch mode {
-	case 0, 't', 'd':
-	case 'c', 'r', 'u', 'A':
-		if file != "" && file != "-" {
-			st.writeTo(c, c.abs(file))
-		}
-		if hasAny(c.args, "--remove-files") && file != "" {
-			for _, r := range rest {
-				if p := filepath.Join(base, r); st.exists(p) {
-					st.add(c, Effect{Kind: Remove, Path: p}) // the archive is not the file: capture it
-				}
-			}
-		}
-	case 'x':
-		if file == "" || file == "-" {
-			st.unresolved(c, "the archive comes from standard input")
-			return
-		}
-		if !st.archiveReadable(c, c.abs(file)) {
-			return
-		}
-		out, ok := st.dry(c, append([]string{"tar", "-tf", c.abs(file)}, rest...))
-		if !ok {
-			return
-		}
-		st.extractInto(c, base, lines(out), stripComponents(c.args), false, hasAny(c.args, "-k", "--keep-old-files", "--skip-old-files"))
-	default:
-		st.opaque(c, "tar mode not modelled")
+	for i := len(missing) - 1; i >= 0; i-- {
+		st.add(c, Effect{Kind: Create, Path: missing[i], Dir: true})
 	}
 }
 
@@ -230,6 +387,12 @@ func ruleUnzip(st *state, c *call) {
 	}
 	o := parseOpts(c.args, "dxP")
 	if len(o.operands) == 0 {
+		return
+	}
+	if o.has("L", "B") {
+		// -L lowercases member names, and -B renames each file it replaces to NAME~,
+		// overwriting any NAME~ already there.
+		st.unresolved(c, "unzip -L or -B changes the names it writes")
 		return
 	}
 	base := c.sc.wd
@@ -243,7 +406,7 @@ func ruleUnzip(st *state, c *call) {
 	if !ok {
 		return
 	}
-	st.extractInto(c, base, lines(out), 0, o.has("j"), o.has("n"))
+	st.extractInto(c, base, lines(out), extractOpts{junk: o.has("j"), noClobber: o.has("n")})
 }
 
 // archiveReadable reports whether an archive can be listed now as it will be when the
