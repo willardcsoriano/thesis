@@ -33,7 +33,7 @@ Installs the built `synapse` binary to `/usr/bin/synapse`, `synapseos-session` t
 
 ## Roles and the image
 
-The columns are `kind name probe required purpose`, tab-separated. `probe` is the command whose presence proves the row is installed, so a package the code runs several programs from has one row per program (`coreutils` for `rm`, `true` and `sleep`; `util-linux` for `flock` and `prlimit`). `check.sh` finds a probe on `PATH` or in `/usr/sbin` and `/sbin`. Every `purpose` starts with the role:
+The columns are `kind name probe required purpose`, tab-separated. `probe` is the command whose presence proves the row is installed, so a package the code runs several programs from has one row per program (`coreutils` for `rm`, `true` and `sleep`; `util-linux` for `flock` and `prlimit`). `check.sh` finds a probe on `PATH` or in `/usr/sbin` and `/sbin`. A package with no program of its own has a file it installs as its probe, as an absolute path (`libc6-dev`: `/usr/include/stdlib.h`). Every `purpose` starts with the role:
 
 | Role | Who needs it | In the image |
 |---|---|---|

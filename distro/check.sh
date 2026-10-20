@@ -10,8 +10,11 @@ quiet=0; [ "${1:-}" = "--quiet" ] && quiet=1
 missing_req=(); missing_opt=()
 
 # A probe is present when it is on PATH or in a system binary directory: a user's
-# PATH may leave out /usr/sbin, where lightdm and its greeter live.
+# PATH may leave out /usr/sbin, where lightdm and its greeter live. A probe that
+# is an absolute path is a file the package installs, for a package with no
+# program of its own (libc6-dev's headers).
 present() {
+  case "$1" in /*) [ -e "$1" ]; return ;; esac
   command -v "$1" >/dev/null 2>&1 || [ -x "/usr/sbin/$1" ] || [ -x "/sbin/$1" ]
 }
 # add LIST NAME appends NAME unless it is there already (one package can have

@@ -7,6 +7,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -160,6 +161,14 @@ func operator(t *testing.T) (name, host string) {
 	return u.Username, host
 }
 
+// names reports whether out contains word as a whole word, not inside a
+// longer one: an operator named v is not leaked by /dev or nologin, but is by
+// /home/v or USER=v. A word is bounded by anything but a letter or a digit,
+// so v-backup or mba15.local still count, which keeps the check strict.
+func names(out, word string) bool {
+	return regexp.MustCompile(`(^|[^A-Za-z0-9])` + regexp.QuoteMeta(word) + `($|[^A-Za-z0-9])`).MatchString(out)
+}
+
 func TestTraceHidesHomes(t *testing.T) {
 	if out := strings.Fields(traceOutput(t, "ls -A /home")); !reflect.DeepEqual(out, []string{oracle.HiddenUser}) {
 		t.Errorf("ls /home = %q, want only the sandbox user", out)
@@ -174,7 +183,7 @@ func TestTraceHidesIdentity(t *testing.T) {
 	t.Setenv("PROBE_CANARY", "probe-canary-value")
 	out := traceOutput(t, "cat /etc/passwd /etc/group /etc/hostname /etc/hosts /etc/machine-id 2>/dev/null; hostname; id; env; pwd")
 	for _, leak := range []string{name, host, "probe-canary-value"} {
-		if strings.Contains(out, leak) {
+		if names(out, leak) {
 			t.Errorf("sandbox output names %q:\n%s", leak, out)
 		}
 	}
@@ -208,10 +217,36 @@ func TestTraceTmpIsPrivate(t *testing.T) {
 
 func TestTraceMountinfoNamesNoOperator(t *testing.T) {
 	name, _ := operator(t)
-	if strings.Contains(os.TempDir(), name) {
+	if names(os.TempDir(), name) {
 		t.Skipf("TMPDIR %s names the operator, and root's host path shows in mountinfo", os.TempDir())
 	}
-	if out := traceOutput(t, "cat /proc/self/mountinfo"); strings.Contains(out, name) {
+	if out := traceOutput(t, "cat /proc/self/mountinfo"); names(out, name) {
 		t.Errorf("mountinfo names the operator:\n%s", out)
+	}
+}
+
+// names must find a short name wherever it stands as a word and nowhere it is
+// only part of one, or the identity tests either pass a leak or fail on any
+// operator whose name is a common substring.
+func TestNamesMatchesWholeWords(t *testing.T) {
+	for _, c := range []struct {
+		out, word string
+		want      bool
+	}{
+		{"/dev/sda1 nologin devpts", "v", false},
+		{"/home/v/task", "v", true},
+		{"USER=v", "v", true},
+		{"uid=1000(v) gid=1000(v)", "v", true},
+		{"v", "v", true},
+		{"/home/v-backup", "v", true},
+		{"mba15.local", "mba15", true},
+		{"mba150", "mba15", false},
+		{"axb", "a.b", false},
+		{"host a.b here", "a.b", true},
+		{"", "v", false},
+	} {
+		if got := names(c.out, c.word); got != c.want {
+			t.Errorf("names(%q, %q) = %v, want %v", c.out, c.word, got, c.want)
+		}
 	}
 }
