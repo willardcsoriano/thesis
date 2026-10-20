@@ -4,7 +4,7 @@
 # every apt dependency in distro/manifest.tsv except the desktop and agent-CLI
 # ones, the Go toolchain go.mod requires, and the sandbox check CI runs.
 # Run as root, from the development machine:
-#   ssh root@<ip> bash -s -- <branch> < tools/verify-box/setup.sh
+#   scp tools/verify-box/setup.sh root@<ip>: && ssh root@<ip> bash setup.sh <branch>
 set -euo pipefail
 branch=${1:?usage: setup.sh <branch>}
 user=verify
@@ -40,9 +40,10 @@ while IFS=$'\t' read -r kind name _; do
 done < "$home/thesis/distro/manifest.tsv"
 apt-get install -y -qq "${pkgs[@]}" >/dev/null
 
-sudo -iu "$user" bash -c '
+# Not sudo -i: it joins a multi-line command into one line.
+sudo -u "$user" -H bash -c '
   set -euo pipefail
-  cd thesis
+  cd ~/thesis
   bash distro/hoard.sh --toolchain
   mkdir -p ~/.local && tar -C ~/.local -xzf distro/hoard/toolchain/go*.linux-amd64.tar.gz
   ~/.local/go/bin/go version
