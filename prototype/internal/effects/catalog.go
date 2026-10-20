@@ -85,7 +85,7 @@ var readOnlyConditional = []struct{ name, when string }{
 // dryRunAdapters are the fixed read-only commands the analysis runs to resolve targets.
 var dryRunAdapters = []struct{ forCmd, runs string }{
 	{"command substitution", "the substitution body, via bash -c, once the analysis finds it has no effects, no privilege, and nothing nondeterministic or written earlier on the line"},
-	{"xargs, while read loops", "the producer pipeline, via bash -c, under the same conditions; network clients count as nondeterministic"},
+	{"xargs, while read loops", "the producer pipeline, via bash -c, under the same conditions; every resolver runs under strace, and one that opens a socket (network, name lookup, local service) is unresolved"},
 	{"find", "find with every action rewritten to -printf and every printing action to -true; refused if any action token survives"},
 	{"tar -x", "tar -tf ARCHIVE [members]"},
 	{"unzip", "unzip -Z1 ARCHIVE"},

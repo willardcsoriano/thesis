@@ -63,7 +63,9 @@ var (
 
 // Analyze parses cmd and derives its effects. It never runs a mutating command.
 func (a *Analyzer) Analyze(ctx context.Context, cmd string) *Analysis {
-	return a.analyzeText(ctx, cmd, newScope(a.WD), 0, nil)
+	sc := newScope(a.WD)
+	envHazards(a.Env, sc)
+	return a.analyzeText(ctx, cmd, sc, 0, nil)
 }
 
 // overlay tracks what earlier parts of the same command line have created or
@@ -164,17 +166,37 @@ func (a *Analyzer) analyzeText(ctx context.Context, text string, sc *scope, dept
 	return an
 }
 
+// scope is the shell state the analysis follows: the working directory and the
+// variables (assign.go has how each builtin changes them). A variable is in at most
+// one of vars (known value), unset (known unset), and unknown; in none, it has the
+// environment's value.
 type scope struct {
-	wd    string
-	vars  map[string]string
-	unset map[string]bool
+	wd      string
+	vars    map[string]string
+	unset   map[string]bool
+	unknown map[string]unknownKind
+	// everything is set once any variable may have changed unseen (a nameref, an
+	// arithmetic evaluation that may assign anything): no variable is known.
+	everything bool
+	// fixed holds names whose later assignments store something other than the value
+	// assigned: 'i' for the integer attribute, 'c' for case conversion or readonly.
+	fixed map[string]byte
+	// funcs holds the names of functions the line (or the environment) defines.
+	funcs map[string]bool
+	// envUnknown is set for a command run with an environment cleared or reset (env
+	// -i, sudo): a variable the line did not give it a value is not known.
+	envUnknown bool
+	// changed says why the shell no longer expands or finds commands as the analysis
+	// models (shopt, set -f, PATH); every later command is unresolved.
+	changed string
 	// cded records a cd since the start of the construct being analysed. If what
 	// follows may run after that cd failed, the directory is unknown (mayHaveFailed).
 	cded bool
 }
 
 func newScope(wd string) *scope {
-	return &scope{wd: wd, vars: map[string]string{}, unset: map[string]bool{}}
+	return &scope{wd: wd, vars: map[string]string{}, unset: map[string]bool{},
+		unknown: map[string]unknownKind{"OLDPWD": unknownAny}, fixed: map[string]byte{}, funcs: map[string]bool{}}
 }
 
 // join sets s to what is known after one of alts ran, without knowing which: a
@@ -184,36 +206,70 @@ func (s *scope) join(alts ...*scope) {
 	first := alts[0]
 	wd, cded := first.wd, false
 	names := map[string]bool{}
+	n := &scope{vars: map[string]string{}, unset: map[string]bool{}, unknown: map[string]unknownKind{},
+		fixed: map[string]byte{}, funcs: map[string]bool{}}
 	for _, a := range alts {
 		if a.wd != wd {
 			wd = unknownWD
 		}
 		cded = cded || a.cded
+		n.everything = n.everything || a.everything
+		n.envUnknown = n.envUnknown || a.envUnknown
+		if n.changed == "" {
+			n.changed = a.changed
+		}
 		for k := range a.vars {
 			names[k] = true
 		}
 		for k := range a.unset {
 			names[k] = true
 		}
-	}
-	vars, unset := map[string]string{}, map[string]bool{}
-	for k := range names {
-		v, set := first.vars[k]
-		gone := first.unset[k]
-		for _, a := range alts[1:] {
-			if w, ok := a.vars[k]; ok != set || w != v || a.unset[k] != gone {
-				set, gone = false, true
-				break
+		for k := range a.unknown {
+			names[k] = true
+		}
+		for k, v := range a.fixed {
+			if n.fixed[k] != 'i' {
+				n.fixed[k] = v
 			}
 		}
-		if set {
-			vars[k] = v
-		}
-		if gone {
-			unset[k] = true
+		for k := range a.funcs {
+			n.funcs[k] = true
 		}
 	}
-	s.wd, s.vars, s.unset, s.cded = wd, vars, unset, cded
+	type state struct {
+		v    string
+		in   bool
+		gone bool
+		kind unknownKind
+	}
+	at := func(a *scope, k string) state {
+		v, in := a.vars[k]
+		return state{v, in, a.unset[k], a.unknown[k]}
+	}
+	for k := range names {
+		s0 := at(first, k)
+		same, ints := true, true
+		for _, a := range alts {
+			sa := at(a, k)
+			same = same && sa == s0
+			ints = ints && (sa.kind == unknownInt || sa.in && isInteger(sa.v))
+		}
+		switch {
+		case !same && ints:
+			n.unknown[k] = unknownInt
+		case !same:
+			n.unknown[k] = unknownAny
+		case s0.in:
+			n.vars[k] = s0.v
+		case s0.gone:
+			n.unset[k] = true
+		case s0.kind != 0:
+			n.unknown[k] = s0.kind
+		}
+	}
+	s.wd, s.vars, s.unset, s.unknown, s.cded = wd, n.vars, n.unset, n.unknown, cded
+	s.everything, s.fixed, s.funcs, s.changed = n.everything, n.fixed, n.funcs, n.changed
+	s.envUnknown = n.envUnknown
 }
 
 // fresh runs f with the record of cd commands cleared and then restores it. A failure
@@ -227,18 +283,35 @@ func (s *scope) fresh(f func()) {
 }
 
 func (s *scope) clone() *scope {
-	n := &scope{wd: s.wd, cded: s.cded, vars: make(map[string]string, len(s.vars)), unset: make(map[string]bool, len(s.unset))}
+	n := &scope{wd: s.wd, cded: s.cded, everything: s.everything, changed: s.changed, envUnknown: s.envUnknown,
+		vars: make(map[string]string, len(s.vars)), unset: make(map[string]bool, len(s.unset)),
+		unknown: make(map[string]unknownKind, len(s.unknown)), fixed: make(map[string]byte, len(s.fixed)),
+		funcs: make(map[string]bool, len(s.funcs))}
 	for k, v := range s.vars {
 		n.vars[k] = v
 	}
 	for k := range s.unset {
 		n.unset[k] = true
 	}
+	for k, v := range s.unknown {
+		n.unknown[k] = v
+	}
+	for k, v := range s.fixed {
+		n.fixed[k] = v
+	}
+	for k := range s.funcs {
+		n.funcs[k] = true
+	}
 	return n
 }
 
-func (s *scope) set(k, v string) { s.vars[k] = v; delete(s.unset, k) }
-func (s *scope) drop(k string)   { delete(s.vars, k); s.unset[k] = true }
+// set gives k a known value. Callers that assign as the shell does go through
+// state.assign, which also applies the attributes the line gave k.
+func (s *scope) set(k, v string) { s.vars[k] = v; delete(s.unset, k); delete(s.unknown, k) }
+
+// drop makes k unset, as `unset k` does. A variable whose value is not known is
+// forgotten instead (assign.go).
+func (s *scope) drop(k string) { delete(s.vars, k); delete(s.unknown, k); s.unset[k] = true }
 
 type pipeCtx struct {
 	stages []*syntax.Stmt
@@ -282,6 +355,7 @@ func (st *state) mayHaveFailed(sc *scope) {
 	st.virt.doubt()
 	if sc.cded {
 		sc.wd = unknownWD
+		sc.forget("OLDPWD")
 	}
 }
 
@@ -319,6 +393,11 @@ func exits(s *syntax.Stmt) bool {
 }
 
 func (st *state) stmt(s *syntax.Stmt, sc *scope, pc *pipeCtx) {
+	if sc.changed != "" {
+		st.issue(IssueUnresolved, st.text(s), sc.changed)
+		return
+	}
+	st.preAssign(s, sc)
 	for _, r := range s.Redirs {
 		st.redirect(r, sc)
 	}
@@ -408,13 +487,26 @@ func (st *state) stmt(s *syntax.Stmt, sc *scope, pc *pipeCtx) {
 			st.stmt(x.Stmt, sc, pc)
 		}
 	case *syntax.CoprocClause:
-		st.stmt(x.Stmt, sc, nil)
+		st.stmt(x.Stmt, sc.clone(), nil)
+		name := "COPROC"
+		if x.Name != nil {
+			if n := x.Name.Lit(); n != "" {
+				name = n
+			} else {
+				sc.everything = true
+			}
+		}
+		sc.forget(name)
+		sc.forgetInt(name + "_PID")
 	case *syntax.DeclClause:
 		st.declClause(x, sc)
 	case *syntax.TestClause, *syntax.ArithmCmd, *syntax.LetClause:
 		st.collectNode(x, sc)
 	case *syntax.FuncDecl:
-		// A definition runs nothing. A later call to it is an unknown command.
+		// A definition runs nothing. A later call to it is opaque (dispatch).
+		if x.Name != nil {
+			sc.funcs[x.Name.Value] = true
+		}
 	default:
 		st.issue(IssueOpaque, st.text(s), fmt.Sprintf("unsupported construct %T", x))
 	}
@@ -541,7 +633,13 @@ func (st *state) forLoop(x *syntax.ForClause, sc *scope) {
 	}
 	name := wi.Name.Value
 	unbound := func() {
-		st.loopBody(x.Do, sc, func(s *scope) { s.drop(name) })
+		st.loopBody(x.Do, sc, func(s *scope) { s.forget(name) })
+	}
+	if x.Select {
+		// select reads the choice from standard input: the variable is one of the
+		// items or empty, and REPLY is what was typed.
+		st.loopBody(x.Do, sc, func(s *scope) { s.forget(name); s.forget("REPLY") })
+		return
 	}
 	if !wi.InPos.IsValid() {
 		unbound()
@@ -564,7 +662,7 @@ func (st *state) forLoop(x *syntax.ForClause, sc *scope) {
 			if i > 0 {
 				st.mayHaveFailed(sc) // the pass before may have failed part-way
 			}
-			sc.set(name, it)
+			st.assign(sc, st.text(x), name, it, false)
 			st.stmts(x.Do, sc)
 		}
 	})
@@ -575,34 +673,37 @@ func (st *state) forLoop(x *syntax.ForClause, sc *scope) {
 
 func (st *state) declClause(x *syntax.DeclClause, sc *scope) {
 	st.collectNode(x, sc)
-	if v := x.Variant.Value; v != "export" && v != "declare" && v != "local" && v != "readonly" && v != "typeset" {
-		return
-	}
+	var items []declItem
 	for _, as := range x.Args {
-		if as.Name == nil {
+		if as.Name != nil {
+			items = append(items, declItem{as: as, known: true})
 			continue
 		}
-		st.bind(as, sc)
+		if as.Value == nil {
+			continue
+		}
+		v, err := st.literal(as.Value, sc)
+		items = append(items, declItem{raw: v, known: err == nil})
 	}
+	st.declare(x.Variant.Value, st.text(x), items, sc)
 }
 
+// bind applies one assignment word (f=x, f+=x, a=(x y), a[i]=x).
 func (st *state) bind(as *syntax.Assign, sc *scope) {
 	name := as.Name.Value
-	if as.Value == nil || as.Array != nil {
-		if as.Array != nil {
-			sc.drop(name)
+	if as.Array != nil || as.Index != nil {
+		sc.forget(name) // an array, which the analysis does not follow
+		return
+	}
+	v := ""
+	if as.Value != nil {
+		var err error
+		if v, err = st.literal(as.Value, sc); err != nil {
+			sc.forget(name)
+			return
 		}
-		return
 	}
-	v, err := st.literal(as.Value, sc)
-	if err != nil {
-		sc.drop(name)
-		return
-	}
-	if as.Append {
-		v = sc.vars[name] + v
-	}
-	sc.set(name, v)
+	st.assign(sc, st.text(as), name, v, as.Append)
 }
 
 // collectNode analyses every command or process substitution inside n. Their
@@ -635,6 +736,10 @@ func (st *state) collectNode(n syntax.Node, sc *scope) {
 }
 
 func (st *state) redirect(r *syntax.Redirect, sc *scope) {
+	if r.N != nil && strings.HasPrefix(r.N.Value, "{") {
+		// {name}>file stores the descriptor it opens in name.
+		sc.forgetInt(strings.Trim(r.N.Value, "{}"))
+	}
 	if r.Word != nil {
 		st.collectNode(r.Word, sc)
 	}
@@ -717,7 +822,8 @@ func (st *state) env(sc *scope) []string {
 			continue
 		}
 		k := kv[:i]
-		if _, ok := sc.vars[k]; ok || sc.unset[k] || k == "PWD" {
+		// bash does not take IFS from the environment, and sets PWD itself.
+		if _, ok := sc.vars[k]; ok || sc.unset[k] || k == "PWD" || k == "IFS" {
 			continue
 		}
 		out = append(out, kv)
@@ -731,9 +837,11 @@ func (st *state) env(sc *scope) []string {
 	return out
 }
 
-func (st *state) cfg(sc *scope) *expand.Config {
+// cfg is the configuration words are expanded with. A read of a variable whose
+// value is not known is recorded in hit, and the caller refuses the expansion.
+func (st *state) cfg(sc *scope, hit *string) *expand.Config {
 	return &expand.Config{
-		Env:     expand.ListEnviron(st.env(sc)...),
+		Env:     scopeEnv{Environ: expand.ListEnviron(st.env(sc)...), sc: sc, hit: hit},
 		NoUnset: true,
 		ReadDir2: func(p string) ([]fs.DirEntry, error) {
 			if sc.wd == unknownWD {
@@ -750,7 +858,12 @@ func (st *state) cfg(sc *scope) *expand.Config {
 }
 
 func (st *state) expand(words []*syntax.Word, sc *scope) ([]string, error) {
-	return expand.Fields(st.cfg(sc), unescapeGlobs(words)...)
+	hit := ""
+	f, err := expand.Fields(st.cfg(sc, &hit), unescapeGlobs(words)...)
+	if hit != "" {
+		return nil, unknownVarError(hit)
+	}
+	return f, err
 }
 
 // unescapeGlobs works around the shell library treating a backslash-escaped glob
@@ -802,11 +915,10 @@ func unescapeGlobs(words []*syntax.Word) []*syntax.Word {
 }
 
 // nondeterministic matches text whose output differs from one run to the next, so
-// resolving it once and running it later would act on different names. Network
-// clients are here too: a resolver runs without the network, so what they fetch is
-// empty then and whatever the server sends when the line runs.
-var nondeterministic = regexp.MustCompile(`/dev/u?random|\$RANDOM|\$\$|\bshuf\b|\bmktemp\b|\buuidgen\b|\bdate\b|\bopenssl\s+rand\b|\$SRANDOM|\bpgrep\b|\bps\b|\bpidof\b|` +
-	`\b(curl|wget|ssh|scp|sftp|ftp|nc|ncat|socat|telnet|aria2c|dig|nslookup|whois)\b`)
+// resolving it once and running it later would act on different names. Commands that
+// read the network are not listed here: a list of names misses every client it does
+// not name (defect 13), so DefaultRunner refuses any resolver that opens a socket.
+var nondeterministic = regexp.MustCompile(`/dev/u?random|\$RANDOM|\$\$|\bshuf\b|\bmktemp\b|\buuidgen\b|\bdate\b|\bopenssl\s+rand\b|\$SRANDOM|\bpgrep\b|\bps\b|\bpidof\b`)
 
 // readsWhatTheLineWrites reports whether text mentions a file an earlier part of the
 // same line writes or creates: what it would read now is not what it will read then.
@@ -822,7 +934,12 @@ func (st *state) readsWhatTheLineWrites(text string) bool {
 }
 
 func (st *state) literal(w *syntax.Word, sc *scope) (string, error) {
-	return expand.Literal(st.cfg(sc), w)
+	hit := ""
+	s, err := expand.Literal(st.cfg(sc, &hit), w)
+	if hit != "" {
+		return "", unknownVarError(hit)
+	}
+	return s, err
 }
 
 // runSubst resolves a command substitution by running it, but only if the
@@ -831,6 +948,9 @@ func (st *state) runSubst(w io.Writer, cs *syntax.CmdSubst, sc *scope) error {
 	info := st.substs[cs]
 	if info == nil || !info.ReadOnly() {
 		return errNotResolved
+	}
+	if v := readsUnknown(cs, sc); v != "" {
+		return unknownVarError(v)
 	}
 	if st.a.Run == nil {
 		return errNoRunner
@@ -856,10 +976,16 @@ func (st *state) runSubst(w io.Writer, cs *syntax.CmdSubst, sc *scope) error {
 	return err
 }
 
+// varPrefix sets, in the resolver's shell, the variables as the line has them by then.
 func varPrefix(sc *scope) string {
 	var b strings.Builder
 	for k, v := range sc.vars {
 		b.WriteString("export " + k + "=" + shQuote(v) + "; ")
+	}
+	for k := range sc.unset {
+		if identifier.MatchString(k) {
+			b.WriteString("unset " + k + "; ")
+		}
 	}
 	return b.String()
 }
@@ -878,12 +1004,20 @@ func (st *state) call(c *syntax.CallExpr, sc *scope, pc *pipeCtx) {
 	}
 	src := st.text(c)
 	name, err := st.expand(c.Args[:1], sc)
+	if errors.Is(err, errUnknownVar) {
+		st.issue(IssueUnresolved, src, "the command name could not be determined: "+err.Error())
+		return
+	}
 	if err != nil || len(name) != 1 {
 		st.issue(IssueOpaque, src, "the command name is computed at run time")
 		return
 	}
 	args, aerr := st.expand(c.Args[1:], sc)
-	st.dispatch(&call{name: name[0], args: args, aerr: aerr, src: src, sc: sc, pc: pc, words: c.Args[1:]})
+	cl := &call{name: name[0], args: args, aerr: aerr, src: src, sc: sc, pc: pc, words: c.Args[1:]}
+	if len(c.Assigns) > 0 {
+		defer st.prefixAssigns(c.Assigns, sc, cl)()
+	}
+	st.dispatch(cl)
 }
 
 // call is one command about to be interpreted.
@@ -1106,16 +1240,25 @@ func (st *state) dispatch(c *call) {
 		c.name = filepath.Base(c.name)
 	}
 	name := c.name
+	if c.sc.funcs[name] {
+		st.opaque(c, "runs the function "+name+", whose body is not analysed")
+		return
+	}
+	if !st.shellState(c) {
+		return
+	}
 	if c.sc.wd != unknownWD && name == "cd" {
 		st.cd(c)
 		return
 	}
 	if name == "cd" || name == "pushd" || name == "popd" {
 		c.sc.wd = unknownWD
+		c.sc.forget("OLDPWD")
+		c.sc.forget("DIRSTACK")
 		return
 	}
 	if name == "export" || name == "declare" || name == "local" || name == "readonly" || name == "typeset" {
-		return // handled as a DeclClause when it parses as one; harmless otherwise
+		return // its assignments were applied by shellState
 	}
 	if name == "unset" || name == "read" || name == "mapfile" || name == "readarray" {
 		st.forgetVars(c)
@@ -1160,7 +1303,8 @@ func (st *state) dispatch(c *call) {
 		if !st.needArgs(c) {
 			return
 		}
-		an := st.a.analyzeText(st.ctx, strings.Join(c.args, " "), c.sc.clone(), st.depth+1, st.virt)
+		// It runs in the current shell, so its assignments and cd outlive it.
+		an := st.a.analyzeText(st.ctx, strings.Join(c.args, " "), c.sc, st.depth+1, st.virt)
 		st.an.merge(an)
 		return
 	}
@@ -1218,43 +1362,98 @@ func (st *state) forgetVars(c *call) {
 	if c.name == "unset" && hasAny(c.args, "-f") {
 		return // functions, which the analysis does not track
 	}
+	if c.name == "unset" {
+		for _, a := range c.args {
+			if identifier.MatchString(a) {
+				c.sc.drop(a)
+			} else {
+				// A subscript (unset 'x[expr]') is arithmetic bash evaluates, so it
+				// can assign another variable or run a command substitution.
+				st.forgetTarget(c.sc, c.src, a)
+			}
+		}
+		return
+	}
 	switch c.name {
 	case "read":
-		c.sc.drop("REPLY")
+		c.sc.forget("REPLY")
 	case "mapfile", "readarray":
-		c.sc.drop("MAPFILE")
+		c.sc.forget("MAPFILE")
 	}
 	for _, a := range c.args {
 		if identifier.MatchString(a) {
-			c.sc.drop(a)
+			if c.sc.fixed[a] == 'i' {
+				// Reading runtime input into an integer-attributed variable evaluates
+				// that input as arithmetic, which may run a command substitution.
+				st.opaque(c, "reads runtime input into an integer variable, evaluated as arithmetic")
+			}
+			c.sc.forget(a)
+		} else {
+			// A subscripted target (read 'x[expr]') evaluates the subscript as
+			// arithmetic too; an option or its value has no leading name and is a no-op.
+			st.forgetTarget(c.sc, c.src, a)
 		}
 	}
 }
 
 func (st *state) cd(c *call) {
+	sc := c.sc
+	lost := func() {
+		sc.wd = unknownWD
+		sc.forget("OLDPWD")
+	}
 	if c.aerr != nil {
-		c.sc.wd = unknownWD
+		lost()
 		return
 	}
 	var ops []string
+	physical := false
 	for _, a := range c.args {
 		if !strings.HasPrefix(a, "-") || a == "-" {
 			ops = append(ops, a)
+		} else if strings.ContainsRune(a, 'P') {
+			physical = true
 		}
 	}
 	target := ""
 	switch {
 	case len(ops) == 0:
-		target = os.Getenv("HOME")
+		home, set, ok := sc.lookup("HOME", st.a.Env)
+		if !ok {
+			lost()
+			return
+		}
+		if !set || home == "" {
+			return // cd fails: HOME not set
+		}
+		target = home
 	case ops[0] == "-":
-		c.sc.wd = unknownWD
+		lost()
 		return
 	default:
 		target = ops[0]
 	}
+	// A relative name not starting with . or .. is looked up in CDPATH first.
+	if !filepath.IsAbs(target) && target != "." && target != ".." && !strings.HasPrefix(target, "./") && !strings.HasPrefix(target, "../") {
+		if cdpath, _, ok := sc.lookup("CDPATH", st.a.Env); !ok || cdpath != "" {
+			lost()
+			return
+		}
+	}
 	p := c.abs(target)
+	if physical && strings.Contains(target, "..") {
+		// -P resolves links before .., where the textual path does not.
+		real, err := filepath.EvalSymlinks(filepath.Join(sc.wd, target))
+		if err != nil {
+			lost()
+			return
+		}
+		p = real
+	}
 	if fi, err := os.Stat(p); err == nil && fi.IsDir() {
-		c.sc.wd, c.sc.cded = p, true
+		old := sc.wd
+		sc.wd, sc.cded = p, true
+		sc.set("OLDPWD", old)
 		return
 	}
 	// The directory does not exist, so cd fails and the shell stays where it was.

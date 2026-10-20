@@ -1,0 +1,80 @@
+Verification of 105-effects-soundness, 2026-10-20
+
+Analyzer commit f31b874 (105-effects-soundness after merging main), run on a
+fresh Hetzner cpx42 (8 shared vCPU, 16 GB, Debian 13) set up by
+tools/verify-box/setup.sh and driven by tools/verify-box/run.sh (both on the
+verify-box-fixes branch). Peak memory in use: about 1 GB. Whole run: about 2
+minutes.
+
+Data. The round-7 corpus (corpus7.jsonl) was frozen before this branch's fixes,
+which came from the audit of the agent command study (open-problems rows 49 and
+50), not from round 7. Composition seed 20261015 is development data. Seeds
+1220325, 2173026 and 1442164 were drawn at random and written down before any
+run, and are held out.
+
+Gated suite (SYNAPSE_REQUIRE_SANDBOX=1 make ci)
+  f31b874 alone: 1644 tests ran, 3 failed, 4 skipped (4 allowed). The failures
+  were TestTraceHidesIdentity and TestTraceMountinfoNamesNoOperator: the box's
+  user was named v, and the tests matched the name as a substring of /dev and
+  nologin. The sandbox output named only the sandbox user and host, so the
+  tests were wrong; verify-box-fixes makes them match whole words
+  (TestNamesMatchesWholeWords).
+  f31b874 merged with verify-box-fixes: 1645 tests ran, 0 failed, 4 skipped
+  (4 allowed), 0 builds failed.
+
+Composition (make composecheck, 4000 lines each): see compose_results.txt.
+  Every line the analysis let run was restored exactly by the undo (V3), on the
+  development seed and on all three held-out seeds.
+
+Round 7 recovery (recovery_results7-rerun-2026-10-20.txt beside the frozen
+recovery_results7.txt)
+  frozen:  631 executed, V3 restored exactly 630/631
+  rerun:   632 executed, V3 restored exactly 631/632
+  The one failure is N024 in both (bidirectional rsync, open-problems row 37).
+  The extra executed case is N331, below; its undo restored it exactly.
+
+Round 7 decisions (classifier_out7-rerun-2026-10-20.jsonl against
+classifier_out7.jsonl): 5439 records each, the same (id, system) pairs.
+  3 decisions changed; 1022 reason strings changed wording only.
+  N331 ALG-strict   unrecoverable -> recoverable-with-capture (still asks)
+  N331 ALG-capture  unrecoverable -> recoverable-with-capture (no longer asks;
+                    captures beta.un~ before removing it)
+       The frozen analysis could not follow the variable set by read UNDOFILE;
+       e6aa19f rebinds variables builtins assign by name. N331's ground-truth
+       label is C (needs capture), so the new class matches it.
+  N257 ALG-noresolve (resolution switched off, an ablation)
+                    recoverable -> unrecoverable, now asks: $IFS is not
+                    followed without resolution. Ground truth R, so the
+                    ablation asks once more than it needs to; this is the
+                    cautious direction.
+  The paper's frozen statistics (results_round7.txt, stats_round7.txt) are left
+  as they were; N331 moves one ALG-capture case from asked to protected
+  without asking.
+
+Second run, after the open-problems row 51 fixes (subscripts and arithmetic that
+run code, and by-name assignments the analysis did not follow)
+
+Analyzer commit 0db4be9 (105-effects-soundness with e3303ed, 76eacb8, f0b4259,
+merged with main), on a fresh cpx42 set up and driven the same way. Whole run:
+about 2.5 minutes; peak memory in use 1147 MB.
+
+Data. The row 51 fixes came from the review of PR #109 and its hand-confirmed
+lines, now hostile tests in internal/effects/subscript_test.go (44 of them fail
+on the code before the fixes). Seed 20261015 is development data. Fresh seeds
+8712178, 8013173 and 4373011 were drawn at random and written down before any
+run, and are held out.
+
+Gated suite (SYNAPSE_REQUIRE_SANDBOX=1 make ci): 1743 tests ran, 0 failed,
+  4 skipped (4 allowed), 0 builds failed.
+
+Composition (make composecheck, 4000 lines each): V3 restored exactly every line
+  the analysis let run, on the development seed (3099/3099) and on all three
+  held-out seeds (3071/3071, 3102/3102, 3075/3075).
+
+Round 7 recovery: 632 executed, V3 restored exactly 631/632, as in the first
+  run; the failure is still N024 (open-problems row 37).
+
+Round 7 decisions: no (id, system) pair changed its prompted or protected
+  decision against the first run, so the fixes make no round-7 command ask
+  that did not before. Against the frozen classifier_out7.jsonl the same 3
+  decisions differ as in the first run (N331 twice, N257).

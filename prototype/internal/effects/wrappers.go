@@ -42,11 +42,12 @@ func (st *state) wrapper(c *call, w wrapperSpec) {
 		st.unresolved(c, "arguments could not be determined: "+c.aerr.Error())
 		return
 	}
-	if c.name == "command" && hasAny(c.args, "-v", "-V") {
-		return
-	}
 	long := setOf(strings.Join(w.longWithArg, " "))
 	args := c.args
+	// opts are the wrapper's own options, before the command it runs, each with its
+	// value: "-C" or "--chdir", as spelled.
+	type opt struct{ name, val string }
+	var opts []opt
 	i := 0
 scan:
 	for i < len(args) {
@@ -56,18 +57,28 @@ scan:
 			i++
 			break scan
 		case strings.HasPrefix(a, "--"):
-			if !strings.Contains(a, "=") && long[a[2:]] {
+			if name, val, ok := strings.Cut(a, "="); ok {
+				opts = append(opts, opt{name, val})
+			} else if long[a[2:]] && i+1 < len(args) {
+				opts = append(opts, opt{a, args[i+1]})
 				i++
+			} else {
+				opts = append(opts, opt{a, ""})
 			}
 		case len(a) > 1 && a[0] == '-':
 			cl := a[1:]
 			for j := 0; j < len(cl); j++ {
+				name := "-" + string(cl[j])
 				if strings.ContainsRune(w.withArg, rune(cl[j])) {
-					if j == len(cl)-1 {
+					val := cl[j+1:]
+					if val == "" && i+1 < len(args) {
 						i++
+						val = args[i]
 					}
+					opts = append(opts, opt{name, val})
 					break
 				}
+				opts = append(opts, opt{name, ""})
 			}
 		default:
 			break scan
@@ -77,9 +88,32 @@ scan:
 	for k := 0; k < w.positional && i < len(args); k++ {
 		i++
 	}
+	var assigns []string
 	if w.assigns {
 		for i < len(args) && assignWord.MatchString(args[i]) {
+			assigns = append(assigns, args[i])
 			i++
+		}
+	}
+	// What the wrapped command runs with: a directory to run in (env -C, sudo -D), the
+	// variables env sets or removes, an environment cleared (env -i, exec -c) or reset
+	// (sudo, doas), in which no variable of this shell is known.
+	dir, cleared := "", c.name == "sudo" || c.name == "doas"
+	var unsets []string
+	for _, o := range opts {
+		switch {
+		case c.name == "command" && (o.name == "-v" || o.name == "-V"):
+			return // command -v NAME looks the name up and runs nothing
+		case c.name == "env" && (o.name == "-S" || o.name == "--split-string"):
+			st.opaque(c, "env -S splits a string into the command it runs, which is not modelled")
+			return
+		case (c.name == "env" && o.name == "-C") || o.name == "--chdir" || (c.name == "sudo" && o.name == "-D"):
+			dir = o.val
+		case c.name == "env" && (o.name == "-u" || o.name == "--unset"):
+			unsets = append(unsets, o.val)
+		case c.name == "env" && (o.name == "-i" || o.name == "--ignore-environment"),
+			c.name == "exec" && o.name == "-c":
+			cleared = true
 		}
 	}
 	if i >= len(args) {
@@ -91,6 +125,36 @@ scan:
 	inner := c.sub(args[i:])
 	if c.name == "sudo" || c.name == "doas" || c.priv {
 		inner.priv = true
+	}
+	if dir != "" || len(assigns) > 0 || len(unsets) > 0 || cleared {
+		// A separate process: what it changes does not reach this shell.
+		isc := c.sc.clone()
+		if dir != "" {
+			if isc.wd == unknownWD {
+				st.unresolved(c, errUnknownWD.Error())
+				return
+			}
+			p := absIn(isc, dir)
+			if fi, err := os.Stat(p); err != nil || !fi.IsDir() {
+				return // the wrapper cannot change to it, and runs nothing
+			}
+			isc.wd = p
+		}
+		if cleared {
+			isc.vars, isc.envUnknown = map[string]string{}, true
+		}
+		for _, k := range unsets {
+			isc.drop(k)
+		}
+		for _, kv := range assigns {
+			k, v, _ := strings.Cut(kv, "=")
+			if behaviourVars[k] {
+				st.unresolved(c, "runs with "+k+" changed, which changes how it is found or what it loads")
+				return
+			}
+			isc.set(k, v)
+		}
+		inner.sc = isc
 	}
 	st.dispatch(inner)
 }
@@ -576,6 +640,11 @@ func (st *state) resolveProducer(c *call, who, whose string) (out []byte, produc
 	}
 	if st.a.Run == nil {
 		return nil, producer, whose + " input needs resolving and resolution is disabled"
+	}
+	for _, stage := range c.pc.stages[:c.pc.idx] {
+		if v := readsUnknown(stage, c.sc); v != "" {
+			return nil, producer, "the command feeding " + who + " reads " + unknownVarError(v).Error()
+		}
 	}
 	if c.priv || hasPrivilege(producer) {
 		return nil, producer, "runs with elevated privilege, so its input cannot be resolved as the current user"

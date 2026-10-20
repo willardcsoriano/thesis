@@ -38,7 +38,7 @@ The columns are `kind name probe required purpose`, tab-separated. `probe` is th
 | Role | Who needs it | In the image |
 |---|---|---|
 | `runtime:` | `synapse` itself: the analysis and its resolvers, undo, the package and service models, the GUI session (XFCE, lightdm, X), the model and Ollama | yes |
-| `study:` | the agent command study (`cmd/agentprobe`: passt, iproute2, util-linux, strace, Node, Claude Code, Gemini CLI) and the corpus oracle's commands | on study machines only |
+| `study:` | the agent command study (`cmd/agentprobe`: passt, iproute2, util-linux, Node, Claude Code, Gemini CLI) and the corpus oracle's commands | on study machines only |
 | `build:` | compiling and testing (Go, its modules, make, gcc), hoarding (curl, jq), and the paper (Chromium, poppler-utils, the `tools/venv` pip packages) | no |
 
 `required` is `yes` only for runtime essentials; `check.sh` exits 1 when one of those is missing. The image's Debian package set is the runtime apt rows:
