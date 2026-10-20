@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -14,8 +15,11 @@ import (
 // Defect 13: a resolver runs without the network, so a producer that reads it prints
 // nothing there, which was read as "nothing to remove" while the real run removed
 // what the server or name lookup returned. The runner now observes socket(2) in every
-// process of a resolver and refuses the result. These tests hold only because of that
-// observation: no command name in them is listed anywhere in the analysis.
+// process of a resolver and refuses the result. TestRunnerRefuses* exercise that
+// observation directly, and TestNetworkProducersAskBecauseTheTracerRefuses pins the
+// end-to-end path by asserting the refusal reason is ErrOutsideInput: were the tracer
+// to break, the sandbox's own network isolation would still fail these commands, but
+// with a different error, so a class-only check would pass without testing anything.
 
 // TestMain lets the test binary stand in for programs the analysis has never heard of:
 // with EFFECTS_TEST_HELPER set it acts as that program instead of running the tests.
@@ -163,6 +167,49 @@ func TestProducersThatReadTheNetworkAsk(t *testing.T) {
 		)
 	}
 	runRuleCasesIn(t, wd, cases)
+}
+
+// TestNetworkProducersAskBecauseTheTracerRefuses makes the tracer the thing under
+// test. Each producer is a command the analysis treats as read-only, so the resolver
+// runs it, and only the socket tracer stops it; the forms are the two that reach the
+// tracer (a bare substitution and xargs), not the ones a prior unknown-variable or
+// awk-program rule already refuses. The assertion is on the ErrOutsideInput reason,
+// not merely the class: with the tracer disabled the sandbox's network isolation
+// still fails these, but with another error, which this then catches.
+func TestNetworkProducersAskBecauseTheTracerRefuses(t *testing.T) {
+	wd := networkFixture(t)
+	producers := []string{
+		"getent hosts example.com",
+		"getent ahosts example.com",
+		"host example.com",
+		"nslookup example.com",
+		"dig +short example.com",
+		"git ls-remote https://example.com/repo.git",
+		"cat < /dev/tcp/example.com/80",
+		"cat < /dev/udp/127.0.0.1/53",
+		"curl -s https://example.com/list",
+		"wget -qO- https://example.com/list",
+		"getent hosts example.com | sort",
+	}
+	for _, p := range producers {
+		for _, cmd := range []string{"rm -f $(" + p + ")", p + " | xargs rm -f"} {
+			t.Run(cmd, func(t *testing.T) {
+				a := analyze(t, wd, cmd, true)
+				if v := a.Verdict(); v.Class != Unrecoverable {
+					t.Fatalf("class = %s, want unrecoverable; issues: %+v", v.Class, a.Issues)
+				}
+				found := false
+				for _, is := range a.Issues {
+					if strings.Contains(is.Reason, ErrOutsideInput.Error()) {
+						found = true
+					}
+				}
+				if !found {
+					t.Fatalf("asked, but not because the tracer saw a socket; issues: %+v", a.Issues)
+				}
+			})
+		}
+	}
 }
 
 func TestOfflineProducersStillResolve(t *testing.T) {
