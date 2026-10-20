@@ -134,6 +134,11 @@ func (t *runnerTracer) run(ctx context.Context, wd string, full []string, stdout
 	}()
 	werr := cmd.Wait()
 	<-done
+	if res.outside == "" {
+		// A syscall left unfinished when the trace ends never had its result read, so
+		// whether it reached outside is unknown: fail closed and count it.
+		res.outside = tr.flush()
+	}
 	if res.outside != "" {
 		return res, nil
 	}
@@ -153,6 +158,16 @@ func (t *runnerTracer) run(ctx context.Context, wd string, full []string, stdout
 type traceReader struct {
 	pending map[string]string
 	execOK  bool
+}
+
+// flush reports a syscall that was left unfinished when the trace ended. Its result
+// was never read, so whether it reached outside is unknown, and the analysis fails
+// closed by treating it as outside input. It returns "" when nothing is pending.
+func (tr *traceReader) flush() string {
+	for _, head := range tr.pending {
+		return head + " <unfinished ...>"
+	}
+	return ""
 }
 
 // line takes one line of the trace and returns it if it shows outside input.

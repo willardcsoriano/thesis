@@ -211,6 +211,10 @@ func TestTraceJudgement(t *testing.T) {
 		{[]string{`7 connect(4, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110 <unfinished ...>`,
 			`7 <... connect resumed>) = -1 ENOENT (No such file or directory)`}, false},
 		{[]string{`7 <... connect resumed>) = -1 ENOENT (No such file or directory)`}, true},
+		// A syscall left unfinished when the trace ends never had its result read, so
+		// whether it reached outside is unknown: it is counted, fail closed.
+		{[]string{`7 connect(4, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110 <unfinished ...>`}, true},
+		{[]string{`7 socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC, 0 <unfinished ...>`}, true},
 		// What strace may print that these rules do not know is outside input.
 		{[]string{`7 something new`}, true},
 	} {
@@ -220,6 +224,10 @@ func TestTraceJudgement(t *testing.T) {
 			if tr.line(l) != "" {
 				got = true
 			}
+		}
+		// Whatever is still unfinished at the end of the trace is judged too.
+		if tr.flush() != "" {
+			got = true
 		}
 		if got != tc.outside {
 			t.Errorf("%q: outside input = %v, want %v", tc.lines, got, tc.outside)
