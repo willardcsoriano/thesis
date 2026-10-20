@@ -662,7 +662,7 @@ func (st *state) forLoop(x *syntax.ForClause, sc *scope) {
 			if i > 0 {
 				st.mayHaveFailed(sc) // the pass before may have failed part-way
 			}
-			st.assign(sc, name, it, false)
+			st.assign(sc, st.text(x), name, it, false)
 			st.stmts(x.Do, sc)
 		}
 	})
@@ -685,7 +685,7 @@ func (st *state) declClause(x *syntax.DeclClause, sc *scope) {
 		v, err := st.literal(as.Value, sc)
 		items = append(items, declItem{raw: v, known: err == nil})
 	}
-	st.declare(x.Variant.Value, items, sc)
+	st.declare(x.Variant.Value, st.text(x), items, sc)
 }
 
 // bind applies one assignment word (f=x, f+=x, a=(x y), a[i]=x).
@@ -703,7 +703,7 @@ func (st *state) bind(as *syntax.Assign, sc *scope) {
 			return
 		}
 	}
-	st.assign(sc, name, v, as.Append)
+	st.assign(sc, st.text(as), name, v, as.Append)
 }
 
 // collectNode analyses every command or process substitution inside n. Their
@@ -1366,6 +1366,10 @@ func (st *state) forgetVars(c *call) {
 		for _, a := range c.args {
 			if identifier.MatchString(a) {
 				c.sc.drop(a)
+			} else {
+				// A subscript (unset 'x[expr]') is arithmetic bash evaluates, so it
+				// can assign another variable or run a command substitution.
+				st.forgetTarget(c.sc, c.src, a)
 			}
 		}
 		return
@@ -1378,7 +1382,16 @@ func (st *state) forgetVars(c *call) {
 	}
 	for _, a := range c.args {
 		if identifier.MatchString(a) {
+			if c.sc.fixed[a] == 'i' {
+				// Reading runtime input into an integer-attributed variable evaluates
+				// that input as arithmetic, which may run a command substitution.
+				st.opaque(c, "reads runtime input into an integer variable, evaluated as arithmetic")
+			}
 			c.sc.forget(a)
+		} else {
+			// A subscripted target (read 'x[expr]') evaluates the subscript as
+			// arithmetic too; an option or its value has no leading name and is a no-op.
+			st.forgetTarget(c.sc, c.src, a)
 		}
 	}
 }

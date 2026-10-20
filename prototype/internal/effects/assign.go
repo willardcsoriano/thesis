@@ -165,44 +165,8 @@ var leadingName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*`)
 // is unknown. Nested statements and substitutions are left to their own turn: those
 // in a substitution run in a subshell.
 func (st *state) preAssign(root *syntax.Stmt, sc *scope) {
-	var arith func(n syntax.Node)
-	arith = func(n syntax.Node) {
-		if n == nil {
-			return
-		}
-		syntax.Walk(n, func(x syntax.Node) bool {
-			switch y := x.(type) {
-			case *syntax.CmdSubst, *syntax.ProcSubst:
-				sc.everything = true // its output is evaluated as an expression
-				return false
-			case *syntax.BinaryArithm:
-				if assignOps[y.Op] {
-					st.arithTarget(y.X, sc)
-				}
-			case *syntax.UnaryArithm:
-				if y.Op == syntax.Inc || y.Op == syntax.Dec {
-					st.arithTarget(y.X, sc)
-				}
-			case *syntax.ParamExp:
-				if y.Param != nil && !y.Excl && !y.Length && y.Index == nil && y.Slice == nil && y.Repl == nil && y.Exp == nil && y.Names == 0 {
-					st.arithName(y.Param.Value, sc)
-				} else {
-					sc.everything = true
-				}
-				return false
-			case *syntax.Lit:
-				// Parsed arithmetic has its operators outside the words; a [[ -eq ]]
-				// operand is a word, so an assignment in it is in its text.
-				if strings.ContainsRune(y.Value, '=') || strings.Contains(y.Value, "++") || strings.Contains(y.Value, "--") {
-					sc.everything = true
-				}
-				for _, name := range identifiers(y.Value) {
-					st.arithName(name, sc)
-				}
-			}
-			return true
-		})
-	}
+	src := st.text(root)
+	arith := func(n syntax.Node) { st.walkArith(n, sc, src) }
 	syntax.Walk(root, func(x syntax.Node) bool {
 		switch y := x.(type) {
 		case *syntax.Stmt:
@@ -217,6 +181,14 @@ func (st *state) preAssign(root *syntax.Stmt, sc *scope) {
 			return false
 		case *syntax.LetClause:
 			for _, e := range y.Exprs {
+				// A quoted or expanded let operand is a string bash re-parses and
+				// evaluates as arithmetic, which may name any target or run a command
+				// substitution. Its text is not the parsed expression here, so route
+				// it through the arithmetic re-parse rather than walking it directly.
+				if w, ok := e.(*syntax.Word); ok && !bareArithWord(w) {
+					st.evalArithText(w, sc, src)
+					continue
+				}
 				arith(e)
 			}
 			return false
@@ -226,8 +198,24 @@ func (st *state) preAssign(root *syntax.Stmt, sc *scope) {
 			arith(y.Post)
 			return false
 		case *syntax.ParamExp:
+			if y.Excl && y.Names == 0 && y.Param != nil {
+				// ${!v} (and its assigning forms) resolves the variable v names. bash
+				// evaluates any subscript in that name, so when v's value carries one
+				// that runs code, so does the line, whatever the value is besides.
+				if v, _, ok := sc.lookup(y.Param.Value, st.a.Env); !ok || nameRunsCode(v) {
+					sc.everything = true
+					st.arithOpaque(src)
+				}
+			}
 			if y.Exp != nil && (y.Exp.Op == syntax.AssignUnset || y.Exp.Op == syntax.AssignUnsetOrNull) && y.Param != nil {
-				sc.forget(y.Param.Value)
+				if y.Excl {
+					// ${!r:=x} assigns to the variable r names, not r: that target is
+					// not known, so no value is, and its name could carry a code subscript.
+					sc.everything = true
+					st.arithOpaque(src)
+				} else {
+					sc.forget(y.Param.Value)
+				}
 			}
 			if y.Index != nil {
 				arith(y.Index)
@@ -240,15 +228,195 @@ func (st *state) preAssign(root *syntax.Stmt, sc *scope) {
 			if y.Index != nil {
 				arith(y.Index)
 			}
+			if y.Array != nil {
+				for _, el := range y.Array.Elems {
+					if el.Index != nil {
+						arith(el.Index)
+					}
+				}
+			}
+		case *syntax.UnaryTest:
+			// [[ -v name ]] evaluates a subscript in name as arithmetic, which assigns
+			// or runs code just as a by-name builtin target does.
+			if y.Op == syntax.TsVarSet {
+				if w, ok := y.X.(*syntax.Word); ok {
+					if s, pure := litText(w); pure {
+						st.forgetTarget(sc, src, s)
+						break
+					}
+				}
+				sc.everything = true
+				st.arithOpaque(src)
+			}
 		case *syntax.BinaryTest:
 			switch y.Op {
 			case syntax.TsEql, syntax.TsNeq, syntax.TsLeq, syntax.TsGeq, syntax.TsLss, syntax.TsGtr:
-				arith(y.X)
-				arith(y.Y)
+				st.testOperand(y.X, sc, src)
+				st.testOperand(y.Y, sc, src)
 			}
 		}
 		return true
 	})
+}
+
+// testOperand handles one operand of an arithmetic test ([[ x -eq y ]]). bash
+// expands the word and evaluates the result as arithmetic, so a literal operand's
+// own text is the expression (an assignment or a subscript in it runs there); an
+// operand with an expansion is walked for the variables it reads.
+func (st *state) testOperand(x syntax.TestExpr, sc *scope, src string) {
+	if w, ok := x.(*syntax.Word); ok {
+		if s, pure := litText(w); pure {
+			st.evalArithText2(s, sc, src)
+			return
+		}
+	}
+	st.walkArith(x, sc, src)
+}
+
+// walkArith walks a parsed arithmetic expression, recording what it assigns and
+// whether it may run a command substitution. A value a name holds is itself
+// evaluated as an expression, so reading one whose value is unknown or carries code
+// makes the line opaque (arithName).
+func (st *state) walkArith(n syntax.Node, sc *scope, src string) {
+	if n == nil {
+		return
+	}
+	syntax.Walk(n, func(x syntax.Node) bool {
+		switch y := x.(type) {
+		case *syntax.CmdSubst, *syntax.ProcSubst:
+			// Its output is re-evaluated as an expression, so it both runs now and may
+			// carry further code: the line is opaque, not merely unknown.
+			sc.everything = true
+			st.arithOpaque(src)
+			return false
+		case *syntax.BinaryArithm:
+			if assignOps[y.Op] {
+				st.arithTarget(y.X, sc)
+			}
+		case *syntax.UnaryArithm:
+			if y.Op == syntax.Inc || y.Op == syntax.Dec {
+				st.arithTarget(y.X, sc)
+			}
+		case *syntax.ParamExp:
+			if y.Param != nil && !y.Excl && !y.Length && y.Index == nil && y.Slice == nil && y.Repl == nil && y.Exp == nil && y.Names == 0 {
+				// A bare variable read: its value is evaluated as an expression.
+				st.arithName(y.Param.Value, sc, src)
+				return false
+			}
+			sc.everything = true
+			switch {
+			case y.Excl:
+				// ${!v} resolves the variable v names; that name may carry a subscript
+				// that runs code, and the name itself is not known.
+				st.arithOpaque(src)
+			case y.Index != nil:
+				// ${x[expr]} and the bare x[expr]: the subscript is arithmetic bash
+				// evaluates, so it may assign or run a command substitution. The array
+				// element read itself runs nothing.
+				st.walkArith(y.Index, sc, src)
+			case y.Slice != nil:
+				st.walkArith(y.Slice.Offset, sc, src)
+				st.walkArith(y.Slice.Length, sc, src)
+			case y.Param != nil && !y.Length:
+				// ${v:-0}, ${v#x}: v's value is produced and then evaluated as an
+				// expression, so a value that carries code runs it.
+				st.arithName(y.Param.Value, sc, src)
+			}
+			return false
+		case *syntax.Lit:
+			// Parsed arithmetic has its operators outside the words; a [[ -eq ]]
+			// operand is a word, so an assignment in it is in its text.
+			if strings.ContainsRune(y.Value, '=') || strings.Contains(y.Value, "++") || strings.Contains(y.Value, "--") {
+				sc.everything = true
+			}
+			for _, name := range identifiers(y.Value) {
+				st.arithName(name, sc, src)
+			}
+		}
+		return true
+	})
+}
+
+// evalArithText re-parses a word's literal text as arithmetic and walks it. The
+// word must be constant (bareArithWord is false but litText is pure); a word with an
+// expansion cannot have its arithmetic known, so it is opaque.
+func (st *state) evalArithText(w *syntax.Word, sc *scope, src string) {
+	s, ok := litText(w)
+	if !ok {
+		sc.everything = true
+		st.arithOpaque(src)
+		return
+	}
+	st.evalArithText2(s, sc, src)
+}
+
+// evalArithText2 parses s as a bash arithmetic expression and walks it. A text that
+// does not parse as arithmetic is treated as running code, to fail closed.
+func (st *state) evalArithText2(s string, sc *scope, src string) {
+	expr, err := syntax.NewParser(syntax.Variant(syntax.LangBash)).Arithmetic(strings.NewReader(s))
+	if err != nil {
+		sc.everything = true
+		st.arithOpaque(src)
+		return
+	}
+	st.walkArith(expr, sc, src)
+}
+
+// bareArithWord reports whether w is a plain unquoted word with no expansion, so the
+// parser has already split its arithmetic operators out and walkArith can walk it.
+func bareArithWord(w *syntax.Word) bool {
+	for _, p := range w.Parts {
+		if _, ok := p.(*syntax.Lit); !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// litText returns a word's literal text with quoting removed, and false when the
+// word has an expansion (a parameter, command, or arithmetic substitution) whose
+// value is not known here.
+func litText(w *syntax.Word) (string, bool) {
+	var b strings.Builder
+	for _, p := range w.Parts {
+		switch x := p.(type) {
+		case *syntax.Lit:
+			b.WriteString(x.Value)
+		case *syntax.SglQuoted:
+			b.WriteString(x.Value)
+		case *syntax.DblQuoted:
+			for _, q := range x.Parts {
+				l, ok := q.(*syntax.Lit)
+				if !ok {
+					return "", false
+				}
+				b.WriteString(l.Value)
+			}
+		default:
+			return "", false
+		}
+	}
+	return b.String(), true
+}
+
+// nameRunsCode reports whether using v as a variable name may run a command: it
+// carries an expansion, or a subscript that is not a plain integer, which bash
+// evaluates as arithmetic when it resolves the name.
+func nameRunsCode(v string) bool {
+	if strings.ContainsAny(v, "$`") {
+		return true
+	}
+	i := strings.IndexByte(v, '[')
+	if i < 0 {
+		return false
+	}
+	return !isDigits(strings.TrimSuffix(v[i+1:], "]"))
+}
+
+// arithOpaque records that arithmetic the analysis cannot follow may run a command,
+// so the line is unrecoverable and asks.
+func (st *state) arithOpaque(src string) {
+	st.issue(IssueOpaque, src, "arithmetic evaluates a value that is unknown or contains a command substitution")
 }
 
 // arithTarget makes the variable an arithmetic assignment writes an unknown integer.
@@ -274,11 +442,55 @@ func (st *state) arithTarget(x syntax.ArithmExpr, sc *scope) {
 }
 
 // arithName handles arithmetic reading a variable: its value is evaluated as an
-// expression in turn, which may assign.
-func (st *state) arithName(name string, sc *scope) {
+// expression in turn, which may assign (then no value is known) or, when it is
+// unknown or carries a command substitution or subscript, run code (then opaque).
+func (st *state) arithName(name string, sc *scope, src string) {
 	if !st.arithSafe(name, sc, 0) {
 		sc.everything = true
 	}
+	if st.arithRunsCode(name, sc, 0) {
+		st.arithOpaque(src)
+	}
+}
+
+// arithRunsCode reports whether evaluating name as arithmetic may run a command: its
+// value is not known (so could be anything), or holds a command substitution or a
+// subscript, or names another variable that does. A value that is only an assignment
+// (contains = or ++ but no $, backtick, or [) assigns but runs nothing.
+func (st *state) arithRunsCode(name string, sc *scope, depth int) bool {
+	if depth > 10 {
+		return true
+	}
+	if sc.unknown[name] == unknownInt || isDigits(name) {
+		return false
+	}
+	v, _, ok := sc.lookup(name, st.a.Env)
+	if !ok {
+		return true // the value is unknown: it could be any expression
+	}
+	return st.arithValueRunsCode(v, sc, depth)
+}
+
+// arithValueRunsCode is arithRunsCode for a value the analysis already holds: it
+// runs code when it carries a command substitution or a subscript, or names a
+// variable that does. A bare assignment (= but no $, backtick, or [) runs nothing.
+func (st *state) arithValueRunsCode(v string, sc *scope, depth int) bool {
+	if depth > 10 {
+		return true
+	}
+	v = strings.TrimSpace(v)
+	if v == "" || isInteger(v) {
+		return false
+	}
+	if strings.ContainsAny(v, "$`[") {
+		return true
+	}
+	for _, n := range identifiers(v) {
+		if st.arithRunsCode(n, sc, depth+1) {
+			return true
+		}
+	}
+	return false
 }
 
 // arithSafe reports whether evaluating name in arithmetic cannot assign: its value
@@ -376,7 +588,14 @@ func (st *state) shellState(c *call) bool {
 			return true
 		}
 		if name, ok := printfTarget(c.args); ok {
-			forgetTarget(sc, name)
+			st.forgetTarget(sc, c.src, name)
+		}
+	case "test", "[":
+		// test -v name / [ -v name ] evaluates a subscript in name as arithmetic.
+		for i, a := range c.args {
+			if a == "-v" && i+1 < len(c.args) {
+				st.forgetTarget(sc, c.src, c.args[i+1])
+			}
 		}
 	case "declare", "typeset", "local", "export", "readonly":
 		if c.aerr != nil {
@@ -387,7 +606,7 @@ func (st *state) shellState(c *call) bool {
 		for _, a := range c.args {
 			items = append(items, declItem{raw: a, known: true})
 		}
-		st.declare(c.name, items, sc)
+		st.declare(c.name, c.src, items, sc)
 	case "getopts":
 		sc.forget("OPTARG")
 		sc.forgetInt("OPTIND")
@@ -400,7 +619,7 @@ func (st *state) shellState(c *call) bool {
 			return true
 		}
 		if len(c.args) > 1 {
-			forgetTarget(sc, c.args[1])
+			st.forgetTarget(sc, c.src, c.args[1])
 		}
 	case "let":
 		sc.everything = true // its arguments are expressions, assigning anything
@@ -411,7 +630,7 @@ func (st *state) shellState(c *call) bool {
 		}
 		for i, a := range c.args {
 			if strings.HasPrefix(a, "-") && strings.ContainsRune(a, 'p') && i+1 < len(c.args) {
-				forgetTarget(sc, c.args[i+1])
+				st.forgetTarget(sc, c.src, c.args[i+1])
 			}
 		}
 	case "mapfile", "readarray":
@@ -493,21 +712,24 @@ func printfTarget(args []string) (string, bool) {
 }
 
 // forgetTarget makes the variable a builtin assigns unknown. A name with a subscript
-// assigns an element; a subscript is arithmetic, which may assign anything else.
-func forgetTarget(sc *scope, target string) {
+// assigns an element; the subscript is arithmetic bash evaluates, so a non-literal
+// one may assign another variable (then it too is unknown) or run a command
+// substitution (then the line is opaque).
+func (st *state) forgetTarget(sc *scope, src, target string) {
 	name := leadingName.FindString(target)
 	if name == "" {
 		return // not a valid name: the builtin fails and assigns nothing
 	}
 	sc.forget(name)
-	if rest := target[len(name):]; rest != "" {
-		if !strings.HasPrefix(rest, "[") {
-			return
-		}
-		if idx := strings.TrimSuffix(strings.TrimPrefix(rest, "["), "]"); !isDigits(idx) {
-			sc.everything = true
-		}
+	rest := target[len(name):]
+	if !strings.HasPrefix(rest, "[") {
+		return
 	}
+	idx := strings.TrimSuffix(strings.TrimPrefix(rest, "["), "]")
+	if isDigits(idx) {
+		return // a literal element: the array is already forgotten above
+	}
+	st.evalArithText2(idx, sc, src)
 }
 
 func hasCluster(args []string, opt rune) bool {
@@ -614,7 +836,7 @@ type declItem struct {
 // declare applies declare, typeset, local, export, readonly, or nameref to the scope.
 // Options apply to every name; a value is followed exactly when it is known and no
 // attribute transforms it.
-func (st *state) declare(variant string, items []declItem, sc *scope) {
+func (st *state) declare(variant, src string, items []declItem, sc *scope) {
 	flags := map[rune]bool{}
 	switch variant {
 	case "readonly":
@@ -679,7 +901,7 @@ func (st *state) declare(variant string, items []declItem, sc *scope) {
 			if !strings.HasPrefix(name[len(base):], "[") {
 				continue
 			}
-			forgetTarget(sc, name)
+			st.forgetTarget(sc, src, name)
 			continue
 		}
 		t.name = name
@@ -689,6 +911,14 @@ func (st *state) declare(variant string, items []declItem, sc *scope) {
 		return // the names are functions
 	}
 	if flags['n'] && variant != "export" {
+		for _, t := range targets {
+			// A nameref whose target carries a code-bearing subscript runs that code
+			// on the next assignment through it, which the analysis cannot pin to a
+			// later line, so the declaration itself is opaque.
+			if t.hasValue && t.known && nameRunsCode(t.value) {
+				st.arithOpaque(src)
+			}
+		}
 		sc.everything = true // a nameref may make any assignment change any variable
 		return
 	}
@@ -705,7 +935,7 @@ func (st *state) declare(variant string, items []declItem, sc *scope) {
 		case flags['i']:
 			sc.fixed[t.name] = 'i'
 			if t.hasValue || t.whole {
-				st.assignInt(sc, t.name, t.value, t.known && !t.whole && !t.append)
+				st.assignInt(sc, src, t.name, t.value, t.known && !t.whole && !t.append)
 			}
 		case transforms:
 			sc.fixed[t.name] = 'c'
@@ -715,7 +945,7 @@ func (st *state) declare(variant string, items []declItem, sc *scope) {
 		case t.whole || t.hasValue && !t.known:
 			sc.forget(t.name)
 		case t.hasValue:
-			st.assign(sc, t.name, t.value, t.append)
+			st.assign(sc, src, t.name, t.value, t.append)
 		}
 		if flags['r'] {
 			sc.fixed[t.name] = 'c' // a later assignment fails and leaves it, or stops the line
@@ -730,7 +960,7 @@ func (st *state) declare(variant string, items []declItem, sc *scope) {
 
 // assign sets k to v (appended to its value when app), as the shell would, given the
 // attributes the line gave k.
-func (st *state) assign(sc *scope, k, v string, app bool) {
+func (st *state) assign(sc *scope, src, k, v string, app bool) {
 	if behaviourVars[k] {
 		sc.changeShell("assigning " + k + " changes how the shell expands or finds commands")
 	}
@@ -744,7 +974,7 @@ func (st *state) assign(sc *scope, k, v string, app bool) {
 	}
 	switch sc.fixed[k] {
 	case 'i':
-		st.assignInt(sc, k, v, !app)
+		st.assignInt(sc, src, k, v, !app)
 		return
 	case 'c':
 		sc.forget(k)
@@ -755,12 +985,21 @@ func (st *state) assign(sc *scope, k, v string, app bool) {
 
 // assignInt assigns to a variable with the integer attribute: the value is
 // evaluated as arithmetic, which may assign anything unless it is a plain integer.
-func (st *state) assignInt(sc *scope, k, v string, known bool) {
+func (st *state) assignInt(sc *scope, src, k, v string, known bool) {
 	if known && isInteger(strings.TrimSpace(v)) {
 		sc.set(k, strings.TrimSpace(v))
 		return
 	}
-	if known && !strings.ContainsAny(v, "=$`[") && !strings.Contains(v, "++") && !strings.Contains(v, "--") {
+	// A value the analysis cannot see, or one that carries a command substitution or
+	// subscript, is re-evaluated as arithmetic and may run a command: the line is
+	// opaque. A value that only assigns (contains = but no code) leaves every
+	// variable unknown instead.
+	if !known || st.arithValueRunsCode(v, sc, 0) {
+		sc.everything = true
+		st.arithOpaque(src)
+		return
+	}
+	if !strings.ContainsAny(v, "=$`[") && !strings.Contains(v, "++") && !strings.Contains(v, "--") {
 		safe := true
 		for _, n := range identifiers(v) {
 			safe = safe && st.arithSafe(n, sc, 0)

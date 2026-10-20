@@ -183,7 +183,7 @@ func (st *state) whileRead(x *syntax.WhileClause, sc *scope, pc *pipeCtx, src st
 			if i > 0 {
 				st.mayHaveFailed(sc) // the pass before may have failed part-way
 			}
-			st.assign(sc, rl.name, it, false)
+			st.assign(sc, src, rl.name, it, false)
 			st.stmts(x.Do, sc)
 		}
 	})
