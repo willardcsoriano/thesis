@@ -1,0 +1,21 @@
+# Rerun of round 7 on 2026-10-20, analyzer commit f31b874 (105-effects-soundness),
+# on a fresh Hetzner cpx42 (8 vCPU, 16 GB, Debian 13). The frozen record is
+# recovery_results7.txt, left as it was. See verify_2026-10-20.txt.
+
+SUMMARY (8 shards)
+  cases: 697 total, 632 executed
+  V1 restored exactly: 604/632
+  V2 restored exactly: 613/632
+  V3 restored exactly: 631/632
+
+FAILURES (V3 not exact)
+N024  class=recoverable plan=
+  setup:   
+  command: rsync -ur dir_a dir_b && rsync -ur dir_b dir_a
+  V3 differences: extra dir_a/dir_b; extra dir_a/dir_b/dir_a; extra dir_a/dir_b/dir_a/item.txt
+  V3 errors: undo: removing dir_a/dir_b: remove /tmp/rc-fix-2937436684/dir_a/dir_b: directory not empty
+  V1 differences: extra dir_a/dir_b; extra dir_a/dir_b/dir_a; extra dir_a/dir_b/dir_a/item.txt; extra dir_a/dir_b/item.txt; extra dir_b/dir_a; extra dir_b/dir_a/item.txt
+  V1 errors: undo: removing dir_b/dir_a: remove /tmp/rc-fix-784045290/dir_b/dir_a: directory not empty; undo: removing dir_a/dir_b: remove /tmp/rc-fix-784045290/dir_a/dir_b: directory not empty
+  V2 differences: extra dir_a/dir_b; extra dir_a/dir_b/dir_a; extra dir_a/dir_b/dir_a/item.txt; extra dir_a/dir_b/item.txt; extra dir_b/dir_a; extra dir_b/dir_a/item.txt
+  V2 errors: undo: removing dir_b/dir_a: remove /tmp/rc-fix-3248135967/dir_b/dir_a: directory not empty; undo: removing dir_a/dir_b: remove /tmp/rc-fix-3248135967/dir_a/dir_b: directory not empty
+---

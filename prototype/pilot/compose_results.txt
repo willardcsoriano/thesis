@@ -14,3 +14,11 @@ the one failure (a second name left for a restored file) was then fixed.
 
 2026-10-19, after closing open-problems rows 44 and 45 and defects 9 to 12 (analyzer-defects.md):
 20261015:4000   V3 restored exactly: 3099/3099
+
+2026-10-20, analyzer commit f31b874 (105-effects-soundness), on an 8-vCPU verification box.
+20261015 is development data (it was rerun while defects 9 to 12 were closed); the other three were drawn
+at random and written down before any run, and played no part in any fix:
+20261015:4000   V3 restored exactly: 3099/3099   (development)
+1220325:4000   V3 restored exactly: 3083/3083   (held out)
+2173026:4000   V3 restored exactly: 3021/3021   (held out)
+1442164:4000   V3 restored exactly: 3101/3101   (held out)
