@@ -60,6 +60,7 @@ apt	curl	curl	no	build: fetches the Go toolchain, the Ollama archive and install
 apt	jq	jq	no	build: hoard.sh's toolchain checksum and model manifests; the guard hook and its tests
 apt	shellcheck	shellcheck	no	build: lints the shell scripts in tools/ and distro/
 apt	gcc	gcc	no	build: cgo for go test -race (prototype/setup.md)
+apt	libc6-dev	/usr/include/stdlib.h	no	build: the C headers cgo compiles against; with gcc on PATH and these missing, go build and go vet fail (stdlib.h: No such file or directory)
 toolchain	go	go	no	build: Go 1.25.0, the version prototype/go.mod requires (hoarded as a tarball)
 gomod	mvdan.cc/sh/v3	-	no	build: shell parser and expander compiled into synapse (v3.13.1; v3.14 needs Go 1.26)
 gomod	charm.land/bubbletea/v2	-	no	build: the TUI's event loop, compiled into synapse
