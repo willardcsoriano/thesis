@@ -22,3 +22,11 @@ at random and written down before any run, and played no part in any fix:
 1220325:4000   V3 restored exactly: 3083/3083   (held out)
 2173026:4000   V3 restored exactly: 3021/3021   (held out)
 1442164:4000   V3 restored exactly: 3101/3101   (held out)
+
+2026-10-20, analyzer commit 0db4be9 (105-effects-soundness with the row 51 fixes), on an 8-vCPU verification box.
+20261015 is development data; the other three were drawn at random and written down before any run, and played
+no part in any fix (the row 51 fixes came from the review of PR #109, not from composition draws):
+20261015:4000   V3 restored exactly: 3099/3099   (development)
+8712178:4000   V3 restored exactly: 3071/3071   (held out)
+8013173:4000   V3 restored exactly: 3102/3102   (held out)
+4373011:4000   V3 restored exactly: 3075/3075   (held out)

@@ -50,3 +50,31 @@ classifier_out7.jsonl): 5439 records each, the same (id, system) pairs.
   The paper's frozen statistics (results_round7.txt, stats_round7.txt) are left
   as they were; N331 moves one ALG-capture case from asked to protected
   without asking.
+
+Second run, after the open-problems row 51 fixes (subscripts and arithmetic that
+run code, and by-name assignments the analysis did not follow)
+
+Analyzer commit 0db4be9 (105-effects-soundness with e3303ed, 76eacb8, f0b4259,
+merged with main), on a fresh cpx42 set up and driven the same way. Whole run:
+about 2.5 minutes; peak memory in use 1147 MB.
+
+Data. The row 51 fixes came from the review of PR #109 and its hand-confirmed
+lines, now hostile tests in internal/effects/subscript_test.go (44 of them fail
+on the code before the fixes). Seed 20261015 is development data. Fresh seeds
+8712178, 8013173 and 4373011 were drawn at random and written down before any
+run, and are held out.
+
+Gated suite (SYNAPSE_REQUIRE_SANDBOX=1 make ci): 1743 tests ran, 0 failed,
+  4 skipped (4 allowed), 0 builds failed.
+
+Composition (make composecheck, 4000 lines each): V3 restored exactly every line
+  the analysis let run, on the development seed (3099/3099) and on all three
+  held-out seeds (3071/3071, 3102/3102, 3075/3075).
+
+Round 7 recovery: 632 executed, V3 restored exactly 631/632, as in the first
+  run; the failure is still N024 (open-problems row 37).
+
+Round 7 decisions: no (id, system) pair changed its prompted or protected
+  decision against the first run, so the fixes make no round-7 command ask
+  that did not before. Against the frozen classifier_out7.jsonl the same 3
+  decisions differ as in the first run (N331 twice, N257).
