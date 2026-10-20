@@ -92,7 +92,7 @@ ssh verify@<server-ip> 'setsid nohup bash run.sh <seed> <seed> <seed> >/dev/null
 ssh verify@<server-ip> cat verify.log       # until it says "all done"
 ```
 
-An exit status other than 0 is read in its `.out` file before anything else is compared.
+If the run is cut off (a reboot, a killed process), start it again the same way: it resumes. A step that passed on the same commit is recorded in `~/verify.done` and skipped, and one that failed or was interrupted runs again. A new commit, or `bash run.sh --fresh <seeds>`, starts from the first step, and a second copy started while one runs refuses to start. An exit status other than 0 is read in its `.out` file before anything else is compared.
 
 **Bringing results back.** The outputs land in the git-ignored `pilot/out/` on the server. Copy them, and the logs, to the development machine (`rsync -a verify@<server-ip>:thesis/prototype/pilot/out/ <somewhere>/` and `rsync -a 'verify@<server-ip>:*.out' 'verify@<server-ip>:verify.log' <somewhere>/`). Commit them under new, dated names beside the frozen files, each with a header naming the analyzer commit, and never over them: the committed round-7 result files are the paper's numbers. Compare the decision file with `pilot/classifier_out7.jsonl`, and report every changed decision. A verdict that differs between the laptop and the VM on the same commit is a bug to chase, not noise.
 
