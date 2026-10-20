@@ -5,6 +5,7 @@ This is the project's process log — a chronological account of *how* work got 
 ## Table of Contents
 
 - [Overview](#overview)
+- [2026-10-20 — Three silent-loss holes closed, verified on a rented 8-core box](#2026-10-20--three-silent-loss-holes-closed-verified-on-a-rented-8-core-box)
 - [2026-10-19 — The agent sandboxes got a network of their own](#2026-10-19--the-agent-sandboxes-got-a-network-of-their-own)
 - [2026-10-19 — Scoring measured each step against the wrong state, and the study's tools under attack](#2026-10-19--scoring-measured-each-step-against-the-wrong-state-and-the-studys-tools-under-attack)
 - [2026-10-19 — The agent study's two coverage gaps closed, and four defects found on the way](#2026-10-19--the-agent-studys-two-coverage-gaps-closed-and-four-defects-found-on-the-way)
@@ -27,6 +28,16 @@ This is the project's process log — a chronological account of *how* work got 
 - [Sessions 20–21 — .gitignore Privacy Rework, PR Shipping, Ollama Client/Loop Tests](#sessions-2021--gitignore-privacy-rework-pr-shipping-ollama-clientloop-tests)
 - [Sessions 17–19 — M1 Built From Scratch: First Live Validation, Classifier/Executor Wiring, D21's Bounded Loop](#sessions-1719--m1-built-from-scratch-first-live-validation-classifierexecutor-wiring-d21s-bounded-loop)
 - [Blockers & Lessons — Quick Reference](#blockers--lessons--quick-reference)
+
+## 2026-10-20 — Three silent-loss holes closed, verified on a rented 8-core box
+
+Rows 49 and 50 were fixed on branch `105-effects-soundness` the day before but had never been run against fresh data, because the slow checks crawl on the 4-core laptop. A throwaway Hetzner server (`tools/verify-box/`, `testing-environment.md`) runs the gated suite, four composition draws and the round-7 rerun in about two minutes. The first run there held on three held-out seeds. The review of the pull request then found a third class of hole by reading the code, not the data: bash evaluates an array subscript, and every value arithmetic reads, as an expression that may run a command, so `printf -v 'x[$(rm a.txt)]' 1` deleted `a.txt` while the analysis called it recoverable. The fix makes such arithmetic opaque and follows each by-name assignment. Each confirmed line became a test that runs under bash in the sandbox and requires that bash lost a file the analysis neither asks about nor captures; 44 of them fail on the code before the fix. A second box run on three new held-out seeds (8712178, 8013173, 4373011) restored every line exactly, and no round-7 decision changed, so the fix costs no extra questions there. The lesson: a green differential test on random draws did not find this; reading the shell's semantics did. Random composition rarely writes a quoted subscript.
+
+**Resolved from `open-problems.md`:** row 49 (network-reading producers resolved as nothing to remove). Resolvers are traced for socket(2) in every process, and a result that read outside input is refused; a call left unfinished at the end of the trace now counts too, and the producer tests require the tracer's own refusal reason rather than any failure. Verified in `pilot/verify_2026-10-20.txt`.
+
+**Resolved from `open-problems.md`:** row 50 (variables assigned by name not rebound). `printf -v`, `read`, `declare` and namerefs rebind or forget what they assign. N331 in round 7 used `read UNDOFILE`, and its class moved to the ground-truth label C. Verified in the same file.
+
+**Resolved from `open-problems.md`:** row 51 (subscripts and arithmetic run hidden code; `let`, subscripted `read` and `unset` targets, `[[ -v ]]`, `test -v` and `${!r:=x}` assign unseen). Fixed in `internal/effects/assign.go` and `analyze.go`, tested by `subscript_test.go`. `mapfile` needed nothing: bash rejects a subscripted target there before evaluating it.
 
 ## 2026-10-19 — The agent sandboxes got a network of their own
 
