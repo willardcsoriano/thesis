@@ -7,7 +7,7 @@ package main
 //
 // A read-only task leaves no trace in the fixture and is scored on what the
 // person was told. That used to be the transcript with the loop's own
-// bookkeeping scraped out by line prefix (open-problems row 2), which made
+// bookkeeping scraped out by line prefix (retrospective.md, 2026-10-23), which made
 // three verifiers vacuous: "did it report 2 warnings" was satisfied by
 // "step 2:", and "did it report 4" by the 4 in a latency. The loop now hands
 // Layer 7 typed events (internal/loopevent), and told() keeps only what reaches

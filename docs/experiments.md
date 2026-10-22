@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is the register of every experiment the thesis runs or promises: what each one measures, whether it is built, the exact command, whether it calls a language model, and what it needs to run. It exists so that "run everything, including every model size" means a known list rather than a guess. Each experiment's design stays in its own home document, linked from the table; this file owns only the register, the plan for the model-size comparison that Chapter 3 Section 2.1(d) promises and nothing yet plans, and the hardware for running it all in one burst. The short version: the CPU-only correctness experiments already run on a rented 8-core box in about two and a half minutes. The model comparison can be run in about a day on hourly rented hardware once two things are fixed first. The user study cannot be rented at all: it needs participants and ethics approval.
+This is the register of every experiment the thesis runs or promises: what each one measures, whether it is built, the exact command, whether it calls a language model, and what it needs to run. It exists so that "run everything, including every model size" means a known list rather than a guess. Each experiment's design stays in its own home document, linked from the table; this file owns only the register, the plan for the model-size comparison that Chapter 3 Section 2.1(d) promises and nothing yet plans, and the hardware for running it all in one burst. The short version: the CPU-only correctness experiments already run on a rented 8-core box in about two and a half minutes. The model comparison can be run in about a day on hourly rented hardware; the four things it needed first were fixed on 2026-10-23. The user study cannot be rented at all: it needs participants and ethics approval.
 
 ## Table of Contents
 
@@ -14,7 +14,7 @@ This is the register of every experiment the thesis runs or promises: what each 
   - [Experiments that need credentials, people, or something not yet built](#experiments-that-need-credentials-people-or-something-not-yet-built)
 - [The model-size comparison](#the-model-size-comparison)
   - [Two questions, measured on different hardware](#two-questions-measured-on-different-hardware)
-  - [What has to be fixed before the comparison is evidence](#what-has-to-be-fixed-before-the-comparison-is-evidence)
+  - [What makes the comparison evidence](#what-makes-the-comparison-evidence)
   - [Everyday desktop load](#everyday-desktop-load)
   - [Candidates and tiers](#candidates-and-tiers)
   - [Size of the run](#size-of-the-run)
@@ -84,10 +84,14 @@ The comparison answers two separate questions, and they cannot share one machine
 
 One check is needed before the GPU accuracy numbers can stand in for CPU ones. The same weights at temperature 0 can still produce different text on GPU and CPU kernels. So the accuracy sweep is repeated on CPU for one tier's model, and the end states are compared. If they disagree, accuracy is measured on CPU too, and the sweep takes longer.
 
-### What has to be fixed before the comparison is evidence
+### What makes the comparison evidence
 
-- **Layer 7 decides by scraping the transcript** (open-problems row 2, `said()`). D40 makes Layer 7 the gate for every model comparison, so until it reads typed events instead, a model can pass by what it prints rather than by what it does.
-- **The Layer 7 tasks were developed against the 3B model.** They are development data for 3B and would favour it. A held-out set of requests, written and frozen before any candidate runs, is needed for a fair comparison. Layer 7 then runs on both sets, and each result is reported with the set it came from.
+Four things had to be fixed before a comparison could count; all four were done on 2026-10-23.
+
+- **Layer 7 scores what the person was told, from typed events**, not a scraped transcript, so a model cannot pass on the loop's own bookkeeping (`prototype/testing-plan.md`, Layer 7). Its verifiers are checked without a model: each rejects its untouched fixture and accepts a reference solution.
+- **Layer 7 has a held-out set.** The development tasks (U1–U12) were tuned against the 3B model and would favour it; H1–H12 were written before any model ran on them and are frozen by hash. Every result names its set (`SYNAPSE_LAYER7_SET`).
+- **The model bench runs model commands in a sandbox** whose home is the playground, so `~` and absolute paths cannot reach the real home (`prototype/manual-tests/bench-sandbox.sh`).
+- **The desktop load exists** (below).
 
 ### Everyday desktop load
 
@@ -141,6 +145,6 @@ Not verified: GPU stock at the hour of renting, the RunPod prepaid-credit minimu
 
 ## What one day can and cannot cover
 
-In one day, once the two fixes above are in: every CPU correctness experiment, the full accuracy sweep (Layers 3, 4, 7 and 8 and the model bench) for every candidate on one GPU, the GPU-to-CPU agreement check, and the deployability timings on the four tier VMs. The model-generated partition is regenerated only if the chosen study model is not the 3B.
+In one day: every CPU correctness experiment, the full accuracy sweep (Layers 3, 4, 7 and 8 and the model bench) for every candidate on one GPU, the GPU-to-CPU agreement check, and the deployability timings on the four tier VMs. The model-generated partition is regenerated only if the chosen study model is not the 3B.
 
 Not in one day, whatever the hardware: the agent command study, which waits on the API driver and a frozen suite and runs on the researcher's machine; anything with participants or raters; OSWorld; and fine-tuning.

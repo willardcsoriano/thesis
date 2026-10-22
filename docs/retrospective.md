@@ -5,6 +5,7 @@ This is the project's process log — a chronological account of *how* work got 
 ## Table of Contents
 
 - [Overview](#overview)
+- [2026-10-23 — Layer 7 stopped reading the transcript, and got a held-out set](#2026-10-23--layer-7-stopped-reading-the-transcript-and-got-a-held-out-set)
 - [2026-10-23 — The model bench got a sandbox, not just a different folder](#2026-10-23--the-model-bench-got-a-sandbox-not-just-a-different-folder)
 - [2026-10-20 — Three silent-loss holes closed, verified on a rented 8-core box](#2026-10-20--three-silent-loss-holes-closed-verified-on-a-rented-8-core-box)
 - [2026-10-19 — The agent sandboxes got a network of their own](#2026-10-19--the-agent-sandboxes-got-a-network-of-their-own)
@@ -29,6 +30,12 @@ This is the project's process log — a chronological account of *how* work got 
 - [Sessions 20–21 — .gitignore Privacy Rework, PR Shipping, Ollama Client/Loop Tests](#sessions-2021--gitignore-privacy-rework-pr-shipping-ollama-clientloop-tests)
 - [Sessions 17–19 — M1 Built From Scratch: First Live Validation, Classifier/Executor Wiring, D21's Bounded Loop](#sessions-1719--m1-built-from-scratch-first-live-validation-classifierexecutor-wiring-d21s-bounded-loop)
 - [Blockers & Lessons — Quick Reference](#blockers--lessons--quick-reference)
+
+## 2026-10-23 — Layer 7 stopped reading the transcript, and got a held-out set
+
+Layer 7, D40's gate for any model change, scored read-only tasks on the CLI transcript with the loop's bookkeeping scraped out by line prefix. It now runs the loop in event mode, which the TUI already used (D39), and scores only command output, the answer and notices, so a step number or a latency cannot satisfy a verifier by construction. Its tasks were tuned against the 3B model, so twelve held-out tasks (H1–H12) were written before any model ran on them and frozen by hash. The scorer's tests had only ever run under `-tags live`, so CI never ran them; they and a new check of every verifier now run in every `go test`. That check found the development set's "technical" phrasings for U1–U4 were English sentences, not commands, so each task now carries a reference solution the check runs. **Lesson: a measuring instrument needs a test that can fail without the thing it measures.** Each verifier must reject an untouched fixture and accept a known-good answer, and a verifier broken to accept anything is caught.
+
+**Resolved from `open-problems.md`:** row 2 (CLI and REPL write text, so Layer 7 scraped the transcript). Layer 7 reads typed events; CLI and REPL keep writing text by design (`eventsFrom` in `cmd/synapse/main.go`), which no longer affects any measurement.
 
 ## 2026-10-23 — The model bench got a sandbox, not just a different folder
 
