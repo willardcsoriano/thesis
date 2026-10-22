@@ -4,7 +4,7 @@
 // The loop used to narrate everything as text on one io.Writer, so a command,
 // its output, the answer, and a warning arrived as the same undifferentiated
 // stream and an interface could only tell them apart by scraping line prefixes
-// (open-problems.md, row 2). A writer that also implements Emitter receives the
+// (retrospective.md, 2026-10-23). A writer that also implements Emitter receives the
 // same information as events instead, and the loop then writes none of it as
 // text. Writers that do not implement Emitter get the unchanged text, which is
 // what keeps CLI and REPL output identical.
