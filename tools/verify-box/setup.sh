@@ -12,7 +12,7 @@ repo=https://github.com/willardcsoriano/thesis.git
 
 # Not needed headless: the desktop session and the agent CLIs, which only the
 # live study runs, on the researcher's machine (docs/testing-environment.md).
-skip=" xfce4 xfce4-session xfce4-terminal lightdm lightdm-gtk-greeter xserver-xorg chromium xclip nodejs npm "
+skip=" xfce4 xfce4-session xfce4-terminal lightdm lightdm-gtk-greeter xserver-xorg chromium mousepad xclip nodejs npm "
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
