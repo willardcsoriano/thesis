@@ -83,7 +83,12 @@ var (
 )
 
 func (t *runnerTracer) wrap(argv []string) []string {
-	full := []string{t.path, "-f", "-qq", "-e", "signal=none", "-s", "256",
+	// --kill-on-exit (strace 6.6) kills every tracee when strace exits or is killed,
+	// as the runner does on a timeout or the first outside input. Without it a
+	// tracee runs on untraced, and strace's "<detached ...>" could hide a socket.
+	// --seccomp-bpf turns it on by itself; it is passed so the plain-ptrace
+	// fallback holds too.
+	full := []string{t.path, "-f", "-qq", "--kill-on-exit", "-e", "signal=none", "-s", "256",
 		"-e", "trace=execve,socket,socketcall,connect,bind,sendto,sendmsg,sendmmsg,io_uring_setup",
 		"-o", fmt.Sprintf("/dev/fd/%d", traceFD)}
 	if t.bpf {
@@ -181,6 +186,13 @@ func (tr *traceReader) line(l string) string {
 	}
 	if tr.pending == nil {
 		tr.pending = map[string]string{}
+	}
+	if l == "???( <detached ...>" {
+		// A thread stopped at a traced call died before strace could read which call
+		// (another thread's exit_group), and strace dropped it. It is dead, not
+		// detached and running on (--kill-on-exit), and its call never ran. A named
+		// call dropped mid-line is judged below, as outside input.
+		return ""
 	}
 	if head, ok := strings.CutSuffix(l, " <unfinished ...>"); ok {
 		tr.pending[pid] = head
