@@ -15,7 +15,7 @@ This is the register of every experiment the thesis runs or promises: what each 
 - [The model-size comparison](#the-model-size-comparison)
   - [Two questions, measured on different hardware](#two-questions-measured-on-different-hardware)
   - [What has to be fixed before the comparison is evidence](#what-has-to-be-fixed-before-the-comparison-is-evidence)
-  - [Candidates and tiers: decisions owed](#candidates-and-tiers-decisions-owed)
+  - [Candidates and tiers](#candidates-and-tiers)
   - [Size of the run](#size-of-the-run)
 - [Hardware for a one-day burst](#hardware-for-a-one-day-burst)
 - [What one day can and cannot cover](#what-one-day-can-and-cannot-cover)
@@ -90,11 +90,11 @@ One check is needed before the GPU accuracy numbers can stand in for CPU ones. T
 - **The model bench lets `~` reach the real home directory** (open-problems row 25). It must be fixed before the bench runs any model unattended.
 - **Nothing generates "everyday desktop load".** The tier machines need a repeatable load (a browser with fixed pages and the desktop session) before timings mean what the paper says. This is a small script, but it does not exist.
 
-### Candidates and tiers: decisions owed
+### Candidates and tiers
 
-These are research-design choices, listed here with a proposal each, to be made before the sweep runs.
+Decided 2026-10-22 as proposed below; the decision and what was rejected are recorded in `decisions.md` D46.
 
-| Decision | Proposal | Reason |
+| Decision | Decided | Reason |
 |---|---|---|
 | Which models | `qwen2.5-coder` at 0.5b, 1.5b, 3b, 7b, 14b and 32b; `qwen3` dense at 4b (which `drift.md` says the next reaudit must weigh) and its neighbours; `qwen3-coder:30b-a3b` as the mixture-of-experts candidate the paper names | One family across the whole size range, plus the two newer lines the paper and `drift.md` already commit to |
 | A 70B-class model | Leave it out | At Ollama's default 4-bit quantization the smallest is about 43 GB of weights (`llama3.3:70b`), so no personal machine in the tiers could hold it. Testing it would answer a question the thesis does not ask |
