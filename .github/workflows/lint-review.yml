@@ -1,0 +1,75 @@
+name: Lint review
+
+# Free, deterministic review: runs shellcheck on changed shell scripts, and
+# gofmt and go vet on the prototype when Go changed, then posts the result as
+# a COMMENT review from github-actions[bot]. Never APPROVE: GitHub refuses
+# approvals from the default Actions token. A record, not a merge gate: ci.yml
+# is what fails a build. No LLM, no secrets.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: prototype/go.mod
+          cache-dependency-path: prototype/go.sum
+
+      - name: Lint what changed
+        env:
+          # Through env, never interpolated into the script: a branch name is
+          # author-controlled text.
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -o pipefail
+          git fetch origin "$BASE_REF" --depth=1
+          changed() { git diff --name-only --diff-filter=d "origin/$BASE_REF...HEAD" -- "$@"; }
+          SH=$(changed '*.sh' '*.bash')
+          GO=$(changed 'prototype/*.go')
+          {
+            echo "## Lint review"
+            echo
+            # Each section tests the tool's own output, not this file: the
+            # headings always have text, so checking the file would never see
+            # a clean run.
+            if [ -z "$SH" ]; then
+              echo "**shellcheck:** no shell scripts changed."
+            else
+              OUT=$(echo "$SH" | xargs shellcheck 2>&1 || true)
+              if [ -z "$OUT" ]; then
+                echo "**shellcheck:** no issues in $(echo "$SH" | wc -l) changed script(s)."
+              else
+                printf '**shellcheck:**\n\n```\n%s\n```\n' "$OUT"
+              fi
+            fi
+            echo
+            if [ -z "$GO" ]; then
+              echo "**gofmt / go vet:** no Go files changed."
+            else
+              FMT=$(cd prototype && gofmt -l . 2>&1 || true)
+              VET=$(cd prototype && go vet ./... 2>&1 || true)
+              if [ -z "$FMT$VET" ]; then
+                echo "**gofmt / go vet:** no issues ($(echo "$GO" | wc -l) changed Go file(s))."
+              else
+                [ -n "$FMT" ] && printf '**gofmt** (files not formatted):\n\n```\n%s\n```\n' "$FMT"
+                [ -n "$VET" ] && printf '**go vet:**\n\n```\n%s\n```\n' "$VET"
+              fi
+            fi
+          } > review.md
+
+      - name: Post as a review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: gh pr review "$PR" --comment --body-file review.md

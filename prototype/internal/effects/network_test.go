@@ -3,13 +3,17 @@ package effects
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
 	"testing"
 	"time"
+
+	"synapseos/internal/testenv"
 )
 
 // Defect 13: a resolver runs without the network, so a producer that reads it prints
@@ -262,6 +266,12 @@ func TestTraceJudgement(t *testing.T) {
 		// whether it reached outside is unknown: it is counted, fail closed.
 		{[]string{`7 connect(4, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110 <unfinished ...>`}, true},
 		{[]string{`7 socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC, 0 <unfinished ...>`}, true},
+		// A thread that dies at a traced stop before its call can be read (another
+		// thread's exit_group): strace prints "???(" and drops it. --kill-on-exit means
+		// no traced process is ever left running untraced, so this made no call.
+		{[]string{`7 ???( <detached ...>`}, false},
+		// A named call dropped mid-line is still judged as outside input.
+		{[]string{`7 socket(AF_INET, SOCK_STREAM, IPPROTO_IP <detached ...>`}, true},
 		// What strace may print that these rules do not know is outside input.
 		{[]string{`7 something new`}, true},
 	} {
@@ -292,5 +302,64 @@ func TestSocketPathThroughALinkIntoDev(t *testing.T) {
 	}
 	if !realSocketPath(filepath.Join(dir, "absent", "socket")) {
 		t.Fatal("a socket path under a missing directory is absent in the real run too")
+	}
+}
+
+// TestTracerLeavesNoTraceeRunning kills strace while the traced command still has a
+// child running, and checks the child died with it within seconds, long before its
+// own 60-second sleep would end. A tracee strace detached would
+// run on untraced, so a "<detached ...>" line could hide a socket opened later; the
+// trace judge accepts that line only because this holds, with or without the seccomp
+// filter (which turns --kill-on-exit on by itself).
+func TestTracerLeavesNoTraceeRunning(t *testing.T) {
+	p, err := exec.LookPath("strace")
+	if err != nil {
+		testenv.Unavailable(t, "strace is not installed")
+	}
+	for _, bpf := range []bool{true, false} {
+		t.Run(fmt.Sprintf("bpf=%v", bpf), func(t *testing.T) {
+			dir := t.TempDir()
+			pidFile := filepath.Join(dir, "pid")
+			tr := &runnerTracer{path: p, bpf: bpf}
+			full := tr.wrap([]string{"bash", "-c", `sleep 60 & echo $! > "$1"; wait`, "bash", pidFile})
+			cmd := exec.Command(full[0], full[1:]...)
+			devnull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer devnull.Close()
+			cmd.ExtraFiles = []*os.File{devnull} // the trace's descriptor 3
+			if err := cmd.Start(); err != nil {
+				t.Fatal(err)
+			}
+			var pid int
+			for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
+				if b, err := os.ReadFile(pidFile); err == nil && len(b) > 1 {
+					fmt.Sscan(string(b), &pid)
+					break
+				}
+			}
+			if pid == 0 {
+				cmd.Process.Kill()
+				cmd.Wait()
+				t.Fatal("the traced child never started")
+			}
+			// The runner stops strace with SIGKILL (its context is cancelled on a
+			// timeout or on the first outside input). Without PTRACE_O_EXITKILL the
+			// kernel then lets every tracee run on, untraced.
+			if err := cmd.Process.Kill(); err != nil {
+				t.Fatal(err)
+			}
+			cmd.Wait()
+			for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
+				// Signal 0 also succeeds on a zombie, so read its state instead.
+				st, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid))
+				if err != nil || strings.Contains(string(st), ") Z ") {
+					return // gone
+				}
+			}
+			syscall.Kill(pid, syscall.SIGKILL)
+			t.Fatalf("pid %d outlived strace: a detached tracee runs on untraced", pid)
+		})
 	}
 }
