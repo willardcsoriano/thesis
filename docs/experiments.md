@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is the register of every experiment the thesis runs or promises: what each one measures, whether it is built, the exact command, whether it calls a language model, and what it needs to run. It exists so that "run everything, including every model size" means a known list rather than a guess. Each experiment's design stays in its own home document, linked from the table; this file owns only the register, the plan for the model-size comparison that Chapter 3 Section 2.1(d) promises and nothing yet plans, and the hardware for running it all in one burst. The short version: the CPU-only correctness experiments already run on a rented 8-core box in about two and a half minutes. The model comparison can be run in about a day on hourly rented hardware once three things are fixed first. The user study cannot be rented at all: it needs participants and ethics approval.
+This is the register of every experiment the thesis runs or promises: what each one measures, whether it is built, the exact command, whether it calls a language model, and what it needs to run. It exists so that "run everything, including every model size" means a known list rather than a guess. Each experiment's design stays in its own home document, linked from the table; this file owns only the register, the plan for the model-size comparison that Chapter 3 Section 2.1(d) promises and nothing yet plans, and the hardware for running it all in one burst. The short version: the CPU-only correctness experiments already run on a rented 8-core box in about two and a half minutes. The model comparison can be run in about a day on hourly rented hardware once two things are fixed first. The user study cannot be rented at all: it needs participants and ethics approval.
 
 ## Table of Contents
 
@@ -54,7 +54,7 @@ All of these talk to Ollama, and all take the model as a parameter, so each can 
 | Layer 3: live classifier agreement | How the classifier judges what the model proposes | run on 3B and 7B | `SYNAPSE_LIVE_MODELS=a,b,…` | 25 | `testing-plan.md` Layer 3 |
 | Layer 4: typed operations against raw bash | Reliability of the two output paths | run on 3B and 7B | `SYNAPSE_LIVE_MODELS` | 10 | `testing-plan.md` Layer 4 |
 | Layer 8: talk-or-act probe | Whether the model answers or acts, across 5 registers | run on 3B and 7B | `SYNAPSE_MODEL`; `SYNAPSE_PROBE_REPEATS` (default 3) | 69 | `testing-plan.md` Layer 8 |
-| Model bench | 8 sample tasks and 8 human-style requests, executed in a playground | run on 1.5B and 3B | `manual-tests/model-bench.sh <model>` | 16, the loop ones up to 5 steps | `manual-tests/model-bench.sh` |
+| Model bench | 8 sample tasks and 8 human-style requests, the human-style ones executed under bubblewrap with the playground as home and the real home hidden | run on 1.5B and 3B | `manual-tests/model-bench.sh <model>` | 16, the loop ones up to 5 steps | `manual-tests/model-bench.sh` |
 | Model-generated corpus partition | Commands the model writes for NL2Bash descriptions, labelled by the sandbox oracle | run once, 3B | `go run ./cmd/genpartition -model <tag> -n 350` | 350 | `algorithms.md` |
 
 The Layer tests are behind the `live` build tag: `go test -tags live ./cmd/synapse/... -run <TestName> -v`, with `TestLayer7UtteranceTiers`, `TestLiveClassifierAgreement`, `TestLayer4TypedOperationReliability` and `TestLayer8ToolCallFork`.
@@ -88,7 +88,6 @@ One check is needed before the GPU accuracy numbers can stand in for CPU ones. T
 
 - **Layer 7 decides by scraping the transcript** (open-problems row 2, `said()`). D40 makes Layer 7 the gate for every model comparison, so until it reads typed events instead, a model can pass by what it prints rather than by what it does.
 - **The Layer 7 tasks were developed against the 3B model.** They are development data for 3B and would favour it. A held-out set of requests, written and frozen before any candidate runs, is needed for a fair comparison. Layer 7 then runs on both sets, and each result is reported with the set it came from.
-- **The model bench lets `~` reach the real home directory** (open-problems row 25). It must be fixed before the bench runs any model unattended.
 
 ### Everyday desktop load
 
@@ -142,6 +141,6 @@ Not verified: GPU stock at the hour of renting, the RunPod prepaid-credit minimu
 
 ## What one day can and cannot cover
 
-In one day, once the three fixes above are in: every CPU correctness experiment, the full accuracy sweep (Layers 3, 4, 7 and 8 and the model bench) for every candidate on one GPU, the GPU-to-CPU agreement check, and the deployability timings on the four tier VMs. The model-generated partition is regenerated only if the chosen study model is not the 3B.
+In one day, once the two fixes above are in: every CPU correctness experiment, the full accuracy sweep (Layers 3, 4, 7 and 8 and the model bench) for every candidate on one GPU, the GPU-to-CPU agreement check, and the deployability timings on the four tier VMs. The model-generated partition is regenerated only if the chosen study model is not the 3B.
 
 Not in one day, whatever the hardware: the agent command study, which waits on the API driver and a frozen suite and runs on the researcher's machine; anything with participants or raters; OSWorld; and fine-tuning.

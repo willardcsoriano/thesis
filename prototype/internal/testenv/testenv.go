@@ -30,3 +30,22 @@ func Unavailable(t testing.TB, format string, args ...any) {
 	}
 	t.Skip(msg)
 }
+
+// HermeticGit makes every git command the test process runs ignore the
+// developer's global and system git config, and gives commits a fixed identity.
+// A test that builds a throwaway repository otherwise depends on the machine:
+// a personal commit hook refuses "git commit -m init", and a machine with no
+// user.email cannot commit at all. Call it from an init in each test package
+// that runs git; it changes the process environment, which children inherit.
+func HermeticGit() {
+	for k, v := range map[string]string{
+		"GIT_CONFIG_GLOBAL":   os.DevNull,
+		"GIT_CONFIG_NOSYSTEM": "1",
+		"GIT_AUTHOR_NAME":     "test",
+		"GIT_AUTHOR_EMAIL":    "test@example.invalid",
+		"GIT_COMMITTER_NAME":  "test",
+		"GIT_COMMITTER_EMAIL": "test@example.invalid",
+	} {
+		os.Setenv(k, v)
+	}
+}

@@ -34,3 +34,29 @@ func TestUnavailable(t *testing.T) {
 		}
 	}
 }
+
+// TestHermeticGit checks git itself sees no global config and can commit with
+// the fixed identity, whatever the developer's own config holds.
+func TestHermeticGit(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not installed")
+	}
+	HermeticGit()
+	dir := t.TempDir()
+	run := func(args ...string) (string, error) {
+		cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+		out, err := cmd.CombinedOutput()
+		return strings.TrimSpace(string(out)), err
+	}
+	if out, err := run("config", "--global", "--list"); err == nil && out != "" {
+		t.Fatalf("global config still visible:\n%s", out)
+	}
+	if out, err := run("init", "-q", "-b", "main"); err != nil {
+		t.Fatal(out)
+	}
+	for _, msg := range []string{"init", "second commit on main"} {
+		if out, err := run("commit", "-q", "--allow-empty", "-m", msg); err != nil {
+			t.Fatalf("commit %q refused: %s", msg, out)
+		}
+	}
+}
