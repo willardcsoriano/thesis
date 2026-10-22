@@ -187,6 +187,13 @@ func (tr *traceReader) line(l string) string {
 	if tr.pending == nil {
 		tr.pending = map[string]string{}
 	}
+	if l == "???( <detached ...>" {
+		// A thread stopped at a traced call died before strace could read which call
+		// (another thread's exit_group), and strace dropped it. It is dead, not
+		// detached and running on (--kill-on-exit), and its call never ran. A named
+		// call dropped mid-line is judged below, as outside input.
+		return ""
+	}
 	if head, ok := strings.CutSuffix(l, " <unfinished ...>"); ok {
 		tr.pending[pid] = head
 		return ""

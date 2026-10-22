@@ -266,6 +266,12 @@ func TestTraceJudgement(t *testing.T) {
 		// whether it reached outside is unknown: it is counted, fail closed.
 		{[]string{`7 connect(4, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110 <unfinished ...>`}, true},
 		{[]string{`7 socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC, 0 <unfinished ...>`}, true},
+		// A thread that dies at a traced stop before its call can be read (another
+		// thread's exit_group): strace prints "???(" and drops it. --kill-on-exit means
+		// no traced process is ever left running untraced, so this made no call.
+		{[]string{`7 ???( <detached ...>`}, false},
+		// A named call dropped mid-line is still judged as outside input.
+		{[]string{`7 socket(AF_INET, SOCK_STREAM, IPPROTO_IP <detached ...>`}, true},
 		// What strace may print that these rules do not know is outside input.
 		{[]string{`7 something new`}, true},
 	} {
