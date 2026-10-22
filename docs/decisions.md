@@ -51,6 +51,7 @@ This file records architectural and research design decisions that have been mad
   - [D43 — Scratch mode: REPL's persistent loop with no memory between tasks](#d43--scratch-mode-repls-persistent-loop-with-no-memory-between-tasks)
   - [D44 — TUI mode gains a scratch variant: `synapse tui scratch`](#d44--tui-mode-gains-a-scratch-variant-synapse-tui-scratch)
   - [D45 — Measure which commands real agents run, across four phrasing tiers, before deciding the user study's fate](#d45--measure-which-commands-real-agents-run-across-four-phrasing-tiers-before-deciding-the-user-studys-fate)
+  - [D46 — The model-size comparison: candidates, tiers, and accuracy on GPU but timing on CPU](#d46--the-model-size-comparison-candidates-tiers-and-accuracy-on-gpu-but-timing-on-cpu)
 
 ## Decisions
 
@@ -714,3 +715,19 @@ The analysis has been evaluated on NL2Bash, on templates, and on one 3B local mo
 **Rejected:** assuming agents rarely write the corpus's edge cases and narrowing the analysis to match. Round 6m is evidence against that assumption, and an unmeasured belief that the hard cases are rare is the same kind of claim as the "it was built" RQ that row 3 retired.
 
 **Not decided here:** whether this study complements or replaces the 40-participant validation study in Chapter 3. Simulated novice input shows how agents respond to novice wording; it is not evidence about how novices behave. That call is the adviser's, after the Thesis 1 verdicts, with this study's first results in hand.
+
+### D46 — The model-size comparison: candidates, tiers, and accuracy on GPU but timing on CPU
+
+**Status:** Decided 2026-10-22, when planning a one-day rented run of every experiment (`experiments.md`).
+
+Chapter 3 Section 2.1(d) promises that each larger memory tier's model is chosen by scoring candidates by execution and timing them under desktop load, but named no candidates and defined no tier above 8 GB. Decided:
+
+- **Candidates:** `qwen2.5-coder` at 0.5b, 1.5b, 3b, 7b, 14b and 32b; `qwen3` dense at 4b and its neighbours; `qwen3-coder:30b-a3b` as the mixture-of-experts candidate. One family across every size, plus the two lines the paper and `drift.md` already commit to.
+- **Tiers:** 4 GB and 8 GB (Table 3.2), then 16 GB and 32 GB, on VMs with 2, 4, 8 and 16 cores. Core count changes CPU inference speed as much as memory does, so it is fixed per tier.
+- **Where each part runs:** accuracy on a rented GPU, timing on CPU VMs sized to each tier with a fixed desktop load. One tier's model is also scored on CPU and its end states compared with the GPU run before the GPU accuracy numbers stand in for CPU ones.
+- **Repeats:** Layer 7's default of 3.
+- **Data:** Layer 7's tasks were developed on 3B, so a held-out request set is written and frozen before any candidate runs, and each result names the set it came from.
+
+**Rejected:** a 70B-class model. The smallest at Ollama's default quantization is about 43 GB of weights, more than any tier holds, so it answers a question the thesis does not ask. Timing on GPU: Table 3.2 promises CPU-only inference, so a GPU timing is not evidence of deployability.
+
+**Not decided here:** which tier the study machine uses. That follows from this comparison's results, as Chapter 3 says.
