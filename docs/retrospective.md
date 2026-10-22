@@ -5,6 +5,7 @@ This is the project's process log — a chronological account of *how* work got 
 ## Table of Contents
 
 - [Overview](#overview)
+- [2026-10-23 — The model bench got a sandbox, not just a different folder](#2026-10-23--the-model-bench-got-a-sandbox-not-just-a-different-folder)
 - [2026-10-20 — Three silent-loss holes closed, verified on a rented 8-core box](#2026-10-20--three-silent-loss-holes-closed-verified-on-a-rented-8-core-box)
 - [2026-10-19 — The agent sandboxes got a network of their own](#2026-10-19--the-agent-sandboxes-got-a-network-of-their-own)
 - [2026-10-19 — Scoring measured each step against the wrong state, and the study's tools under attack](#2026-10-19--scoring-measured-each-step-against-the-wrong-state-and-the-studys-tools-under-attack)
@@ -28,6 +29,12 @@ This is the project's process log — a chronological account of *how* work got 
 - [Sessions 20–21 — .gitignore Privacy Rework, PR Shipping, Ollama Client/Loop Tests](#sessions-2021--gitignore-privacy-rework-pr-shipping-ollama-clientloop-tests)
 - [Sessions 17–19 — M1 Built From Scratch: First Live Validation, Classifier/Executor Wiring, D21's Bounded Loop](#sessions-1719--m1-built-from-scratch-first-live-validation-classifierexecutor-wiring-d21s-bounded-loop)
 - [Blockers & Lessons — Quick Reference](#blockers--lessons--quick-reference)
+
+## 2026-10-23 — The model bench got a sandbox, not just a different folder
+
+`model-bench.sh` ran each human-style task after a `cd` into the playground, with `HOME` still naming the operator's home, so a model's `~/Downloads` was the real one (the 2026-09-17 run). Setting `HOME` alone would have closed `~`, `$HOME` and a bare `cd`, but not `~user`, which bash resolves through `/etc/passwd`, nor an absolute path to the home, which any command's output can show a model. So synapse now runs under bubblewrap (`manual-tests/bench-sandbox.sh`), laid out like the oracle's HideHost sandbox: the host read-only, an empty tmpfs over every home, temp and runtime folder, the playground bound back at `/home/user` as `HOME`, and a cleared environment that passes only `SYNAPSE_*` through. The network stays shared, because synapse must reach Ollama. Without a working bubblewrap the bench refuses to start. synapse's own undo journal now lands in the playground too, not in the operator's `~/.synapse`. The test, `manual-tests/bench-sandbox_test.sh` (`make bench-sandbox-check`, part of `make ci`), runs the bench's own per-task function with a stand-in synapse that executes its argument as `internal/executor` does. It tries `~`, `$HOME`, a bare `cd`, `~user`, absolute paths, the XDG variables and `TMPDIR`, for writes and for a read of a planted file, and checks that the same writes do land in the playground. It failed 16 of 18 checks before the fix and passes all 18 after; a live run with `qwen2.5-coder:1.5b` wrote only inside the playground. **Lesson: a test of an escape must not perform the escape.** This one re-runs itself in a containment where the real home is a throwaway tmpfs, so a failing run shows the hole without touching the operator's files.
+
+**Resolved from `open-problems.md`:** row 25 (`model-bench.sh` did not set `HOME`, so `~` reached the real home). Fixed in `prototype/manual-tests/bench-sandbox.sh`, tested by `bench-sandbox_test.sh`; `experiments.md` no longer lists it among the fixes owed before the model comparison.
 
 ## 2026-10-20 — Three silent-loss holes closed, verified on a rented 8-core box
 
