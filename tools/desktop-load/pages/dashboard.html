@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dashboard (desktop load)</title>
+<!--
+  Everyday desktop load, page 1 of 3: a live dashboard, the kind of tab people
+  leave open all day. Keeps working at a fixed rate: a canvas chart redrawn
+  30 times a second from a fixed-size ring buffer, a table of 60 rows updated
+  every second, a clock and a CSS animation. Every structure is bounded, so the
+  page's memory is stationary over a day of timings. Offline: no network,
+  content from a fixed-seed generator, so every run does the same work.
+-->
+<style>
+  body { font: 14px/1.4 sans-serif; margin: 0; background: #f4f5f7; color: #1d2330; }
+  header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #1d2330; color: #fff; }
+  .spinner { width: 14px; height: 14px; border: 3px solid #8aa; border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  main { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; padding: 12px; }
+  canvas { width: 100%; height: 260px; background: #fff; border: 1px solid #ccd; }
+  table { border-collapse: collapse; width: 100%; background: #fff; font-variant-numeric: tabular-nums; }
+  td, th { padding: 2px 6px; border-bottom: 1px solid #e3e5ea; text-align: right; }
+  td:first-child, th:first-child { text-align: left; }
+  .up { color: #127a3a; } .down { color: #b3261e; }
+</style>
+</head>
+<body>
+<header><strong>Operations dashboard</strong><span id="clock"></span><div class="spinner"></div></header>
+<main>
+  <section><canvas id="chart" width="900" height="260"></canvas></section>
+  <section><table><thead><tr><th>Series</th><th>Value</th><th>Change</th></tr></thead><tbody id="rows"></tbody></table></section>
+</main>
+<script>
+"use strict";
+// mulberry32: a fixed seed makes every run's numbers the same.
+function rng(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const rand = rng(20261023);
+const POINTS = 600, LINES = 4;
+const series = [];
+for (let l = 0; l < LINES; l++) {
+  const s = new Float64Array(POINTS);
+  for (let i = 0; i < POINTS; i++) s[i] = 0.5 + 0.3 * Math.sin(i / (20 + 7 * l)) + 0.1 * rand();
+  series.push(s);
+}
+let head = 0;
+const canvas = document.getElementById("chart"), ctx = canvas.getContext("2d");
+const colours = ["#2463eb", "#d9480f", "#2b8a3e", "#862e9c"];
+function draw() {
+  for (let l = 0; l < LINES; l++) {
+    const s = series[l];
+    s[head] = Math.min(1, Math.max(0, s[(head + POINTS - 1) % POINTS] + (rand() - 0.5) * 0.06));
+  }
+  head = (head + 1) % POINTS;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = "#e3e5ea";
+  for (let y = 0; y <= 260; y += 26) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(900, y); ctx.stroke(); }
+  for (let l = 0; l < LINES; l++) {
+    const s = series[l];
+    ctx.strokeStyle = colours[l];
+    ctx.beginPath();
+    for (let i = 0; i < POINTS; i++) {
+      const x = i * 900 / (POINTS - 1), y = 255 - s[(head + i) % POINTS] * 250;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+}
+const ROWS = 60, tbody = document.getElementById("rows"), values = [];
+for (let i = 0; i < ROWS; i++) {
+  values.push(100 + 900 * rand());
+  const tr = document.createElement("tr");
+  tr.innerHTML = "<td>series-" + String(i).padStart(2, "0") + "</td><td></td><td></td>";
+  tbody.appendChild(tr);
+}
+function table() {
+  for (let i = 0; i < ROWS; i++) {
+    const delta = (rand() - 0.5) * 4;
+    values[i] = Math.max(1, values[i] + delta);
+    const cells = tbody.rows[i].cells;
+    cells[1].textContent = values[i].toFixed(2);
+    cells[2].textContent = (delta >= 0 ? "+" : "") + delta.toFixed(2);
+    cells[2].className = delta >= 0 ? "up" : "down";
+  }
+  document.getElementById("clock").textContent = new Date().toLocaleTimeString();
+}
+// setInterval rather than requestAnimationFrame: a background tab gets no
+// animation frames at all, and start.sh turns timer throttling off, so the
+// same work runs whichever tab or window is in front.
+setInterval(draw, 1000 / 30);
+setInterval(table, 1000);
+window.addEventListener("load", function () {
+  draw(); table();
+  console.log("DESKTOP_LOAD_READY dashboard");
+});
+</script>
+</body>
+</html>

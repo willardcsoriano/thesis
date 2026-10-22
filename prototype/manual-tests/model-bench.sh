@@ -9,6 +9,11 @@
 #
 # Usage: SYNAPSE_OLLAMA=http://127.0.0.1:11435 manual-tests/model-bench.sh <model-name>
 #
+# Requires bubblewrap: each human-style task executes what the model proposes,
+# so synapse runs in a sandbox whose home is the playground and where the
+# operator's home is hidden (bench-sandbox.sh; tested by
+# bench-sandbox_test.sh).
+#
 # Writes manual-tests/bench-results/<model-name>.md (gitignored — regenerate
 # per run, never a committed artifact, same convention as
 # live_classifier_report.json). Run it once per candidate model and diff the
@@ -20,6 +25,12 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUTDIR="$ROOT/manual-tests/bench-results"
 mkdir -p "$OUTDIR"
 REPORT="$OUTDIR/$(echo "$MODEL" | tr '/:' '__').md"
+
+# shellcheck source=bench-sandbox.sh disable=SC1091
+source "$ROOT/manual-tests/bench-sandbox.sh"
+# Fail before building anything: the human-style tasks execute what the model
+# proposes, and the bench never runs them outside the sandbox.
+bench_sandbox_ready
 
 cd "$ROOT"
 go build -o bin/synapse ./cmd/synapse
@@ -61,7 +72,7 @@ SYNAPSE_MODEL="$MODEL" ./bin/synapse >> "$REPORT" 2>&1
 {
   echo '```'
   echo
-  echo "## Human-mimicking suite (real execute path, isolated sandbox, no stdin — anything irreversible auto-declines)"
+  echo "## Human-mimicking suite (real execute path, bubblewrap sandbox with the playground as home, no stdin — anything irreversible auto-declines)"
   echo
 } >> "$REPORT"
 
@@ -72,7 +83,9 @@ for task in "${HUMAN_TASKS[@]}"; do
     echo '```'
   } >> "$REPORT"
   start=$(date +%s.%N)
-  ( cd "$SANDBOX_HOME" && SYNAPSE_MODEL="$MODEL" "$ROOT/bin/synapse" "$task" < /dev/null ) >> "$REPORT" 2>&1 || true
+  # Under bubblewrap with SANDBOX_HOME as home: see bench-sandbox.sh for why
+  # cd-ing into it was not enough.
+  bench_run_task "$SANDBOX_HOME" "$ROOT/bin" "$MODEL" "$task" >> "$REPORT" 2>&1 || true
   end=$(date +%s.%N)
   {
     echo '```'
