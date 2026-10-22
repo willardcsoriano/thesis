@@ -5,14 +5,15 @@ This is the rigorous testing plan for SynapseOS's execution engine (`internal/cl
 ## Table of Contents
 
 - [Overview](#overview)
-- [Layer 1 — Deterministic Unit Correctness](#layer-1-deterministic-unit-correctness)
-- [Layer 2 — Adversarial Classifier Corpus](#layer-2-adversarial-classifier-corpus)
-- [Layer 3 — Model-Facing Integration Testing](#layer-3-model-facing-integration-testing)
-- [Layer 4 — Typed-Operation Reliability Experiment](#layer-4-typed-operation-reliability-experiment)
-- [Layer 5 — Executor Chaos/Edge-Case Testing](#layer-5-executor-chaosedge-case-testing)
-- [Layer 6 — Regression Harness](#layer-6-regression-harness)
-- [Layer 7 — Proficiency-Tiered Utterance Robustness](#layer-7-proficiency-tiered-utterance-robustness)
-- [Model Parameterization — a Cross-Cutting Requirement](#model-parameterization-a-cross-cutting-requirement)
+- [Layer 1 — Deterministic Unit Correctness](#layer-1--deterministic-unit-correctness)
+- [Layer 2 — Adversarial Classifier Corpus](#layer-2--adversarial-classifier-corpus)
+- [Layer 3 — Model-Facing Integration Testing](#layer-3--model-facing-integration-testing)
+- [Layer 4 — Typed-Operation Reliability Experiment](#layer-4--typed-operation-reliability-experiment)
+- [Layer 5 — Executor Chaos/Edge-Case Testing](#layer-5--executor-chaosedge-case-testing)
+- [Layer 6 — Regression Harness](#layer-6--regression-harness)
+- [Layer 7 — Proficiency-Tiered Utterance Robustness](#layer-7--proficiency-tiered-utterance-robustness)
+- [Layer 8 — Tool-Call Fork Probe](#layer-8--tool-call-fork-probe)
+- [Model Parameterization — a Cross-Cutting Requirement](#model-parameterization--a-cross-cutting-requirement)
 
 ## Layer 1 — Deterministic Unit Correctness
 
@@ -94,9 +95,15 @@ Plain-to-technical gap: **50.0 points**. Every cell scored 0/3 or 3/3 — with `
 1. Scoring required `verify(...) && exitCode == 0`, which charged loop-termination defects to the phrasing. U8's *technical* tier — `mkdir -p logs && mv *.log logs/`, a phrasing that cannot be misunderstood — scored 0/3 for this reason while leaving the files correctly relocated.
 2. Three verifiers substring-matched the whole transcript, so SynapseOS's own bookkeeping satisfied them: `Contains(out, "2")` was satisfied by `step 2:`, and `Contains(out, "4")` by the `4` in a latency. Those tasks passed at every tier regardless of what the model did.
 
-They had been cancelling out: the plain headline was 50% before and after, but technical moved 91.7% → 100% and the gap 41.7 → 50.0. `TestLayer7ScoringHelpers` now covers each case that was previously mis-scored.
+They had been cancelling out: the plain headline was 50% before and after, but technical moved 91.7% → 100% and the gap 41.7 → 50.0.
 
-**Fixing (2) required scraping the transcript by line prefix** (`said()` in the test) to separate command output from the loop's narration. That is a symptom of `open-problems.md` row 2 — the core hands every interface a flat `io.Writer` — which was filed as a TUI progressive-disclosure issue and is now also blocking measurement. The scraper is deliberately left visible as evidence for that row.
+**Fixing (2) first meant scraping the transcript by line prefix**, a stopgap for `open-problems.md` row 2 (the core handed every interface one flat text stream). Since 2026-10-23 Layer 7 runs the loop in event mode (`internal/loopevent`) and scores only what reached the person: each command's standard output, the answer, and notices (`told()` in `layer7_score_test.go`). Step numbers, token counts and latencies are fields of other events, so they cannot satisfy a verifier by construction. The run fails if the loop writes any text in event mode, since that would be narration outside what is scored. The 2026-09-14 numbers above were taken with the scraper.
+
+**Two sets, reported separately.** The twelve tasks above (U1–U12, `layer7_corpus_test.go`) were written and tuned while the system was built against `qwen2.5-coder:3b`, so they are development data for that model. A held-out set of twelve different intents (H1–H12, `layer7_heldout_test.go`) was written on 2026-10-23 before any model ran on it, and is frozen: `pilot/layer7_heldout.sha256` holds the file's hash and `TestLayer7HeldOutFrozen` fails on any edit, so a changed set goes under a new name. `SYNAPSE_LAYER7_SET=development` or `heldout` runs one; empty runs both, each with its own summary naming the set and the model (D46).
+
+**The verifiers are checked without a model**, in every `go test` (`TestLayer7Verifiers`): each task's untouched fixture, with nothing told, must fail its verifier, and the fixture after the task's reference `solution` command must pass it. A verifier made to accept anything is caught (checked by breaking H8's). The scorer's own cases are in `TestLayer7Scoring`, also untagged, where the old `TestLayer7ScoringHelpers` ran only under `-tags live`.
+
+Run with `go test -tags live ./cmd/synapse/... -run TestLayer7UtteranceTiers -v`, with `SYNAPSE_MODEL` naming the model.
 
 **The failures are not primarily comprehension failures.** Of the 24 failing runs:
 
