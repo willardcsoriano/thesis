@@ -30,6 +30,7 @@ This mirrors the standing global rule this project's author already works under;
 | Playwright API | `tools/export_pdf.py` | Frequent releases; the CDP-level features used here (`generateDocumentOutline`) are explicitly experimental | `tools/requirements.txt` pins the working version — if ever upgraded, re-verify the CDP call still behaves the same way before trusting a re-export |
 | Debian / XFCE version specifics | `decisions.md` D12; `scope.md` hardware specs | A new Debian stable release could ship before the study's hardware is provisioned | Verify "Debian 13 (Trixie)" is still the correct target immediately before final hardware setup, not just at design time |
 | Mapúa writing guidelines | `research-methods/module 3/references/writing-guidelines.pdf` | Static institutional document — low drift risk, listed for completeness | Only recheck if the department issues a revised version |
+| Rented hardware: types, prices, stock, and Ollama model file sizes (checked 2026-10-22) | `experiments.md`, "Hardware for a one-day burst" and "Size of the run" | Cloud prices and GPU stock change weekly; Hetzner retires server types; Ollama retags models | `hcloud server-type list`, the provider pricing pages and the Ollama library tag pages cited there, on the day of renting |
 
 ## When to Recheck
 

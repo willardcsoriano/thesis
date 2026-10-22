@@ -110,6 +110,7 @@ The question that prevents this map from decaying.
 | A fact that will be wrong in six months | `drift.md` |
 | An idea for after the thesis | `notes/future-features.md` |
 | How the destructive-testing environment is set up and reached | `testing-environment.md` |
+| Which experiments exist, how each is run, and the model-size comparison's protocol and hardware | `experiments.md` |
 
 If it fits none of these, that is the only case where a new document is warranted — and it needs a row here before it is written.
 
@@ -127,6 +128,8 @@ If it fits none of these, that is the only case where a new document is warrante
 - **Never hand-write a Table of Contents.** A PostToolUse hook generates it. Edit `.md` files with the Edit/Write tools rather than shell commands, or the hook will not fire and the TOC will silently rot.
 
 ## Change log for this map
+
+**2026-10-22** — `experiments.md` added: no row owned a register of every experiment, and nothing planned the model-size comparison Chapter 3 Section 2.1(d) promises. Each experiment's design stays in its own home, linked from the register.
 
 **2026-10-06** — `testing-environment.md` added: none of the eight prior rows fit a disposable cloud VM used for destructive testing and real-TTY/GUI manual tests, so it's the one case the map's own rule allows a new document for. The provisioning script stays in a separate ops repo (one fact, one home); this doc is what keeps the setup reproducible without it.
 
