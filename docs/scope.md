@@ -150,7 +150,7 @@ Three physical machines required for the lab setup.
 - `[ ]` **Ollama installed and verified** — Ollama running at `localhost:11434` on the SynapseOS machine; Qwen2.5-Coder-3B-Instruct Q4_K_M pulled and loaded
 - `[ ]` **Bubblewrap (`bwrap`) on the evaluation and study machines** — required, not optional: run-time target resolution and the corpus oracle both execute commands under it. Without it resolution is off and such commands ask for confirmation (safe, but more cautious than the measured system)
 - `[~]` **Dependency hoard for the bootable image** — the distribution will ship as a bootable image, so every dependency (Debian packages, the Go toolchain and modules, models, the model runtime) is collected ahead of time and the build reads only from the hoard. `distro/manifest.tsv` names each dependency, `distro/check.sh` reports what is missing, `distro/hoard.sh` downloads into `distro/hoard/` (git-ignored), and `distro/README.md` documents it. Existing tools are preferred over new code
-- `[x]` **Continuous integration** — `.github/workflows/ci.yml` runs `make -C prototype ci` (gofmt check, `go vet`, `go test`) and `tools/claude-hardening/test-guard.sh` on every change
+- `[x]` **Continuous integration** — `.github/workflows/ci.yml` runs `make -C prototype ci` (gofmt check, `go vet`, `go test`) on every change
 - `[ ]` **Screen capture software** — installed and tested on all three machines; output format and storage location standardized
 
 ---

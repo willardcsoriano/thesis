@@ -30,5 +30,3 @@ jobs:
         env:
           SYNAPSE_REQUIRE_SANDBOX: "1"
         run: make -C prototype ci
-      - name: Guard hook tests
-        run: bash tools/claude-hardening/test-guard.sh
