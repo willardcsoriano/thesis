@@ -109,7 +109,15 @@ fmt-check:
 vet:
 	$(GO) vet ./...
 
-ci: fmt-check vet test-gated cover-check
+ci: fmt-check vet test-gated cover-check bench-sandbox-check
+
+# model-bench.sh's sandbox: hostile commands (~, $$HOME, bare cd, ~user, an
+# absolute path, XDG and TMPDIR) must not reach the operator's home. Runs inside
+# a throwaway containment, so a broken sandbox never touches the real home.
+# Skips without bubblewrap, and fails then under SYNAPSE_REQUIRE_SANDBOX=1.
+.PHONY: bench-sandbox-check
+bench-sandbox-check:
+	bash manual-tests/bench-sandbox_test.sh
 
 # The tests, through the skip gate: go test counts a skip as a pass, so a
 # host without a working sandbox would pass having run none of the sandbox
