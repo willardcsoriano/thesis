@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is the register of every experiment the thesis runs or promises: what each one measures, whether it is built, the exact command, whether it calls a language model, and what it needs to run. It exists so that "run everything, including every model size" means a known list rather than a guess. Each experiment's design stays in its own home document, linked from the table; this file owns only the register, the plan for the model-size comparison that Chapter 3 Section 2.1(d) promises and nothing yet plans, and the hardware for running it all in one burst. The short version: the CPU-only correctness experiments already run on a rented 8-core box in about two and a half minutes. The model comparison can be run in about a day on hourly rented hardware once four things are fixed first. The user study cannot be rented at all: it needs participants and ethics approval.
+This is the register of every experiment the thesis runs or promises: what each one measures, whether it is built, the exact command, whether it calls a language model, and what it needs to run. It exists so that "run everything, including every model size" means a known list rather than a guess. Each experiment's design stays in its own home document, linked from the table; this file owns only the register, the plan for the model-size comparison that Chapter 3 Section 2.1(d) promises and nothing yet plans, and the hardware for running it all in one burst. The short version: the CPU-only correctness experiments already run on a rented 8-core box in about two and a half minutes. The model comparison can be run in about a day on hourly rented hardware once three things are fixed first. The user study cannot be rented at all: it needs participants and ethics approval.
 
 ## Table of Contents
 
@@ -15,6 +15,7 @@ This is the register of every experiment the thesis runs or promises: what each 
 - [The model-size comparison](#the-model-size-comparison)
   - [Two questions, measured on different hardware](#two-questions-measured-on-different-hardware)
   - [What has to be fixed before the comparison is evidence](#what-has-to-be-fixed-before-the-comparison-is-evidence)
+  - [Everyday desktop load](#everyday-desktop-load)
   - [Candidates and tiers](#candidates-and-tiers)
   - [Size of the run](#size-of-the-run)
 - [Hardware for a one-day burst](#hardware-for-a-one-day-burst)
@@ -88,7 +89,24 @@ One check is needed before the GPU accuracy numbers can stand in for CPU ones. T
 - **Layer 7 decides by scraping the transcript** (open-problems row 2, `said()`). D40 makes Layer 7 the gate for every model comparison, so until it reads typed events instead, a model can pass by what it prints rather than by what it does.
 - **The Layer 7 tasks were developed against the 3B model.** They are development data for 3B and would favour it. A held-out set of requests, written and frozen before any candidate runs, is needed for a fair comparison. Layer 7 then runs on both sets, and each result is reported with the set it came from.
 - **The model bench lets `~` reach the real home directory** (open-problems row 25). It must be fixed before the bench runs any model unattended.
-- **Nothing generates "everyday desktop load".** The tier machines need a repeatable load (a browser with fixed pages and the desktop session) before timings mean what the paper says. This is a small script, but it does not exist.
+
+### Everyday desktop load
+
+The paper times each model "under everyday desktop load" on tier VMs "loaded with a web browser and everyday applications" (p. 54–55, 78). `tools/desktop-load/` generates that load, the same on every run and with no network:
+
+- **Browser.** Chromium, as `distro/manifest.tsv` installs it, with three local pages from `tools/desktop-load/pages/` open as tabs: a dashboard redrawing a canvas chart 30 times a second and updating a 60-row table every second; a long article (300 sections built at load) that scrolls a little every 50 ms while its contents sidebar follows; and a webmail inbox of 1,500 messages that gains one and drops the oldest every 2 s and re-filters the whole list every 5 s. Every page's content comes from a fixed-seed generator and every structure is bounded, so the work is the same each run and the memory does not drift over a day. Chromium runs on a fresh profile with its own background networking off, and with timer throttling off, so a background tab or a window covered by the SynapseOS terminal does the same work as one in front.
+- **Editor.** Mousepad holding `pages/notes.txt`, with default settings every run.
+- **Settle.** `start.sh` returns only when both apps are alive and every page has run its load handler (each logs a line Chromium writes to the load's log), then waits 20 s more (`DESKTOP_LOAD_SETTLE`). A browser's first seconds (starting renderers, compiling scripts, laying out the article, the first garbage collections) cost CPU an open desktop no longer spends; the wait keeps that burst out of the first timing. It is a fixed wait, not "until quiet", because the pages never go quiet by design. If the pages have not loaded within 120 s (`DESKTOP_LOAD_TIMEOUT`), start fails and stops what it started.
+
+Run it inside the tier VM's desktop session:
+
+```sh
+tools/desktop-load/start.sh     # up and settled; prints the status line; exit 3 if a load is already recorded
+tools/desktop-load/status.sh    # desktop-load state=up apps=2/2 processes=15 rss_kb=1387052 pss_kb=498818
+tools/desktop-load/stop.sh      # stops exactly what start.sh started, also after one app has crashed
+```
+
+The timing harness logs `status.sh`'s line next to each timing. `rss_kb` counts shared pages once per process and overstates a multi-process browser; `pss_kb` is the load's real share of memory. The figures above are from one run under Xvfb on the development machine, not from a tier VM. `stop.sh` never matches by name: it stops the PIDs `start.sh` recorded (checked against their start time), their process groups, and the processes carrying the run's random token in their environment, which catches Chromium's crash handler after it leaves the group. `bash tools/desktop-load/test.sh` checks all of this against a real Chromium and Mousepad on Xvfb, with a decoy `sleep` and a decoy Mousepad that must survive every stop.
 
 ### Candidates and tiers
 
@@ -116,7 +134,7 @@ Checked live on 2026-10-22. Prices and stock change: recheck before renting (`dr
 |---|---|---|---|
 | CPU correctness experiments | Hetzner Cloud `cpx42` (8 shared vCPU, 16 GB) | €0.1314 an hour | Measured: the whole set in about 2.5 minutes |
 | Accuracy sweep, every size up to 32B | One GPU rented by the second: RunPod A100 80 GB at $1.79 an hour (Secure Cloud), or an RTX 4090 24 GB at $0.89 | about $43 for a full 24 hours on the A100 | Holds every candidate. Hetzner Cloud has no GPU types, and Hetzner's dedicated GPU servers carry a one-time setup fee equal to about a month's rent (GEX45: €209 setup, €214 a month), which only pays off over weeks |
-| Deployability timing | One Hetzner Cloud VM per tier: `cx23` (2 vCPU, 4 GB), `cx33` (4, 8 GB), `cx43` (8, 16 GB), `cx53` (16, 32 GB), each with the desktop and the load script | about €0.01 to €0.06 an hour each | CPU-only, sized to Table 3.2 as the paper promises; all four side by side cost under €3 a day, or about €7.50 with `cpx62` in place of `cx53`. `cx53` showed no stock in any location on 2026-10-22, so the 32 GB tier may need `cpx62` (16 shared vCPU, 32 GB, €0.2452 an hour) |
+| Deployability timing | One Hetzner Cloud VM per tier: `cx23` (2 vCPU, 4 GB), `cx33` (4, 8 GB), `cx43` (8, 16 GB), `cx53` (16, 32 GB), each with the desktop and the load (`tools/desktop-load`) | about €0.01 to €0.06 an hour each | CPU-only, sized to Table 3.2 as the paper promises; all four side by side cost under €3 a day, or about €7.50 with `cpx62` in place of `cx53`. `cx53` showed no stock in any location on 2026-10-22, so the 32 GB tier may need `cpx62` (16 shared vCPU, 32 GB, €0.2452 an hour) |
 
 Sources: `hcloud server-type list` (willard-mba15 project), https://www.hetzner.com/dedicated-rootserver/matrix-gpu/, https://www.runpod.io/pricing, https://ollama.com/library/qwen2.5-coder/tags, https://ollama.com/library/qwen3-coder/tags, https://ollama.com/library/llama3.3/tags.
 
@@ -124,6 +142,6 @@ Not verified: GPU stock at the hour of renting, the RunPod prepaid-credit minimu
 
 ## What one day can and cannot cover
 
-In one day, once the four fixes above are in: every CPU correctness experiment, the full accuracy sweep (Layers 3, 4, 7 and 8 and the model bench) for every candidate on one GPU, the GPU-to-CPU agreement check, and the deployability timings on the four tier VMs. The model-generated partition is regenerated only if the chosen study model is not the 3B.
+In one day, once the three fixes above are in: every CPU correctness experiment, the full accuracy sweep (Layers 3, 4, 7 and 8 and the model bench) for every candidate on one GPU, the GPU-to-CPU agreement check, and the deployability timings on the four tier VMs. The model-generated partition is regenerated only if the chosen study model is not the 3B.
 
 Not in one day, whatever the hardware: the agent command study, which waits on the API driver and a frozen suite and runs on the researcher's machine; anything with participants or raters; OSWorld; and fine-tuning.

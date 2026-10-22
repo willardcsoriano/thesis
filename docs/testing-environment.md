@@ -25,6 +25,7 @@ Three reasons, not one:
 Provisioned by `scripts/gui-test.sh` in the `debian-server-baselines` repo (external — see "one fact, one home" in `docs/README.md`; this list is kept current here so the setup stays reproducible without that repo):
 
 - XFCE desktop, Firefox ESR, Chromium
+  - `tools/desktop-load/start.sh` (and `stop.sh`, `status.sh`) opens the fixed browser pages and editor the model timings run under; see `docs/experiments.md`, Everyday desktop load. It also needs `mousepad`, which this list does not name; `bash distro/check.sh` says whether it is missing.
 - Go, resolved against the current stable release of the same line this project pins in `prototype/go.mod` (`go 1.25.0`) — kept in sync by re-reading that file, not duplicated as a version number here
 - Ollama with `qwen2.5-coder:3b` pulled — the same model `prototype/setup.md` specifies for local inference
 - `bubblewrap` and `build-essential` — the sandbox the effect-analysis resolvers run under (`prototype/internal/effects`, per the root `CLAUDE.md`), and what anything else under test needs to compile
