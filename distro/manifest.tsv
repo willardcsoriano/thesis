@@ -33,6 +33,8 @@ apt	passt	pasta	no	study: the agent command study's isolated network namespace (
 apt	iproute2	ip	no	study: routing rules inside the agent command study's isolated namespace
 apt	util-linux	flock	no	study: the lifeline lock that ends the agent command study's isolated namespace
 apt	util-linux	prlimit	no	study: process cap in the agent command study's sandbox (agentprobe refuses to run without it)
+apt	util-linux	setsid	no	study: tools/desktop-load starts each app of the everyday desktop load in its own process group, so stop.sh stops exactly those
+apt	mousepad	mousepad	no	study: the text editor of the everyday desktop load the model timings run under (tools/desktop-load); not part of the xfce4 package's dependencies
 apt	dash	sh	no	study: /bin/sh, the first process of the agent command study's isolated namespace
 apt	nodejs	node	no	study: runs Gemini CLI (engines node >=20; Debian 13 ships 20.19) and pilot/ccsafetynet.mjs
 apt	npm	npm	no	study: installs Gemini CLI and cc-safety-net@2.6.1 for pilot/ccsafetynet.mjs
@@ -53,12 +55,13 @@ apt	python3-venv	python3	no	build: tools/venv, the virtual environment of the PD
 pip	playwright	-	no	build: drives Chromium for the PDF build in tools/venv (tools/requirements.txt pins it; no Debian package)
 pip	pypdf	-	no	build: page stamping in tools/venv (tools/requirements.txt; Debian's python3-pypdf is not visible in the venv)
 pip	reportlab	-	no	build: page numbers in tools/venv (tools/requirements.txt; Debian's python3-reportlab is not visible in the venv)
-apt	chromium	chromium	no	build: renders the paper to PDF (SYNAPSE_CHROMIUM=/usr/bin/chromium)
+apt	chromium	chromium	no	build: renders the paper to PDF (SYNAPSE_CHROMIUM=/usr/bin/chromium); also the browser of the everyday desktop load the model timings run under (tools/desktop-load)
 apt	poppler-utils	pdftotext	no	build: page labels and the per-chapter text of the paper (tools/pagelabels.py, tools/export_text.py)
 apt	make	make	no	build: build and test entry points
 apt	curl	curl	no	build: fetches the Go toolchain, the Ollama archive and installer, and the Claude Code installer
 apt	jq	jq	no	build: hoard.sh's toolchain checksum and model manifests; the guard hook and its tests
 apt	shellcheck	shellcheck	no	build: lints the shell scripts in tools/ and distro/
+apt	xvfb	xvfb-run	no	build: the headless X display tools/desktop-load/test.sh runs the real browser and editor on
 apt	gcc	gcc	no	build: cgo for go test -race (prototype/setup.md)
 apt	libc6-dev	/usr/include/stdlib.h	no	build: the C headers cgo compiles against; with gcc on PATH and these missing, go build and go vet fail (stdlib.h: No such file or directory)
 toolchain	go	go	no	build: Go 1.25.0, the version prototype/go.mod requires (hoarded as a tarball)
