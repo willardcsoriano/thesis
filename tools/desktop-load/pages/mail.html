@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mail (desktop load)</title>
+<!--
+  Everyday desktop load, page 3 of 3: a webmail inbox, the third tab people
+  keep open. It holds 1,500 messages in the DOM; every 2 seconds a message
+  arrives at the top and the oldest is dropped, so the list never grows, and
+  every 5 seconds a search filter is re-applied over the whole list. A CSS
+  animation runs in the status bar. Offline: senders and subjects come from a
+  fixed-seed generator, so every run does the same work.
+-->
+<style>
+  body { font: 13px/1.4 sans-serif; margin: 0; display: flex; height: 100vh; }
+  aside { width: 180px; background: #eef1f6; padding: 8px; }
+  main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  #bar { padding: 6px 10px; border-bottom: 1px solid #ccd; display: flex; gap: 10px; align-items: center; }
+  .pulse { width: 10px; height: 10px; border-radius: 50%; background: #2463eb; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform: scale(1.6); opacity: .4; } }
+  ul { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
+  li { display: grid; grid-template-columns: 160px 1fr 70px; gap: 8px; padding: 4px 10px; border-bottom: 1px solid #eee; white-space: nowrap; }
+  li span { overflow: hidden; text-overflow: ellipsis; }
+  li.unread { font-weight: bold; }
+  li.hidden { display: none; }
+</style>
+</head>
+<body>
+<aside><p>Inbox</p><p>Sent</p><p>Drafts</p><p>Archive</p></aside>
+<main>
+  <div id="bar"><div class="pulse"></div><span id="count"></span><span id="filter"></span></div>
+  <ul id="list"></ul>
+</main>
+<script>
+"use strict";
+function rng(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const rand = rng(7031);
+const people = ["Team lead", "Registrar", "Adviser", "Build server", "Library", "Calendar", "Newsletter", "Lab group", "Course office", "Help desk"];
+const topics = ["weekly report", "meeting moved", "draft comments", "build failed", "build passed", "room booking", "reading list", "deadline reminder", "invoice", "survey", "slides attached", "minutes"];
+const pick = a => a[Math.floor(rand() * a.length)];
+let seq = 0;
+function message() {
+  const li = document.createElement("li");
+  seq++;
+  if (rand() < 0.3) li.className = "unread";
+  li.innerHTML = "<span></span><span></span><span></span>";
+  li.children[0].textContent = pick(people);
+  li.children[1].textContent = "#" + seq + " " + pick(topics) + " - " + pick(topics) + " and " + pick(topics);
+  li.children[2].textContent = (8 + seq % 10) + ":" + String(seq % 60).padStart(2, "0");
+  return li;
+}
+const MESSAGES = 1500, list = document.getElementById("list");
+for (let i = 0; i < MESSAGES; i++) list.appendChild(message());
+function arrive() {
+  list.insertBefore(message(), list.firstChild);
+  list.removeChild(list.lastChild);
+  document.getElementById("count").textContent = MESSAGES + " messages, newest #" + seq;
+}
+let term = 0;
+function search() {
+  const q = topics[term++ % topics.length];
+  let shown = 0;
+  for (const li of list.children) {
+    const hit = li.children[1].textContent.indexOf(q) >= 0;
+    li.classList.toggle("hidden", !hit);
+    if (hit) shown++;
+  }
+  document.getElementById("filter").textContent = "filter \"" + q + "\": " + shown + " shown";
+}
+setInterval(arrive, 2000);
+setInterval(search, 5000);
+window.addEventListener("load", function () {
+  arrive(); search();
+  console.log("DESKTOP_LOAD_READY mail");
+});
+</script>
+</body>
+</html>

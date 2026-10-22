@@ -1,0 +1,53 @@
+Notes - week of the model timings
+=================================
+
+This file is the document the text editor holds open during the everyday
+desktop load (tools/desktop-load). It stands in for the notes a person keeps
+open beside their browser: a few pages of plain text, never saved, never
+changed by the load itself.
+
+Monday
+------
+- Read the draft of chapter three again; the tier table needs the core counts.
+- Ask the adviser whether the 32 GB tier counts as a personal machine.
+- Book the lab room for the pilot sessions (two hours each, four sessions).
+- Check that the consent form names the data that is kept and for how long.
+
+Tuesday
+-------
+- The bench run on the 4 GB tier was slow; note the load level next to it.
+- Rerun the composition draws after the resolver fix; compare with round 7.
+- Reply to the registrar about the submission format (PDF, bookmarks on).
+- Archive the old screenshots folder; it is not needed for the paper.
+
+Wednesday
+---------
+- Write the held-out requests before any candidate model runs.
+- Freeze them: record the file's checksum in the decision log.
+- Group meeting at two: bring the list of what is not yet tested.
+
+Thursday
+--------
+- Rent the tier machines for one day; recheck prices before renting.
+- Start the desktop load on each before timing; stop it after.
+- Copy the result files off each machine before deleting it.
+
+Friday
+------
+- Compare the CPU and GPU end states for the one tier that runs both.
+- Update the experiments register with what ran and what did not.
+- Clean the downloads folder; move the faculty files to the submissions folder.
+
+Reading list
+------------
+1. Shell command languages and their pitfalls: quoting, globbing, expansion.
+2. Undo in file systems: snapshots, journals, and copy-on-write.
+3. Package managers as state machines: install, remove, purge, hold.
+4. Evaluating natural-language interfaces by execution, not by text match.
+5. Measuring interactive latency on shared, loaded machines.
+
+Shopping
+--------
+- printer paper, two reams
+- USB stick for the live image
+- coffee
