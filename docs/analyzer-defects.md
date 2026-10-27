@@ -1,6 +1,6 @@
 ## Overview
 
-This is the log of every soundness defect found in the recoverability analysis (`prototype/internal/effects`) after the round-7 corpus was frozen on 2026-10-09: eleven so far, plus one in undo (defect 8), each with how it was found, the command shape that triggered it, what it would have cost a user, the fix, and its effect on the reported results. Every one has been fixed with a regression test, and none changed a single decision on the round-7 corpus, so no number in the paper moved. The pattern matters more than any single entry. The per-command rules held up; every defect from the fifth on lies where parts of one command line interact (an earlier part changes what a later part sees, or may fail before it), a shape the corpus almost never contains. The log ends with why that happened and the test that would find the next one before a reviewer does: differential testing of generated compound lines against the sandbox.
+This is the log of every soundness defect found in the recoverability analysis (`prototype/internal/effects`) after the round-7 corpus was frozen on 2026-10-09: thirteen so far, plus one in undo (defect 8), each with how it was found, the command shape that triggered it, what it would have cost a user, the fix, and its effect on the reported results. Every one has been fixed with a regression test, and none changed a single decision on the round-7 corpus, so no number in the paper moved. The pattern matters more than any single entry. The per-command rules held up; every defect from the fifth on lies where parts of one command line interact (an earlier part changes what a later part sees, or may fail before it), a shape the corpus almost never contains. The log ends with why that happened and the test that would find the next one before a reviewer does: differential testing of generated compound lines against the sandbox.
 
 ## Table of Contents
 
@@ -86,3 +86,26 @@ Closing `open-problems.md` rows 44 (`zip` not modelled) and 45 (`while read` loo
 
 Effect on round 7, against the frozen analyzer: 2 of 5,439 decisions differ, both N331 (`find ... \| while read UNDOFILE; do ...; rm "$UNDOFILE"; done`), which ALG strict and capture now protect with a capture instead of asking. None of the four fixes changed a decision. Silent loss stays 0; the sandboxed recovery check restores 631 of 632 executed commands (630 of 631 before, N331 now executed and restored, N024 as before); `make composecheck` on seed 20261015 restores 3,099 of 3,099. The paper's numbers belong to the frozen analyzer and are not changed. Defects 9 to 11 are single-command rule gaps again, found only because new rules sent the work back into old ones; defect 12 is another interaction between parts of a line, and was found by the differential test, as the section "What would find the next one first" predicted.
 
+
+## Defect 13: found by fuzzing the CLI (2026-10-25)
+
+| # | Date | Found by | Shape | What it would have done | Fix |
+|---|---|---|---|---|---|
+| 13 | 2026-10-25 | `FuzzAnalysisDecision` in `cmd/synapse` (`cli-breaking.md`), after about 2.6 million inputs | `xargs -a`, and any value-taking `xargs` flag (`-d`, `-n`, `-L`, `-P`, `-s`, `-E`, `--arg-file`, …) at the end of the line | The flag stepped past the end of the arguments and the analysis panicked (slice bounds out of range), which crashed `synapse` mid-task | The command is read from the clamped position: xargs refuses such a line and runs nothing, so it has no effect (`TestXargsFlagMissingItsValue`). Independently, `synapse` now turns any panic in the analysis into a confirmation (`decideFailClosed`) |
+
+**Effect on round 7.** Re-run on a rented 8-core box on 2026-10-25, against the frozen round-7 files:
+
+- **Decisions:** 3 of 5,439 differ from the frozen file. Two are N331, already explained under defects 9 to 12. The third is N257 under `ALG-noresolve`, which now asks (`$IFS` set in a way the analysis cannot follow) where it ran, erring toward asking.
+- **The fix's own effect, measured in full:** the whole corpus was run at the last commit without the fixes for defects 13 and 14 (e56d18b) and on the working tree with them, and the two were compared with `cmd/comparedecisions`. All 5,439 decisions are identical. The three differences from the frozen file are all present at e56d18b, so they came from earlier committed work, the resolver fixes of 2026-10-22 among it. To reproduce: `go run ./cmd/listpilot pilot/corpus7.jsonl > OUT.jsonl` on each tree, then `go run ./cmd/comparedecisions A.jsonl B.jsonl`. (The first version of this check compared one decision and inferred the rest. A Volkswagen audit flagged that, and this replaced it.)
+- **Recovery:** the sandboxed recovery check restores 631 of 632 executed commands, as before.
+- **Composition:** `make composecheck` restores every case on the recorded seed 20261015 (3,099 of 3,099) and on three fresh seeds drawn before the run: 2869784 (3,036 of 3,036), 3679671 (3,095 of 3,095) and 5271414 (3,129 of 3,129).
+
+The paper's numbers belong to the frozen analyzer and are unchanged.
+
+## Defect 14: found by the differential test on a fresh seed (2026-10-25)
+
+| # | Date | Found by | Shape | What it would have done | Fix |
+|---|---|---|---|---|---|
+| 14 | 2026-10-25 | `make composecheck` on fresh seed 3134150 (case K3355), the day's second re-check | `if x=logs; then echo y > $x; fi ; rm -r $x`, where `logs` is a folder; any redirect onto an existing folder | The redirect was read as a write, so `logs` became a file the line wrote and then removed, protected by a content capture. In fact the redirect fails, `rm -r` deletes the folder, and a content capture cannot restore a folder: the folder was lost | A redirect onto a path the analysis knows is a folder is unresolved, which asks (`TestRedirectOntoAFolderIsNotAWrite`) |
+
+**Effect.** Seed 3134150 is development data for this fix: it shows the fix applies (3,097 of 3,097 restored). Three fresh seeds drawn after the fix, which it never saw, restore every executed case: 9854779 (3,110), 8739820 (3,085) and 6961959 (3,100). On the recorded seed 20261015, three cases that redirect onto a folder now ask instead of running, so 3,096 cases execute instead of 3,099, and all are restored. On round 7, the full comparison above shows no decision changed by this fix, and the recovery check still restores 631 of 632. Like defects 5 to 12, this one lies where parts of a line interact, and like defect 12 it was found by the differential test, as "What would find the next one first" predicts.

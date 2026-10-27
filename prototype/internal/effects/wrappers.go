@@ -546,7 +546,10 @@ scan:
 		}
 		i++
 	}
-	cmd := args[i:]
+	// A flag whose value is missing (`xargs -a`) steps past the end above.
+	// xargs itself refuses such a line and runs nothing, which is what an
+	// empty command reads as here (defect 13, found by FuzzAnalysisDecision).
+	cmd := args[min(i, len(args)):]
 	if len(cmd) == 0 || readOnlyForm(cmd[0], cmd[1:], true) {
 		return
 	}
