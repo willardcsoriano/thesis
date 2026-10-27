@@ -127,8 +127,9 @@ func TestAnalysisAsksWhereTheListDoesNotAndDeclineStopsIt(t *testing.T) {
 	if asked != 1 {
 		t.Fatalf("an interpreter one-liner the list does not know must ask once, asked %d\n%s", asked, out.String())
 	}
-	if !strings.Contains(out.String(), "needs confirmation") {
-		t.Fatalf("prompt did not say why:\n%s", out.String())
+	// The explanation goes with the prompt, on stderr (D48), in plain words.
+	if !strings.Contains(errOut.String(), "can't tell for certain") {
+		t.Fatalf("prompt did not say why:\n%s", errOut.String())
 	}
 	if _, err := os.Stat("a.tmp"); err != nil {
 		t.Fatal("declined, but the file is gone")

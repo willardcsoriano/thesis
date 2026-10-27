@@ -47,7 +47,7 @@ From this directory:
 go run ./cmd/synapse
 
 # Run one ad-hoc task
-go run ./cmd/synapse "find the 10 largest files under /var/log"
+go run ./cmd/synapse run "find the 10 largest files under /var/log"
 
 # Persistent multi-task session (M4) — one process, issue several tasks in a row
 go run ./cmd/synapse repl

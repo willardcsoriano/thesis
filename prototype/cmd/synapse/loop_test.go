@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"synapseos/internal/loopevent"
@@ -28,6 +29,11 @@ import (
 // testAnswerText is what the mock returns for the D31 summarising call.
 // Distinctive so a test can assert the reply reached the user.
 const testAnswerText = "here is what happened, in plain language."
+
+// testAnswerParts is testAnswerText as a streamed reply arrives: in pieces
+// that are not whole words, with the leading space a model's first token
+// often carries.
+var testAnswerParts = []string{" here is wh", "at happened,", " in plain ", "language."}
 
 // runGit runs a git subcommand in dir for test setup, failing the test on
 // error — used by the git-reset/git-clean integration tests below to build
@@ -56,6 +62,17 @@ func scriptedOllamaServer(t *testing.T, responses []string) *httptest.Server {
 		// the "called too many times" guard keeps its meaning.
 		body, _ := io.ReadAll(r.Body)
 		if bytes.Contains(body, []byte("You are reporting the outcome of a task")) {
+			// A streamed request gets what Ollama sends for one: the reply in
+			// pieces, then a closing record marked done.
+			var req struct{ Stream bool }
+			json.Unmarshal(body, &req)
+			if req.Stream {
+				for _, part := range testAnswerParts {
+					json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: part})
+				}
+				json.NewEncoder(w).Encode(ollama.GenerateResponse{Done: true, EvalCount: 1})
+				return
+			}
 			json.NewEncoder(w).Encode(ollama.GenerateResponse{Response: testAnswerText, EvalCount: 1})
 			return
 		}
@@ -118,14 +135,15 @@ func TestSessionAnnouncesTheExecutionTimeoutOnceNotPerTask(t *testing.T) {
 	defer server.Close()
 
 	var out, errOut bytes.Buffer
-	code := runREPL(context.Background(), ollama.New(server.URL), "m", "",
+	code := runREPL(context.Background(), ollama.New(server.URL), "m", sessionJournal(t),
 		strings.NewReader("do nothing\ndo nothing again\n"), &out, &errOut)
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
 	}
 	want := fmt.Sprintf("Each step may run for up to %s", stepExecutionTimeout)
-	if n := strings.Count(out.String(), want); n != 1 {
-		t.Errorf("timeout notice appeared %d times across two tasks, want exactly 1:\n%s", n, out.String())
+	// Session chrome is on stderr (finding atk4-11).
+	if n := strings.Count(errOut.String(), want); n != 1 {
+		t.Errorf("timeout notice appeared %d times across two tasks, want exactly 1:\n%s", n, errOut.String())
 	}
 }
 
@@ -163,8 +181,8 @@ func TestRunLoopIrreversibleCancelledNeverExecutes(t *testing.T) {
 
 	code := runLoop(context.Background(), client, "m", "delete keep.txt", confirmFn, &out, &errOut, "")
 
-	if code != 0 {
-		t.Fatalf("exit code = %d, want 0 (a declined confirmation is a clean cancel, not a failure); stderr:\n%s", code, errOut.String())
+	if code != exitDeclined {
+		t.Fatalf("exit code = %d, want exitDeclined (D48: declined is distinct from success so a script can tell no from done); stderr:\n%s", code, errOut.String())
 	}
 	if confirmCalls != 1 {
 		t.Errorf("confirmFn called %d times, want exactly 1", confirmCalls)
@@ -172,8 +190,9 @@ func TestRunLoopIrreversibleCancelledNeverExecutes(t *testing.T) {
 	if _, err := os.Stat(target); err != nil {
 		t.Errorf("file should have survived the declined confirmation, but stat failed: %v", err)
 	}
-	if !strings.Contains(out.String(), "blocked:") || !strings.Contains(out.String(), "Cancelled.") {
-		t.Errorf("stdout missing blocked/cancelled messaging, got:\n%s", out.String())
+	// The request for approval goes with the prompt, on stderr (D48).
+	if !strings.Contains(errOut.String(), "I need your OK") || !strings.Contains(out.String(), "Cancelled.") {
+		t.Errorf("missing approval request or cancellation; stderr:\n%s\nstdout:\n%s", errOut.String(), out.String())
 	}
 }
 
@@ -252,7 +271,9 @@ func TestRunLoopEveryStepReclassifiedNotJustTheFirst(t *testing.T) {
 func TestRunLoopStepLimitReachedIsReportedNotSilent(t *testing.T) {
 	responses := make([]string, maxLoopSteps)
 	for i := range responses {
-		responses[i] = "true" // always reversible, never signals DONE
+		// Always reversible, never signals DONE, and never the step just run:
+		// a repeat stops the loop before the limit (repeat_test.go).
+		responses[i] = fmt.Sprintf("true %d", i)
 	}
 	server := scriptedOllamaServer(t, responses)
 	defer server.Close()
@@ -262,8 +283,8 @@ func TestRunLoopStepLimitReachedIsReportedNotSilent(t *testing.T) {
 
 	code := runLoop(context.Background(), client, "m", "never-ending task", neverConfirm(t), &out, &errOut, "")
 
-	if code != 1 {
-		t.Errorf("exit code = %d, want 1", code)
+	if code != exitStepLimit {
+		t.Errorf("exit code = %d, want exitStepLimit (D48)", code)
 	}
 	if !strings.Contains(errOut.String(), fmt.Sprintf("step limit reached (%d steps)", maxLoopSteps)) {
 		t.Errorf("stderr missing step-limit message, got:\n%s", errOut.String())
@@ -279,8 +300,8 @@ func TestRunLoopUnsupportedRequest(t *testing.T) {
 
 	code := runLoop(context.Background(), client, "m", "sing me a song", neverConfirm(t), &out, &errOut, "")
 
-	if code != 1 {
-		t.Errorf("exit code = %d, want 1", code)
+	if code != exitUnsupported {
+		t.Errorf("exit code = %d, want exitUnsupported (D48)", code)
 	}
 	got := out.String()
 	// The wording matters more than it looks. This is what a study
@@ -339,8 +360,8 @@ func TestRunLoopProposeErrorIsReported(t *testing.T) {
 
 	code := runLoop(context.Background(), client, "m", "anything", neverConfirm(t), &out, &errOut, "")
 
-	if code != 1 {
-		t.Errorf("exit code = %d, want 1", code)
+	if code != exitModelUnavailable {
+		t.Errorf("exit code = %d, want exitModelUnavailable (D48)", code)
 	}
 	if !strings.Contains(errOut.String(), "error:") {
 		t.Errorf("stderr missing an error report, got:\n%s", errOut.String())
@@ -435,14 +456,14 @@ func TestRunLoopBlocksCpOntoExistingDestination(t *testing.T) {
 	}
 
 	code := runLoop(context.Background(), client, "m", "back up source.txt", confirmFn, &out, &errOut, "")
-	if code != 0 {
-		t.Fatalf("exit code = %d, want 0 (a declined confirmation is a clean cancel); stderr:\n%s", code, errOut.String())
+	if code != exitDeclined {
+		t.Fatalf("exit code = %d, want exitDeclined (D48: declined is distinct from success so a script can tell no from done); stderr:\n%s", code, errOut.String())
 	}
 	if !confirmPrompted {
 		t.Fatal("expected cp onto an existing destination to block on confirmation, but confirmFn was never called")
 	}
-	if !strings.Contains(out.String(), "cp overwrites an existing file") {
-		t.Errorf("stdout missing the cp-overwrite reason, got:\n%s", out.String())
+	if !strings.Contains(errOut.String(), "cp overwrites an existing file") {
+		t.Errorf("the approval request is missing the cp-overwrite reason, got:\n%s", errOut.String())
 	}
 	got, err := os.ReadFile("backup.txt")
 	if err != nil {
@@ -697,8 +718,8 @@ func TestRunLoopDeclinedInPlaceEditTakesNoBackup(t *testing.T) {
 	var out, errOut bytes.Buffer
 
 	code := runLoop(context.Background(), client, "m", "fix the port", func(string) bool { return false }, &out, &errOut, journalPath)
-	if code != 0 {
-		t.Fatalf("exit code = %d, want 0 (a declined confirmation is a clean cancel); stderr:\n%s", code, errOut.String())
+	if code != exitDeclined {
+		t.Fatalf("exit code = %d, want exitDeclined (D48: declined is distinct from success so a script can tell no from done); stderr:\n%s", code, errOut.String())
 	}
 
 	unchanged, err := os.ReadFile("config.yaml")
@@ -837,8 +858,11 @@ func TestRunLoopWarnsWhenJournalWriteFailsForABackupEntry(t *testing.T) {
 	var out, errOut bytes.Buffer
 
 	code := runLoop(context.Background(), client, "m", "clean up", func(string) bool { return true }, &out, &errOut, journalPath)
-	if code != 0 {
-		t.Fatalf("exit code = %d, want 0 (a lost safety-net record must not fail the step); stderr:\n%s", code, errOut.String())
+	// Not 1: a lost safety-net record must not look like the command failed.
+	// Not 0 either: the step cannot be undone, and exit 0 said nothing of it
+	// (volkswagen audit, finding 10). It has its own code.
+	if code != exitNotUndoable {
+		t.Fatalf("exit code = %d, want exitNotUndoable; stderr:\n%s", code, errOut.String())
 	}
 	if !strings.Contains(errOut.String(), "could not record undo entry") {
 		t.Errorf("errOut = %q, want a could-not-record-undo-entry warning", errOut.String())
@@ -1459,6 +1483,12 @@ func kinds(evs []loopevent.Event) []loopevent.Kind {
 	return out
 }
 
+// withoutReplyParts drops the streamed pieces of a reply, for a test about
+// something else; answer_stream_test.go pins the pieces themselves.
+func withoutReplyParts(ks []loopevent.Kind) []loopevent.Kind {
+	return slices.DeleteFunc(ks, func(k loopevent.Kind) bool { return k == loopevent.AnswerPart })
+}
+
 func TestRunLoopEventsReplaceTheNarration(t *testing.T) {
 	server := scriptedOllamaServer(t, []string{"echo hi", "DONE"})
 	defer server.Close()
@@ -1472,7 +1502,11 @@ func TestRunLoopEventsReplaceTheNarration(t *testing.T) {
 	if out.Len() != 0 || errOut.Len() != 0 {
 		t.Errorf("the loop still wrote text alongside its events:\nout: %q\nerr: %q", out.String(), errOut.String())
 	}
-	want := []loopevent.Kind{loopevent.Command, loopevent.Result, loopevent.Answer}
+	want := []loopevent.Kind{loopevent.Command, loopevent.Result}
+	for range testAnswerParts {
+		want = append(want, loopevent.AnswerPart)
+	}
+	want = append(want, loopevent.Answer)
 	if got := kinds(*evs); !reflect.DeepEqual(got, want) {
 		t.Fatalf("event kinds = %v, want %v", got, want)
 	}
@@ -1492,14 +1526,23 @@ func TestRunLoopEventsReportAFailureAndRefusalsAsData(t *testing.T) {
 	evs, opt := collectEvents()
 	var out, errOut bytes.Buffer
 	runLoop(context.Background(), ollama.New(server.URL), "m", "do it", neverConfirm(t), &out, &errOut, "", opt)
+	// A command failed and the model gave up: the notice says the command
+	// did not work, not that the request has no command-line equivalent
+	// (finding atk1-01), and the reply that follows explains what happened.
+	got := kinds(*evs)
 	want := []loopevent.Kind{loopevent.Command, loopevent.Result, loopevent.Notice}
-	if got := kinds(*evs); !reflect.DeepEqual(got, want) {
-		t.Fatalf("event kinds = %v, want %v", got, want)
+	if len(got) < 3 || !reflect.DeepEqual(got[:3], want) {
+		t.Fatalf("event kinds = %v, want %v first", got, want)
+	}
+	for _, k := range got[3:] {
+		if k != loopevent.AnswerPart && k != loopevent.Answer {
+			t.Fatalf("event kinds = %v: only the reply may follow the notice", got)
+		}
 	}
 	if (*evs)[1].ExitCode != 1 {
 		t.Errorf("result exit code = %d, want 1", (*evs)[1].ExitCode)
 	}
-	if !strings.Contains((*evs)[2].Text, "couldn't work out a command") {
+	if !strings.Contains((*evs)[2].Text, "didn't work") {
 		t.Errorf("notice = %q", (*evs)[2].Text)
 	}
 }
@@ -1526,7 +1569,8 @@ func TestRunLoopEventsAnnounceAnApprovalBeforeAsking(t *testing.T) {
 		t.Fatal("the gate never asked")
 	}
 	ap := (*evs)[1]
-	if ap.Command == "" || !strings.Contains(ap.Text, "can't be undone") {
+	// No journal in this test, so nothing can be undone, and it must say so.
+	if ap.Command == "" || !strings.Contains(ap.Text, "cannot be taken back") {
 		t.Errorf("approval event = %+v", ap)
 	}
 	if last := (*evs)[len(*evs)-1]; last.Kind != loopevent.Notice || last.Text != "Cancelled." {
@@ -1638,8 +1682,8 @@ func TestRunLoopHandlesAStructuredUnsupportedReply(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	code := runLoop(context.Background(), ollama.New(server.URL), "m", "edit this image", neverConfirm(t), &out, &errOut, "")
-	if code != 1 {
-		t.Errorf("exit code = %d, want 1", code)
+	if code != exitUnsupported {
+		t.Errorf("exit code = %d, want exitUnsupported (D48)", code)
 	}
 	if !strings.Contains(out.String(), "couldn't work out a command") {
 		t.Errorf("stdout missing the unsupported message, got:\n%s", out.String())
@@ -1736,7 +1780,7 @@ func TestRunLoopRefusalAsEventsCarriesTheAlternative(t *testing.T) {
 	// The command that was chosen is still announced (Command), the same as any
 	// other step; what differs is that its Result says it was never run.
 	want := []loopevent.Kind{loopevent.Command, loopevent.Result, loopevent.Answer}
-	if got := kinds(*evs); !reflect.DeepEqual(got, want) {
+	if got := withoutReplyParts(kinds(*evs)); !reflect.DeepEqual(got, want) {
 		t.Fatalf("event kinds = %v, want %v", got, want)
 	}
 	res := (*evs)[1]

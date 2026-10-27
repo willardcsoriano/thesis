@@ -48,6 +48,7 @@ import (
 	"testing"
 	"time"
 
+	"synapseos/internal/loopevent"
 	"synapseos/internal/ollama"
 )
 
@@ -57,12 +58,18 @@ import (
 // coin flip. Override with SYNAPSE_LAYER7_REPEATS when iterating.
 var layer7Repeats = envIntOr("SYNAPSE_LAYER7_REPEATS", 3)
 
+// layer7RunTimeout bounds one (task, tier) run. A person waits about this long
+// for one request; a run cut here counts as a miss, and its RUN line says
+// capped=true so a timing taken from it is known to be a lower bound.
+const layer7RunTimeout = 3 * time.Minute
+
 func TestLayer7UtteranceTiers(t *testing.T) {
 	client := ollama.New(os.Getenv("SYNAPSE_OLLAMA"))
 	if err := client.Ping(context.Background()); err != nil {
 		t.Skipf("needs a running Ollama: %v", err)
 	}
 	model := envOr("SYNAPSE_MODEL", defaultModel)
+	t.Logf("analysis: %s", shippedAnalysis(t))
 
 	sets := layer7Sets(t, os.Getenv("SYNAPSE_LAYER7_SET"))
 	if only := os.Getenv("SYNAPSE_LAYER7_ONLY"); only != "" {
@@ -96,20 +103,23 @@ type layer7Set struct {
 	tasks []utteranceTask
 }
 
-// layer7Sets picks the sets SYNAPSE_LAYER7_SET names: development, heldout, or
-// both when empty. An unknown name fails rather than running nothing.
+// layer7Sets picks the sets SYNAPSE_LAYER7_SET names: development (the default),
+// heldout, or both. The held-out set runs only when asked for by name: a run
+// that names nothing is a tuning run, and one that also ran the held-out set
+// would spend it (ship review, 2026-10-27). An unknown name fails rather than
+// running nothing.
 func layer7Sets(t *testing.T, which string) []layer7Set {
 	dev := layer7Set{"development", append(utteranceCorpus(), extraUtteranceCorpus()...)}
 	held := layer7Set{"heldout", heldOutUtteranceCorpus()}
 	switch which {
-	case "":
+	case "both":
 		return []layer7Set{dev, held}
-	case "development":
+	case "", "development":
 		return []layer7Set{dev}
 	case "heldout":
 		return []layer7Set{held}
 	}
-	t.Fatalf("SYNAPSE_LAYER7_SET=%q: want development, heldout, or empty for both", which)
+	t.Fatalf("SYNAPSE_LAYER7_SET=%q: want development (the default), heldout, or both", which)
 	return nil
 }
 
@@ -118,6 +128,7 @@ func runLayer7Set(t *testing.T, client *ollama.Client, model string, set layer7S
 	reps := layer7Repeats
 	passes := map[string][3]int{}
 	cleans := map[string][3]int{}
+	var repeats [3]int
 
 	for _, task := range corpus {
 		var row, clean [3]int
@@ -127,9 +138,11 @@ func runLayer7Set(t *testing.T, client *ollama.Client, model string, set layer7S
 				task.setup(t, dir)
 				t.Chdir(dir)
 
-				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+				started := time.Now()
+				ctx, cancel := context.WithTimeout(context.Background(), layer7RunTimeout)
 				var out, errOut strings.Builder
 				rec := &layer7Recorder{}
+				var outcome string
 				// Auto-approve: this layer measures whether intent was
 				// understood, not whether the gate works — the gate has its
 				// own tests and the fixture is disposable. The loop reports
@@ -137,8 +150,11 @@ func runLayer7Set(t *testing.T, client *ollama.Client, model string, set layer7S
 				// scored (layer7_score_test.go).
 				code := runLoop(ctx, client, model, task.phrasings[ti],
 					func(string) bool { return true },
-					io.Writer(&out), io.Writer(&errOut), "", withEvents(rec.emit))
+					io.Writer(&out), io.Writer(&errOut), "", withEvents(rec.emit),
+					withOutcome(func(o string) { outcome = o }))
+				capped := ctx.Err() == context.DeadlineExceeded
 				cancel()
+				elapsed := time.Since(started)
 				// In event mode the loop writes no narration as text. Text
 				// here would be narration that bypassed the events and was
 				// therefore never scored.
@@ -147,7 +163,21 @@ func runLayer7Set(t *testing.T, client *ollama.Client, model string, set layer7S
 						task.id, tier(ti), tail(out.String(), 300))
 				}
 
-				ok, why := task.verify(dir, told(rec.events))
+				ok, why := task.score(ti, dir, told(rec.events))
+				// One machine-readable line per run, for timing a model
+				// (tools/model-box reads it). capped means the run was cut
+				// at layer7RunTimeout, so its time is a lower bound.
+				t.Logf("RUN set=%s task=%s tier=%s rep=%d secs=%.1f exit=%d ok=%t capped=%t outcome=%s",
+					set.name, task.id, tier(ti), r+1, elapsed.Seconds(), code, ok, capped, outcome)
+				// Every command the model proposed, passed or not: how a
+				// model translates a phrasing is the comparison's subject,
+				// and a log of misses alone hides what the good runs did.
+				for _, e := range rec.events {
+					if e.Kind == loopevent.Command {
+						t.Logf("CMD set=%s task=%s tier=%s rep=%d step=%d %q",
+							set.name, task.id, tier(ti), r+1, e.Step, e.Command)
+					}
+				}
 				if ok {
 					row[ti]++
 				} else {
@@ -170,11 +200,17 @@ func runLayer7Set(t *testing.T, client *ollama.Client, model string, set layer7S
 				// Folding that into the tier comparison would charge a
 				// termination defect to the phrasing, which is the one thing
 				// this file exists to measure cleanly.
-				if code == 0 {
+				// Clean means the model said it was done. A stop on a repeated
+				// command also exits 0, but the loop ended it, not the model, so
+				// it is counted on its own line.
+				if outcome == outcomeRepeatedSuccess {
+					repeats[ti]++
+				}
+				if outcome == outcomeComplete || outcome == outcomeNothingToDo {
 					clean[ti]++
 				} else if ok {
-					t.Logf("%-4s %-10s run %d  DIRTY intent satisfied but exit %d",
-						task.id, tier(ti), r+1, code)
+					t.Logf("%-4s %-10s run %d  DIRTY intent satisfied but exit %d (%s)",
+						task.id, tier(ti), r+1, code, outcome)
 					t.Logf("    run: %s", tail(narrate(rec.events), 600))
 				}
 			}
@@ -207,6 +243,8 @@ func runLayer7Set(t *testing.T, client *ollama.Client, model string, set layer7S
 	t.Logf("  plain      %3d/%d  %5.1f%%", cleanTotals[0], n, pct(cleanTotals[0]))
 	t.Logf("  interface  %3d/%d  %5.1f%%", cleanTotals[1], n, pct(cleanTotals[1]))
 	t.Logf("  technical  %3d/%d  %5.1f%%", cleanTotals[2], n, pct(cleanTotals[2]))
+	t.Log("stopped on a repeated command (exit 0, but the model never said it was done):")
+	t.Logf("  plain %d  interface %d  technical %d", repeats[0], repeats[1], repeats[2])
 
 	// Deliberately not asserted. A low plain-tier score is a finding about the
 	// system and the model, not a broken test — see this file's header.

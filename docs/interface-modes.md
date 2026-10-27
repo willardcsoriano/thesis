@@ -27,7 +27,7 @@ This is the reference for how SynapseOS's three interface modes — CLI, TUI, an
 
 Every mode is a thin wrapper around the same three packages — nothing mode-specific happens inside them, and nothing about them assumes which mode is calling:
 
-- **`internal/ollama`** — the only code that talks to the model. `Generate` sends a non-streaming prompt and waits for the full response (what CLI and REPL mode use); `GenerateStream` delivers the same result token-by-token over NDJSON (what TUI mode uses, opt-in per mode). A stream that ends without a completion marker is rejected outright rather than returned short — truncated text would still be a runnable command, and a different one.
+- **`internal/ollama`** — the only code that talks to the model. `Generate` sends a non-streaming prompt and waits for the full response (what CLI and REPL mode use); `GenerateStream` delivers the same result token-by-token over NDJSON. The loop uses it for one thing: the plain-language reply, when an interface takes events (TUI mode, and `run --json` and Layer 7, which keep only the whole reply). Each command step is still asked for whole, and CLI and REPL text output asks for the reply whole too, because printed text cannot be taken back if a stream breaks off. A stream that ends without a completion marker is rejected outright rather than returned short — truncated text would still be a runnable command, and a different one.
 - **`internal/classifier`** — `Classify(cmd string) (Verdict, string)` pattern-matches a proposed command against known-irreversible shapes and returns `Reversible` or `Irreversible` plus a human-readable reason. Started as a short list (`rm`, `dd`, `mkfs`, `shred`, `git reset --hard`, `git clean -f`, truncating redirects) and has since grown substantially (F1: `sed -i`/`awk -i inplace`/`truncate`/unsafe `tee`; F3/D22: recursive `chmod`/`chown`, fetch-decode-exec, bare `eval`) — see `build-order.md` F1/F3 for the current full rule set. It has no notion of a terminal, a prompt, or a UI — it is pure logic, which is exactly what lets every mode reuse it unmodified.
 - **`internal/executor`** — `Run(ctx, cmd) Result` dispatches through `sh -c`, capturing stdout/stderr and the exit code. Also mode-agnostic: it doesn't know or care whether its caller is a one-shot process or a long-running session.
 
@@ -41,7 +41,7 @@ Every mode is a thin wrapper around the same three packages — nothing mode-spe
               ▼                      ▼                      ▼
         [ CLI mode ]           [ TUI mode ]            [ GUI mode ]
        one-shot process      persistent terminal      persistent fullscreen
-       synapse "<task>"      session (bubbletea)       kiosk session (XFCE)
+   synapse run "<task>"      session (bubbletea)       kiosk session (XFCE)
 ```
 
 A mode's job is only ever: collect input, drive the core, render output. Every mode-specific line of code should be justifiable as "input collection," "rendering," or "session lifecycle" — the moment mode-specific code starts reimplementing classification or execution, that's a sign the logic belongs back in the shared core instead.
@@ -62,7 +62,7 @@ A mode's job is only ever: collect input, drive the core, render output. Every m
 
 ## 3. CLI Mode (D19, M1 — done)
 
-CLI mode is the one-shot interface: `synapse "<task>"` runs one request through a bounded, gated multi-step loop (D21) — propose → classify → confirm-if-needed → execute → feed the result back so the model can propose the next step or signal done, repeating until complete or a hard step cap is hit — then exits. Not single-command execution: a task that genuinely needs several distinct actions (e.g. "make a folder, then move matching files into it") is handled within one invocation, with every step independently classified and gated, not just the first. No conversation history *across* invocations, no persistent process — every invocation starts cold. This is deliberate, not a limitation to fix later: it's what makes CLI mode viable for scripting and one-off remote commands (`ssh host synapse "..."` behaves exactly like any other single-purpose CLI tool).
+CLI mode is the one-shot interface: `synapse run "<task>"` runs one request through a bounded, gated multi-step loop (D21) — propose → classify → confirm-if-needed → execute → feed the result back so the model can propose the next step or signal done, repeating until complete or a hard step cap is hit — then exits. Not single-command execution: a task that genuinely needs several distinct actions (e.g. "make a folder, then move matching files into it") is handled within one invocation, with every step independently classified and gated, not just the first. No conversation history *across* invocations, no persistent process — every invocation starts cold. This is deliberate, not a limitation to fix later: it's what makes CLI mode viable for scripting and one-off remote commands (`ssh host synapse run "..."` behaves exactly like any other single-purpose CLI tool).
 
 Because there's no session to render into, the confirmation gate is the simplest possible implementation: print the blocked command and why, then block on a single line of stdin. TUI reuses the same yes/no *decision* logic but renders the prompt differently (§4) — the UX difference is a rendering concern, not a logic difference, which is why it lives in the mode layer and not the shared core.
 
@@ -86,7 +86,7 @@ TUI mode turns the one-shot CLI into a persistent, interactive session — the d
 **As built (Session 28), which differs from this section's original sketch in one important way.** The sketch had `Update` calling the model directly. It does not — TUI mode never reimplements any part of the propose/classify/confirm/execute loop. The *same* `runLoop` that CLI and REPL mode use is injected as a `tui.TaskRunner` and driven on its own goroutine, so every reversibility verdict, confirmation gate, and undo-journal write is literally the same code in every mode and cannot drift between them.
 
 1. **Model:** the unfinished output line, current input, whether a task is running, and any outstanding confirmation prompt.
-2. **Update:** on `Enter`, launches the injected runner on a goroutine and returns immediately — `Update` must never block. Two channels bridge the synchronous loop into the event loop: the runner's `io.Writer` output arrives as messages (streamed token-by-token, since TUI passes `withTokenStreaming`), and when the loop hits an irreversible step its `confirmFn` publishes a confirmation request and *blocks* until `Update` — having rendered the prompt and taken a keypress — sends the verdict back. Ctrl+C mid-task cancels that task's context only; the session survives.
+2. **Update:** on `Enter`, launches the injected runner on a goroutine and returns immediately — `Update` must never block. Two channels bridge the synchronous loop into the event loop: the loop reports through the runner's writer as typed events (`internal/loopevent`), and the reply arrives as `AnswerPart` pieces drawn in the live region until the `Answer` that prints it once, whole; a reply that breaks off leaves nothing behind, and when the loop hits an irreversible step its `confirmFn` publishes a confirmation request and *blocks* until `Update` — having rendered the prompt and taken a keypress — sends the verdict back. Ctrl+C mid-task cancels that task's context only; the session survives.
 3. **View:** draws only the live region — the unfinished line, plus either the input box, a working indicator, or the confirmation prompt — the last being the only bordered, colored element in the interface, so an irreversible-command gate can never be mistaken for ordinary output.
 
 ### What TUI Reuses vs. Adds
@@ -94,7 +94,7 @@ TUI mode turns the one-shot CLI into a persistent, interactive session — the d
 | Reused unchanged | New in TUI |
 |---|---|
 | `internal/classifier` — same `Classify` call, same verdicts | Persistent process / session loop (bubbletea) |
-| `internal/executor` — same `Run` call, same `Result` shape | `GenerateStream` in `internal/ollama` (opt-in per mode; CLI/REPL stay non-streaming) |
+| `internal/executor` — same `Run` call, same `Result` shape | `GenerateStream` in `internal/ollama`, for the reply only (event consumers; CLI/REPL text stays non-streaming) |
 | `runLoop` itself — the whole propose/classify/confirm/execute loop, injected and driven, never reimplemented | In-session confirmation rendering (vs. blocking stdin read), and viewport scrollback |
 | | Multi-turn context (M6 — depends on TUI existing, not part of M4/M5 itself) |
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -31,13 +30,15 @@ func TestConfirm(t *testing.T) {
 		{"empty line (bare enter)", "\n", false},
 		{"garbage input", "sure\n", false},
 		{"EOF with no input fails closed", "", false},
+		{"a final y with no newline still answers", "y", true},
+		{"a final n with no newline declines", "n", false},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			var out bytes.Buffer
-			r := bufio.NewReader(strings.NewReader(tc.input))
-			if got := confirm(r, &out, "proceed?"); got != tc.want {
+			src := newLineSource(strings.NewReader(tc.input))
+			if got := confirmLine(context.Background(), src, &out, "proceed?"); got != tc.want {
 				t.Errorf("confirm(%q) = %v, want %v", tc.input, got, tc.want)
 			}
 			if !strings.Contains(out.String(), "proceed?") {
@@ -115,7 +116,7 @@ func TestBuildStepPromptWithHistory(t *testing.T) {
 		"2. $ mv *.pdf dest/",
 		"exit code: 1",
 		"stderr: mv: cannot stat",
-		"What command should run next? Output DONE",
+		doneOffer,
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("buildStepPrompt output missing %q\ngot:\n%s", want, got)
@@ -316,7 +317,7 @@ func TestFirstStepPromptDoesNotOfferDone(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got := buildStepPrompt("du -sh .", tc.history, tc.prior, tc.cwd)
-			offered := strings.Contains(got, "DONE")
+			offered := strings.Contains(got, doneOffer)
 			if offered != tc.wantDoneOffer {
 				t.Errorf("DONE offered = %v, want %v\nprompt:\n%s", offered, tc.wantDoneOffer, got)
 			}
@@ -432,11 +433,31 @@ func TestAnswerConversational(t *testing.T) {
 // TestMain turns the effect analysis off for the tests that predate it, so they
 // keep exercising the list classifier they were written against. Tests of the
 // analysis set SYNAPSE_ANALYSIS themselves.
+//
+// With runMainEnv set, the test binary runs synapse's own main() instead of the
+// tests, so a test can execute the real program, command line and all (see
+// runSynapse in cli_test.go).
 func TestMain(m *testing.M) {
+	if os.Getenv(runMainEnv) == "1" {
+		os.Args = append([]string{"synapse"}, os.Args[1:]...)
+		main()
+		os.Exit(0)
+	}
 	if os.Getenv("SYNAPSE_ANALYSIS") == "" {
 		os.Setenv("SYNAPSE_ANALYSIS", "off")
+		analysisDefaultedOff = true
 	}
-	os.Exit(m.Run())
+	// No test may write to the developer's real ~/.synapse (journal, trash,
+	// backups): every test in this package gets a private home. Tests that
+	// need their own still set one with t.Setenv.
+	home, err := os.MkdirTemp("", "synapse-test-home-")
+	if err != nil {
+		panic(err)
+	}
+	os.Setenv("HOME", home)
+	code := m.Run()
+	os.RemoveAll(home)
+	os.Exit(code)
 }
 
 // A model that copies a shell prompt from an example produced "$ df -h", which
@@ -452,15 +473,6 @@ func TestCleanCommandDropsACopiedShellPrompt(t *testing.T) {
 		if got := cleanCommand(in); got != want {
 			t.Errorf("cleanCommand(%q) = %q, want %q", in, got, want)
 		}
-	}
-}
-
-func TestApprovalMessageSaysWhatIsKnown(t *testing.T) {
-	if got := approvalMessage(false, "opaque: unknown command foo"); !strings.Contains(got, "can't tell for certain") || strings.Contains(got, "delete") {
-		t.Errorf("an unanalysed command was described as a deletion:\n%s", got)
-	}
-	if got := approvalMessage(true, "rm can permanently delete files"); !strings.Contains(got, "can't be undone") || !strings.Contains(got, "rm can permanently") {
-		t.Errorf("a known deletion lost its warning or its reason:\n%s", got)
 	}
 }
 

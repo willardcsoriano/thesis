@@ -145,11 +145,6 @@ func writeFixtureFile(t *testing.T, path string, mtime time.Time) {
 	}
 }
 
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
-}
-
 func basenames(paths []string) []string {
 	names := make([]string, len(paths))
 	for i, p := range paths {

@@ -75,12 +75,20 @@ const charsPerToken = 4.0
 type Step struct {
 	Command string
 	Result  string // already truncated to ResultChars
+	// Changed is what the step created, changed or moved something into,
+	// relative to where it ran, folders ending in "/". Render lists the
+	// newest of these so "it" and "there" in a follow-up have something to
+	// point at; empty when the caller does not track it.
+	Changed []string
 }
 
 // Turn is one completed task and what it did.
 type Turn struct {
 	Task  string
 	Steps []Step
+	// Answer is the reply the person was shown, when one was; not rendered
+	// into the prompt, only read by LastReply.
+	Answer string
 }
 
 // Context is a session's rolling conversation memory. The zero value is
@@ -150,6 +158,11 @@ func NewWithBudget(maxTokens, resultChars int) *Context {
 // could refer back to, so keeping it would spend budget to remember that
 // nothing happened.
 func (c *Context) Append(task string, steps []Step) {
+	c.AppendAnswered(task, steps, "")
+}
+
+// AppendAnswered is Append with the reply the person was shown.
+func (c *Context) AppendAnswered(task string, steps []Step, answer string) {
 	task = strings.TrimSpace(task)
 	if task == "" || len(steps) == 0 {
 		return
@@ -162,9 +175,10 @@ func (c *Context) Append(task string, steps []Step) {
 		compact = append(compact, Step{
 			Command: strings.TrimSpace(s.Command),
 			Result:  truncate(strings.TrimSpace(s.Result), c.resultChars),
+			Changed: s.Changed,
 		})
 	}
-	c.turns = append(c.turns, Turn{Task: task, Steps: compact})
+	c.turns = append(c.turns, Turn{Task: task, Steps: compact, Answer: truncate(strings.TrimSpace(answer), c.resultChars)})
 	c.trim()
 	// Any new turn invalidates an outstanding Snapshot, trim-triggered or
 	// not: Compact reconstructs history from "the current newest keep
@@ -233,6 +247,11 @@ func (c *Context) render(turns []Turn) string {
 				fmt.Fprintf(&b, "     %s\n", s.Result)
 			}
 		}
+	}
+	if recent := recentlyChanged(turns, maxRecent); len(recent) > 0 {
+		b.WriteString("Most recently created or changed in this session, newest first (what \"it\", \"that\" and \"there\" most likely mean): ")
+		b.WriteString(strings.Join(recent, ", "))
+		b.WriteString("\n")
 	}
 	return b.String()
 }
@@ -370,4 +389,50 @@ func truncate(s string, n int) string {
 		return s
 	}
 	return s[:n] + " ...(truncated)"
+}
+
+// LastReply is the reply to the most recent turn and whether that turn's
+// steps changed anything; "" when there is no turn or no reply was shown.
+func (c *Context) LastReply() (answer string, changed bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if len(c.turns) == 0 {
+		return "", false
+	}
+	t := c.turns[len(c.turns)-1]
+	for _, s := range t.Steps {
+		changed = changed || len(s.Changed) > 0
+	}
+	return t.Answer, changed
+}
+
+// Recent is what the session's steps created or changed, newest first, at
+// most maxRecent, folders ending in "/".
+func (c *Context) Recent() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return recentlyChanged(c.turns, maxRecent)
+}
+
+// maxRecent bounds the recently-changed list in the rendered history.
+const maxRecent = 6
+
+// recentlyChanged lists the paths the turns' steps changed, newest first,
+// each once, at most max.
+func recentlyChanged(turns []Turn, max int) []string {
+	seen := map[string]bool{}
+	var out []string
+	for i := len(turns) - 1; i >= 0 && len(out) < max; i-- {
+		steps := turns[i].Steps
+		for j := len(steps) - 1; j >= 0 && len(out) < max; j-- {
+			ch := steps[j].Changed
+			for k := len(ch) - 1; k >= 0 && len(out) < max; k-- {
+				if !seen[ch[k]] {
+					seen[ch[k]] = true
+					out = append(out, ch[k])
+				}
+			}
+		}
+	}
+	return out
 }

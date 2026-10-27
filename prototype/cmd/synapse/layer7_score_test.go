@@ -80,6 +80,10 @@ func narrate(evs []loopevent.Event) string {
 			fmt.Fprintf(&b, "answer: %s\n", e.Text)
 		case loopevent.Notice:
 			fmt.Fprintf(&b, "notice: %s\n", e.Text)
+		case loopevent.Note:
+			// Bookkeeping, such as a reply the loop withheld: never told, so
+			// never scored, but what a miss has to be diagnosed from.
+			fmt.Fprintf(&b, "note: %s\n", e.Text)
 		case loopevent.Problem:
 			fmt.Fprintf(&b, "problem: %s (%s)\n", e.Text, e.Detail)
 		case loopevent.Approval:

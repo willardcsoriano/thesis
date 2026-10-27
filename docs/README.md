@@ -51,6 +51,7 @@ These explain things. Consulted, not read front to back.
 
 | File | Owns |
 |---|---|
+| `cli.md` | The CLI contract: commands, exit codes, stdout/stderr, the `--json` stream, configuration, and which test enforces each guarantee |
 | `interface-modes.md` | CLI/TUI/GUI boundaries — what the shared core is, what each mode reuses versus builds, and the GUI session plumbing |
 | `layers.md` | Where SynapseOS sits in the Linux stack, the "is this an OS / a distro?" question, and the glossary |
 | `agent-command-study.md` | The study of which commands real AI agents run (API and CLI drivers, four phrasing tiers including novice): its questions, task suite, capture layers, record schema, isolation, analysis plan, and status. Results go to `recoverability-analysis.md` |

@@ -53,6 +53,7 @@ package undo
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -115,6 +116,13 @@ type ContentBackup struct {
 	Path       string      `json:"path"`        // absolute path to the file that was backed up
 	BackupPath string      `json:"backup_path"` // absolute path to the saved copy
 	Mode       os.FileMode `json:"mode"`        // the original file's permissions, restored alongside its content
+	// LinkText and LinkTarget are set when Path was a symlink: its own text,
+	// and the file it resolved to, whose content BackupPath holds. A write
+	// through the link (`echo x > link`) changes the target; `sed -i link`
+	// replaces the link with a file. Undo restores both: the target's content
+	// and the link itself (findings r2-atk7-01, r2-atk6-03).
+	LinkText   string `json:"link_text,omitempty"`
+	LinkTarget string `json:"link_target,omitempty"`
 }
 
 // TrashedItem records a file or directory tree preserved via hardlink (see
@@ -183,6 +191,69 @@ func (i Inverse) String() string {
 		argv = append([]string{"sudo"}, argv...)
 	}
 	return strings.Join(argv, " ")
+}
+
+// KeepObserved drops from e what the command was expected to do but did not:
+// a creation or a move whose result exists nowhere after it ran, following
+// later moves of the same path. The journal used to record the analysis's
+// prediction, so a command that failed before doing anything left an entry
+// whose undo reported "move back" for files that never moved and "Undo
+// complete" with nothing done, and that entry stood in front of the person's
+// real last change (finding r3-atk9-03). Captures stay: they were taken
+// before the command ran and restore whatever it did manage.
+func (e Entry) KeepObserved() Entry {
+	exists := func(p string) bool {
+		_, err := os.Lstat(filepath.Join(e.Dir, p))
+		return err == nil
+	}
+	// A path the command moved on again is not gone: for mv a b; mv b c the
+	// file the first move made is the one the second moved, so a->b is kept
+	// when b's chain of later moves ends at a path that exists. Judging each
+	// move by its own destination dropped a->b, and undo then left the file
+	// at b and reported success (ship review, 2026-10-27).
+	reaches := func(start string, from int) bool {
+		at, seen := start, map[string]bool{}
+		for !exists(at) {
+			if seen[at] {
+				return false
+			}
+			seen[at] = true
+			next := -1
+			for j := from; j < len(e.Moves); j++ {
+				if e.Moves[j].OldPath == at {
+					next = j
+					break
+				}
+			}
+			if next < 0 {
+				return false
+			}
+			at, from = e.Moves[next].NewPath, next+1
+		}
+		return true
+	}
+	var created []string
+	for _, c := range e.Created {
+		if reaches(c, 0) {
+			created = append(created, c)
+		}
+	}
+	var moves []Move
+	for i, m := range e.Moves {
+		if reaches(m.NewPath, i+1) {
+			moves = append(moves, m)
+		}
+	}
+	e.Created, e.Moves = created, moves
+	return e
+}
+
+// Restorable reports whether undoing e would put anything back. An entry
+// holding only Unhandled changes records that something happened that could
+// not be captured, and restores nothing.
+func (e Entry) Restorable() bool {
+	return len(e.Moves) > 0 || len(e.Created) > 0 || len(e.ContentBackups) > 0 || len(e.Trashed) > 0 ||
+		e.GitReset != "" || len(e.MetadataBackups) > 0 || len(e.Inverses) > 0
 }
 
 // IsNoop reports whether e has nothing to undo — no filesystem effect was
@@ -722,6 +793,9 @@ var inverseRunner = runInverse
 // explicitly afterwards, because a command that recreated the file (git checkout,
 // install) gave it a mode of its own and opening an existing file keeps that mode.
 func restoreContent(cb ContentBackup) error {
+	if cb.LinkText != "" {
+		return restoreThroughLink(cb)
+	}
 	if fi, err := os.Lstat(cb.Path); err == nil && fi.Mode()&os.ModeSymlink != 0 {
 		if err := os.Remove(cb.Path); err != nil {
 			return fmt.Errorf("removing the link that replaced %s: %w", cb.Path, err)
@@ -732,6 +806,36 @@ func restoreContent(cb ContentBackup) error {
 	}
 	if err := os.Chmod(cb.Path, cb.Mode); err != nil {
 		return fmt.Errorf("restoring mode of %s: %w", cb.Path, err)
+	}
+	return nil
+}
+
+// restoreThroughLink restores a file that was reached through a symlink: the
+// target gets its old content back, and the path becomes that same link again
+// if the command replaced it.
+func restoreThroughLink(cb ContentBackup) error {
+	if err := os.MkdirAll(filepath.Dir(cb.LinkTarget), 0o755); err != nil {
+		return err
+	}
+	if fi, err := os.Lstat(cb.LinkTarget); err == nil && fi.Mode()&os.ModeSymlink != 0 {
+		if err := os.Remove(cb.LinkTarget); err != nil {
+			return fmt.Errorf("removing the link that replaced %s: %w", cb.LinkTarget, err)
+		}
+	}
+	if err := copyFile(cb.BackupPath, cb.LinkTarget, cb.Mode); err != nil {
+		return err
+	}
+	if err := os.Chmod(cb.LinkTarget, cb.Mode); err != nil {
+		return fmt.Errorf("restoring mode of %s: %w", cb.LinkTarget, err)
+	}
+	if text, err := os.Readlink(cb.Path); err == nil && text == cb.LinkText {
+		return nil // the link is still there
+	}
+	if err := os.Remove(cb.Path); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("removing what replaced the link %s: %w", cb.Path, err)
+	}
+	if err := os.Symlink(cb.LinkText, cb.Path); err != nil {
+		return fmt.Errorf("restoring the link %s: %w", cb.Path, err)
 	}
 	return nil
 }
@@ -810,13 +914,26 @@ func BackupContent(paths []string) ([]ContentBackup, []error) {
 		if err != nil || info.IsDir() {
 			continue // nothing to protect: not a real file (or not there at all)
 		}
+		cb := ContentBackup{Path: path, Mode: info.Mode()}
+		if li, err := os.Lstat(path); err == nil && li.Mode()&os.ModeSymlink != 0 {
+			text, terr := os.Readlink(path)
+			target, rerr := filepath.EvalSymlinks(path)
+			if terr != nil || rerr != nil {
+				errs = append(errs, fmt.Errorf("backing up %s: resolving the link: %v %v", path, terr, rerr))
+				continue
+			}
+			if !filepath.IsAbs(target) {
+				target = filepath.Join(filepath.Dir(path), target)
+			}
+			cb.LinkText, cb.LinkTarget = text, target
+		}
 
-		backupPath := filepath.Join(backupDir, fmt.Sprintf("%d-%d-%s", time.Now().UnixNano(), i, filepath.Base(path)))
-		if err := copyFile(path, backupPath, info.Mode()); err != nil {
+		cb.BackupPath = filepath.Join(backupDir, fmt.Sprintf("%d-%d-%s", time.Now().UnixNano(), i, filepath.Base(path)))
+		if err := copyFile(path, cb.BackupPath, info.Mode()); err != nil {
 			errs = append(errs, fmt.Errorf("backing up %s: %w", path, err))
 			continue
 		}
-		backups = append(backups, ContentBackup{Path: path, BackupPath: backupPath, Mode: info.Mode()})
+		backups = append(backups, cb)
 	}
 	return backups, errs
 }
@@ -981,6 +1098,12 @@ var linkFunc = os.Link
 
 // hardlinkTree walks srcDir, recreating its directory structure at dstDir
 // and hardlinking each regular file it contains rather than copying data.
+// isTrashRoot reports whether dir is synapse's trash directory.
+func isTrashRoot(dir string) bool {
+	home, err := os.UserHomeDir()
+	return err == nil && filepath.Clean(dir) == filepath.Join(home, ".synapse", "trash")
+}
+
 func hardlinkTree(srcDir, dstDir string) error {
 	// Directory modes are applied after the walk, deepest first: a directory
 	// captured as read-only could not otherwise receive its own children, and
@@ -1000,6 +1123,13 @@ func hardlinkTree(srcDir, dstDir string) error {
 			return err
 		}
 		target := filepath.Join(dstDir, rel)
+		// The destination itself, when the tree being kept contains the
+		// trash (`rm -rf ~/.synapse`), is skipped: walking into it would
+		// copy the copy into itself until the path grew too long (finding
+		// r2-atk5-06).
+		if d.IsDir() && (path == dstDir || isTrashRoot(path)) {
+			return filepath.SkipDir
+		}
 		if d.IsDir() {
 			info, ierr := d.Info()
 			if ierr != nil {
@@ -1051,75 +1181,206 @@ func copyFile(src, dst string, mode os.FileMode) error {
 	return nil
 }
 
+// The journal is shared by every synapse process of one user, so each change
+// to it holds an exclusive lock on a sibling file (path + ".lock") for its
+// whole read-modify-write. The lock lives beside the journal, not on it,
+// because a pop replaces the journal file and a lock on the old file would
+// not cover the new one. A rewrite goes to a temporary file that is synced
+// and renamed into place, so a crash leaves the old journal or the new one,
+// never a half-written one. A line that does not parse (an append cut off by
+// a crash, or damage) is kept as it is and skipped, so one bad line cannot
+// disable every undo.
+
+// ErrJournalChanged is returned by PopLastJournalIf when the newest entry is
+// no longer the one the caller showed the person, because another process
+// appended or undid something in between.
+var ErrJournalChanged = errors.New("the undo journal changed while the undo was being confirmed")
+
+// withJournalLock runs fn holding the journal's exclusive lock.
+func withJournalLock(path string, fn func() error) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("locking undo journal %s: %w", path, err)
+	}
+	l, err := os.OpenFile(path+".lock", os.O_CREATE|os.O_RDWR, 0o644)
+	if err != nil {
+		return fmt.Errorf("locking undo journal %s: %w", path, err)
+	}
+	defer l.Close()
+	if err := syscall.Flock(int(l.Fd()), syscall.LOCK_EX); err != nil {
+		return fmt.Errorf("locking undo journal %s: %w", path, err)
+	}
+	defer syscall.Flock(int(l.Fd()), syscall.LOCK_UN)
+	return fn()
+}
+
+// JournalWritable reports whether an entry could be appended to the journal
+// at path now: its lock and the journal itself open for writing. It creates
+// them if absent and writes nothing.
+func JournalWritable(path string) error {
+	return withJournalLock(path, func() error {
+		f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+		if err != nil {
+			return fmt.Errorf("opening undo journal %s: %w", path, err)
+		}
+		return f.Close()
+	})
+}
+
 // AppendJournal appends e to the journal at path as one JSON line.
 func AppendJournal(path string, e Entry) error {
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		return fmt.Errorf("opening undo journal %s: %w", path, err)
-	}
-	defer f.Close()
-
 	b, err := json.Marshal(e)
 	if err != nil {
 		return fmt.Errorf("encoding undo entry: %w", err)
 	}
-	if _, err := f.Write(append(b, '\n')); err != nil {
-		return fmt.Errorf("writing undo journal %s: %w", path, err)
-	}
-	return nil
+	return withJournalLock(path, func() error {
+		f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0o644)
+		if err != nil {
+			return fmt.Errorf("opening undo journal %s: %w", path, err)
+		}
+		// A line cut off by a crash has no newline; without one written first,
+		// this entry would be glued onto it and lost with it (finding atk4-09).
+		line := append(b, '\n')
+		if fi, err := f.Stat(); err == nil && fi.Size() > 0 {
+			last := make([]byte, 1)
+			if _, err := f.ReadAt(last, fi.Size()-1); err == nil && last[0] != '\n' {
+				line = append([]byte{'\n'}, line...)
+			}
+		}
+		if _, err := f.Write(line); err != nil {
+			f.Close()
+			return fmt.Errorf("writing undo journal %s: %w", path, err)
+		}
+		if err := f.Close(); err != nil {
+			return fmt.Errorf("writing undo journal %s: %w", path, err)
+		}
+		return nil
+	})
 }
 
 // PeekLastJournal returns the most recent entry in the journal at path
 // without removing it — for showing the user what an undo would do before
 // they've confirmed it. ok is false (with a zero Entry) if the journal
-// doesn't exist or is empty.
+// doesn't exist or holds no readable entry.
 func PeekLastJournal(path string) (entry Entry, ok bool, err error) {
-	entries, err := readJournal(path)
+	lines, err := readJournal(path)
 	if err != nil {
 		return Entry{}, false, err
 	}
-	if len(entries) == 0 {
-		return Entry{}, false, nil
+	if i := lastEntry(lines); i >= 0 {
+		return *lines[i].entry, true, nil
 	}
-	return entries[len(entries)-1], true, nil
+	return Entry{}, false, nil
 }
 
-// PopLastJournal reads all entries from the journal at path, removes the
-// last one, rewrites the file without it, and returns the popped entry. ok
-// is false (with a zero Entry) if the journal doesn't exist or is empty.
-// Callers that need to show the entry before committing to removing it
-// should call PeekLastJournal first and only Pop once the action is
-// confirmed.
+// UnreadableJournalLines counts the journal lines that do not parse as an
+// entry and are therefore skipped, so a caller can say so.
+func UnreadableJournalLines(path string) (int, error) {
+	lines, err := readJournal(path)
+	n := 0
+	for _, l := range lines {
+		if l.entry == nil {
+			n++
+		}
+	}
+	return n, err
+}
+
+// PopLastJournal removes the most recent entry from the journal at path and
+// returns it. ok is false (with a zero Entry) if there is none. Callers that
+// show the entry before removing it should use PopLastJournalIf, so that an
+// entry another process added in the meantime is not removed unapplied.
 func PopLastJournal(path string) (entry Entry, ok bool, err error) {
-	entries, err := readJournal(path)
+	err = withJournalLock(path, func() error {
+		var e error
+		entry, ok, e = popLocked(path, nil)
+		return e
+	})
+	return entry, ok, err
+}
+
+// PopLastJournalIf removes the most recent entry only if it is still want,
+// the entry the caller peeked and showed. Otherwise it removes nothing and
+// returns ErrJournalChanged.
+func PopLastJournalIf(path string, want Entry) error {
+	return withJournalLock(path, func() error {
+		_, ok, err := popLocked(path, &want)
+		if err == nil && !ok {
+			return ErrJournalChanged
+		}
+		return err
+	})
+}
+
+// popLocked removes the last readable entry, if it equals want when want is
+// set, keeping every other line, readable or not, byte for byte. The caller
+// holds the lock.
+func popLocked(path string, want *Entry) (Entry, bool, error) {
+	lines, err := readJournal(path)
 	if err != nil {
 		return Entry{}, false, err
 	}
-	if len(entries) == 0 {
+	i := lastEntry(lines)
+	if i < 0 {
 		return Entry{}, false, nil
 	}
-
-	last := entries[len(entries)-1]
-	remaining := entries[:len(entries)-1]
-
-	f, err := os.Create(path)
+	if want != nil {
+		a, _ := json.Marshal(lines[i].entry)
+		b, _ := json.Marshal(want)
+		if !bytes.Equal(a, b) {
+			return Entry{}, false, nil
+		}
+	}
+	popped := *lines[i].entry
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".undo-journal-*")
 	if err != nil {
 		return Entry{}, false, fmt.Errorf("rewriting undo journal %s: %w", path, err)
 	}
-	defer f.Close()
-	for _, e := range remaining {
-		b, err := json.Marshal(e)
-		if err != nil {
-			return Entry{}, false, fmt.Errorf("encoding undo entry: %w", err)
+	defer os.Remove(tmp.Name()) // no-op once renamed
+	w := bufio.NewWriter(tmp)
+	for j, l := range lines {
+		if j == i {
+			continue
 		}
-		if _, err := f.Write(append(b, '\n')); err != nil {
-			return Entry{}, false, fmt.Errorf("rewriting undo journal %s: %w", path, err)
-		}
+		w.Write(l.raw)
+		w.WriteByte('\n')
 	}
-	return last, true, nil
+	if err := w.Flush(); err == nil {
+		err = tmp.Sync()
+	}
+	if cerr := tmp.Close(); err == nil {
+		err = cerr
+	}
+	if err == nil {
+		err = os.Chmod(tmp.Name(), 0o644)
+	}
+	if err == nil {
+		err = os.Rename(tmp.Name(), path)
+	}
+	if err != nil {
+		return Entry{}, false, fmt.Errorf("rewriting undo journal %s: %w", path, err)
+	}
+	return popped, true, nil
 }
 
-func readJournal(path string) ([]Entry, error) {
+// journalLine is one line of the journal: its bytes, and its entry when it
+// parses.
+type journalLine struct {
+	raw   []byte
+	entry *Entry
+}
+
+func lastEntry(lines []journalLine) int {
+	for i := len(lines) - 1; i >= 0; i-- {
+		if lines[i].entry != nil {
+			return i
+		}
+	}
+	return -1
+}
+
+// readJournal reads every non-empty line. A line of any length is read whole;
+// one that does not parse is returned with a nil entry.
+func readJournal(path string) ([]journalLine, error) {
 	f, err := os.Open(path)
 	if os.IsNotExist(err) {
 		return nil, nil
@@ -1129,22 +1390,24 @@ func readJournal(path string) ([]Entry, error) {
 	}
 	defer f.Close()
 
-	var entries []Entry
-	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-	for scanner.Scan() {
-		line := scanner.Bytes()
-		if len(line) == 0 {
-			continue
+	var lines []journalLine
+	r := bufio.NewReader(f)
+	for {
+		raw, rerr := r.ReadBytes('\n')
+		raw = bytes.TrimRight(raw, "\n")
+		if len(bytes.TrimSpace(raw)) > 0 {
+			l := journalLine{raw: raw}
+			var e Entry
+			if json.Unmarshal(raw, &e) == nil {
+				l.entry = &e
+			}
+			lines = append(lines, l)
 		}
-		var e Entry
-		if err := json.Unmarshal(line, &e); err != nil {
-			return nil, fmt.Errorf("parsing undo journal %s: %w", path, err)
+		if rerr == io.EOF {
+			return lines, nil
 		}
-		entries = append(entries, e)
+		if rerr != nil {
+			return nil, fmt.Errorf("reading undo journal %s: %w", path, rerr)
+		}
 	}
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("reading undo journal %s: %w", path, err)
-	}
-	return entries, nil
 }

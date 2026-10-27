@@ -13,6 +13,7 @@ This is the rigorous testing plan for SynapseOS's execution engine (`internal/cl
 - [Layer 6 — Regression Harness](#layer-6--regression-harness)
 - [Layer 7 — Proficiency-Tiered Utterance Robustness](#layer-7--proficiency-tiered-utterance-robustness)
 - [Layer 8 — Tool-Call Fork Probe](#layer-8--tool-call-fork-probe)
+- [Layer 9 — Multi-Turn Conversations](#layer-9--multi-turn-conversations)
 - [Model Parameterization — a Cross-Cutting Requirement](#model-parameterization--a-cross-cutting-requirement)
 
 ## Layer 1 — Deterministic Unit Correctness
@@ -99,11 +100,13 @@ They had been cancelling out: the plain headline was 50% before and after, but t
 
 **Fixing (2) first meant scraping the transcript by line prefix**, a stopgap for `open-problems.md` row 2 (the core handed every interface one flat text stream). Since 2026-10-23 Layer 7 runs the loop in event mode (`internal/loopevent`) and scores only what reached the person: each command's standard output, the answer, and notices (`told()` in `layer7_score_test.go`). Step numbers, token counts and latencies are fields of other events, so they cannot satisfy a verifier by construction. The run fails if the loop writes any text in event mode, since that would be narration outside what is scored. The 2026-09-14 numbers above were taken with the scraper.
 
-**Two sets, reported separately.** The twelve tasks above (U1–U12, `layer7_corpus_test.go`) were written and tuned while the system was built against `qwen2.5-coder:3b`, so they are development data for that model. A held-out set of twelve different intents (H1–H12, `layer7_heldout_test.go`) was written on 2026-10-23 before any model ran on it, and is frozen: `pilot/layer7_heldout.sha256` holds the file's hash and `TestLayer7HeldOutFrozen` fails on any edit, so a changed set goes under a new name. `SYNAPSE_LAYER7_SET=development` or `heldout` runs one; empty runs both, each with its own summary naming the set and the model (D46).
+**Two sets, reported separately.** The twelve tasks above (U1–U12, `layer7_corpus_test.go`) were written and tuned while the system was built against `qwen2.5-coder:3b`, so they are development data for that model. A held-out set of twelve different intents (H1–H12, `layer7_heldout_test.go`) was written on 2026-10-23 before any model ran on it, and is frozen: `pilot/layer7_heldout.sha256` holds the file's hash and `TestLayer7HeldOutFrozen` fails on any edit, so a changed set goes under a new name. `SYNAPSE_LAYER7_SET` picks the set: `development` (the default), `heldout`, or `both`, each with its own summary naming the set and the model (D46). The held-out set runs only when named, so a tuning run cannot spend it; until 2026-10-27 an unset variable ran both.
 
 **The verifiers are checked without a model**, in every `go test` (`TestLayer7Verifiers`): each task's untouched fixture, with nothing told, must fail its verifier, and the fixture after the task's reference `solution` command must pass it. A verifier made to accept anything is caught (checked by breaking H8's). The scorer's own cases are in `TestLayer7Scoring`, also untagged, where the old `TestLayer7ScoringHelpers` ran only under `-tags live`.
 
 Run with `go test -tags live ./cmd/synapse/... -run TestLayer7UtteranceTiers -v`, with `SYNAPSE_MODEL` naming the model.
+
+**The analysis setting.** Until 2026-10-25 every run of this layer and of Layer 9 had the effect analysis off: the package's `TestMain` turns it off for unit tests unless `SYNAPSE_ANALYSIS` is set, and the live layers run in that package. Since then they run with the shipped default, `strict`, unless the run sets it (`shippedAnalysis`, `TestLiveLayersRunTheShippedAnalysis`), and each run logs the setting. Because this layer approves every confirmation, the setting changes little of what ran before; it matters for the loop's brakes, which read the analysis.
 
 **The failures are not primarily comprehension failures.** Of the 24 failing runs:
 
@@ -159,6 +162,24 @@ Prose-when-action-needed fell from **45 to 6**. Invented or unusable calls: **0*
 **The residual weakness is the plain tier at 60%**, the same plain-versus-technical gap Layer 7 measures. The fork is close to solved; comprehension of plain phrasing is not, and no change of architecture addresses that.
 
 **Status:** the parser is built and tested (`internal/toolcall`, unit-tested offline against replies captured live). It is **not wired into `runLoop`** — the CLI still uses the sentinel protocol. That rewrite changes the loop's core contract and needs a decision entry before it starts.
+
+## Layer 9 — Multi-Turn Conversations
+
+`cmd/synapse/layer9_test.go`, `-tags live`. Added 2026-10-25, with its corpus in `layer9_corpus_test.go` and `layer9_heldout_test.go`.
+
+Every layer above sends one request at a time. A person in the REPL or TUI does not: they say "move it into old", "no, the other one", "put it back". Session memory (`internal/session`) has unit tests at 98% coverage, but they check that earlier turns *reach* the prompt, not what the model makes of them. The one time that mattered, a follow-up answered `DONE` because the model read the previous task as this one, and only a live run found it (`manual-tests/m6-session-context.md`).
+
+**Design.** A conversation is a fixture and 2–3 turns spoken against it in one session, as the REPL runs one: the same session memory and undo journal across turns, with "undo" answered by synapse itself (`runUndo`), not the model. Every turn is scored on the real end state and on what it told the person, using Layer 7's `told()`, so step numbers and latencies cannot satisfy a check. A turn is scored on its own, so a later turn can pass after an earlier one failed, and whether every turn of a conversation passed is reported beside it. Every reply is logged (`TOLD` lines), because a reply that states something the commands did not show leaves no state to check and needs a person to read.
+
+**Categories:** a reference to an earlier result ("move it", "rename that file"), a correction ("no, I meant the other text file"), undo by the REPL's own word and the same intent in words ("actually, put it back where it was"), a change of topic, chat wrapped around work, building on earlier turns, and "the same for".
+
+**Two sets.** Eight development conversations (C1–C8, `layer9_corpus_test.go`) are for tuning. Four held-out ones (K1–K4, `layer9_heldout_test.go`) were written on 2026-10-25 before any model ran on them and are frozen by `pilot/layer9_heldout.sha256` (`TestLayer9HeldOutFrozen`). They are run only in the model comparison, never while the loop is being tuned. `SYNAPSE_LAYER9_SET` picks the set as in Layer 7 (`development` by default, `heldout` or `both` only by name); `SYNAPSE_LAYER9_REPEATS` sets the repeats (default 3).
+
+**The verifiers are checked without a model**, in every `go test` (`TestLayer9Verifiers`), in conversation order: after the earlier turns' reference solutions ran, each turn must fail with nothing done and nothing told, and must pass after its own solution.
+
+**Known limits.** The conversations are authored, as Layer 7's phrasings are, so they stand in for real conversations until the pilot study supplies some. Manual conversations are for finding failures; each one found becomes a scripted conversation here, in the development set. Like Layer 7, this layer asserts nothing about the model.
+
+Run with `go test -tags live ./cmd/synapse/... -run TestLayer9Conversations -v`, with `SYNAPSE_MODEL` naming the model.
 
 ## Model Parameterization — a Cross-Cutting Requirement
 

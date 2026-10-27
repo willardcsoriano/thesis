@@ -125,8 +125,8 @@ Leave the session (`exit`), then run two **separate** one-shot invocations:
 
 ```sh
 cd /tmp/synapse-m6
-~/repos/thesis/prototype/bin/synapse "create a file called oneshot.txt"
-~/repos/thesis/prototype/bin/synapse "rename it to oneshot2.txt"
+~/repos/thesis/prototype/bin/synapse run "create a file called oneshot.txt"
+~/repos/thesis/prototype/bin/synapse run "rename it to oneshot2.txt"
 ```
 
 **What to check:** the second one should *not* resolve "it". Each invocation is a fresh process with no memory, and that's deliberate — statelessness is what makes CLI mode safe to script (D19), not an oversight. If it somehow does resolve, memory is leaking across processes, which would be a genuine bug.

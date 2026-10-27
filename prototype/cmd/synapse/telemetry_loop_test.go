@@ -158,7 +158,7 @@ func TestDeclinedConfirmationIsRecorded(t *testing.T) {
 func TestUndoInvokedIsLoggedOnDecline(t *testing.T) {
 	dir := t.TempDir()
 	journal := filepath.Join(dir, "journal.jsonl")
-	if err := undo.AppendJournal(journal, undo.Entry{Command: "rm gone.txt", Dir: dir}); err != nil {
+	if err := undo.AppendJournal(journal, undo.Entry{Command: "touch made.txt", Dir: dir, Created: []string{"made.txt"}}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -166,7 +166,7 @@ func TestUndoInvokedIsLoggedOnDecline(t *testing.T) {
 	var out, errOut bytes.Buffer
 	code := runUndo(func(string) bool { return false }, &out, &errOut, journal,
 		telemetry.New(&log, "P05"), "T9")
-	if code != 0 {
+	if code != exitDeclined {
 		t.Fatalf("exit %d: %s", code, errOut.String())
 	}
 
@@ -177,7 +177,7 @@ func TestUndoInvokedIsLoggedOnDecline(t *testing.T) {
 	if evs[0]["event_type"] != "undo_invoked" || evs[0]["outcome"] != "declined" {
 		t.Fatalf("event = %v, want undo_invoked/declined", evs[0])
 	}
-	if evs[0]["command"] != "rm gone.txt" {
+	if evs[0]["command"] != "touch made.txt" {
 		t.Errorf("command = %v", evs[0]["command"])
 	}
 }
@@ -211,7 +211,7 @@ func TestREPLEntryPointActuallyEmitsTelemetry(t *testing.T) {
 	defer server.Close()
 
 	var out, errOut bytes.Buffer
-	code := runREPL(context.Background(), ollama.New(server.URL), "m", "",
+	code := runREPL(context.Background(), ollama.New(server.URL), "m", sessionJournal(t),
 		strings.NewReader("do something harmless\n"), &out, &errOut)
 	if code != 0 {
 		t.Fatalf("exit %d: %s", code, errOut.String())
@@ -249,7 +249,7 @@ func TestTaskCommandRetargetsSubsequentEvents(t *testing.T) {
 	defer server.Close()
 
 	var out, errOut bytes.Buffer
-	runREPL(context.Background(), ollama.New(server.URL), "m", "",
+	runREPL(context.Background(), ollama.New(server.URL), "m", sessionJournal(t),
 		strings.NewReader("first task\ntask T5\nsecond task\n"), &out, &errOut)
 
 	raw, _ := os.ReadFile(logPath)

@@ -607,3 +607,25 @@ func TestGenerateStreamSendsTheGivenFormat(t *testing.T) {
 		t.Errorf("request format = %v, want the literal \"json\"", raw["format"])
 	}
 }
+
+// A keep-alive in seconds goes to Ollama as a number and a duration as a
+// string; a bare number sent as a string was refused (finding r2-atk8-01).
+func TestKeepAliveIsSentInTheTypeOllamaAccepts(t *testing.T) {
+	for v, want := range map[string]any{"-1": float64(-1), "600": float64(600), "10m": "10m", "": DefaultKeepAlive} {
+		t.Setenv("SYNAPSE_KEEP_ALIVE", v)
+		var got any
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var body map[string]any
+			json.NewDecoder(r.Body).Decode(&body)
+			got = body["keep_alive"]
+			json.NewEncoder(w).Encode(GenerateResponse{Response: "x", Done: true})
+		}))
+		if _, err := New(srv.URL).Generate(context.Background(), "m", "", "p", nil, nil); err != nil {
+			t.Fatal(err)
+		}
+		srv.Close()
+		if got != want {
+			t.Errorf("SYNAPSE_KEEP_ALIVE=%q sent keep_alive %#v, want %#v", v, got, want)
+		}
+	}
+}

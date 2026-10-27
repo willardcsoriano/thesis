@@ -74,5 +74,5 @@ bench_run_task() {
     args+=(--setenv "$name" "${!name}")
   done < <(compgen -e | grep '^SYNAPSE_' || true)
   args+=(--setenv SYNAPSE_MODEL "$model" --chdir "$BENCH_HOME_IN")
-  bwrap "${args[@]}" -- synapse "$task" </dev/null
+  bwrap "${args[@]}" -- synapse run -- "$task" </dev/null
 }

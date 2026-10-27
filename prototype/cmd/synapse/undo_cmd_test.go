@@ -98,8 +98,8 @@ func TestRunUndoDeclinedLeavesEverythingIntact(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	code := runUndo(func(string) bool { return false }, &out, &errOut, journalPath, nil, "")
-	if code != 0 {
-		t.Fatalf("exit code = %d, want 0 (a declined undo is a clean cancel); stderr:\n%s", code, errOut.String())
+	if code != exitDeclined {
+		t.Fatalf("exit code = %d, want exitDeclined (D48: a declined undo is distinct from an applied one); stderr:\n%s", code, errOut.String())
 	}
 	if !strings.Contains(out.String(), "Cancelled.") {
 		t.Errorf("stdout missing cancellation message, got:\n%s", out.String())
@@ -293,12 +293,14 @@ func TestRunUndoShowsUnhandledNote(t *testing.T) {
 		t.Fatalf("AppendJournal: %v", err)
 	}
 
+	// Nothing in this entry can be put back, so undo says so and fails
+	// rather than reporting "Undo complete" (finding r2-atk5-08).
 	var out, errOut bytes.Buffer
 	code := runUndo(func(string) bool { return true }, &out, &errOut, journalPath, nil, "")
-	if code != 0 {
-		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
+	if code != 1 {
+		t.Fatalf("exit code = %d, want 1; stderr:\n%s", code, errOut.String())
 	}
-	if !strings.Contains(out.String(), "orphan.txt") {
+	if !strings.Contains(out.String(), "can be put back") {
 		t.Errorf("stdout missing the unhandled-change note, got:\n%s", out.String())
 	}
 }
@@ -334,14 +336,16 @@ func TestRunUndoPopFailureIsReported(t *testing.T) {
 	if err := undo.AppendJournal(journalPath, entry); err != nil {
 		t.Fatalf("AppendJournal: %v", err)
 	}
-	// Read-only on the file itself: unlike removing/renaming a directory
-	// entry, rewriting an *existing* file's content only needs write
-	// permission on the file's own mode bits, not the containing
-	// directory — so the permission has to be revoked here, not on the dir.
-	if err := os.Chmod(journalPath, 0o444); err != nil {
-		t.Fatalf("chmod journalPath: %v", err)
+	// Read-only on the directory: the pop rewrites the journal into a
+	// temporary file beside it and renames that into place (so a crash
+	// cannot leave half a journal), which needs write permission on the
+	// directory, not on the journal file. Changed from chmod-ing the file
+	// when the rewrite became atomic; the assertion is unchanged.
+	dir := filepath.Dir(journalPath)
+	if err := os.Chmod(dir, 0o555); err != nil {
+		t.Fatalf("chmod dir: %v", err)
 	}
-	defer os.Chmod(journalPath, 0o644) // let t.TempDir() clean it up
+	defer os.Chmod(dir, 0o755) // let t.TempDir() clean it up
 
 	var out, errOut bytes.Buffer
 	code := runUndo(func(string) bool { return true }, &out, &errOut, journalPath, nil, "")

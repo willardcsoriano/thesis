@@ -92,6 +92,12 @@ type Logger struct {
 	sync          func() error
 	participantID string
 	now           func() time.Time
+	// OnError, when set, is told about the first event that could not be
+	// written. Callers emit unconditionally and do not read the returned
+	// error, so without it a log that fills up or fails mid-session loses
+	// every later event in silence (volkswagen audit, finding 10).
+	OnError  func(error)
+	reported bool
 }
 
 // New returns a Logger appending to w for the given participant code. If w
@@ -133,12 +139,23 @@ func (l *Logger) emit(ev Event) error {
 		return fmt.Errorf("marshal %s event: %w", ev.Type, err)
 	}
 	if _, err := l.w.Write(append(line, '\n')); err != nil {
-		return fmt.Errorf("write %s event: %w", ev.Type, err)
+		return l.failed(fmt.Errorf("write %s event: %w", ev.Type, err))
 	}
 	if l.sync != nil {
-		return l.sync()
+		if err := l.sync(); err != nil {
+			return l.failed(fmt.Errorf("sync %s event: %w", ev.Type, err))
+		}
 	}
 	return nil
+}
+
+// failed reports err through OnError the first time and returns it.
+func (l *Logger) failed(err error) error {
+	if l.OnError != nil && !l.reported {
+		l.reported = true
+		l.OnError(err)
+	}
+	return err
 }
 
 // The methods below are deliberately one per event type rather than a single

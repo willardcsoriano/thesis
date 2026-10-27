@@ -1,6 +1,9 @@
 # Compiled binaries
 /bin/
 /synapse
+# `go build` run inside a command's own folder leaves its binary there
+/cmd/*/synapse
+/cmd/*/agentprobe
 *.exe
 
 # Go build/test cache and coverage

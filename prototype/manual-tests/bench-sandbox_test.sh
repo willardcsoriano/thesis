@@ -78,7 +78,11 @@ BIN="$(mktemp -d)"
 cat >"$BIN/synapse" <<'EOF'
 #!/bin/bash
 # Stand-in for bin/synapse: runs the task as the command, as executor.Run does.
-exec bash -o pipefail -c "$1"
+# It accepts only the real CLI's task form, `synapse run -- <task>`, and refuses
+# anything else with the real usage exit code, so the harness cannot drift back
+# to a command line the real binary rejects.
+[ "$#" -eq 3 ] && [ "$1" = run ] && [ "$2" = -- ] || { echo "stub synapse: refused command line: $*" >&2; exit 2; }
+exec bash -o pipefail -c "$3"
 EOF
 chmod +x "$BIN/synapse"
 

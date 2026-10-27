@@ -5,11 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -36,7 +38,7 @@ func TestRunREPLProcessesMultipleTasksInOneProcess(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := strings.NewReader("create a.txt\ncreate b.txt\n")
 
-	code := runREPL(context.Background(), client, "m", "", in, &out, &errOut)
+	code := runREPL(context.Background(), client, "m", sessionJournal(t), in, &out, &errOut)
 
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
@@ -68,7 +70,7 @@ func TestRunREPLExitsCleanlyOnExitCommand(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := strings.NewReader("create a.txt\nexit\nthis line must never be reached\n")
 
-	code := runREPL(context.Background(), client, "m", "", in, &out, &errOut)
+	code := runREPL(context.Background(), client, "m", sessionJournal(t), in, &out, &errOut)
 
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
@@ -89,7 +91,7 @@ func TestRunREPLExitsCleanlyOnEOF(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := strings.NewReader("")
 
-	code := runREPL(context.Background(), client, "m", "", in, &out, &errOut)
+	code := runREPL(context.Background(), client, "m", sessionJournal(t), in, &out, &errOut)
 
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
@@ -115,7 +117,7 @@ func TestRunREPLRunsFinalTaskEvenWithoutTrailingNewlineBeforeEOF(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := strings.NewReader("create a.txt") // no trailing \n
 
-	code := runREPL(context.Background(), client, "m", "", in, &out, &errOut)
+	code := runREPL(context.Background(), client, "m", sessionJournal(t), in, &out, &errOut)
 
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
@@ -145,7 +147,7 @@ func TestRunREPLContinuesSessionAfterAFailedTask(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := strings.NewReader("do something impossible\ncreate b.txt\n")
 
-	code := runREPL(context.Background(), client, "m", "", in, &out, &errOut)
+	code := runREPL(context.Background(), client, "m", sessionJournal(t), in, &out, &errOut)
 
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
@@ -194,7 +196,7 @@ func TestRunREPLSharesOneReaderBetweenTasksAndConfirmations(t *testing.T) {
 	// into one continuous terminal session would produce it.
 	in := strings.NewReader("delete doomed.txt\ny\ncreate second.txt\n")
 
-	code := runREPL(context.Background(), client, "m", "", in, &out, &errOut)
+	code := runREPL(context.Background(), client, "m", sessionJournal(t), in, &out, &errOut)
 
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
@@ -231,7 +233,7 @@ func TestRunREPLDeclinedConfirmationDoesNotLeakIntoNextTask(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := strings.NewReader("delete kept.txt\nn\ncreate second.txt\n")
 
-	code := runREPL(context.Background(), client, "m", "", in, &out, &errOut)
+	code := runREPL(context.Background(), client, "m", sessionJournal(t), in, &out, &errOut)
 
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
@@ -255,9 +257,9 @@ func TestRunREPLPrintsPromptAndGreeting(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := strings.NewReader("exit\n")
 
-	runREPL(context.Background(), client, "m", "", in, &out, &errOut)
+	runREPL(context.Background(), client, "m", sessionJournal(t), in, &out, &errOut)
 
-	got := out.String()
+	got := errOut.String() // the greeting and prompt are chrome: stderr (atk4-11)
 	if !strings.Contains(got, "exit or quit") {
 		t.Errorf("expected a greeting explaining how to leave, got:\n%s", got)
 	}
@@ -321,7 +323,7 @@ func TestRunREPLInterruptCancelsTaskButKeepsSessionAlive(t *testing.T) {
 
 	done := make(chan int, 1)
 	go func() {
-		done <- runREPL(context.Background(), client, "m", "", in, &out, &errOut)
+		done <- runREPL(context.Background(), client, "m", sessionJournal(t), in, &out, &errOut)
 	}()
 
 	select {
@@ -363,7 +365,7 @@ func TestRunREPLCarriesContextAcrossTasks(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	in := strings.NewReader("create the report\nmove it to Downloads\n")
-	runREPL(context.Background(), ollama.New(server.URL), "m", "", in, &out, &errOut)
+	runREPL(context.Background(), ollama.New(server.URL), "m", sessionJournal(t), in, &out, &errOut)
 
 	last := prompts[len(prompts)-1]
 	if !strings.Contains(last, "create the report") {
@@ -380,7 +382,7 @@ func TestRunREPLContextCommandReportsMemory(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	in := strings.NewReader("say hi\ncontext\n")
-	runREPL(context.Background(), ollama.New(server.URL), "m", "", in, &out, &errOut)
+	runREPL(context.Background(), ollama.New(server.URL), "m", sessionJournal(t), in, &out, &errOut)
 
 	got := out.String()
 	if !strings.Contains(got, "remembering 1 task(s)") {
@@ -401,7 +403,7 @@ func TestRunREPLClearCommandForgets(t *testing.T) {
 
 	var out, errOut bytes.Buffer
 	in := strings.NewReader("say hi\nclear\ncontext\n")
-	runREPL(context.Background(), ollama.New(server.URL), "m", "", in, &out, &errOut)
+	runREPL(context.Background(), ollama.New(server.URL), "m", sessionJournal(t), in, &out, &errOut)
 
 	got := out.String()
 	if !strings.Contains(got, "Forgot 1 remembered task(s)") {
@@ -430,7 +432,7 @@ func TestRunScratchCarriesNoHistoryBetweenTasks(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := strings.NewReader("create report.pdf\nmove it to Downloads\n")
 
-	code := runScratch(context.Background(), client, "m", "", in, &out, &errOut)
+	code := runScratch(context.Background(), client, "m", sessionJournal(t), in, &out, &errOut)
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
 	}
@@ -466,7 +468,7 @@ func TestRunScratchProcessesMultipleTasksInOneProcess(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := strings.NewReader("create a.txt\ncreate b.txt\n")
 
-	code := runScratch(context.Background(), client, "m", "", in, &out, &errOut)
+	code := runScratch(context.Background(), client, "m", sessionJournal(t), in, &out, &errOut)
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
 	}
@@ -485,7 +487,7 @@ func TestRunScratchContextAndClearAnswerTruthfullyWithNoMemory(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := strings.NewReader("context\nclear\n")
 
-	code := runScratch(context.Background(), client, "m", "", in, &out, &errOut)
+	code := runScratch(context.Background(), client, "m", sessionJournal(t), in, &out, &errOut)
 	if code != 0 {
 		t.Fatalf("exit code = %d, want 0; stderr:\n%s", code, errOut.String())
 	}
@@ -506,8 +508,8 @@ func TestRunScratchHeaderSaysNothingCarriesOver(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := strings.NewReader("")
 
-	runScratch(context.Background(), client, "m", "", in, &out, &errOut)
-	got := out.String()
+	runScratch(context.Background(), client, "m", sessionJournal(t), in, &out, &errOut)
+	got := errOut.String() // the header is chrome: stderr (atk4-11)
 	if !strings.Contains(got, "Scratch mode") {
 		t.Errorf("header should name the mode, got:\n%s", got)
 	}
@@ -524,12 +526,133 @@ func TestRunREPLHeaderIsUnchangedByScratchModesExistence(t *testing.T) {
 	var out, errOut bytes.Buffer
 	in := strings.NewReader("")
 
-	runREPL(context.Background(), client, "m", "", in, &out, &errOut)
-	got := out.String()
+	runREPL(context.Background(), client, "m", sessionJournal(t), in, &out, &errOut)
+	got := errOut.String() // the header is chrome: stderr (atk4-11)
 	if !strings.Contains(got, "Follow-ups can refer back") {
 		t.Errorf("REPL's memory hint is missing, got:\n%s", got)
 	}
 	if strings.Contains(got, "Scratch mode") {
 		t.Errorf("REPL's header should never mention scratch mode, got:\n%s", got)
+	}
+}
+
+// Ctrl+C while a task waits at a confirmation prompt cancels that task at
+// once, declines, and leaves the session reading: the next line typed goes to
+// the session's prompt as a new task, not to the abandoned confirmation.
+// Before lineSource, the prompt kept waiting until Enter, and that Enter was
+// consumed as the confirmation's answer.
+func TestRunREPLInterruptAtAConfirmationPromptIsImmediate(t *testing.T) {
+	dir := t.TempDir()
+	keep := filepath.Join(dir, "keep.txt")
+	after := filepath.Join(dir, "after.txt")
+	if err := os.WriteFile(keep, []byte("data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	server := scriptedOllamaServer(t, []string{
+		fmt.Sprintf("rm %q", keep),
+		fmt.Sprintf("touch %q", after),
+		"DONE",
+	})
+	defer server.Close()
+
+	origNotify, origStop := notifyInterrupts, stopInterrupts
+	defer func() { notifyInterrupts, stopInterrupts = origNotify, origStop }()
+	var taskSignals []chan<- os.Signal
+	var mu sync.Mutex
+	notifyInterrupts = func(c chan<- os.Signal) { mu.Lock(); taskSignals = append(taskSignals, c); mu.Unlock() }
+	stopInterrupts = func(c chan<- os.Signal) {}
+
+	in, typing := io.Pipe()
+	out, errOut := &lockedBuffer{}, &lockedBuffer{}
+	done := make(chan int, 1)
+	go func() {
+		done <- runREPL(context.Background(), ollama.New(server.URL), "m", sessionJournal(t), in, out, errOut)
+	}()
+
+	typing.Write([]byte("delete keep.txt\n"))
+	waitFor(t, func() bool { return strings.Contains(errOut.String(), "[y/N]") }, "the confirmation prompt")
+	mu.Lock()
+	taskSignals[0] <- os.Interrupt
+	mu.Unlock()
+	waitFor(t, func() bool { return strings.Contains(out.String(), "Cancelling this task") }, "the cancellation notice")
+
+	typing.Write([]byte("create after.txt\n"))
+	waitFor(t, func() bool { _, err := os.Stat(after); return err == nil }, "the next task to run")
+	typing.Close()
+
+	select {
+	case <-done:
+	case <-time.After(30 * time.Second):
+		t.Fatal("runREPL did not return after its input closed")
+	}
+	if _, err := os.Stat(keep); err != nil {
+		t.Errorf("keep.txt was deleted although the confirmation was interrupted: %v", err)
+	}
+}
+
+// lockedBuffer is a bytes.Buffer safe to read while the session writes to it.
+type lockedBuffer struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (l *lockedBuffer) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.b.Write(p)
+}
+
+func (l *lockedBuffer) String() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.b.String()
+}
+
+func waitFor(t *testing.T, cond func() bool, what string) {
+	t.Helper()
+	deadline := time.Now().Add(20 * time.Second)
+	for !cond() {
+		if time.Now().After(deadline) {
+			t.Fatalf("timed out waiting for %s", what)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// sessionJournal gives a session test a writable undo journal. A real session
+// asks before every change when it has no journal (loopConfig.requireUndo),
+// so a test of session mechanics needs one like any real session has.
+func sessionJournal(t *testing.T) string {
+	t.Helper()
+	return filepath.Join(t.TempDir(), "undo.log")
+}
+
+// "undo" typed in the TUI is synapse's undo, never a request to the model, as
+// in the REPL (ship review, 2026-10-27: the TUI sent it to the model).
+func TestTUIUndoIsAnsweredLocally(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	journal := filepath.Join(t.TempDir(), "undo.log")
+	srv := scriptedOllamaServer(t, []string{"touch made.txt", "DONE"})
+	run := tuiRunner(ollama.New(srv.URL), "m", journal, nil, newTaskTracker(), nil)
+	yes := func(string) bool { return true }
+	var out, errOut bytes.Buffer
+	if code := run(context.Background(), "make a file", yes, &out, &errOut); code != exitOK {
+		t.Fatalf("task exit %d: %s", code, errOut.String())
+	}
+	srv.Close()
+	// Any request to the model now fails the test: the server is gone, and
+	// one that answered would be the model handling "undo".
+	asked := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("the model was asked to handle undo")
+	}))
+	defer asked.Close()
+	run = tuiRunner(ollama.New(asked.URL), "m", journal, nil, newTaskTracker(), nil)
+	out.Reset()
+	if code := run(context.Background(), "undo", yes, &out, &errOut); code != exitOK {
+		t.Fatalf("undo exit %d: %s%s", code, out.String(), errOut.String())
+	}
+	if _, err := os.Stat(filepath.Join(dir, "made.txt")); err == nil {
+		t.Errorf("made.txt is still there after undo:\n%s", out.String())
 	}
 }

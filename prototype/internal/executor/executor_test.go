@@ -198,3 +198,39 @@ func TestRunConcurrentOverlappingRuns(t *testing.T) {
 		t.Error(e)
 	}
 }
+
+func TestCaptureKeepsHeadAndTailAndCountsTheRest(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		writes []string
+		limit  int
+		want   string
+		drop   int64
+	}{
+		{"unlimited", []string{"abc", "def"}, 0, "abcdef", 0},
+		{"under the limit", []string{"abc"}, 10, "abc", 0},
+		{"exactly the limit", []string{"abcdefghij"}, 10, "abcdefghij", 0},
+		{"one over", []string{"abcdefghijk"}, 10, "abcde\n[... 1 bytes not shown ...]\nghijk", 1},
+		{"many small writes", []string{"ab", "cd", "ef", "gh", "ij", "kl", "mn"}, 6, "abc\n[... 8 bytes not shown ...]\nlmn", 8},
+	} {
+		c := newCapture(tc.limit)
+		for _, w := range tc.writes {
+			if n, err := c.Write([]byte(w)); n != len(w) || err != nil {
+				t.Fatalf("%s: Write = %d, %v", tc.name, n, err)
+			}
+		}
+		if got := c.String(); got != tc.want || c.dropped != tc.drop {
+			t.Errorf("%s: got %q dropped %d, want %q dropped %d", tc.name, got, c.dropped, tc.want, tc.drop)
+		}
+	}
+}
+
+func TestRunCappedBoundsOutput(t *testing.T) {
+	res := RunCapped(context.Background(), "head -c 100000 /dev/zero | tr '\\0' a; printf END", 1000)
+	if res.ExitCode != 0 {
+		t.Fatalf("exit %d: %s", res.ExitCode, res.Stderr)
+	}
+	if len(res.Stdout) > 1100 || !strings.HasSuffix(res.Stdout, "END") || res.StdoutDropped != 100003-1000 {
+		t.Fatalf("len %d, dropped %d, tail %q", len(res.Stdout), res.StdoutDropped, res.Stdout[len(res.Stdout)-10:])
+	}
+}

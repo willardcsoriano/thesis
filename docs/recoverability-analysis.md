@@ -96,7 +96,7 @@ flowchart LR
 
 **The analysis does not use the language model.** The model only translates the request into a command. The analysis is deterministic program analysis over that command: the same command in the same directory always gets the same answer, and a wrong translation is analysed exactly as faithfully as a right one. This is why the 3B model's translation errors (Chapter 3, Section 2.3) do not affect the algorithm's results.
 
-It is on by default (`SYNAPSE_ANALYSIS` unset means `strict`; `capture` asks less; `off` reverts to the pattern list, for comparison only), per `decisions.md` D35. Two runtime rules sit around it (`prototype/cmd/synapse/analysis.go`). The pattern list is still consulted, and a command it calls irreversible still asks, so **the analysis can add a confirmation but never remove one**. And resolvers (step 4) run only where the bubblewrap sandbox is available (`SYNAPSE_RESOLVE=auto`); without it, anything that needs resolving is unresolved and asks.
+It is on by default (`SYNAPSE_ANALYSIS` unset means `strict`; `capture` asks less; `off` reverts to the pattern list, for comparison only), per `decisions.md` D35. Two runtime rules sit around it (`prototype/cmd/synapse/analysis.go`). The pattern list is still consulted, and a command matching one of its command rules still asks, so **for those the analysis can add a confirmation but never remove one**. The exception is the list's two character scans (a truncating `>`, `tee` without `-a`), which read quoted text as an overwrite. The analysis clears those only when it resolved the command completely and found it recoverable with nothing to capture (D49). And resolvers (step 4) run only where the bubblewrap sandbox is available (`SYNAPSE_RESOLVE=auto`); without it, anything that needs resolving is unresolved and asks.
 
 ## 3. The model
 
@@ -898,7 +898,7 @@ Round 7, the reported result: 777 commands drawn after the design was frozen and
 - **Undo:** 630 of 631 executed commands restored exactly (99.8%).
 - **External lists:** the open-source checks were built for coding agents inside version control and let 73–97% of file-destroying commands through without asking; full method and caveats in `external-baselines.md` and Chapter 3, Section 3.1(a).
 
-Each row scores that system's own decision. The running system also consults the pattern list and asks when either asks, which can add confirmations but never removes protection.
+Each row scores that system's own decision. The running system also consults the pattern list and asks when either asks. The one exception is the list's character scans, which a confident, plainly recoverable analysis clears (D49), so the list adds confirmations but removes no protection the analysis does not prove unneeded.
 
 The fixes made on 2026-10-09 and 2026-10-10 (section 11) were each checked against round 7: all 3,885 decisions (777 commands × 5 systems) are identical before and after, so the reported numbers stand.
 

@@ -67,7 +67,7 @@ HUMAN_TASKS=(
   echo '```'
 } > "$REPORT"
 
-SYNAPSE_MODEL="$MODEL" ./bin/synapse >> "$REPORT" 2>&1
+SYNAPSE_MODEL="$MODEL" ./bin/synapse demo >> "$REPORT" 2>&1
 
 {
   echo '```'

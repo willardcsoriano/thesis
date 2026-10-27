@@ -29,7 +29,7 @@ SYNAPSE = "$(CURDIR)/bin/synapse"
 # (no filesystem changes, no classification, no execution). A quality smoke
 # test, not something a user runs to get work done; see cli/repl/tui for that.
 run: build
-	cd "$(RUNDIR)" && $(SYNAPSE)
+	cd "$(RUNDIR)" && $(SYNAPSE) demo
 
 # One ad-hoc task, e.g. make task TASK="find the 10 largest files under /var/log"
 # — this is CLI mode (D19); `cli` is the same target under that mode's own name,
@@ -40,7 +40,7 @@ task: build
 		echo "Usage: make task TASK=\"<what you want done>\" (or: make cli TASK=\"...\")"; \
 		exit 1; \
 	fi
-	cd "$(RUNDIR)" && $(SYNAPSE) "$(TASK)"
+	cd "$(RUNDIR)" && $(SYNAPSE) run -- "$(TASK)"
 
 cli: task
 
@@ -106,8 +106,11 @@ recoverycheck:
 fmt-check:
 	@out=$$($(GO)fmt -l cmd internal 2>/dev/null || gofmt -l cmd internal); if [ -n "$$out" ]; then echo "not gofmt-clean:"; echo "$$out"; exit 1; fi
 
+# The live tests run only against a model server, so ci never runs them; vet
+# still compiles them, or a name clash with an untagged file goes unseen.
 vet:
 	$(GO) vet ./...
+	$(GO) vet -tags live ./...
 
 ci: fmt-check vet test-gated cover-check bench-sandbox-check
 

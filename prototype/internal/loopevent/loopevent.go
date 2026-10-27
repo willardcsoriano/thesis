@@ -32,6 +32,12 @@ const (
 	// Approval: a command is about to ask for confirmation; Command, and Text
 	// carrying the reason and any warning.
 	Approval
+	// AnswerPart: the next piece of the Answer as the model writes it; Text.
+	// Zero or more come before the Answer, which still carries the whole reply
+	// and is the only one to score, log or keep. Parts with no Answer after
+	// them belong to a reply that failed part way, and are to be discarded:
+	// they were never a reply.
+	AnswerPart
 )
 
 // Event is one thing the loop wants the interface to know.
@@ -56,4 +62,26 @@ type Event struct {
 // Emitter is implemented by a writer whose owner wants events.
 type Emitter interface {
 	Emit(Event)
+}
+
+// kindNames are the stable wire names of each Kind, used by `synapse run
+// --json`. They are part of the CLI's contract: renaming one, or reordering
+// the constants above, must not change what a consumer reads.
+var kindNames = map[Kind]string{
+	Command:    "command",
+	Result:     "result",
+	Answer:     "answer",
+	Notice:     "notice",
+	Problem:    "problem",
+	Note:       "note",
+	Approval:   "approval",
+	AnswerPart: "answer_part",
+}
+
+// String returns the Kind's wire name, or "unknown" for a value with none.
+func (k Kind) String() string {
+	if n, ok := kindNames[k]; ok {
+		return n
+	}
+	return "unknown"
 }

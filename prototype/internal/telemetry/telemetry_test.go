@@ -227,3 +227,19 @@ func TestUnnormalisedResultOmitsRedundantFields(t *testing.T) {
 		}
 	}
 }
+
+type fullDisk struct{}
+
+func (fullDisk) Write([]byte) (int, error) { return 0, errors.New("disk full") }
+
+// A log that cannot be written is reported once, not lost in silence.
+func TestWriteFailureIsReportedOnce(t *testing.T) {
+	l := New(fullDisk{}, "P01")
+	var reports []error
+	l.OnError = func(err error) { reports = append(reports, err) }
+	l.TaskStart("T1", "a")
+	l.TaskStart("T1", "b")
+	if len(reports) != 1 || !strings.Contains(reports[0].Error(), "disk full") {
+		t.Fatalf("reports = %v, want exactly one naming the cause", reports)
+	}
+}
