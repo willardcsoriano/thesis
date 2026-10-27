@@ -30,12 +30,19 @@ import (
 )
 
 // Entry is one thing in a fixture. Kind is "file", "dir" or "link".
+//
+// Age is how old the entry is when the fixture is materialized, in seconds:
+// its modification and access times are set that far before now. It is
+// relative, not a date, so a fixture means the same thing whenever it is
+// built: a file 60 days old is older than "15 days" in every run and every
+// replay of it. Zero leaves the times as creating the entry set them.
 type Entry struct {
 	Path   string `json:"p"`
 	Kind   string `json:"k"`
 	Data   string `json:"d,omitempty"`
 	Target string `json:"t,omitempty"`
 	Mode   uint32 `json:"m,omitempty"`
+	Age    int64  `json:"a,omitempty"`
 }
 
 // Materialize creates the fixture under root. Parents are created as needed.
@@ -52,12 +59,24 @@ type Entry struct {
 //
 // Mode is a Unix mode: the permission bits plus setuid (04000), setgid
 // (02000) and sticky (01000). Zero means 0644.
+//
+// Ages are applied after every entry exists, deepest path first, because
+// creating something in a directory resets the directory's own times. A
+// directory that is created only as a parent, with no entry of its own, is
+// as new as the fixture. A link has no age: its times would be set through
+// it, on its target.
 func Materialize(root string, fx []Entry) error {
 	r, err := os.OpenRoot(root)
 	if err != nil {
 		return err
 	}
 	defer r.Close()
+	now := time.Now()
+	type aged struct {
+		rel string
+		at  time.Time
+	}
+	var ages []aged
 	for _, e := range fx {
 		rel, err := entryPath(root, e.Path)
 		if err != nil {
@@ -65,6 +84,14 @@ func Materialize(root string, fx []Entry) error {
 		}
 		if e.Kind != "file" && e.Mode != 0 {
 			return fmt.Errorf("fixture %q: a mode is only applied to a file", e.Path)
+		}
+		switch {
+		case e.Age < 0:
+			return fmt.Errorf("fixture %q: negative age %d", e.Path, e.Age)
+		case e.Age > 0 && e.Kind == "link":
+			return fmt.Errorf("fixture %q: a link has no age", e.Path)
+		case e.Age > 0:
+			ages = append(ages, aged{rel, now.Add(-time.Duration(e.Age) * time.Second)})
 		}
 		parent := filepath.Dir(rel)
 		switch e.Kind {
@@ -100,6 +127,17 @@ func Materialize(root string, fx []Entry) error {
 			}
 		default:
 			return fmt.Errorf("fixture %q: unknown kind %q", e.Path, e.Kind)
+		}
+	}
+	sort.SliceStable(ages, func(i, j int) bool {
+		return strings.Count(ages[i].rel, "/") > strings.Count(ages[j].rel, "/")
+	})
+	for _, a := range ages {
+		// Setting times does not touch the parent, so deepest-first leaves
+		// every age as given. Root.Chtimes cannot leave root, even through
+		// a link swapped in after the entry was made.
+		if err := r.Chtimes(a.rel, a.at, a.at); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -369,6 +407,11 @@ type Sandbox struct {
 	// The rest of the host root stays visible read-only (/usr, /etc, /var,
 	// /sys, /opt), and /proc/self/mountinfo shows the mount layout.
 	HideHost bool
+	// Chdir, under HideHost, is the directory the command starts in and its
+	// PWD, when it is not HiddenRoot: a WritableAt mount over a parent of
+	// HiddenRoot shadows it, and bubblewrap cannot enter a directory the
+	// shadowing folder does not hold. Empty means HiddenRoot.
+	Chdir string
 }
 
 // Mount is a host directory and the path it is bound at inside the sandbox.
@@ -514,7 +557,11 @@ func hiddenArgs(identity, root string, sb Sandbox) ([]string, error) {
 		k, v, _ := strings.Cut(kv, "=")
 		args = append(args, "--setenv", k, v)
 	}
-	return append(args, "--chdir", HiddenRoot, "--setenv", "HOME", home, "--setenv", "PWD", HiddenRoot, "--"), nil
+	wd := HiddenRoot
+	if sb.Chdir != "" {
+		wd = sb.Chdir
+	}
+	return append(args, "--chdir", wd, "--setenv", "HOME", home, "--setenv", "PWD", wd, "--"), nil
 }
 
 type limited struct{ b []byte }
