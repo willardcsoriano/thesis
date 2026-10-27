@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"synapseos/internal/classifier"
 	"synapseos/internal/effects"
 	"synapseos/internal/gate"
 )
@@ -56,8 +58,28 @@ func analysisDecision(ctx context.Context, cmd, wd string) *gate.Decision {
 	if !on || wd == "" {
 		return nil
 	}
-	d := gate.Decide(ctx, newAnalyzer(wd), cmd, p)
-	return &d
+	return decideFailClosed(ctx, newAnalyzer(wd), cmd, p)
+}
+
+// decide is gate.Decide, a variable only so a test can make it panic.
+var decide = gate.Decide
+
+// decideFailClosed runs the analysis and turns a panic inside it into the
+// fail-closed answer: unresolved and unrecoverable, which asks. The analysis
+// runs on every command the model proposes, so without this one input it
+// cannot handle would crash synapse mid-task instead of asking. The frozen
+// analysis is not edited for such a defect; it is caught here and recorded.
+func decideFailClosed(ctx context.Context, an *effects.Analyzer, cmd string, p gate.Policy) (d *gate.Decision) {
+	defer func() {
+		if r := recover(); r != nil {
+			d = &gate.Decision{
+				Verdict: effects.Verdict{Class: effects.Unrecoverable, Reasons: []string{fmt.Sprintf("the analysis failed on this command (%v), so it is treated as unrecoverable", r)}},
+				Confirm: true,
+			}
+		}
+	}()
+	res := decide(ctx, an, cmd, p)
+	return &res
 }
 
 // firstReason is the leading reason the analysis gave, for the prompt.
@@ -66,4 +88,15 @@ func firstReason(d *gate.Decision) string {
 		return "the effects of this command could not be determined"
 	}
 	return d.Verdict.Reasons[0]
+}
+
+// analysisClearsTextScan reports whether the analysis may clear a list
+// confirmation whose reason is one of the list's character scans (D49). It
+// may when it resolved everything (Confident) and found the command
+// recoverable with nothing to capture, the same bar strict mode uses to run a
+// command without asking. The list's command rules (rm, dd, git reset --hard,
+// and the rest) are never cleared: for those the gate stays a union.
+func analysisClearsTextScan(listReason string, d *gate.Decision) bool {
+	return classifier.IsTextScanReason(listReason) &&
+		d != nil && d.Confident && d.Verdict.Class == effects.Recoverable
 }
