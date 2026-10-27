@@ -5,8 +5,11 @@
 # ones, the Go toolchain go.mod requires, and the sandbox check CI runs.
 # Run as root, from the development machine:
 #   scp tools/verify-box/setup.sh root@<ip>: && ssh root@<ip> bash setup.sh <branch>
+# Or, for work not yet pushed, copy the checkout to /root/thesis first and pass
+# --copied: the tree is used exactly as copied, uncommitted changes included
+# (tools/break-box/push.sh does the copy).
 set -euo pipefail
-branch=${1:?usage: setup.sh <branch>}
+branch=${1:?usage: setup.sh <branch> | --copied}
 user=verify
 repo=https://github.com/willardcsoriano/thesis.git
 
@@ -25,10 +28,17 @@ install -d -m 700 -o "$user" -g "$user" /home/"$user"/.ssh
 install -m 600 -o "$user" -g "$user" /root/.ssh/authorized_keys /home/"$user"/.ssh/
 
 home=/home/$user
-[ -d "$home/thesis" ] || sudo -u "$user" git clone -q "$repo" "$home/thesis"
-sudo -u "$user" git -C "$home/thesis" fetch -q origin
-sudo -u "$user" git -C "$home/thesis" checkout -q "$branch"
-sudo -u "$user" git -C "$home/thesis" pull -q --ff-only
+if [ "$branch" = --copied ]; then
+  [ -d /root/thesis ] || { echo "--copied: no tree at /root/thesis" >&2; exit 1; }
+  rm -rf "$home/thesis"
+  cp -a /root/thesis "$home/thesis"
+  chown -R "$user:$user" "$home/thesis"
+else
+  [ -d "$home/thesis" ] || sudo -u "$user" git clone -q "$repo" "$home/thesis"
+  sudo -u "$user" git -C "$home/thesis" fetch -q origin
+  sudo -u "$user" git -C "$home/thesis" checkout -q "$branch"
+  sudo -u "$user" git -C "$home/thesis" pull -q --ff-only
+fi
 
 # The package list comes from the manifest, so a dependency added there
 # reaches the box without editing this script.
