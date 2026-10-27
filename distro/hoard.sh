@@ -52,7 +52,9 @@ if [ $want_tc -eq 1 ]; then
   fi
   want=$(curl -fsSL 'https://go.dev/dl/?mode=json&include=all' | jq -r --arg f "$file" '.[].files[] | select(.filename==$f) | .sha256' | head -1)
   got=$(sha256sum "$out/toolchain/$file" | awk '{print $1}')
-  [ -n "$want" ] && [ "$want" = "$got" ] || { echo "toolchain checksum mismatch or unknown: want=$want got=$got" >&2; rm -f "$out/toolchain/$file"; exit 1; }
+  if [ -z "$want" ] || [ "$want" != "$got" ]; then
+    echo "toolchain checksum mismatch or unknown: want=$want got=$got" >&2; rm -f "$out/toolchain/$file"; exit 1
+  fi
   echo "toolchain $file verified"
 fi
 
@@ -102,5 +104,7 @@ if [ $want_pip -eq 1 ]; then
   echo "pip wheels hoarded in $out/pip"
 fi
 
+# find leaves SHA256SUMS out, so the file being written is never read.
+# shellcheck disable=SC2094
 (cd "$out" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
 echo "wrote $out/SHA256SUMS"
