@@ -52,6 +52,12 @@ This file records architectural and research design decisions that have been mad
   - [D44 — TUI mode gains a scratch variant: `synapse tui scratch`](#d44--tui-mode-gains-a-scratch-variant-synapse-tui-scratch)
   - [D45 — Measure which commands real agents run, across four phrasing tiers, before deciding the user study's fate](#d45--measure-which-commands-real-agents-run-across-four-phrasing-tiers-before-deciding-the-user-studys-fate)
   - [D46 — The model-size comparison: candidates, tiers, and accuracy on GPU but timing on CPU](#d46--the-model-size-comparison-candidates-tiers-and-accuracy-on-gpu-but-timing-on-cpu)
+  - [D47 — Local models join the agent command study, through the same API driver](#d47--local-models-join-the-agent-command-study-through-the-same-api-driver)
+  - [D48 — The CLI is the system's contract; free text becomes a task only after `run` or `--`](#d48--the-cli-is-the-systems-contract-free-text-becomes-a-task-only-after-run-or---)
+  - [D49 — A confident analysis may clear the pattern list's character scans, and nothing else](#d49--a-confident-analysis-may-clear-the-pattern-lists-character-scans-and-nothing-else)
+  - [D50 — Network and administrator commands always ask; every confirmation is plain and true; undo keeps what is there now](#d50--network-and-administrator-commands-always-ask-every-confirmation-is-plain-and-true-undo-keeps-what-is-there-now)
+  - [D51 — The loop stops a run the model cannot stop; Layer 9 tests conversations; live layers run on rented boxes](#d51--the-loop-stops-a-run-the-model-cannot-stop-layer-9-tests-conversations-live-layers-run-on-rented-boxes)
+  - [D52 — Layer 7 accepts both fair readings of an ambiguous plain request; the harness aids each weakness it measured](#d52--layer-7-accepts-both-fair-readings-of-an-ambiguous-plain-request-the-harness-aids-each-weakness-it-measured)
 
 ## Decisions
 
@@ -722,7 +728,7 @@ The analysis has been evaluated on NL2Bash, on templates, and on one 3B local mo
 
 Chapter 3 Section 2.1(d) promises that each larger memory tier's model is chosen by scoring candidates by execution and timing them under desktop load, but named no candidates and defined no tier above 8 GB. Decided:
 
-- **Candidates:** `qwen2.5-coder` at 0.5b, 1.5b, 3b, 7b, 14b and 32b; `qwen3` dense at 4b and its neighbours; `qwen3-coder:30b-a3b` as the mixture-of-experts candidate. One family across every size, plus the two lines the paper and `drift.md` already commit to.
+- **Candidates:** `qwen2.5-coder` at 0.5b, 1.5b, 3b, 7b, 14b and 32b; `qwen3` dense at 4b and its neighbours (1.7b and 8b, named 2026-10-23 for the feasibility run); `qwen3-coder:30b` (30B total, 3B active; tag checked against the Ollama registry 2026-10-23) as the mixture-of-experts candidate. One family across every size, plus the two lines the paper and `drift.md` already commit to.
 - **Tiers:** 4 GB and 8 GB (Table 3.2), then 16 GB and 32 GB, on VMs with 2, 4, 8 and 16 cores. Core count changes CPU inference speed as much as memory does, so it is fixed per tier.
 - **Where each part runs:** accuracy on a rented GPU, timing on CPU VMs sized to each tier with a fixed desktop load. One tier's model is also scored on CPU and its end states compared with the GPU run before the GPU accuracy numbers stand in for CPU ones.
 - **Repeats:** Layer 7's default of 3.
@@ -731,3 +737,158 @@ Chapter 3 Section 2.1(d) promises that each larger memory tier's model is chosen
 **Rejected:** a 70B-class model. The smallest at Ollama's default quantization is about 43 GB of weights, more than any tier holds, so it answers a question the thesis does not ask. Timing on GPU: Table 3.2 promises CPU-only inference, so a GPU timing is not evidence of deployability.
 
 **Not decided here:** which tier the study machine uses. That follows from this comparison's results, as Chapter 3 says.
+
+### D47 — Local models join the agent command study, through the same API driver
+
+**Status:** Decided 2026-10-23, when planning the model-size comparison (D46).
+
+The agent command study (D45) asks which commands real agents write, so that the corpus can be checked against them: a kind of command agents write that the corpus lacks is a gap, and a kind the corpus is full of that agents never write says the corpus's rates of needless confirmation are not the rates a person would see. The agents were frontier ones only. The ten D46 candidates now join them, run on the study's 68 tasks and four phrasing tiers through the planned API driver, pointed at Ollama's OpenAI-compatible endpoint (`/v1/chat/completions` accepts `tools`, though not `tool_choice`; checked against Ollama's docs 2026-10-23). One driver then serves DeepSeek, Kimi and every local model, and holds everything but the model fixed.
+
+The ideal corpus covers every kind of command any of these agents writes, plus the hostile and unusual cases they rarely do. Commands that expose a gap become development data once it is fixed (`CLAUDE.md`), so each such batch is followed by a fresh one the fixes never saw.
+
+**Measures:** the model's own command writing in a plain agent loop, comparable with Claude Code and Gemini CLI. How well SynapseOS uses a model stays Layer 7's question. Small models often answer in words instead of calling a tool (Layer 8: 0 tool calls in 69 at 3B), so few commands from a model is a finding, not a failure.
+
+**Order:** the API driver is built and the suite frozen and hashed first; the local runs then share the rented machines of the comparison. Whether all ten models or only the small ones and the chosen study model run follows from the feasibility run's timings (`experiments.md`).
+
+
+### D48 — The CLI is the system's contract; free text becomes a task only after `run` or `--`
+
+**Status:** Decided 2026-10-24, when hardening the CLI ahead of the bootable image.
+
+The CLI is the backbone: scripts, agents, the study harnesses and the image's boot test all drive `synapse` through it, and the TUI and GUI are presentation over the same loop (D26, D27). Until now `main` matched exact subcommands and joined every other command line into a natural-language task. `synapse --help`, a mistyped subcommand, and `synapse undo --dry-run` were all sent to the model as instructions, which the loop could turn into a command and, when the analysis judged it recoverable, run without asking. An agent probing the CLI hits this first, because `--help` is the first thing it tries.
+
+**Decision:** `cmd/synapse/cli.go` parses the whole command line before anything else runs. Tasks are given only as `synapse run <task>` or `synapse -- <task>`; every subcommand rejects arguments it does not take; anything unrecognised, and a bare `synapse`, exits 2 with usage on stderr and never contacts the model. `--help` and `--version` exist, the version is read from Go's build information, and the former no-argument sample suite is `synapse demo`. The old bare form `synapse "<task>"` is removed, not deprecated, since the prototype has no outside users. Diagnostics such as the model banner go to stderr so stdout carries only results.
+
+**Enforced by:** `cli_test.go`, which runs the real `main` against a fake model that counts requests and asserts that every refused command line exits 2 with zero requests; and the bench harness's stand-in binary, which accepts only `run -- <task>`. The rest of the hardening landed under the same decision on the same day:
+
+- **Exit codes per outcome.** Each code is derived from the outcome the study log already records (`outcome.go`): 3 declined, 4 unsupported, 5 step limit, 6 model unavailable, 130 interrupted. Before this, a declined confirmation exited 0.
+- **Streams.** Prompts and diagnostics moved to stderr.
+- **`run --json`.** It streams the loop's events as JSON Lines and ends with the outcome.
+- **Configuration.** Every `SYNAPSE_*` variable is validated at startup from the same list the help prints (`config.go`). `undo` is exempt, so a bad model setting cannot block recovery.
+- **Interrupts.** Ctrl+C on a one-shot task records the outcome before exiting.
+
+`docs/cli.md` states the contract, with each guarantee next to the test that enforces it.
+
+**Not done: moving the loop into an internal package.** Go does not allow importing `package main`, so the TUI already cannot reach the loop. The boundary that matters, the TUI importing the executor or the analysis, is enforced by an allowlist test over its whole import graph (`internal/tui/boundary_test.go`). Moving the loop would have changed about 6,500 lines of tests in `package main` for no reuse that exists today. Instead, `main.go` was split by concern within the package (`loop.go`, `prompts.go`, `modes.go`, `undo_cmd.go`), and the split was checked to preserve every line. Extract the loop when a second program needs it.
+
+### D49 — A confident analysis may clear the pattern list's character scans, and nothing else
+
+**Status:** Decided 2026-10-25, by the owner, while smoothing the CLI (D48).
+
+The running gate was a union: the pattern list was always consulted, and the analysis could add a confirmation but never remove one. Two of the list's checks read the command as text, not as shell: any `>` that is not part of `>>` counts as a truncating redirect, and any `tee` without `-a` counts as an overwrite. So `printf '%s\n' 'a>b'` and `echo hi > new.txt` asked for confirmation, although the analysis resolved them completely and found nothing that could be lost. For a person, that is a needless prompt on an ordinary command.
+
+**Decision:** the gate drops a list confirmation only when both hold:
+
+- the list's reason is one of those two character scans (`classifier.IsTextScanReason`);
+- the analysis is confident (no unresolved issues) and its verdict is plainly recoverable, the bar strict mode already uses to run a command without asking.
+
+The list's command rules (`rm`, `dd`, `shred`, `git reset --hard`, and the rest) still always ask, so the list stays defense in depth where it reads a command's meaning, not its characters. With the analysis off, the list alone decides, as before. The gate records each cleared prompt as a note event.
+
+**What it does not change:** `Classify` returns the same verdicts, so the L0 baseline and the committed round-7 numbers are untouched. The round-7 rows score each system's own decision, not the running union. The paper's description of the gate (chapter 3) and `safety-model.md` and `recoverability-analysis.md` were updated to say this.
+
+**Enforced by:** `TestGateClearsOnlyTheListsTextScans`, which runs the real program under the default strict analysis. A quoted `>`, a redirect to a new file and `tee` to a new file run; a redirect over an existing file still asks and leaves the file intact; `rm -f` of a missing file, which the analysis calls recoverable, still asks because a command rule fired. Widening the override to every list reason fails that last case. `TestGateWithoutAnalysisKeepsTheList` checks the analysis-off path.
+
+### D50 — Network and administrator commands always ask; every confirmation is plain and true; undo keeps what is there now
+
+**Status:** Decided 2026-10-25. The owner chose "play safe" for network access and asked that confirmations be understandable to people with no technical background. The undo rule followed from the round-1 live findings (`cli-breaking.md`).
+
+The first live attack round (four agents, about 130 runs against the real 3B model) found no way past the confirmation gate, but it found three things a careful person could still be hurt by.
+
+- **Commands the analysis does not model.** `curl wttr.in` ran without asking, because reading the network changes no file. `sudo` commands ran with no approval record and failed only for lack of a password.
+- **Confirmations that said the wrong thing.** Every confirmation said "it can't be undone", including deletions synapse saves to its trash and undoes exactly. Text mode and `--json` also gave different reasons for the same command.
+- **Undo destroying later work.** Undo removed, overwrote or replaced whatever stood at a path, so a file the person had written since the command ran was destroyed without warning. Six findings from three attackers.
+
+**Decision:**
+
+- **Network and administrator rights always ask.** A command that names a privileged program (`sudo`, `doas`, `pkexec`, `su`, `run0`) or reaches the network (`curl`, `wget`, `ssh`, `git pull`, package installs, and the rest in `consent.go`) asks, whatever the file analysis says. The check reads every simple command in the line, through pipes, substitutions and wrappers, and over-asks rather than under-asks.
+- **One consent message, everywhere.** Every confirmation says in everyday words what the command does (built from the analysis's effects: "It deletes notes.txt"), and whether undo can take it back. The undo sentence follows the gate's own capture decision, so it cannot promise more than the safety net delivers. It also says when no journal is being kept at all. The technical reason stays as a details line. Text mode, `--json` and the TUI show the same message.
+- **Undo never destroys what is there now.** `ApplySafely` first hard-links into synapse's trash whatever currently occupies a path the undo will restore into, remove, or replace, then runs `Apply` unchanged. `Apply` is the restore the sandboxed recovery check measures, so the paper's instrument is untouched. Uncommitted git changes are stashed before a git restore. The plan shown before confirming says, in plain words, what will be set aside. If anything cannot be set aside, nothing is undone and the entry goes back in the journal.
+
+**Enforced by:** `consent_test.go`, `undo_safety_test.go` (each test changes a file after the command, undoes, and checks the later version survives; each fails against the old undo), and `TestNetworkAndAdministratorCommandsAlwaysAsk`.
+
+**Extended 2026-10-25, after live rounds 2 and 3.** The same three rules were carried further where the next rounds broke them:
+
+- **Undo keeps what is there now** now also covers:
+  - writes through symlinks (the target and the link are both restored);
+  - commands that touch synapse's own history or trash (always ask, never promise undo);
+  - a copy that cannot be saved (the command does not run);
+  - a missing saved copy (undo changes nothing and stays retryable);
+  - files added inside folders the command made;
+  - git edits (stashed before anything is set aside).
+- **Consent is true at the moment of running:** after a yes the command is checked again, and if the folder changed while the person was deciding, it says so and asks again. Without a writable undo history, everything that changes files asks.
+- **The journal records what happened, not what was predicted:** creations and moves that did not occur are dropped, and an entry with nothing restorable is neither journaled nor reported as undone.
+
+Each is enforced by a test in `undo_safety_test.go` or `consent_test.go`. The full list, with the finding behind each, is in `cli-breaking.md`.
+
+### D51 — The loop stops a run the model cannot stop; Layer 9 tests conversations; live layers run on rented boxes
+
+**Status:** Decided 2026-10-25, while testing how far the loop can carry `qwen2.5-coder:1.5b` (`experiments.md`, "Harnessing the 1.5B model"). Development data only.
+
+**Finding:** 1.5B writes mostly right commands but cannot judge that a task is finished. After `wc -l log.txt` printed the answer it proposed the same command again; 3B answered done. Asking "are you done?" before "what next?" changed nothing over 69 runs and was reverted. A separate yes or no judge answered yes for 3 of 4 unfinished cases at 1.5B. Before any change, 79 of 108 Layer 7 runs hit the step limit.
+
+**Decision:**
+
+- **Brakes in the loop, not the prompt** (`cmd/synapse/brakes.go`). The command that just succeeded, proposed again, is not run (`repeated_success`). A step the analysis predicts only moves back what the step before it moved is not run (`reversed_step`). Both exit 0 but are counted apart from `complete`, so a study never credits the model with finishing. A reply that names a number or file no command printed, nor the analysis predicted, is withheld and the person told why. After a read-only step that found nothing, the person is told which search it was. A brake never runs anything and never makes a wrong command right.
+- **Two aids:** the step prompt lists the working folder's names, and a reply Ollama aborted for looping is retried once with `repeat_penalty` 1.2.
+- **Layer 9** (`testing-plan.md`) scores conversations turn by turn in one session, with eight development conversations and four held out, frozen by `pilot/layer9_heldout.sha256`.
+- **Live layers run with the analysis as shipped** (`strict`); before this they ran with it off through the package's `TestMain`.
+- **Live layers run on a rented box** (`tools/layer-box/run.sh`, about 7 minutes for two models on a cpx52), never the development laptop, and the box is deleted when the round ends.
+
+**Result:** 1.5B no longer hits the step limit, but is no more accurate, and gets a quarter of conversations fully right. 3B said done itself in 94 of 108 runs and gets 20 of 24 conversations right. 3B stays the default; 1.5B is a best-effort option for weak machines.
+
+**Rejected:** prompting 1.5B to judge completion (no effect), a 1.5B completion judge (stops unfinished work), and 3B judging for 1.5B (little faster than running 3B throughout).
+
+**Open:** the first two rounds also differ in Ollama version (0.34.1 on the laptop, 0.40.11 on the box), so an ablation on one box is owed before the brakes are credited with any change. Since the third round Ollama is pinned (`distro/ollama-pin`, checksum-verified) and every round records each model's digest.
+
+### D52 — Layer 7 accepts both fair readings of an ambiguous plain request; the harness aids each weakness it measured
+
+**Status:** Decided 2026-10-26 by the owner, before any harness change was measured against it.
+
+**Readings.** The development runs of 2026-10-25 scored two of 3B's plain-tier answers as misses that a person could fairly have meant:
+
+- "how long is log.txt" answered in bytes instead of lines (U4);
+- "put all my pdfs together in one place" read as one merged file instead of one folder (U1).
+
+Both are ordinary casual requests. The owner ruled that either reading answers them. Each task gets a second acceptance (`plainAlso`) for the plain tier only, with its own reference solution, which the corpus check runs: the second reading must be reachable, recognised, and refused on an untouched fixture. The interface and technical phrasings name one reading and keep it. U1's fixture now holds real one-page PDFs, so a merge can succeed. The held-out set is frozen and unchanged, and its tasks were not read while designing this.
+
+**Aids.** The misses that remain point at three weaknesses, and each gets a deterministic aid in `cmd/synapse/aids.go`, switchable with `SYNAPSE_AIDS`:
+
+| Aid | Weakness | Evidence | What it does |
+|---|---|---|---|
+| `peek` | the model writes the command before seeing the data | 9 of 3B's 16 Layer 7 misses: `awk` without `-F,` on a CSV; `WARNING` searched for where the file says `WARN` | the first lines of each file the request names |
+| `tools` | a program that is not installed makes the model give up | U1: `pdftk` "command not found" | the command is not run, and the model is told to use an installed program |
+| `refs` | follow-ups lose track of "there" and "it" | all of 3B's Layer 9 misses | lists what the session most recently created or changed |
+
+Every aid is generic: none names a task's file, word or program. A rule written for a failing development task would fit the harness to the test, the same failure as tuning a system to its test.
+
+**Measurement rule.** Each aid is run with and without it, on one box with one pinned Ollama, across 1.5B, 3B and 7B, on the development sets, and confirmed once on the held-out sets. An aid stays only if it helps 3B and hurts no size.
+
+**First measurement (2026-10-26, development data, 3B only).** Each setting ran on one rented box (Ollama 0.40.11), three repeats per task. The box was deleted before 7B and 1.5B came back (see `testing-environment.md`, "Renting automatically"), so only 3B is complete.
+
+| 3B setting | Layer 7 (108 runs) | Layer 9 (51 turns) |
+|---|---|---|
+| none | 94 | 43 |
+| peek | 99 | 48 |
+| tools | 92 | 43 |
+| refs | 95 | 46 |
+| peek, tools, refs | 97 | 41 |
+
+Three things were learned. **Repeats are not samples:** at temperature 0 the same prompt gives the same command, so a task's three repeats mostly agree, and any change to the prompt can flip a whole task from 3 of 3 to 0 of 3, whether or not the change concerns it. With all three aids on, Layer 9's C8 turn 2 went from 2 of 3 to 0 of 3 by moving one of two files, a slip the aids do not touch. `tools` changes nothing unless a program is missing, yet U4 and U8 moved by one run each: about 2 runs in 108 is serving noise. **Always-on prompt text reshuffles; checks that act only on a detected mistake do not.** **Telling the model is not enough:** with `peek` showing `name,score`, 3B still wrote `awk '{sum += $2}'` and reported a sum of 0; with `refs` naming `stuff/`, it still counted the working folder for "how many files are in there now"; told `pdftk` is not installed, it gave up.
+
+**Second set of aids (2026-10-26).** Each answers a miss above by a mechanism, not a task:
+
+| Aid | Miss | What it does |
+|---|---|---|
+| `lint` | a command that runs cleanly but cannot give the answer: awk's `$2` on a file with no blanks (U9, 6 of 6 runs); `ls -l \| wc -l` counting the "total" line (C8); `ls -l \| sort` sorting by permissions, naming a 1-byte file the biggest (C1) | the command is not run; the model is told why and what works (`-F','`, `ls -A`, `ls -lS`). Each check fires only on a case it can prove from the command and the files it reads |
+| `refs`, extended | "in there" and "it" ignored though the list named them | a note beside the request: `"in there" most likely means stuff/`. Not for a bare "there", which in "how many files are there" means here |
+| `tools`, extended | gave up after "not installed" | the note lists installed programs whose names are like the missing one or contain the file kind (pdftk: `pdfunite`, `pdfinfo`, …), at most 40 |
+| `literal` | the person typed a command and 3B ran something else (U8 technical) | a note that the request is itself a command, to propose as written; only when it parses, every program is installed, and it has shell punctuation or an option |
+
+A third pair followed the second measurement, for the two misses left:
+
+| Aid | Miss | What it does |
+|---|---|---|
+| `tools`, re-ask | told `pdfunite` was installed, 3B still gave up on the next reply (U1, 3 of 3) | when the model gives up straight after a refusal, it is asked once more, with each similar program's one-line description from its manual page (read from the file, never by running the program). Once per task. The refusal itself has no room for this: a step's error is cut at 500 characters |
+| `refs`, the last reply | after "the biggest file is big.bin", "move it" moved both files: the look-up changed nothing, so the note had nothing to point at (C1 turn 2) | the session keeps the reply the person was shown (not a withheld one); when the last request changed nothing and its reply named exactly one thing here, "it" is that. Two named: no note |
+
+The model's remaining 3B misses with no harness answer are listed in `experiments.md` beside the second measurement.

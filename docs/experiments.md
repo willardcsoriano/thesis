@@ -18,6 +18,8 @@ This is the register of every experiment the thesis runs or promises: what each 
   - [Everyday desktop load](#everyday-desktop-load)
   - [Candidates and tiers](#candidates-and-tiers)
   - [Size of the run](#size-of-the-run)
+  - [Feasibility run](#feasibility-run)
+  - [Harnessing the 1.5B model (2026-10-25)](#harnessing-the-15b-model-2026-10-25)
 - [Hardware for a one-day burst](#hardware-for-a-one-day-burst)
 - [What one day can and cannot cover](#what-one-day-can-and-cannot-cover)
 
@@ -54,10 +56,11 @@ All of these talk to Ollama, and all take the model as a parameter, so each can 
 | Layer 3: live classifier agreement | How the classifier judges what the model proposes | run on 3B and 7B | `SYNAPSE_LIVE_MODELS=a,b,…` | 25 | `testing-plan.md` Layer 3 |
 | Layer 4: typed operations against raw bash | Reliability of the two output paths | run on 3B and 7B | `SYNAPSE_LIVE_MODELS` | 10 | `testing-plan.md` Layer 4 |
 | Layer 8: talk-or-act probe | Whether the model answers or acts, across 5 registers | run on 3B and 7B | `SYNAPSE_MODEL`; `SYNAPSE_PROBE_REPEATS` (default 3) | 69 | `testing-plan.md` Layer 8 |
+| Layer 9: multi-turn conversations | Whether follow-ups, corrections, undo and changes of topic reach the intended state, turn by turn, in one session | run on 1.5B, development set (below) | `SYNAPSE_MODEL`; `SYNAPSE_LAYER9_SET`; `SYNAPSE_LAYER9_REPEATS` (default 3) | 17 development turns and 8 held-out turns, x 3 repeats | `testing-plan.md` Layer 9 |
 | Model bench | 8 sample tasks and 8 human-style requests, the human-style ones executed under bubblewrap with the playground as home and the real home hidden | run on 1.5B and 3B | `manual-tests/model-bench.sh <model>` | 16, the loop ones up to 5 steps | `manual-tests/model-bench.sh` |
 | Model-generated corpus partition | Commands the model writes for NL2Bash descriptions, labelled by the sandbox oracle | run once, 3B | `go run ./cmd/genpartition -model <tag> -n 350` | 350 | `algorithms.md` |
 
-The Layer tests are behind the `live` build tag: `go test -tags live ./cmd/synapse/... -run <TestName> -v`, with `TestLayer7UtteranceTiers`, `TestLiveClassifierAgreement`, `TestLayer4TypedOperationReliability` and `TestLayer8ToolCallFork`.
+The Layer tests are behind the `live` build tag: `go test -tags live ./cmd/synapse/... -run <TestName> -v`, with `TestLayer7UtteranceTiers`, `TestLiveClassifierAgreement`, `TestLayer4TypedOperationReliability`, `TestLayer8ToolCallFork` and `TestLayer9Conversations`.
 
 ### Experiments that need credentials, people, or something not yet built
 
@@ -89,7 +92,7 @@ One check is needed before the GPU accuracy numbers can stand in for CPU ones. T
 Four things had to be fixed before a comparison could count; all four were done on 2026-10-23.
 
 - **Layer 7 scores what the person was told, from typed events**, not a scraped transcript, so a model cannot pass on the loop's own bookkeeping (`prototype/testing-plan.md`, Layer 7). Its verifiers are checked without a model: each rejects its untouched fixture and accepts a reference solution.
-- **Layer 7 has a held-out set.** The development tasks (U1–U12) were tuned against the 3B model and would favour it; H1–H12 were written before any model ran on them and are frozen by hash. Every result names its set (`SYNAPSE_LAYER7_SET`).
+- **Layer 7 has a held-out set.** The development tasks (U1–U12) were tuned against the 3B model and would favour it; H1–H12 were written before any model ran on them and are frozen by hash. Every result names its set (`SYNAPSE_LAYER7_SET`). On 2026-10-25 the checks of U1 and U8 stopped requiring a folder named `PDFs/` or `logs/`, since their plain wordings ("in one place", "their own folder") name none: the 2026-10-23 feasibility run had scored qwen2.5-coder:14b a miss for gathering the PDFs into `pdfs/`. Any one folder holding both files passes at the plain tier (`plainAlso`); since 2026-10-27 the two tiers that name the folder require that name again, as D52 has a named reading kept (`TestLayer7NamedFolderTiers`). Between 2026-10-25 and 2026-10-27 those tiers accepted any folder, so the rounds run then scored them leniently. That run's U1 counts (its sample had no U8) are development data scored under the old check. The held-out checks were read for the same flaw (a check needing a name its plain wording never gives) and have none.
 - **The model bench runs model commands in a sandbox** whose home is the playground, so `~` and absolute paths cannot reach the real home (`prototype/manual-tests/bench-sandbox.sh`).
 - **The desktop load exists** (below).
 
@@ -109,7 +112,7 @@ tools/desktop-load/status.sh    # desktop-load state=up apps=2/2 processes=15 rs
 tools/desktop-load/stop.sh      # stops exactly what start.sh started, also after one app has crashed
 ```
 
-The timing harness logs `status.sh`'s line next to each timing. `rss_kb` counts shared pages once per process and overstates a multi-process browser; `pss_kb` is the load's real share of memory. The figures above are from one run under Xvfb on the development machine, not from a tier VM. `stop.sh` never matches by name: it stops the PIDs `start.sh` recorded (checked against their start time), their process groups, and the processes carrying the run's random token in their environment, which catches Chromium's crash handler after it leaves the group. `bash tools/desktop-load/test.sh` checks all of this against a real Chromium and Mousepad on Xvfb, with a decoy `sleep` and a decoy Mousepad that must survive every stop.
+The timing harness logs `status.sh`'s line next to each timing. `tools/tier-box/run.sh MODEL...` is that harness for one tier: on a server the size of the tier, CPU only, it runs `tools/model-box/run.sh` for the models twice, idle and then under the load in a headless X display (`xvfb-run`), and keeps both results with `status.sh`'s line from before and after the timed run. Through `rent.sh` the tiers map to Hetzner's shared types with the same memory: 2 cores and 4 GB `cpx22`, 4 and 8 GB `cpx32`, 8 and 16 GB `cpx42`, 16 and 32 GB `cpx62` (`RENT_TYPE=cpx32 RENT_FETCH=tier-box bash tools/rent/rent.sh -- bash tools/tier-box/run.sh qwen2.5-coder:3b`). A rented vCPU is not a laptop core (often half a physical core, shared with other tenants), so these timings compare tiers and models with each other; a claim about a particular device needs a run on one. `rss_kb` counts shared pages once per process and overstates a multi-process browser; `pss_kb` is the load's real share of memory. The figures above are from one run under Xvfb on the development machine, not from a tier VM. `stop.sh` never matches by name: it stops the PIDs `start.sh` recorded (checked against their start time), their process groups, and the processes carrying the run's random token in their environment, which catches Chromium's crash handler after it leaves the group. `bash tools/desktop-load/test.sh` checks all of this against a real Chromium and Mousepad on Xvfb, with a decoy `sleep` and a decoy Mousepad that must survive every stop.
 
 ### Candidates and tiers
 
@@ -117,7 +120,7 @@ Decided 2026-10-22 as proposed below; the decision and what was rejected are rec
 
 | Decision | Decided | Reason |
 |---|---|---|
-| Which models | `qwen2.5-coder` at 0.5b, 1.5b, 3b, 7b, 14b and 32b; `qwen3` dense at 4b (which `drift.md` says the next reaudit must weigh) and its neighbours; `qwen3-coder:30b-a3b` as the mixture-of-experts candidate the paper names | One family across the whole size range, plus the two newer lines the paper and `drift.md` already commit to |
+| Which models | `qwen2.5-coder` at 0.5b, 1.5b, 3b, 7b, 14b and 32b; `qwen3` dense at 4b (which `drift.md` says the next reaudit must weigh) and its neighbours; `qwen3-coder:30b` (30B total, 3B active; tag checked against the Ollama registry 2026-10-23) as the mixture-of-experts candidate the paper names | One family across the whole size range, plus the two newer lines the paper and `drift.md` already commit to |
 | A 70B-class model | Leave it out | At Ollama's default 4-bit quantization the smallest is about 43 GB of weights (`llama3.3:70b`), so no personal machine in the tiers could hold it. Testing it would answer a question the thesis does not ask |
 | The memory tiers | 4 GB and 8 GB (Table 3.2), then 16 GB and 32 GB | Table 3.2 fixes only the two minimum tiers; the larger ones are not yet defined anywhere |
 | Cores per tier VM | 2, 4, 8 and 16 cores, matching Hetzner's `cx23`, `cx33`, `cx43` and `cx53` | Core count changes CPU inference speed as much as memory does, so it has to be fixed per tier rather than taken from whatever the rented type offers |
@@ -125,9 +128,64 @@ Decided 2026-10-22 as proposed below; the decision and what was rejected are rec
 
 ### Size of the run
 
-The model files, from the Ollama library on 2026-10-22, set the minimum memory: `qwen2.5-coder` 0.5b 398 MB, 1.5b 986 MB, 3b 1.9 GB, 7b 4.7 GB, 14b 9.0 GB, 32b 20 GB; `qwen3-coder:30b-a3b` 19 GB. Real use is higher by the context cache and runtime overhead, so the 32B and 30B models need a 24 GB GPU at least, and only fit the 32 GB CPU tier.
+The model files, from the Ollama registry on 2026-10-23, set the minimum memory: `qwen2.5-coder` 0.5b 0.40 GB, 1.5b 0.99 GB, 3b 1.93 GB, 7b 4.68 GB, 14b 8.99 GB, 32b 19.85 GB; `qwen3` 1.7b 1.36 GB, 4b 2.50 GB, 8b 5.23 GB; `qwen3-coder:30b` (the mixture-of-experts model, 3B active) 18.56 GB. About 64.5 GB in all. Real use is higher by the context cache and runtime overhead, so the 32B and 30B models need a 24 GB GPU at least, and only fit the 32 GB CPU tier.
 
-The only measured speed is 3B on an unrecorded machine: Layer 7's 108 runs in 480 s. There is no measurement for any larger model, and none is guessed here. The first hour of the burst measures one Layer 7 pass per size, and the rest of the day is planned from that.
+The full comparison is 216 Layer 7 runs per model (24 tasks, 3 tiers, 3 repeats), each cut at 3 minutes. There is no measured speed for any model above 3B, and none is guessed here: the feasibility run measures it first.
+
+### Feasibility run
+
+`tools/model-box/run.sh` answers whether a given machine can run the whole comparison in about a day, before renting for a day. For each candidate it pulls the model, measures Ollama's own prompt and generation rates on a fixed request with synapse's options, times a sample of Layer 7 development tasks (U1, U4, U7, U10, one repeat: 12 runs), and extrapolates to the 216 runs. The held-out set is never run here, so its results stay unseen until the comparison. A model that cannot fit in the machine's free memory is recorded as such, not run. Its preflight also reports CPUs, memory, any GPU, and whether bubblewrap works, which decides whether a machine can run the sandboxed parts (it may not inside a container, as on RunPod).
+
+It runs on any Debian or Ubuntu machine with the repository: on Hetzner after `tools/verify-box/setup.sh`, the same way as the verification box. It uses a running Ollama at `OLLAMA_URL`, or fetches Ollama's official archive (`distro/hoard.sh --ollama`) and serves it for the run. Results go to `~/model-box/results.tsv`, one row per model with the estimate in hours; a row marked LOWER BOUND had runs cut at the 3-minute cap. Rerunning resumes.
+
+```sh
+scp tools/verify-box/setup.sh root@<server-ip>: && ssh root@<server-ip> bash setup.sh main
+ssh verify@<server-ip> 'cd thesis && setsid nohup bash tools/model-box/run.sh >/dev/null 2>&1 < /dev/null &'
+ssh verify@<server-ip> cat model-box/results.tsv      # one row per model as each finishes
+```
+
+Pass model tags after `run.sh` to time only those (for example `qwen2.5-coder:32b qwen3-coder:30b`). It runs detached, like the verification box, so a dropped connection does not stop it.
+
+### Harnessing the 1.5B model (2026-10-25)
+
+How far the loop, not the model, can carry `qwen2.5-coder:1.5b` (Q4_K_M). All development data, on the researcher's laptop shared with other work, so the times are not timings. The held-out sets of Layers 7 and 9 were not run.
+
+| Run | Plain | Interface | Technical | Clean exits |
+|---|---|---|---|---|
+| Layer 7 baseline, 108 runs | 21/36 | 25/36 | 36/36 | 2/108; 79 hit the step limit |
+| With the stop on a repeated success (`repeated_success`) | 21/36 | 27/36 | 33/36 | 0/108 said done; 88 stopped on a repeat |
+| Layer 9, with the stop | 28 of 51 turns, 7 of 24 whole conversations | | | |
+
+- **1.5B cannot judge that a task is finished.** After `wc -l log.txt` printed `4 log.txt`, it proposed the same command again, with or without the JSON format; 3B answered done. Asking whether a step was done before asking for the next command changed nothing over 69 runs, and was reverted. A separate yes or no question ("have these steps accomplished the task?") was answered yes for 3 of 4 unfinished cases by 1.5B and right for all 8 by 3B (cases written for the check, so indicative only).
+- **The baseline's 36/36 technical was partly luck.** For "mv report.txt summary.txt" it renamed the file and back again until the step limit, landing on the right name at step 5. With the stop it ends after the first rename back, and fails.
+- **The stop is how 1.5B finishes at all**: a run ends one short request after the work, instead of at the step limit. It never runs the repeat, so a side effect cannot happen twice.
+- **Other misses, by cause:** the model looped inside a reply until Ollama aborted it ("prediction aborted, token repeat limit reached", 4 of 108 runs, reported as `propose_error`); `UNSUPPORTED` for doable requests ("give report.txt a different name"); a wrong command concept (`ls -lh | sort -rh` choosing the `total` line, `awk` without `-F,` on a CSV, `WARNING` for `WARN`); and, once, `rm -rf ./*` for "get rid of the temporary files here", which the gate held for approval and Layer 7 auto-approves.
+- **In conversations** the misses are references: "no, I meant the other text file" and "put the two text files in it". Undo worked both ways, by the REPL's `undo` and by "put it back where it was".
+
+**Reading:** the commands are mostly right; the judgement around them (is it finished, which file is meant) is what 1.5B lacks, and a prompt does not supply it. Rules in the loop can stand in for some of it, as the stop does.
+
+**Second round, on a rented box (2026-10-25).** The loop gained three brakes and two aids (`cmd/synapse/brakes.go`, `prompts.go`): a step that only moves back what the step before it moved is not run (`reversed_step`); a reply naming a number or file that no command printed, nor the analysis predicted, is withheld and the person told why; after a read-only step that found nothing, the person is told which search it was; the step prompt lists the working folder's names; and a reply Ollama aborted for looping is retried once with `repeat_penalty` 1.2. The round ran with `tools/layer-box/run.sh` on a Hetzner cpx52 (12 cores, 4 shards): both models, both layers, in about 7 minutes. Development data.
+
+| Model | Layer 7 plain | interface | technical | Layer 9 turns | whole conversations |
+|---|---|---|---|---|---|
+| 1.5B, first round (laptop) | 21/36 | 25/36 | 36/36 | 28/51 | 7/24 |
+| 1.5B, this round | 24/36 | 26/36 | 33/36 | 27/51 | 6/24 |
+| 3B, first round (laptop) | 24/36 | 33/36 | 33/36 | 42/51 | 18/24 |
+| 3B, this round | 24/36 | 33/36 | 36/36 | 46/51 | 20/24 |
+
+1.5B now finishes every run by a brake rather than the step limit (90 stops on a repeat, 3 on a reversal, none at the limit) but is no more accurate: its gains and losses are within a few runs, and its conversations stay at a quarter right. 3B said done itself in 94 of 108 runs, so the brakes rarely touch it, and it gained 4 conversation turns. **The rounds differ in more than the brakes**, so the change cannot be credited to them alone: the box ran Ollama 0.40.11 against the laptop's 0.34.1 (`distro/hoard.sh --ollama` fetches the newest release, unpinned), and from this round the live layers run with the analysis on (`testing-plan.md`, Layer 7). An ablation on one box, with and without the brakes, is what would separate them.
+
+**Running a round.** Live Layer 7 and 9 runs go on a rented box, not the development laptop (4 shared threads: the same round took about 1.5 hours there). One command rents, runs, copies the results back and deletes the box (`testing-environment.md`, "Renting automatically"):
+
+```sh
+bash tools/rent/rent.sh -- bash tools/layer-box/run.sh qwen2.5-coder:1.5b qwen2.5-coder:3b
+```
+
+`tools/layer-box/run.sh` splits each model's development tasks and conversations across `LAYER_BOX_SHARDS` (default 4) copies of one test binary against one Ollama serving that many requests at once, and `merge.py` sums the shards as one run. The held-out sets run only with `LAYER_BOX_SET=heldout`. `LAYER_BOX_AIDS` (for example `"none peek,tools,refs all"`) runs each model once per `SYNAPSE_AIDS` setting on the same box, and `tools/layer-box/compare_aids.py RESULTS_DIR` prints each setting's score beside `none` and, per task and turn, which ones it made better and which worse: equal totals can hide an aid that fixed one task and broke another.
+
+**Third round (2026-10-25, the first through `rent.sh`).** The reply check now also accepts step numbers and exit codes, which the reply is written from: on the second round most withheld replies named "0" (an exit code) or "1" and "2" (step numbers). Same box type, Ollama 0.40.11 from the pin, model digests recorded. 1.5B: Layer 7 24/28/33 of 36, Layer 9 28 of 51 turns and 7 of 24 conversations, 3 replies withheld in conversations. 3B: Layer 7 24/33/35, Layer 9 44 of 51 turns and 19 of 24 conversations, none withheld. Against the second round, on the same Ollama, the differences are a few runs either way. Two causes are mixed in them and not yet separated: a withheld reply is not part of what is scored, so the corrected check changes what some tasks are scored on, and runs at temperature 0 still differed between the rounds, likely from serving four requests at once (not checked).
+
+**Aids and readings (2026-10-26, built, not yet measured).** Layer 7's U1 and U4 now accept a second fair reading of the plain phrasing only. Three harness aids exist, switchable with `SYNAPSE_AIDS`: `peek`, `tools` and `refs`, recorded in D52. No result here includes them yet. The next round runs each model with `SYNAPSE_AIDS=none` and with each aid on, on one box, with the Ollama version pinned.
 
 ## Hardware for a one-day burst
 
@@ -141,7 +199,7 @@ Checked live on 2026-10-22. Prices and stock change: recheck before renting (`dr
 
 Sources: `hcloud server-type list` (willard-mba15 project), https://www.hetzner.com/dedicated-rootserver/matrix-gpu/, https://www.runpod.io/pricing, https://ollama.com/library/qwen2.5-coder/tags, https://ollama.com/library/qwen3-coder/tags, https://ollama.com/library/llama3.3/tags.
 
-Not verified: GPU stock at the hour of renting, the RunPod prepaid-credit minimum for a new account, and whether the project's Hetzner core limit allows four tier VMs plus the verification box at once.
+Not verified: GPU stock at the hour of renting, and the RunPod prepaid-credit minimum for a new account. The Hetzner project's core limit is at least 20 (8 for the development VM plus 12 were accepted together on 2026-10-20; the Console's Limits page has the exact figure), so the four tier VMs (30 cores) cannot all run at once alongside the development VM: run them in turn, or ask Hetzner for a higher limit (Console, Limits, Request change).
 
 ## What one day can and cannot cover
 
