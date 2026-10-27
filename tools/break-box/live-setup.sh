@@ -33,6 +33,9 @@ chown -R verify:verify /opt/ollama-models
 # A rerun stops the server this script started before (by its recorded PID).
 pidfile=/home/verify/ollama.pid
 if [ -f "$pidfile" ]; then kill "$(cat "$pidfile")" 2>/dev/null || true; sleep 1; fi
+# The log is opened by this script, which runs as root, and handed to the
+# server it starts as verify: intended, so root owns the log.
+# shellcheck disable=SC2024
 sudo -u verify -H env OLLAMA_HOST=127.0.0.1:11434 OLLAMA_MODELS=/opt/ollama-models \
   OLLAMA_NUM_PARALLEL="$n" OLLAMA_KEEP_ALIVE=-1 \
   setsid nohup ollama serve > /home/verify/ollama-serve.log 2>&1 < /dev/null &
@@ -45,8 +48,8 @@ echo "model $model ready"
 for i in $(seq "$n"); do
   u=atk$i
   id "$u" >/dev/null 2>&1 || useradd -m -s /bin/bash "$u"
-  install -d -m 700 -o "$u" -g "$u" /home/$u/.ssh
-  install -m 600 -o "$u" -g "$u" /root/.ssh/authorized_keys /home/$u/.ssh/
+  install -d -m 700 -o "$u" -g "$u" "/home/$u/.ssh"
+  install -m 600 -o "$u" -g "$u" /root/.ssh/authorized_keys "/home/$u/.ssh/"
 done
 echo "attackers: $(seq -f 'atk%g' -s ' ' "$n")"
 synapse version
