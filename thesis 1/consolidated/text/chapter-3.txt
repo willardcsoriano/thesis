@@ -1334,7 +1334,7 @@ writes.
 e) Execution Pipeline
 
 ──────── p. 79 ────────
-                                                                                           79
+                                                                                        79
 
 
          The execution pipeline is where the analysis takes effect on the user’s system.
@@ -1352,124 +1352,127 @@ with capture or unrecoverable, and on approval takes the captures the plan names
 the command runs.       Under the capture policy it asks only before unrecoverable
 
 commands, and takes the plan’s captures for the rest without asking. Under either policy
-the enumerated-pattern list is still consulted, and a command it flags also asks, so the list
-can add a confirmation but never remove one; with the analysis disabled, the gate falls
-back to the list alone. Captures use five mechanisms — full content backup, hardlink-
+the enumerated-pattern list is still consulted, and a command matching one of its
+command rules also asks, so for those the list can add a confirmation but never remove
+one. Its two character scans, which read a quoted > or the word tee as an overwrite, are
 
-based trash, git HEAD capture, permission-metadata capture, or, for package and service
-state, an inverse command — and are recorded to a persistent undo journal before the
-command runs, so that a command approved in error remains recoverable; rollback is
-invoked through a dedicated undo command rather than from within the conversation.
+set aside only when the analysis has resolved the command completely and found it
+plainly recoverable; with the analysis disabled, the gate falls back to the list alone.
+Captures use five mechanisms — full content backup, hardlink-based trash, git HEAD
+capture, permission-metadata capture, or, for package and service state, an inverse
 
-Once the gate has passed the command, it is dispatched to a bash subprocess, and its
-standard output and standard error are captured and rendered in the conversational
-surface as the system’s response to the original natural language input.
+command — and are recorded to a persistent undo journal before the command runs, so
+that a command approved in error remains recoverable; rollback is invoked through a
+dedicated undo command rather than from within the conversation. Once the gate has
 
+passed the command, it is dispatched to a bash subprocess, and its standard output and
+standard error are captured and rendered in the conversational surface as the system’s
+response to the original natural language input.
          SynapseOS executes only shell-expressible operations. The system’s capability
+
 boundary is the Linux command-line toolchain: file management, process control, text
 processing, package management, network configuration, and any application that
-exposes a command-line interface.         GUI-only interactions — clicking buttons in
-
-graphical applications, navigating web page elements, or interacting with visual-only
-interfaces — are explicitly outside scope, in deliberate contrast to broader desktop agent
+exposes a command-line interface.        GUI-only interactions — clicking buttons in
 
 ──────── p. 80 ────────
                                                                                             80
 
 
+graphical applications, navigating web page elements, or interacting with visual-only
+interfaces — are explicitly outside scope, in deliberate contrast to broader desktop agent
+
 frameworks that additionally orchestrate GUI automation atop the existing session [54].
 This boundary is intentional: it constrains the research to a tractable, verifiable claim that
-
 the system can be built, evaluated, and defended within the thesis timeline.
 
 
 
 2.2 Data pre-processing
-
          Collected data is put into a consistent, analyzable form, with participants’
 identities replaced by codes, before any statistics are computed. Prior to statistical
+
 analysis, the command corpus and all data collected during the benchmark evaluation and
 user study — not the system itself — undergo the following processing steps:
-
          Command corpus: each candidate command is given a fixture built from its
+
          own text before the analysis is consulted; commands that do not finish cleanly
          on their fixture are excluded and counted with the reason, never labeled by guess
-
          (Section 1.2(b)); and the corpus is fixed by a recorded seed and hash before the
          analysis is run on it (Section 3.1(e))
+
          Task normalization: task descriptions and expected outcomes are standardized
          across both the OSWorld benchmark and the custom task suite to ensure
-
          consistent evaluation criteria
          Log parsing and event extraction: raw session logs from SynapseOS telemetry
+
          are parsed to extract per-task metrics — completion time, error events, and undo
          events
-
          Metric computation: task completion time is computed as the elapsed time
          between task prompt presentation and task completion event. Error rate is
+
          computed as the ratio of failed or incorrect outcomes to the number of tasks
          presented; the denominator is the task count rather than the attempt count, so
-
          that retrying cannot lower a participant’s error rate. Each task is scored against a
+
          written rubric specifying the observable end state that counts as success, with
          partial completion, abandonment at the time limit, and facilitator intervention
-
-         coded as distinct outcomes. Because SynapseOS outcomes are captured by the
-         session logger while native-OS outcomes must be judged from screen recording,
 
 ──────── p. 81 ────────
                                                                                          81
 
 
-        all tasks in both conditions are scored by one procedure: the rubric, fixed before
+        coded as distinct outcomes. Because SynapseOS outcomes are captured by the
 
+        session logger while native-OS outcomes must be judged from screen recording,
+        all tasks in both conditions are scored by one procedure: the rubric, fixed before
         any session is run, is applied to the screen recording by a single research team
         member, and for the SynapseOS condition a script additionally checks the end
+
         state the rubric names (a file, a package, a service) from the session log, so that
         the scoring of that condition does not rest on the scorer’s judgment alone. SUS
-
         and NASA-TLX scores are computed according to their respective standard
         scoring formulas
+
         Participant data pseudonymization: all participant records are pseudonymized
         at the point of extraction, replacing identifying information with participant ID
-
         codes prior to any analysis
 
 
 
 2.3 Validation
         Before the results can be trusted, the system and the instruments that measure it
+
 are themselves checked. The following validation procedures are applied to ensure the
 reliability and accuracy of the system and the study instruments:
-
         Pilot study: conducted with five participants prior to the main study to validate
         the task set difficulty, the questionnaire instruments, and the session procedure;
+
         findings from the pilot study are used to revise instruments and procedures
         before the main data collection begins
-
         Intent parsing accuracy: evaluated using an execution-based scoring
+
         methodology [47] rather than syntax-level string matching: each generated
         command is executed in a controlled environment, and its resulting system state
-
         is compared against a human-annotated expected outcome for each task
         utterance. Ambiguous cases, where the resulting state differs from the expected
+
         one only in ways the task did not ask about, are decided by a written equivalence
         rubric fixed before data collection and applied independently by two members
-
-        of the team; disagreements are settled by discussion, and the number of cases
-        decided this way is reported. Accuracy is computed as the proportion of first-
-        attempt matches
 
 ──────── p. 82 ────────
                                                                                             82
 
 
+         of the team; disagreements are settled by discussion, and the number of cases
+         decided this way is reported. Accuracy is computed as the proportion of first-
+         attempt matches
          Confirmation policy effectiveness: evaluated by verifying that every command
+
          in the task set that the analysis judges unrecoverable, and under the strict policy
          every command it judges recoverable only with capture, triggers the
          confirmation prompt, and that no such command executes without user approval
-
          Undo success rate: evaluated by executing a representative set of reversible
+
          operations and verifying that the undo log correctly restores the prior system
          state in each case
          The last two procedures have been carried out once on the prototype, as a
@@ -1477,13 +1480,13 @@ reliability and accuracy of the system and the study instruments:
 manual verification of ten test cases recorded as terminal logs and provided as
 supplementary material. In seven of them, a request is sent to the deployed system,
 where the language model writes the command, and the run is repeated with the analysis
-
 disabled, each from a freshly created test directory of ordinary files. Both configurations
+
 include the same undo log, so the analysis changes only what is captured before a
 command runs. The affected files are listed in the initial state, after execution, and after
 undo, and in every case the model wrote the same command in both runs. Requests name
-
 the kind of command under test, and some spell it out, because with loose phrasing the
+
 model produced a usable command of the intended shape in only two of seven cases, a
 limitation of translation rather than of the analysis. Of the remaining cases, one examines
 the analysis alone, one uses an everyday request, and one examines the scope of undo.
@@ -1491,52 +1494,52 @@ the analysis alone, one uses an everyday request, and one examines the scope of 
 All ten behaved as expected. Without the analysis, two data-destroying commands ran
 with no confirmation at all; where a command’s targets were indirect, undo restored the
 affected files in every case with the analysis enabled and in none with it disabled; and
-
 where targets were named directly, the two configurations behaved identically. The
+
 verification is illustrative rather than evidential: its cases were chosen to exhibit specific
 behaviors, so it supports no claim about rates, and the claims of RQ2 through RQ5 rest
 on the corpus evaluation in Section 3.1. What it adds is confirmation that the analysis’s
-
-decisions carry through to the files themselves in the deployed system, which the corpus
 
 ──────── p. 83 ────────
                                                                                          83
 
 
+decisions carry through to the files themselves in the deployed system, which the corpus
 evaluation, presenting commands directly to the analysis, does not exercise. It also
 surfaced two defects, recorded with the project’s open problems; the one that bears on the
+
 study is described under threats to validity (Section 3.7).
 
 
 
 2.4 Study session procedure
-
          Every session runs through the same steps, from briefing and consent to the
 closing debrief. Each participant session follows a standardized procedure conducted in
 the following order, with the facilitator’s checklist in Appendix K:
-      1. Briefing: The session facilitator explains the study purpose, session structure,
 
+      1. Briefing: The session facilitator explains the study purpose, session structure,
          and participant rights. The participant reads and signs the informed consent
          form. Screening was completed at sign-up (Section 1.4), so no session time is
          spent on it.
-      2. System familiarization: For the SynapseOS condition, the participant is given a
 
+      2. System familiarization: For the SynapseOS condition, the participant is given a
          five-minute orientation to the conversational interface and shown how to enter
          natural language commands. For the native OS condition, no familiarization is
-         provided — participants use their own operating system as they normally
 
+         provided — participants use their own operating system as they normally
          would. No task-specific training is provided under either condition.
       3. Task completion: The participant completes the full task set under the assigned
          condition. Tasks are presented one at a time via a printed task prompt sheet.
-         The session logger captures start and end times automatically, and screen
 
+         The session logger captures start and end times automatically, and screen
          recording captures all on-screen activity. Participants are not asked to verbalize
          while tasks are timed, because concurrent think-aloud reliably slows task
          performance, and here it would slow the two conditions unequally: narrating
-         while composing a natural-language instruction competes for the same linguistic
 
+         while composing a natural-language instruction competes for the same linguistic
          resources far more than narrating while pointing and clicking. Verbal data is
          instead collected retrospectively, by replaying the screen recording with the
+
          participant during the post-study interview.
 
 ──────── p. 84 ────────
