@@ -12,7 +12,9 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -49,6 +51,9 @@ type Result struct {
 	// example the shell binary is missing). It is distinct from a nonzero
 	// ExitCode, which means the command ran and reported failure normally.
 	Err error
+	// StdoutDropped and StderrDropped count the bytes RunCapped did not keep
+	// from the middle of each stream. Zero for Run and RunIn, which keep all.
+	StdoutDropped, StderrDropped int64
 }
 
 // waitDelay bounds how long Run waits for a killed process's I/O pipes to
@@ -76,6 +81,21 @@ func Run(ctx context.Context, cmd string) Result {
 // original command and from a different working directory than the one
 // it needs to act on.
 func RunIn(ctx context.Context, dir, cmd string) Result {
+	return run(ctx, dir, cmd, 0)
+}
+
+// RunCapped is Run for output nobody controls: the model's commands. It keeps
+// the first and last limit/2 bytes of each stream and counts the rest, so a
+// command that prints gigabytes costs a bounded amount of memory. The kept
+// text says how much was left out. Internal callers whose output feeds a
+// backup (a git clean preview) use Run, which keeps everything, because a
+// truncated list there would silently shrink the backup.
+func RunCapped(ctx context.Context, cmd string, limit int) Result {
+	return run(ctx, "", cmd, limit)
+}
+
+// run is RunIn with an optional per-stream capture limit (0 keeps all).
+func run(ctx context.Context, dir, cmd string, limit int) Result {
 	// bash, not sh: the model is prompted to emit bash, and on Debian
 	// /bin/sh is dash, which rejects bash-only syntax ([[ ]], arrays,
 	// brace expansion, process substitution). Running generated bash under
@@ -95,13 +115,13 @@ func RunIn(ctx context.Context, dir, cmd string) Result {
 	c.Dir = dir
 	c.WaitDelay = waitDelay
 
-	var stdout, stderr bytes.Buffer
-	c.Stdout = &stdout
-	c.Stderr = &stderr
+	stdout, stderr := newCapture(limit), newCapture(limit)
+	c.Stdout = stdout
+	c.Stderr = stderr
 
 	err := c.Run()
 
-	res := Result{Stdout: stdout.String(), Stderr: stderr.String()}
+	res := Result{Stdout: stdout.String(), Stderr: stderr.String(), StdoutDropped: stdout.dropped, StderrDropped: stderr.dropped}
 	if ctx.Err() == context.DeadlineExceeded {
 		res.TimedOut = true
 	}
@@ -129,4 +149,65 @@ func RunIn(ctx context.Context, dir, cmd string) Result {
 	}
 
 	return res
+}
+
+// capture is an io.Writer that keeps everything, or, with a limit, the first
+// and last limit/2 bytes and a count of what fell between.
+type capture struct {
+	limit   int
+	head    bytes.Buffer
+	tail    []byte // ring of the last limit/2 bytes once head is full
+	next    int    // where the ring writes next
+	full    bool   // the ring has wrapped
+	dropped int64
+}
+
+func newCapture(limit int) *capture { return &capture{limit: limit} }
+
+func (c *capture) Write(p []byte) (int, error) {
+	n := len(p)
+	if c.limit <= 0 {
+		return c.head.Write(p)
+	}
+	half := c.limit / 2
+	if room := half - c.head.Len(); room > 0 {
+		k := min(room, len(p))
+		c.head.Write(p[:k])
+		p = p[k:]
+	}
+	if len(p) == 0 {
+		return n, nil
+	}
+	if c.tail == nil {
+		c.tail = make([]byte, 0, half)
+	}
+	for _, b := range p {
+		if len(c.tail) < half {
+			c.tail = append(c.tail, b)
+			continue
+		}
+		c.full = true
+		c.tail[c.next] = b
+		c.next = (c.next + 1) % half
+		c.dropped++
+	}
+	return n, nil
+}
+
+func (c *capture) String() string {
+	if c.tail == nil {
+		return c.head.String()
+	}
+	var b strings.Builder
+	b.Write(c.head.Bytes())
+	if c.dropped > 0 {
+		fmt.Fprintf(&b, "\n[... %d bytes not shown ...]\n", c.dropped)
+	}
+	if c.full {
+		b.Write(c.tail[c.next:])
+		b.Write(c.tail[:c.next])
+	} else {
+		b.Write(c.tail)
+	}
+	return b.String()
 }
