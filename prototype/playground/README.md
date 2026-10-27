@@ -21,9 +21,9 @@ Safe to rerun any time — it deletes and rebuilds `sandbox/` from scratch.
 **Always name the sandbox path explicitly in your prompt, and use an absolute path.** The model has no idea this playground exists — if you ask for "my Desktop" or "my home folder" without qualifying it, it'll propose a command against your *real* `~/Desktop`, not this fixture. A relative path (`playground/sandbox/...`) is also unreliable: in live testing the model sometimes prepended a leading `/`, turning it into an absolute path from filesystem root and pointing at nothing. Absolute paths worked every time. From the repo root, that's `$(pwd)/prototype/playground/sandbox/...`:
 
 ```sh
-go run ./cmd/synapse "find all PDF files modified in the last 7 days in $(pwd)/prototype/playground/sandbox/home/user/Documents"
-go run ./cmd/synapse "move every screenshot in $(pwd)/prototype/playground/sandbox/home/user/Desktop into a folder called Screenshots"
-go run ./cmd/synapse "count how many lines in $(pwd)/prototype/playground/sandbox/home/user/Documents/access.log contain the word error"
+go run ./cmd/synapse run "find all PDF files modified in the last 7 days in $(pwd)/prototype/playground/sandbox/home/user/Documents"
+go run ./cmd/synapse run "move every screenshot in $(pwd)/prototype/playground/sandbox/home/user/Desktop into a folder called Screenshots"
+go run ./cmd/synapse run "count how many lines in $(pwd)/prototype/playground/sandbox/home/user/Documents/access.log contain the word error"
 ```
 
 After a run, `find prototype/playground/sandbox -type f` (or just look) shows what actually happened — compare it against what you asked for. Rerun `seed.sh` to reset before the next test.
