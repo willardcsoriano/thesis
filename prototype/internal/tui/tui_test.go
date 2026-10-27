@@ -1344,3 +1344,69 @@ func TestStartTaskForcesARepaintInNeatModeButNotOtherwise(t *testing.T) {
 		}
 	})
 }
+
+func answerPart(text string) eventMsg {
+	return ev(loopevent.AnswerPart, func(e *loopevent.Event) { e.Text = text })
+}
+
+// A reply being written shows in the live region as it grows, and reaches the
+// scrollback once, whole, when the Answer arrives.
+func TestStreamedReplyGrowsLiveThenPrintsOnce(t *testing.T) {
+	m, printed := newCaptured()
+	m.running = true
+	m = step(t, m, command(1, "ls"))
+	m = step(t, m, result("a\n", 0))
+	m = step(t, m, answerPart(" One "))
+	if v := m.View().Content; !strings.Contains(v, "One") {
+		t.Errorf("the first piece of the reply is not on screen:\n%s", v)
+	}
+	m = step(t, m, answerPart("file here."))
+	if v := m.View().Content; !strings.Contains(v, "One file here.") {
+		t.Errorf("the reply so far is not on screen:\n%s", v)
+	}
+	if strings.Contains(joined(printed), "One") {
+		t.Errorf("a piece of the reply reached the scrollback before the reply was whole:\n%s", joined(printed))
+	}
+	m = step(t, m, answer("One file here."))
+	if v := m.View().Content; strings.Contains(v, "One file") {
+		t.Errorf("the live copy of the reply stayed after it was printed:\n%s", v)
+	}
+	m = step(t, m, taskDoneMsg{})
+	if n := strings.Count(joined(printed), "One file here."); n != 1 {
+		t.Errorf("the reply was printed %d times, want once:\n%s", n, joined(printed))
+	}
+}
+
+// A reply that breaks off has no Answer. Its pieces leave the screen with the
+// task and are never printed, and the task falls back to what it showed before
+// there was streaming: the raw output, since nothing answered.
+func TestBrokenOffReplyLeavesNothingBehind(t *testing.T) {
+	m, printed := newCaptured()
+	m.running = true
+	for _, msg := range []tea.Msg{command(1, "ls /tmp"), result("a\n", 0), answerPart("The folder ho"), taskDoneMsg{}} {
+		m = step(t, m, msg)
+	}
+	if strings.Contains(joined(printed), "The folder ho") {
+		t.Errorf("half a reply was printed:\n%s", joined(printed))
+	}
+	if v := m.View().Content; strings.Contains(v, "The folder ho") {
+		t.Errorf("half a reply stayed on screen after the task ended:\n%s", v)
+	}
+	if !strings.Contains(joined(printed), "$ ls /tmp") {
+		t.Errorf("with no answer the raw output must show:\n%s", joined(printed))
+	}
+}
+
+// A long reply wraps to the terminal's width while it is being written, so the
+// live region knows its own height.
+func TestStreamedReplyWrapsToTheWidth(t *testing.T) {
+	m, _ := newCaptured()
+	m.running = true
+	m.width = 20
+	m = step(t, m, answerPart(strings.Repeat("word ", 12)))
+	for _, line := range strings.Split(m.View().Content, "\n") {
+		if strings.Contains(line, "word") && len([]rune(line)) > 20 {
+			t.Errorf("a live reply line is %d columns wide, more than 20: %q", len([]rune(line)), line)
+		}
+	}
+}

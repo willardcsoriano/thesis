@@ -49,6 +49,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"synapseos/internal/loopevent"
+	"synapseos/internal/termsafe"
 )
 
 // Styles are defined once at package level. lipgloss v2 Styles are plain
@@ -216,6 +217,11 @@ type taskRecord struct {
 	steps    []stepRecord
 	notes    []string
 	answered bool
+	// replying is the reply so far, while the model is still writing it. It
+	// lives only in the redrawn live region: the scrollback gets the whole
+	// reply once, from the Answer event, and a reply that breaks off is
+	// dropped with the task record instead of being left half-printed.
+	replying string
 }
 
 // NewModel builds the initial state. The input is focused here rather
@@ -717,6 +723,12 @@ func (m Model) View() tea.View {
 		b.WriteString(strings.Join(wrapLine(m.partial, m.width), "\n") + "\n")
 	}
 
+	if r := strings.TrimSpace(m.cur.replying); r != "" {
+		for _, line := range strings.Split(r, "\n") {
+			b.WriteString(strings.Join(wrapLine(line, m.width), "\n") + "\n")
+		}
+	}
+
 	switch {
 	case m.pendingConfirm != "":
 		b.WriteString("\n" + confirmStyle.Render(warnGlyph+" "+m.pendingConfirm+"  [y/N]") + "\n")
@@ -844,7 +856,7 @@ func indentLines(text string) string {
 // renderCommand is the "$ command" header of a step, with what the model spent
 // on it, which only the details view shows.
 func renderCommand(r stepRecord) string {
-	out := "$ " + r.command
+	out := "$ " + termsafe.Display(r.command)
 	if r.tokens > 0 || r.latency > 0 {
 		out += "\n" + hintStyle.Render(fmt.Sprintf("  the model took %s (%d tokens) to choose this", r.latency.Round(100*time.Millisecond), r.tokens))
 	}
@@ -858,10 +870,10 @@ func renderResult(r stepRecord) string {
 		parts = append(parts, "  (not run)")
 	}
 	if r.stdout != "" {
-		parts = append(parts, indentLines(r.stdout))
+		parts = append(parts, indentLines(termsafe.Display(r.stdout)))
 	}
 	if r.stderr != "" {
-		parts = append(parts, indentLines(r.stderr))
+		parts = append(parts, indentLines(termsafe.Display(r.stderr)))
 	}
 	if r.stdout == "" && r.stderr == "" && r.exit == 0 && !r.timedOut && !r.notRun {
 		parts = append(parts, "  (no output)")
@@ -935,12 +947,15 @@ func (m *Model) lastStep() *stepRecord {
 	return &m.cur.steps[len(m.cur.steps)-1]
 }
 
-// onEvent decides how the loop's report is shown.
+// onEvent decides how the loop's report is shown. Every text it shows goes
+// through termsafe.Display, synapse's own words included, since a notice, a
+// note or an approval can quote the model's command or a file's name (ship
+// review, 2026-10-27: only results, commands and replies did).
 func (m *Model) onEvent(ev loopevent.Event) tea.Cmd {
 	switch ev.Kind {
 	case loopevent.Command:
 		m.cur.steps = append(m.cur.steps, stepRecord{step: ev.Step, command: ev.Command, tokens: ev.Tokens, latency: ev.Latency})
-		m.status = ev.Command
+		m.status = termsafe.Display(ev.Command)
 		if m.verbose {
 			r := m.lastStep()
 			r.announced = true
@@ -959,36 +974,40 @@ func (m *Model) onEvent(ev loopevent.Event) tea.Cmd {
 			return m.raw(renderResult(*r))
 		}
 
+	case loopevent.AnswerPart:
+		m.cur.replying += termsafe.Display(ev.Text)
+
 	case loopevent.Answer:
 		m.cur.answered = true
-		return m.block(ev.Text)
+		m.cur.replying = ""
+		return m.block(termsafe.Display(ev.Text))
 
 	case loopevent.Notice:
-		return sequence(m.hiddenBefore(), m.block(ev.Text))
+		return sequence(m.hiddenBefore(), m.block(termsafe.Display(ev.Text)))
 
 	case loopevent.Problem:
-		text := ev.Text
+		text := termsafe.Display(ev.Text)
 		if ev.Detail != "" {
-			text += "\n" + hintStyle.Render("  "+ev.Detail)
+			text += "\n" + hintStyle.Render("  "+termsafe.Display(ev.Detail))
 		}
 		return sequence(m.hiddenBefore(), m.block(text))
 
 	case loopevent.Note:
-		m.cur.notes = append(m.cur.notes, ev.Text)
+		m.cur.notes = append(m.cur.notes, termsafe.Display(ev.Text))
 		if m.verbose {
-			return m.raw(hintStyle.Render("  " + ev.Text))
+			return m.raw(hintStyle.Render("  " + termsafe.Display(ev.Text)))
 		}
 
 	case loopevent.Approval:
 		// The command is always shown before asking: an approval that hides
 		// what is being approved is not consent.
 		if m.verbose {
-			return m.raw(ev.Text)
+			return m.raw(termsafe.Display(ev.Text))
 		}
 		if r := m.lastStep(); r != nil {
 			r.announced = true
 		}
-		return m.block("$ " + ev.Command + "\n" + ev.Text)
+		return m.block("$ " + termsafe.Display(ev.Command) + "\n" + termsafe.Display(ev.Text))
 	}
 	return nil
 }
