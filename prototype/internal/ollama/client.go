@@ -15,7 +15,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -29,11 +31,22 @@ type Client struct {
 	HTTP    *http.Client
 }
 
+// DisplayURL is the base URL with any password masked, for messages: a URL
+// with credentials was printed in clear on stderr (finding r2-atk8-03).
+func (c *Client) DisplayURL() string {
+	if u, err := url.Parse(c.BaseURL); err == nil {
+		return u.Redacted()
+	}
+	return c.BaseURL
+}
+
 // New returns a Client for baseURL, falling back to DefaultBaseURL when empty.
 func New(baseURL string) *Client {
 	if baseURL == "" {
 		baseURL = DefaultBaseURL
 	}
+	// A trailing slash would make every request path start with "//".
+	baseURL = strings.TrimRight(baseURL, "/")
 	return &Client{
 		BaseURL: baseURL,
 		// No overall timeout here: generation on CPU can take tens of seconds.
@@ -50,7 +63,7 @@ type generateRequest struct {
 	System    string         `json:"system,omitempty"`
 	Stream    bool           `json:"stream"`
 	Options   map[string]any `json:"options,omitempty"`
-	KeepAlive string         `json:"keep_alive,omitempty"`
+	KeepAlive any            `json:"keep_alive,omitempty"`
 	// Format constrains the response to the literal "json" or a JSON schema
 	// object; see withFormat. Omitted (nil) leaves the response free text,
 	// which is every caller before this field existed.
@@ -69,7 +82,7 @@ func firstOrNil(format []any) any {
 	return format[0]
 }
 
-// defaultKeepAlive overrides Ollama's own default (5m) so the model stays
+// DefaultKeepAlive overrides Ollama's own default (5m) so the model stays
 // resident for a full interactive session instead of being evicted and
 // reloaded mid-conversation. Session 32 traced an apparent 34s generation
 // stall to exactly this: not slow inference, but a cold reload after the
@@ -78,13 +91,21 @@ func firstOrNil(format []any) any {
 // small") when it is really "the model was not there yet." Override with
 // SYNAPSE_KEEP_ALIVE (Ollama's own duration syntax, e.g. "10m", or "-1" to
 // never unload) if 30 minutes doesn't fit a given session's shape.
-const defaultKeepAlive = "30m"
+const DefaultKeepAlive = "30m"
 
-func keepAlive() string {
-	if v := os.Getenv("SYNAPSE_KEEP_ALIVE"); v != "" {
-		return v
+// keepAlive returns SYNAPSE_KEEP_ALIVE as Ollama reads it: a whole number
+// of seconds (-1 for always) goes as a JSON number, a duration such as "10m"
+// as a string. A bare number sent as a string was refused by Ollama with
+// "missing unit in duration" on every request (finding r2-atk8-01).
+func keepAlive() any {
+	v := os.Getenv("SYNAPSE_KEEP_ALIVE")
+	if v == "" {
+		return DefaultKeepAlive
 	}
-	return defaultKeepAlive
+	if n, err := strconv.Atoi(v); err == nil {
+		return n
+	}
+	return v
 }
 
 // GenerateResponse is the reply body. With stream=false it is the whole
@@ -160,7 +181,7 @@ func (c *Client) Preload(ctx context.Context, model string, options map[string]a
 	body, err := json.Marshal(struct {
 		Model     string         `json:"model"`
 		Options   map[string]any `json:"options,omitempty"`
-		KeepAlive string         `json:"keep_alive,omitempty"`
+		KeepAlive any            `json:"keep_alive,omitempty"`
 	}{Model: model, Options: options, KeepAlive: keepAlive()})
 	if err != nil {
 		return fmt.Errorf("marshal request: %w", err)
@@ -386,11 +407,11 @@ func (c *Client) Ping(ctx context.Context) error {
 	}
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
-		return fmt.Errorf("ollama not reachable at %s: %w", c.BaseURL, err)
+		return fmt.Errorf("ollama not reachable at %s: %w", c.DisplayURL(), err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("ollama health check at %s returned %s", c.BaseURL, resp.Status)
+		return fmt.Errorf("ollama health check at %s returned %s", c.DisplayURL(), resp.Status)
 	}
 	return nil
 }
