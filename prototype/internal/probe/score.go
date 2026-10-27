@@ -52,8 +52,9 @@ const resolveTimeout = 8 * time.Second
 // deleted) is analysed against the wrong state here; ScoreReplayed analyses it
 // against the replayed pre-step state instead and is the default.
 //
-// fx is the fixture of r's task, materialized in a fresh temporary directory
-// with HOME at its home folder, the way the oracle runs commands.
+// fx is the fixture of r's task, materialized in a fresh temporary directory.
+// HOME is that directory under LayoutHome, as in the agent's sandbox, and its
+// home folder for older runs, the way the oracle runs commands.
 //
 // Resolution (the read-only commands the analysis runs to learn run-time
 // targets) uses effects.DefaultRunner only when bubblewrap works, so resolvers
@@ -66,9 +67,13 @@ const resolveTimeout = 8 * time.Second
 func Score(ctx context.Context, r *Record, fx []oracle.Entry) error {
 	scoreStatic(r)
 	r.Analysis, r.AnalysisNote = "", ""
-	r.AnalysisState, r.AnalysisCwd = StateInitial, agentRoot
+	root, err := rootOf([]Record{*r})
+	if err != nil {
+		return err
+	}
+	r.AnalysisState, r.AnalysisCwd = StateInitial, root
 	if r.Kind == KindBash {
-		a, err := analyse(ctx, r.Command, fx)
+		a, err := analyse(ctx, r.Command, fx, r.Layout == LayoutHome)
 		if err != nil {
 			return err
 		}
@@ -89,13 +94,16 @@ func scoreStatic(r *Record) {
 }
 
 // analyse returns the analysis verdict for cmd on a fresh copy of fx.
-func analyse(ctx context.Context, cmd string, fx []oracle.Entry) (string, error) {
+func analyse(ctx context.Context, cmd string, fx []oracle.Entry, homeIsRoot bool) (string, error) {
 	wd, err := os.MkdirTemp("", "probe-score-")
 	if err != nil {
 		return "", err
 	}
 	defer os.RemoveAll(wd)
 	home := filepath.Join(wd, "home")
+	if homeIsRoot {
+		home = wd
+	}
 	if err := oracle.Materialize(wd, fx); err != nil {
 		return "", err
 	}

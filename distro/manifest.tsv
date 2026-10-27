@@ -32,6 +32,7 @@ binary	ollama	ollama	yes	runtime: model runtime (installer script; hoarded by ho
 apt	passt	pasta	no	study: the agent command study's isolated network namespace (agentprobe -net isolated, the default)
 apt	iproute2	ip	no	study: routing rules inside the agent command study's isolated namespace
 apt	util-linux	flock	no	study: the lifeline lock that ends the agent command study's isolated namespace
+apt	coreutils	cp	no	study: copies the CLI into a frozen per-batch folder, so a host update cannot change it mid-batch (claudecode.Freeze)
 apt	util-linux	prlimit	no	study: process cap in the agent command study's sandbox (agentprobe refuses to run without it)
 apt	util-linux	setsid	no	study: tools/desktop-load starts each app of the everyday desktop load in its own process group, so stop.sh stops exactly those
 apt	mousepad	mousepad	no	study: the text editor of the everyday desktop load the model timings run under (tools/desktop-load); not part of the xfce4 package's dependencies
@@ -57,9 +58,12 @@ pip	pypdf	-	no	build: page stamping in tools/venv (tools/requirements.txt; Debia
 pip	reportlab	-	no	build: page numbers in tools/venv (tools/requirements.txt; Debian's python3-reportlab is not visible in the venv)
 apt	chromium	chromium	no	build: renders the paper to PDF (SYNAPSE_CHROMIUM=/usr/bin/chromium); also the browser of the everyday desktop load the model timings run under (tools/desktop-load)
 apt	poppler-utils	pdftotext	no	build: page labels and the per-chapter text of the paper (tools/pagelabels.py, tools/export_text.py)
+apt	poppler-utils	pdfinfo	no	build: Layer 7 checks that a merged PDF holds both pages (cmd/synapse/layer7_corpus_test.go, mergedPDF)
 apt	make	make	no	build: build and test entry points
 apt	curl	curl	no	build: fetches the Go toolchain, the Ollama archive and installer, and the Claude Code installer
-apt	jq	jq	no	build: hoard.sh's toolchain checksum and model manifests; the guard hook and its tests
+apt	jq	jq	no	build: hoard.sh's toolchain checksum and model manifests; the guard hook and its tests; tools/model-box/run.sh reads Ollama's JSON replies
+apt	zstd	zstd	no	build: unpacks Ollama's official archive, the version distro/ollama-pin names, in tools/model-box/ollama.sh
+apt	bsdextrautils	column	no	build: prints tools/model-box/run.sh's results table
 apt	shellcheck	shellcheck	no	build: lints the shell scripts in tools/ and distro/
 apt	xvfb	xvfb-run	no	build: the headless X display tools/desktop-load/test.sh runs the real browser and editor on
 apt	gcc	gcc	no	build: cgo for go test -race (prototype/setup.md)
@@ -69,3 +73,4 @@ gomod	mvdan.cc/sh/v3	-	no	build: shell parser and expander compiled into synapse
 gomod	charm.land/bubbletea/v2	-	no	build: the TUI's event loop, compiled into synapse
 gomod	charm.land/bubbles/v2	-	no	build: the TUI's text input and spinner, compiled into synapse
 gomod	charm.land/lipgloss/v2	-	no	build: the TUI's styling, compiled into synapse
+apt	libsecret-tools	secret-tool	no	study: tools/agentprobe-run/run.sh reads the Claude token from the desktop keyring, so it is never typed or stored in a file

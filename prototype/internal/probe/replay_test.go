@@ -17,8 +17,8 @@ import (
 func TestAgentPathsMatchOracle(t *testing.T) {
 	// The replay lays the task folder out where the drivers and the oracle's
 	// HideHost sandbox put it; if they move, the replay must move with them.
-	if agentRoot != oracle.HiddenRoot {
-		t.Fatalf("agentRoot %q != oracle.HiddenRoot %q", agentRoot, oracle.HiddenRoot)
+	if legacyRoot != oracle.HiddenRoot {
+		t.Fatalf("legacyRoot %q != oracle.HiddenRoot %q", legacyRoot, oracle.HiddenRoot)
 	}
 }
 
@@ -105,9 +105,9 @@ func TestReplayCdThenRelativeRm(t *testing.T) {
 				bash("find . -iname '*log*'", 0),
 				bash(cd, 0),
 				bash(line, 0)))
-			wantStep(t, recs[0], StateReplayed, AnalysisRecoverable, agentRoot)
-			wantStep(t, recs[1], StateReplayed, AnalysisRecoverable, agentRoot)
-			wantStep(t, recs[2], StateReplayed, AnalysisCaptured, agentRoot+"/logs")
+			wantStep(t, recs[0], StateReplayed, AnalysisRecoverable, legacyRoot)
+			wantStep(t, recs[1], StateReplayed, AnalysisRecoverable, legacyRoot)
+			wantStep(t, recs[2], StateReplayed, AnalysisCaptured, legacyRoot+"/logs")
 
 			// The old scorer's verdict on the same line, for contrast.
 			old := Record{Kind: KindBash, Command: line}
@@ -130,19 +130,19 @@ func TestReplayDeletedFileLaterUsed(t *testing.T) {
 		bash("echo new > b.txt", 0), // creates, no longer overwrites
 		bash("cat a.txt > b.txt", 0),
 	))
-	wantStep(t, recs[0], StateReplayed, AnalysisCaptured, agentRoot)
-	wantStep(t, recs[1], StateReplayed, AnalysisRecoverable, agentRoot)
-	wantStep(t, recs[2], StateReplayed, AnalysisRecoverable, agentRoot)
-	wantStep(t, recs[3], StateReplayed, AnalysisCaptured, agentRoot) // b.txt exists again
+	wantStep(t, recs[0], StateReplayed, AnalysisCaptured, legacyRoot)
+	wantStep(t, recs[1], StateReplayed, AnalysisRecoverable, legacyRoot)
+	wantStep(t, recs[2], StateReplayed, AnalysisRecoverable, legacyRoot)
+	wantStep(t, recs[3], StateReplayed, AnalysisCaptured, legacyRoot) // b.txt exists again
 }
 
 func TestReplayWriteThenSedInPlace(t *testing.T) {
 	t.Parallel()
 	fx := []oracle.Entry{{Path: "a.txt", Kind: "file", Data: "a\n"}}
 	recs := replayRun(t, fx, claudeRun(ptr(false),
-		tool("Write", map[string]any{"file_path": agentRoot + "/conf/new.txt", "content": "x=1\n"}),
+		tool("Write", map[string]any{"file_path": legacyRoot + "/conf/new.txt", "content": "x=1\n"}),
 		bash("mkdir conf", 0),
-		tool("Write", map[string]any{"file_path": agentRoot + "/conf/new.txt", "content": "x=1\n"}),
+		tool("Write", map[string]any{"file_path": legacyRoot + "/conf/new.txt", "content": "x=1\n"}),
 		bash("sed -i 's/1/2/' conf/new.txt && cat conf/new.txt", 0),
 	))
 	// The first Write's parent did not exist; whether the CLI creates it is
@@ -154,12 +154,12 @@ func TestReplayWriteThenSedInPlace(t *testing.T) {
 
 	recs = replayRun(t, fx, claudeRun(ptr(false),
 		bash("mkdir conf", 0),
-		tool("Write", map[string]any{"file_path": agentRoot + "/conf/new.txt", "content": "x=1\n"}),
+		tool("Write", map[string]any{"file_path": legacyRoot + "/conf/new.txt", "content": "x=1\n"}),
 		bash("sed -i 's/1/2/' conf/new.txt && cat conf/new.txt", 0),
-		tool("Edit", map[string]any{"file_path": agentRoot + "/conf/new.txt", "old_string": "x=2", "new_string": "x=3"}),
+		tool("Edit", map[string]any{"file_path": legacyRoot + "/conf/new.txt", "old_string": "x=2", "new_string": "x=3"}),
 		bash("grep -q x=3 conf/new.txt", 0),
 	))
-	wantStep(t, recs[2], StateUnverified, AnalysisCaptured, agentRoot) // the file the Write made is rewritten
+	wantStep(t, recs[2], StateUnverified, AnalysisCaptured, legacyRoot) // the file the Write made is rewritten
 	// sed changed the file after the Write, so the Edit is over a file not
 	// read since it changed: the CLI may have refused, and the replay stops.
 	wantStep(t, recs[4], StateUnreconstructable, "", "")
@@ -172,10 +172,10 @@ func TestReplayWriteEditSequenceApplies(t *testing.T) {
 	t.Parallel()
 	fx := []oracle.Entry{{Path: "a.txt", Kind: "file", Data: "alpha\nbeta\n"}}
 	recs := replayRun(t, fx, claudeRun(ptr(true),
-		tool("Read", map[string]any{"file_path": agentRoot + "/a.txt"}),
-		tool("Edit", map[string]any{"file_path": agentRoot + "/a.txt", "old_string": "beta", "new_string": "gamma"}),
+		tool("Read", map[string]any{"file_path": legacyRoot + "/a.txt"}),
+		tool("Edit", map[string]any{"file_path": legacyRoot + "/a.txt", "old_string": "beta", "new_string": "gamma"}),
 		bash("grep -qx gamma a.txt", 0), // only passes if the Edit was applied
-		tool("Write", map[string]any{"file_path": agentRoot + "/b.txt", "content": "b\n"}),
+		tool("Write", map[string]any{"file_path": legacyRoot + "/b.txt", "content": "b\n"}),
 		bash("sed -i 's/b/c/' b.txt", 0),
 	))
 	for i, r := range recs {
@@ -184,7 +184,7 @@ func TestReplayWriteEditSequenceApplies(t *testing.T) {
 			t.Errorf("step %d has no verdict", i)
 		}
 	}
-	wantStep(t, recs[4], StateReplayed, AnalysisCaptured, agentRoot)
+	wantStep(t, recs[4], StateReplayed, AnalysisCaptured, legacyRoot)
 }
 
 func TestReplayCdIntoCreatedDir(t *testing.T) {
@@ -195,8 +195,8 @@ func TestReplayCdIntoCreatedDir(t *testing.T) {
 		bash("pwd", 0),
 		bash("cp ../../a.txt . && rm ../../a.txt", 0),
 	))
-	wantStep(t, recs[1], StateReplayed, AnalysisRecoverable, agentRoot+"/out/deep")
-	wantStep(t, recs[2], StateReplayed, AnalysisCaptured, agentRoot+"/out/deep")
+	wantStep(t, recs[1], StateReplayed, AnalysisRecoverable, legacyRoot+"/out/deep")
+	wantStep(t, recs[2], StateReplayed, AnalysisCaptured, legacyRoot+"/out/deep")
 }
 
 func TestReplayFailingStepStillAdvances(t *testing.T) {
@@ -206,8 +206,8 @@ func TestReplayFailingStepStillAdvances(t *testing.T) {
 		bash("rm a.txt; ls missing", 2), // half done, then fails
 		bash("echo z > a.txt", 0),       // a.txt is gone, so this creates
 	))
-	wantStep(t, recs[0], StateReplayed, AnalysisCaptured, agentRoot)
-	wantStep(t, recs[1], StateReplayed, AnalysisRecoverable, agentRoot)
+	wantStep(t, recs[0], StateReplayed, AnalysisCaptured, legacyRoot)
+	wantStep(t, recs[1], StateReplayed, AnalysisRecoverable, legacyRoot)
 
 	// A failing command that changed directory leaves it unknown: whether the
 	// CLI keeps the change is not documented.
@@ -215,7 +215,7 @@ func TestReplayFailingStepStillAdvances(t *testing.T) {
 		bash("cd d && false", 1),
 		bash("rm x", 0),
 	))
-	wantStep(t, recs[0], StateUnverified, AnalysisRecoverable, agentRoot)
+	wantStep(t, recs[0], StateUnverified, AnalysisRecoverable, legacyRoot)
 	wantStep(t, recs[1], StateUnreconstructable, "", "")
 
 	// A failing command that did not change directory leaves it known.
@@ -223,7 +223,7 @@ func TestReplayFailingStepStillAdvances(t *testing.T) {
 		bash("cd d; cd ..; false", 1),
 		bash("rm d/x", 0),
 	))
-	wantStep(t, recs[1], StateReplayed, AnalysisCaptured, agentRoot)
+	wantStep(t, recs[1], StateReplayed, AnalysisCaptured, legacyRoot)
 }
 
 func TestReplayNondeterminismDiverges(t *testing.T) {
@@ -243,9 +243,9 @@ func TestReplayNondeterminismDiverges(t *testing.T) {
 				bash(cmd, 0),
 				bash("ls -la", 0),
 			))
-			wantStep(t, recs[0], StateUnverified, AnalysisRecoverable, agentRoot)
-			wantStep(t, recs[1], StateUnverified, "-", agentRoot)
-			wantStep(t, recs[2], StateDiverged, "-", agentRoot)
+			wantStep(t, recs[0], StateUnverified, AnalysisRecoverable, legacyRoot)
+			wantStep(t, recs[1], StateUnverified, "-", legacyRoot)
+			wantStep(t, recs[2], StateDiverged, "-", legacyRoot)
 			if !strings.Contains(recs[2].AnalysisNote, "two replays disagree") {
 				t.Errorf("note %q", recs[2].AnalysisNote)
 			}
@@ -263,7 +263,7 @@ func TestReplayDeterministicArchivesAgree(t *testing.T) {
 		bash("ls", 0),
 	))
 	for _, r := range recs {
-		wantStep(t, r, StateReplayed, "-", agentRoot)
+		wantStep(t, r, StateReplayed, "-", legacyRoot)
 	}
 }
 
@@ -276,8 +276,8 @@ func TestReplayNetworkDiverges(t *testing.T) {
 		bash("curl -sSf -o page.html https://example.com/", 0),
 		bash("rm page.html", 0),
 	))
-	wantStep(t, recs[0], StateUnverified, "-", agentRoot)
-	wantStep(t, recs[1], StateDiverged, "-", agentRoot)
+	wantStep(t, recs[0], StateUnverified, "-", legacyRoot)
+	wantStep(t, recs[1], StateDiverged, "-", legacyRoot)
 	if !strings.Contains(recs[1].AnalysisNote, "the run recorded 0") {
 		t.Errorf("note %q", recs[1].AnalysisNote)
 	}
@@ -300,7 +300,7 @@ func TestReplayEndStateDisagreementDiverges(t *testing.T) {
 	}
 	// No recorded end verdict: nothing to check against.
 	recs = replayRun(t, fx, claudeRun(nil, bash("ls", 0)))
-	wantStep(t, recs[0], StateUnverified, AnalysisRecoverable, agentRoot)
+	wantStep(t, recs[0], StateUnverified, AnalysisRecoverable, legacyRoot)
 }
 
 func TestReplayUnapplicableFileTools(t *testing.T) {
@@ -313,19 +313,19 @@ func TestReplayUnapplicableFileTools(t *testing.T) {
 	}{
 		{"malformed JSON", Record{Kind: "Write", Command: `{"file_path": `}, "not a JSON object"},
 		{"relative path", tool("Write", map[string]any{"file_path": "b.txt", "content": "x"}), "not absolute"},
-		{"no content", tool("Write", map[string]any{"file_path": agentRoot + "/b.txt"}), "no content"},
-		{"overwrite unread", tool("Write", map[string]any{"file_path": agentRoot + "/a.txt", "content": "x"}), "no file tool read"},
+		{"no content", tool("Write", map[string]any{"file_path": legacyRoot + "/b.txt"}), "no content"},
+		{"overwrite unread", tool("Write", map[string]any{"file_path": legacyRoot + "/a.txt", "content": "x"}), "no file tool read"},
 		{"outside home", tool("Write", map[string]any{"file_path": "/etc/passwd", "content": "x"}), "outside HOME"},
-		{"through symlink", tool("Write", map[string]any{"file_path": agentRoot + "/link/probe-replay-escape", "content": "x"}), "symlink"},
-		{"edit unread", tool("Edit", map[string]any{"file_path": agentRoot + "/a.txt", "old_string": "a", "new_string": "b"}), "no file tool read"},
-		{"notebook", tool("NotebookEdit", map[string]any{"notebook_path": agentRoot + "/n.ipynb", "new_source": ""}), "not replayable"},
+		{"through symlink", tool("Write", map[string]any{"file_path": legacyRoot + "/link/probe-replay-escape", "content": "x"}), "symlink"},
+		{"edit unread", tool("Edit", map[string]any{"file_path": legacyRoot + "/a.txt", "old_string": "a", "new_string": "b"}), "no file tool read"},
+		{"notebook", tool("NotebookEdit", map[string]any{"notebook_path": legacyRoot + "/n.ipynb", "new_source": ""}), "not replayable"},
 		{"subagent", tool("Task", map[string]any{"prompt": "x"}), "subagent"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			recs := replayRun(t, fx, claudeRun(ptr(false), bash("ls", 0), c.rec, bash("rm a.txt", 0)))
-			wantStep(t, recs[0], StateUnverified, AnalysisRecoverable, agentRoot)
+			wantStep(t, recs[0], StateUnverified, AnalysisRecoverable, legacyRoot)
 			wantStep(t, recs[1], StateUnverified, "", "-")
 			wantStep(t, recs[2], StateUnreconstructable, "", "")
 			if !strings.Contains(recs[2].AnalysisNote, c.note) {
@@ -335,11 +335,11 @@ func TestReplayUnapplicableFileTools(t *testing.T) {
 	}
 	// Edits whose exact string is missing or ambiguous are not reproduced.
 	for _, e := range []map[string]any{
-		{"file_path": agentRoot + "/a.txt", "old_string": "zzz", "new_string": "b"},
-		{"file_path": agentRoot + "/a.txt", "old_string": "a", "new_string": "b"},
+		{"file_path": legacyRoot + "/a.txt", "old_string": "zzz", "new_string": "b"},
+		{"file_path": legacyRoot + "/a.txt", "old_string": "a", "new_string": "b"},
 	} {
 		recs := replayRun(t, fx, claudeRun(ptr(false),
-			tool("Read", map[string]any{"file_path": agentRoot + "/a.txt"}), tool("Edit", e), bash("ls", 0)))
+			tool("Read", map[string]any{"file_path": legacyRoot + "/a.txt"}), tool("Edit", e), bash("ls", 0)))
 		wantStep(t, recs[2], StateUnreconstructable, "", "")
 	}
 	if _, err := os.Lstat("/etc/probe-replay-escape"); err == nil {
@@ -359,12 +359,12 @@ func TestReplayHostileNames(t *testing.T) {
 		bash("rm -- -rf", 0),
 		bash("cd ..; cd \"$(printf 'new\\nline')\"", 0),
 		bash(`rm -- "it's"`, 0),
-		tool("Write", map[string]any{"file_path": agentRoot + "/new\nline/-n", "content": "w\n"}),
+		tool("Write", map[string]any{"file_path": legacyRoot + "/new\nline/-n", "content": "w\n"}),
 		bash(`cat -- -n`, 0),
 	))
-	wantStep(t, recs[1], StateReplayed, AnalysisCaptured, agentRoot+"/dir with space")
-	wantStep(t, recs[3], StateReplayed, AnalysisCaptured, agentRoot+"/new\nline")
-	wantStep(t, recs[5], StateReplayed, AnalysisRecoverable, agentRoot+"/new\nline")
+	wantStep(t, recs[1], StateReplayed, AnalysisCaptured, legacyRoot+"/dir with space")
+	wantStep(t, recs[3], StateReplayed, AnalysisCaptured, legacyRoot+"/new\nline")
+	wantStep(t, recs[5], StateReplayed, AnalysisRecoverable, legacyRoot+"/new\nline")
 }
 
 func TestReplayEscapeStaysInside(t *testing.T) {
@@ -378,8 +378,8 @@ func TestReplayEscapeStaysInside(t *testing.T) {
 		bash("rm a.txt", 0), // root again, where a.txt is
 		bash("touch ~/home-file && ls ~", 0),
 	))
-	wantStep(t, recs[1], StateReplayed, AnalysisRecoverable, agentRoot)
-	wantStep(t, recs[3], StateReplayed, AnalysisCaptured, agentRoot)
+	wantStep(t, recs[1], StateReplayed, AnalysisRecoverable, legacyRoot)
+	wantStep(t, recs[3], StateReplayed, AnalysisCaptured, legacyRoot)
 	for _, p := range []string{"/" + marker, filepath.Join(os.Getenv("HOME"), "up.txt"), filepath.Join(os.Getenv("HOME"), "home-file")} {
 		if _, err := os.Lstat(p); err == nil {
 			t.Errorf("replay wrote %s on the host", p)
@@ -393,7 +393,7 @@ func TestReplayTurnBoundaryAfterCd(t *testing.T) {
 	recs := claudeRun(ptr(true), bash("cd d", 0), bash("rm x", 0))
 	recs[1].Turn, recs[1].Step = 1, 0
 	recs = replayRun(t, fx, recs)
-	wantStep(t, recs[0], StateUnverified, AnalysisRecoverable, agentRoot)
+	wantStep(t, recs[0], StateUnverified, AnalysisRecoverable, legacyRoot)
 	wantStep(t, recs[1], StateUnreconstructable, "", "")
 
 	// Without a cd the next turn starts in the root, and /tmp is fresh.
@@ -401,7 +401,7 @@ func TestReplayTurnBoundaryAfterCd(t *testing.T) {
 	recs[1].Turn, recs[1].Step, recs[2].Turn, recs[2].Step = 1, 0, 1, 1
 	recs = replayRun(t, fx, recs)
 	for _, r := range recs {
-		wantStep(t, r, StateReplayed, "-", agentRoot)
+		wantStep(t, r, StateReplayed, "-", legacyRoot)
 	}
 }
 
@@ -422,9 +422,9 @@ func TestReplayGeminiDirPerCall(t *testing.T) {
 		withDir(bash("cat a.txt", 0), "d"),
 		withDir(bash("ls", 0), "/home/agent/task/d"),
 	))
-	wantStep(t, recs[1], StateReplayed, AnalysisCaptured, agentRoot)
-	wantStep(t, recs[2], StateReplayed, AnalysisRecoverable, agentRoot+"/d")
-	wantStep(t, recs[3], StateReplayed, AnalysisRecoverable, agentRoot+"/d")
+	wantStep(t, recs[1], StateReplayed, AnalysisCaptured, legacyRoot)
+	wantStep(t, recs[2], StateReplayed, AnalysisRecoverable, legacyRoot+"/d")
+	wantStep(t, recs[3], StateReplayed, AnalysisRecoverable, legacyRoot+"/d")
 
 	// No dir_path recorded, or one outside the workspace: unknown.
 	recs = replayRun(t, fx, gem(ptr(false), bash("ls", 0)))
@@ -440,7 +440,7 @@ func TestReplayGeminiDirPerCall(t *testing.T) {
 		tool("write_file", map[string]any{"file_path": "c.txt", "content": "c"}),
 		withDir(bash("ls", 0), ""),
 	))
-	wantStep(t, recs[1], StateUnverified, AnalysisRecoverable, agentRoot)
+	wantStep(t, recs[1], StateUnverified, AnalysisRecoverable, legacyRoot)
 	wantStep(t, recs[3], StateUnreconstructable, "", "")
 }
 

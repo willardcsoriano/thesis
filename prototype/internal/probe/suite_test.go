@@ -1,10 +1,13 @@
 package probe
 
 import (
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"synapseos/internal/oracle"
 )
@@ -18,6 +21,7 @@ const suitePath = "../../agentprobe/tasks.jsonl"
 var noviceFeatures = map[string]bool{
 	"vague-target": true, "wrong-model": true, "pronoun": true, "multi-intent": true,
 	"question-as-action": true, "typo": true, "taglish": true, "underspecified": true, "urgent": true,
+	"trial-and-error": true,
 }
 
 // categories are the spec's task categories, as slugs.
@@ -58,8 +62,8 @@ func TestSuiteLoadsAndIsWellFormed(t *testing.T) {
 				}
 			}
 		case PartitionNL2Bash:
-			if !nl2bashSource.MatchString(task.Source) {
-				t.Errorf("%s: partition S source %q is not nl2bash:N", task.ID, task.Source)
+			if !nl2bashSource.MatchString(task.Sources["technical"]) {
+				t.Errorf("%s: partition S technical source %q is not nl2bash:N", task.ID, task.Sources["technical"])
 			}
 			if len(task.FollowUps) != 0 {
 				t.Errorf("%s: only persona tasks have follow-ups", task.ID)
@@ -266,6 +270,55 @@ func TestTaglishTagHasFilipinoWords(t *testing.T) {
 		text := task.Prompts[TierNovice] + " " + strings.Join(task.FollowUps, " ")
 		if !hasFilipinoFunctionWord(text) {
 			t.Errorf("%s: tagged taglish, but the novice text has no Filipino function word: %q", task.ID, text)
+		}
+	}
+}
+
+// The age-criterion tasks did nothing on their fixtures until fixtures had
+// ages: every file was as new as the run. Each now has entries on both sides
+// of its line, checked the way the task's own command would see them, with
+// find(1) on the materialized fixture.
+func TestSuiteAgeTasksSplitTheirFixture(t *testing.T) {
+	tasks, err := LoadTasks(suitePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byID := map[string]Task{}
+	for _, task := range tasks {
+		byID[task.ID] = task
+	}
+	now := time.Now()
+	july1 := time.Date(now.Year(), 7, 1, 0, 0, 0, 0, time.Local)
+	if now.Before(july1) {
+		july1 = july1.AddDate(-1, 0, 0)
+	}
+	for id, test := range map[string][]string{
+		"S-M067": {"-type", "f", "!", "-newermt", july1.Format("2006-01-02")},
+		"S-M101": {"-type", "f", "-mtime", "+15"},
+		"S-M159": {"-type", "f", "-mtime", "+180"},
+		"S-M134": {"-mindepth", "1", "-type", "d", "-mtime", "-1"},
+	} {
+		task, ok := byID[id]
+		if !ok {
+			t.Errorf("%s: not in the suite", id)
+			continue
+		}
+		root := t.TempDir()
+		if err := oracle.Materialize(root, task.Fixture); err != nil {
+			t.Fatal(err)
+		}
+		kind := test[slices.Index(test, "-type")+1]
+		all, err := exec.Command("find", root, "-mindepth", "1", "-type", kind).Output()
+		if err != nil {
+			t.Fatal(err)
+		}
+		hit, err := exec.Command("find", append([]string{root}, test...)...).Output()
+		if err != nil {
+			t.Fatal(err)
+		}
+		n, of := len(strings.Fields(string(hit))), len(strings.Fields(string(all)))
+		if n == 0 || n == of {
+			t.Errorf("%s: find %v matches %d of %d entries; the criterion must split the fixture", id, test, n, of)
 		}
 	}
 }

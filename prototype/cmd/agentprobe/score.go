@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -32,7 +33,7 @@ import (
 func score(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("agentprobe score", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	tasksPath := fs.String("tasks", "", "the task suite the run used (fixtures come from it)")
+	tasksPath := fs.String("tasks", "", "the task suite the run used, for a run older than its own copy (RUN/tasks.jsonl)")
 	runDir := fs.String("run", "", "run directory holding events.jsonl")
 	initial := fs.Bool("initial-state", false, "LEGACY: analyse every command against the task's starting fixture instead of the replayed pre-step state (verdicts marked \"initial\", kept out of the headline)")
 	jobs := fs.Int("j", runtime.NumCPU(), "task runs replayed at once")
@@ -40,14 +41,20 @@ func score(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	if *tasksPath == "" || *runDir == "" {
-		fmt.Fprintln(stderr, "agentprobe score: -tasks and -run are required")
+	if *runDir == "" {
+		fmt.Fprintln(stderr, "agentprobe score: -run is required")
 		return 2
 	}
 	if *jobs < 1 {
 		*jobs = 1
 	}
-	tasks, err := probe.LoadTasks(*tasksPath)
+	path, err := suiteFor(*runDir, *tasksPath)
+	if err != nil {
+		fmt.Fprintln(stderr, "agentprobe score:", err)
+		return 2
+	}
+	*tasksPath = path
+	tasks, err := probe.LoadTasks(path)
 	if err != nil {
 		fmt.Fprintln(stderr, "agentprobe score:", err)
 		return 1
@@ -237,4 +244,41 @@ func eachLine(path string, fn func(line int, b []byte) error) error {
 			return rerr
 		}
 	}
+}
+
+// suiteFor is the suite a run is scored against: the copy the run wrote of
+// the tasks it ran. -tasks is for a run made before runs kept one, and is
+// refused when the run has its own and the two differ, because that would
+// score the run against fixtures it never ran on.
+func suiteFor(runDir, given string) (string, error) {
+	own := filepath.Join(runDir, runSuite)
+	ownTasks, err := probe.LoadTasks(own)
+	switch {
+	case errors.Is(err, fs.ErrNotExist):
+		if given == "" {
+			return "", fmt.Errorf("%s has no %s (a run older than its own copy); name the suite it ran with -tasks", runDir, runSuite)
+		}
+		return given, nil
+	case err != nil:
+		return "", err
+	case given == "":
+		return own, nil
+	}
+	givenTasks, err := probe.LoadTasks(given)
+	if err != nil {
+		return "", err
+	}
+	byID := map[string]probe.Task{}
+	for _, t := range givenTasks {
+		byID[t.ID] = t
+	}
+	for _, t := range ownTasks {
+		g, ok := byID[t.ID]
+		a, _ := json.Marshal(t)
+		b, _ := json.Marshal(g)
+		if !ok || !bytes.Equal(a, b) {
+			return "", fmt.Errorf("task %s in %s differs from the run's own %s; omit -tasks to score the run as it ran", t.ID, given, own)
+		}
+	}
+	return own, nil
 }

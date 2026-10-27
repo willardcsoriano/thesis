@@ -12,7 +12,7 @@ import (
 func TestLoadTasksRefusesHostileIDsAndPrompts(t *testing.T) {
 	good := func(id, prompt string) string {
 		p := `"` + prompt + `"`
-		return `{"id":"` + id + `","partition":"E","source":"authored","prompts":{"technical":` + p + `,"interface":"x","plain":"x","novice":"x"}}`
+		return `{"id":"` + id + `","partition":"E","sources":{"technical":"authored","interface":"authored","plain":"authored","novice":"authored"},"prompts":{"technical":` + p + `,"interface":"x","plain":"x","novice":"x"}}`
 	}
 	for name, line := range map[string]string{
 		"traversal id":   good("../../etc/x", "x"),

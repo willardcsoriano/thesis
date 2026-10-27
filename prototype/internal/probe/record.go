@@ -36,8 +36,19 @@ type Task struct {
 	Prompts   map[string]string `json:"prompts"`              // tier -> first message
 	FollowUps []string          `json:"follow_ups,omitempty"` // later turns, persona tasks only
 	Features  []string          `json:"features,omitempty"`   // novice-tier tags, e.g. "pronoun", "taglish"
-	Source    string            `json:"source"`               // provenance of the wording, e.g. "nl2bash:5943", "authored", a URL
+	Sources   map[string]string `json:"sources"`              // tier -> provenance of that tier's wording (CheckSource)
 }
+
+// Layouts of the agent's sandbox (Record.Layout).
+const (
+	// LayoutHome: the fixture is the agent's home folder, which is also
+	// where it starts, so "my downloads" is ~/Downloads as on a real
+	// desktop. The CLI's own state lives outside it.
+	LayoutHome = "home"
+	// LayoutTaskFolder: the fixture is a folder named task in the home
+	// folder. Every run before LayoutHome (batch1) used it.
+	LayoutTaskFolder = ""
+)
 
 // Kinds of captured step.
 const (
@@ -59,6 +70,10 @@ type Record struct {
 	// AgentGeminiCLI). Replay needs it to track the shell's working directory
 	// the way that CLI does; records without it are recognised by model name.
 	Agent string `json:"agent,omitempty"`
+	// Layout is where the agent's sandbox put the task's fixture, which
+	// replay must reproduce: LayoutHome, or "" for runs before it
+	// (LayoutTaskFolder), whose fixture sat in a folder below HOME.
+	Layout string `json:"layout,omitempty"`
 
 	// RunStatus is how the task run this record belongs to ended, from the
 	// run's status.jsonl ("complete", "incomplete", "interrupted", "error",

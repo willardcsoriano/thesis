@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -109,4 +111,59 @@ func TestApplyStatusRefusesAMalformedLine(t *testing.T) {
 	if err := applyStatus([]probe.Record{{Task: "A"}}, path); err == nil {
 		t.Fatal("a status line without a status must be an error, not 'complete'")
 	}
+}
+
+// A run keeps the tasks it ran, and scoring uses them: editing the suite
+// afterwards must not rescore the run against fixtures it never saw.
+func TestRunKeepsItsSuiteAndScoreUsesIt(t *testing.T) {
+	tasks, err := probe.LoadTasks(suite)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := t.TempDir()
+	none := func(context.Context, probe.Task, string) ([]probe.Record, error) { return nil, nil }
+	if code := runTasks(context.Background(), none, out, tasks, []string{"technical"}, nil, io.Discard); code != 0 {
+		t.Fatalf("run: exit %d", code)
+	}
+	kept, err := probe.LoadTasks(filepath.Join(out, runSuite))
+	if err != nil {
+		t.Fatalf("the run's copy does not load: %v", err)
+	}
+	if len(kept) != len(tasks) || kept[0].ID != tasks[0].ID {
+		t.Fatalf("the run kept %d tasks, want %d", len(kept), len(tasks))
+	}
+
+	if got, err := suiteFor(out, ""); err != nil || got != filepath.Join(out, runSuite) {
+		t.Errorf("no -tasks: %q %v, want the run's own copy", got, err)
+	}
+	if got, err := suiteFor(out, suite); err != nil || got != filepath.Join(out, runSuite) {
+		t.Errorf("-tasks naming the same suite: %q %v", got, err)
+	}
+
+	// The suite edited after the run: one fixture changed.
+	edited := filepath.Join(t.TempDir(), "edited.jsonl")
+	changed := append([]probe.Task(nil), tasks...)
+	changed[0].Fixture = append(changed[0].Fixture[:0:0], changed[0].Fixture...)
+	changed[0].Fixture[0].Data += "edited"
+	writeLines(t, edited, toAny(changed)...)
+	if _, err := suiteFor(out, edited); err == nil {
+		t.Error("scoring against an edited suite was allowed")
+	}
+
+	// A run from before runs kept a copy needs -tasks, and gets it as given.
+	old := t.TempDir()
+	if _, err := suiteFor(old, ""); err == nil {
+		t.Error("an old run with no copy and no -tasks was scored against nothing")
+	}
+	if got, err := suiteFor(old, edited); err != nil || got != edited {
+		t.Errorf("old run with -tasks: %q %v", got, err)
+	}
+}
+
+func toAny[T any](xs []T) []any {
+	out := make([]any, len(xs))
+	for i, x := range xs {
+		out[i] = x
+	}
+	return out
 }

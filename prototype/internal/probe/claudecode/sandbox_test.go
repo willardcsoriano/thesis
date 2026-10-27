@@ -63,12 +63,14 @@ func TestArgvKeepsHomeHiddenAndTokenOut(t *testing.T) {
 		if strings.Contains(strings.Join(argv, "\x00"), fakeToken) {
 			t.Fatal("token in argv")
 		}
-		// Every read-write bind comes from the workdir and lands in the
-		// sandbox home; nothing of the real home is writable.
+		// The only read-write binds are the workdir's home (the fixture) at
+		// the sandbox home and its state folder at the CLI's state path;
+		// nothing of the real home is writable.
+		rw := map[string]string{w.Home(): SandboxHome, w.State(): SandboxState}
 		for i, a := range argv {
 			if a == "--bind" || a == "--bind-try" {
 				src, dst := argv[i+1], argv[i+2]
-				if !strings.HasPrefix(src, w.Root+"/") || dst != SandboxHome {
+				if want, ok := rw[src]; !ok || dst != want {
 					t.Errorf("read-write bind %s -> %s", src, dst)
 				}
 				if realHome != "" && (src == realHome || strings.HasPrefix(realHome, src+"/")) {
@@ -143,6 +145,8 @@ echo "pwd=$(pwd) whoami=$(whoami) host=$(hostname) homes=$(ls /home | tr '\n' ,)
 [ -e "$REAL_HOME_PROBE" ] && echo "REAL HOME VISIBLE" >&2
 touch /usr/agentprobe-escape 2>/dev/null && echo "USR WRITABLE" >&2
 [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] && echo "token-present" >&2
+mkdir -p "$CLAUDE_CONFIG_DIR/projects" && : > "$CLAUDE_CONFIG_DIR/.claude.json" && echo "state-written" >&2
+echo "home-holds=$(ls -A ~ | tr '\n' ,)" >&2
 echo '{"type":"system","subtype":"init","session_id":"s","model":"fake-model","claude_code_version":"0.0.1","permissionMode":"bypassPermissions"}'
 case "$*" in
 *--session-id*)
@@ -212,10 +216,15 @@ func TestRunTaskInRealSandbox(t *testing.T) {
 				t.Fatal(err)
 			}
 			got := string(seen)
-			for _, want := range []string{"pwd=" + SandboxCwd, "whoami=agent", "host=agentprobe", "homes=agent,", "--session-id", "token-present"} {
+			for _, want := range []string{"pwd=" + SandboxCwd, "whoami=agent", "host=agentprobe", "homes=agent,", "--session-id", "token-present", "state-written", "home-holds=notes.txt,old,"} {
 				if !strings.Contains(got, want) {
 					t.Errorf("sandbox view lacks %q: %s", want, got)
 				}
+			}
+			// The fixture is HOME; the CLI's own files must land in its state
+			// folder, never among the task's files.
+			if strings.Contains(got, "home-holds=") && (strings.Contains(got, ".claude") || strings.Contains(got, ".gemini")) {
+				t.Errorf("CLI state in the fixture: %s", got)
 			}
 			for _, bad := range []string{"REAL HOME VISIBLE", "USR WRITABLE"} {
 				if strings.Contains(got, bad) {
@@ -306,5 +315,44 @@ func TestRealCLIStartsWithoutHostCredentials(t *testing.T) {
 	t.Logf("auth status with a token: %s", out)
 	if !strings.Contains(out, `"oauth_token"`) {
 		t.Errorf("CLI did not take %s as its credential: %s", TokenEnv, out)
+	}
+}
+
+// TestFreezeIsolatesTheCopy: the frozen copy keeps modes and content, does
+// not change when the original is rewritten or deleted mid-batch, and is gone
+// after cleanup.
+func TestFreezeIsolatesTheCopy(t *testing.T) {
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	src := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(src, "bin"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	exe := filepath.Join(src, "bin", "cli")
+	if err := os.WriteFile(exe, []byte("#!/bin/sh\necho v1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("bin/cli", filepath.Join(src, "link")); err != nil {
+		t.Fatal(err)
+	}
+	dst, done, err := Freeze(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(exe, []byte("#!/bin/sh\necho v2\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll(filepath.Join(src, "bin")); err != nil {
+		t.Fatal(err)
+	}
+	out, err := exec.Command(filepath.Join(dst, "bin", "cli")).Output()
+	if err != nil || strings.TrimSpace(string(out)) != "v1" {
+		t.Fatalf("frozen cli = %q, %v; want v1, runnable", out, err)
+	}
+	if l, err := os.Readlink(filepath.Join(dst, "link")); err != nil || l != "bin/cli" {
+		t.Errorf("link = %q, %v", l, err)
+	}
+	done()
+	if _, err := os.Stat(dst); !os.IsNotExist(err) {
+		t.Errorf("frozen copy left behind: %v", err)
 	}
 }
