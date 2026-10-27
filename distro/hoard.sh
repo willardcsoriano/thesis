@@ -73,9 +73,23 @@ if [ $want_models -eq 1 ]; then
 fi
 
 if [ $want_ollama -eq 1 ]; then
+  # The version is pinned in distro/ollama-pin, with the archive's SHA-256 from
+  # the GitHub release, so every box serves the same runtime. Until 2026-10-25
+  # this fetched the newest release, and two runs a day apart ran 0.34.1 and
+  # 0.40.11. A download that does not match the pin is deleted, not used.
+  read -r ollama_version ollama_sha < "$repo/distro/ollama-pin"
   mkdir -p "$out/toolchain"
-  curl -fsSL https://ollama.com/download/ollama-linux-amd64.tar.zst -o "$out/toolchain/ollama-linux-amd64.tar.zst" \
-    || echo "ollama archive not fetched; the installer script at https://ollama.com/install.sh is the fallback" >&2
+  dest="$out/toolchain/ollama-linux-amd64-v$ollama_version.tar.zst"
+  if [ ! -f "$dest" ] || ! echo "$ollama_sha  $dest" | sha256sum -c --quiet - 2>/dev/null; then
+    curl -fsSL "https://github.com/ollama/ollama/releases/download/v$ollama_version/ollama-linux-amd64.tar.zst" -o "$dest.part" \
+      || { echo "ollama v$ollama_version not fetched" >&2; exit 1; }
+    if echo "$ollama_sha  $dest.part" | sha256sum -c --quiet -; then
+      mv "$dest.part" "$dest"
+    else
+      rm -f "$dest.part"; echo "ollama v$ollama_version does not match the SHA-256 in distro/ollama-pin" >&2; exit 1
+    fi
+  fi
+  echo "ollama v$ollama_version hoarded and verified"
 fi
 
 if [ $want_pip -eq 1 ]; then
