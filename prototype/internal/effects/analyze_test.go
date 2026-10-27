@@ -489,3 +489,37 @@ func TestPipelineStageMayDestroyALaterMove(t *testing.T) {
 		t.Fatalf("a rename in a pipeline is undone by moving back: %+v", p.Captures)
 	}
 }
+
+// Defect 13: a value-taking xargs flag at the end of the line (`xargs -a`)
+// stepped past the end of the arguments and panicked, found by
+// FuzzAnalysisDecision in cmd/synapse. xargs refuses such a line and runs
+// nothing; the analysis must neither panic nor invent an effect.
+func TestXargsFlagMissingItsValue(t *testing.T) {
+	dir := t.TempDir()
+	for _, cmd := range []string{"xargs -a", "xargs -d", "xargs -n", "xargs -L", "xargs -P", "xargs -s", "xargs -E", "xargs --arg-file", "xargs --delimiter", "xargs --max-args", "xargs -0 -a", "ls | xargs -n"} {
+		an := New(dir)
+		res := an.Analyze(context.Background(), cmd)
+		if v := res.Verdict(); v.Class != Recoverable {
+			t.Errorf("%q: %v %v, want recoverable (xargs runs nothing)", cmd, v.Class, v.Reasons)
+		}
+	}
+}
+
+// Defect 14: a redirect onto a folder fails, so a line that then removes the
+// folder must not be read as "a file written, then removed" with a content
+// capture (found by make composecheck on seed 3134150).
+func TestRedirectOntoAFolderIsNotAWrite(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, "logs"), 0o755)
+	os.WriteFile(filepath.Join(dir, "logs", "x.log"), []byte("x"), 0o644)
+	for _, cmd := range []string{
+		"if x=logs; then echo y > $x; fi ; rm -r $x",
+		"echo y > logs; rm -r logs",
+		"echo y >> logs",
+	} {
+		res := New(dir).Analyze(context.Background(), cmd)
+		if v := res.Verdict(); v.Class != Unrecoverable {
+			t.Errorf("%q: %v %v, want unrecoverable (asks)", cmd, v.Class, v.Reasons)
+		}
+	}
+}

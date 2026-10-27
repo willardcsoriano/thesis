@@ -168,6 +168,22 @@ var rules = []rule{
 // confirmation keypress, never a false negative, so it's left as-is rather
 // than chased with a fragile "was dd actually the command name" heuristic.
 
+// The reasons given by Classify's two character scans. Unlike the command
+// rules, these read the command as text: a '>' or the word tee inside a quoted
+// string is reported as an overwrite. The running system's gate lets a
+// confident effect analysis clear exactly these (IsTextScanReason); the
+// verdicts Classify returns, and so the L0 baseline, are unchanged.
+const (
+	ReasonTruncatingRedirect = "truncating redirect (>) overwrites the target file's existing contents"
+	ReasonUnsafeTee          = "tee without -a/--append overwrites the target file's existing contents"
+)
+
+// IsTextScanReason reports whether reason came from one of Classify's
+// character scans rather than a command rule.
+func IsTextScanReason(reason string) bool {
+	return reason == ReasonTruncatingRedirect || reason == ReasonUnsafeTee
+}
+
 // Classify returns whether cmd is safe to auto-run. When the verdict is
 // Irreversible, reason explains why in a form suitable for showing directly
 // to the user in a confirmation prompt; it is empty for Reversible.
@@ -178,10 +194,10 @@ func Classify(cmd string) (Verdict, string) {
 		}
 	}
 	if hasTruncatingRedirect(cmd) {
-		return Irreversible, "truncating redirect (>) overwrites the target file's existing contents"
+		return Irreversible, ReasonTruncatingRedirect
 	}
 	if hasUnsafeTee(cmd) {
-		return Irreversible, "tee without -a/--append overwrites the target file's existing contents"
+		return Irreversible, ReasonUnsafeTee
 	}
 	if hasFetchExec(cmd) {
 		return Irreversible, "fetching remote content and running it through a shell interpreter executes arbitrary unreviewed code"

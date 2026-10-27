@@ -775,6 +775,16 @@ func (st *state) redirect(r *syntax.Redirect, sc *scope) {
 		st.issue(IssueUnresolved, src, errUnknownWD.Error())
 		return
 	}
+	// A redirect onto a folder always fails, and the command it belongs to
+	// does not run. Reading it as a write made `echo y > logs; rm -r logs`
+	// look like a file written and then removed, protected by a content
+	// capture that cannot restore a folder (defect 14, found by
+	// make composecheck on seed 3134150). What the line does after a failure
+	// it did not expect is not predicted here; it asks.
+	if st.isDir(p) {
+		st.issue(IssueUnresolved, src, "redirects into "+p+", which is a folder, so the command fails and what follows is not predictable")
+		return
+	}
 	kind := Create
 	if st.exists(p) {
 		kind = Write

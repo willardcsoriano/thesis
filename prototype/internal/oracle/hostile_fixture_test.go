@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -342,4 +343,75 @@ func TestMaterializeHugeFixture(t *testing.T) {
 		t.Errorf("observed %d files, want %d", files, len(seen))
 	}
 	_ = fs.ModePerm
+}
+
+// Ages are real modification times, set after the whole fixture exists, so
+// an aged directory keeps its age even when its children come later in the
+// list, and find(1) sees them the way a user's old files would be seen.
+func TestMaterializeAges(t *testing.T) {
+	root := t.TempDir()
+	const day = 24 * 60 * 60
+	fx := []Entry{
+		{Path: "old", Kind: "dir", Age: 90 * day},
+		{Path: "old/a.txt", Kind: "file", Data: "a", Age: 60 * day},
+		{Path: "old/new.txt", Kind: "file", Data: "n"},
+		{Path: "recent.txt", Kind: "file", Data: "r", Age: 2 * day},
+		{Path: "plain.txt", Kind: "file", Data: "p"},
+	}
+	before := time.Now()
+	if err := Materialize(root, fx); err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]time.Duration{"old": 90 * 24 * time.Hour, "old/a.txt": 60 * 24 * time.Hour, "recent.txt": 2 * 24 * time.Hour}
+	for p, age := range want {
+		fi, err := os.Lstat(filepath.Join(root, p))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := before.Sub(fi.ModTime()); got < age-time.Minute || got > age+time.Minute {
+			t.Errorf("%s: %v old, want %v", p, got.Round(time.Hour), age)
+		}
+	}
+	for _, p := range []string{"old/new.txt", "plain.txt"} {
+		fi, _ := os.Lstat(filepath.Join(root, p))
+		if time.Since(fi.ModTime()) > time.Minute {
+			t.Errorf("%s has no age but is %v old", p, time.Since(fi.ModTime()).Round(time.Hour))
+		}
+	}
+	out, err := exec.Command("find", root, "-mtime", "+15", "-printf", "%P\n").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Fields(string(out)); strings.Join(got, " ") != "old old/a.txt" && strings.Join(got, " ") != "old/a.txt old" {
+		t.Errorf("find -mtime +15 saw %v, want old and old/a.txt", got)
+	}
+}
+
+func TestMaterializeRefusesBadAges(t *testing.T) {
+	for name, e := range map[string]Entry{
+		"negative": {Path: "f", Kind: "file", Age: -1},
+		"link":     {Path: "l", Kind: "link", Target: "f", Age: 60},
+	} {
+		if err := Materialize(t.TempDir(), []Entry{e}); err == nil {
+			t.Errorf("%s: accepted", name)
+		}
+	}
+}
+
+// An aged entry whose path a later link entry escapes through stays inside
+// the root: the age is set through os.Root.
+func TestMaterializeAgeStaysInRoot(t *testing.T) {
+	root, outside, victim := arena(t)
+	old, _ := os.Lstat(victim)
+	fx := []Entry{
+		{Path: "esc", Kind: "link", Target: outside},
+		{Path: "esc/victim", Kind: "file", Data: "x", Age: 3600},
+	}
+	if err := Materialize(root, fx); err == nil {
+		t.Error("a file written through a link out of the root was accepted")
+	}
+	if now, _ := os.Lstat(victim); !now.ModTime().Equal(old.ModTime()) {
+		t.Error("the victim's times were changed through the link")
+	}
+	outsideUntouched(t, outside, victim)
 }
