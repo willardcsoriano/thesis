@@ -20,14 +20,14 @@ These are the facts about the Claude Code CLI that this driver depends on. Each 
 - `--model` takes an alias (`sonnet`, `opus`, `haiku`, `fable`) or a full model name. Source: cli-reference.
 - `--session-id <uuid>` fixes a session's id; `--resume <id>` continues it, and finds it in any project on the machine. `--no-session-persistence` would make resuming impossible, so the runner does not pass it. Source: cli-reference; headless ("Continue conversations").
 - `--allowedTools` uses permission-rule syntax: `Bash(ls *)`, with the space before `*` (the older `Bash(ls:*)` form is not what the docs show). Source: headless ("Create a commit").
-- `-p` skips the workspace-trust dialog. Without `--bare` it still loads hooks, MCP servers, skills, plugins and CLAUDE.md from the working directory and `~/.claude`. Inside the sandbox `~` is a fresh empty directory, so none of the operator's configuration loads. Source: headless ("Start faster with bare mode"); `claude --help`.
+- `-p` skips the workspace-trust dialog. Without `--bare` it still loads hooks, MCP servers, skills, plugins and CLAUDE.md from the working directory and `~/.claude`. Inside the sandbox `~` is the task's fixture and `CLAUDE_CONFIG_DIR` points to a fresh empty state folder, so none of the operator's configuration loads. Source: headless ("Start faster with bare mode"); `claude --help`.
 
 ## Authentication
 
 - `claude setup-token` prints a one-year OAuth token and saves it nowhere; set it as `CLAUDE_CODE_OAUTH_TOKEN`. It requires a Pro, Max, Team or Enterprise plan and can only make model requests. Source: https://code.claude.com/docs/en/authentication ("Generate a long-lived token").
 - Precedence: cloud-provider variables, then `ANTHROPIC_AUTH_TOKEN`, then `ANTHROPIC_API_KEY`, then `apiKeyHelper`, then `CLAUDE_CODE_OAUTH_TOKEN`, then `/login` credentials. The sandbox passes only `CLAUDE_CODE_OAUTH_TOKEN`, so nothing outranks it. Source: authentication ("Authentication precedence").
 - `--bare` (and `CLAUDE_CODE_SIMPLE=1`) never reads `CLAUDE_CODE_OAUTH_TOKEN`. Source: authentication; https://code.claude.com/docs/en/env-vars.
-- On Linux, `/login` credentials live in `~/.claude/.credentials.json`, or under `CLAUDE_CONFIG_DIR` when that is set. The sandbox's `~` is empty, so there are none to find. Source: authentication ("Credential management").
+- On Linux, `/login` credentials live in `~/.claude/.credentials.json`, or under `CLAUDE_CONFIG_DIR` when that is set. The sandbox's config folder is empty, so there are none to find. `CLAUDE_CONFIG_DIR` moves `~/.claude.json` too: run headless in the sandbox with an empty HOME on 2.1.310, every file it wrote (`.claude.json`, `projects/`, `sessions/`, `telemetry/`, `backups/`) landed in the config folder and HOME stayed empty. Source: authentication ("Credential management").
 
 ## Environment variables set in the sandbox
 

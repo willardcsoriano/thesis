@@ -22,6 +22,10 @@ const APIKeyEnv = "GEMINI_API_KEY"
 // need one; Workspace and Code Assist licences do. Passed through when set.
 const ProjectEnv = "GOOGLE_CLOUD_PROJECT"
 
+// HomeEnv replaces the folder the CLI keeps .gemini in (its homedir(), which
+// reads this variable before os.homedir() at v0.49.0).
+const HomeEnv = "GEMINI_CLI_HOME"
+
 // Auth types, as the CLI's security.auth.selectedType setting names them.
 const (
 	AuthOAuthPersonal = "oauth-personal" // "Sign in with Google": the personal subscription
@@ -206,8 +210,10 @@ func Settings(authType string, maxTurns int) []byte {
 	return append(b, '\n')
 }
 
-// configDir is the CLI's user directory inside the throwaway home.
-func configDir(w claudecode.Workdir) string { return filepath.Join(w.Home(), ".gemini") }
+// configDir is the CLI's user directory, in the workdir's state folder:
+// GEMINI_CLI_HOME (HomeEnv) stands in for ~ when the CLI finds it, so the
+// settings and the credential copy stay out of the fixture, which is HOME.
+func configDir(w claudecode.Workdir) string { return filepath.Join(w.State(), ".gemini") }
 
 // PrepareHome writes the CLI's user directory into w's home: settings.json
 // and, for the OAuth type, the credential copy. Both are mode 0600 in a
@@ -269,6 +275,7 @@ func (s Sandbox) Env(a Auth) []string {
 	env := []string{
 		"PATH=" + filepath.Dir(toolNode) + ":/usr/local/bin:/usr/bin:/bin",
 		"HOME=" + SandboxHome,
+		HomeEnv + "=" + claudecode.SandboxState,
 		"USER=" + sandboxUser,
 		"LOGNAME=" + sandboxUser,
 		"SHELL=/bin/bash",

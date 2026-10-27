@@ -125,7 +125,7 @@ func (r Runner) RunTask(ctx context.Context, t probe.Task, tier string) ([]probe
 	if err != nil {
 		return nil, err
 	}
-	base := probe.Record{Run: r.RunID, Driver: "cli", Agent: probe.AgentGeminiCLI, Model: r.Model, Profile: "native", ToolVersion: r.Sandbox.Install.Version,
+	base := probe.Record{Run: r.RunID, Driver: "cli", Agent: probe.AgentGeminiCLI, Layout: probe.LayoutHome, Model: r.Model, Profile: "native", ToolVersion: r.Sandbox.Install.Version,
 		Task: t.ID, Partition: t.Partition, Category: t.Category, Tier: tier, Features: t.Features}
 	var all []probe.Record
 	var turnErr error

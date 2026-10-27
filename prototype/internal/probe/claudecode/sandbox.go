@@ -23,14 +23,25 @@ const TokenEnv = "CLAUDE_CODE_OAUTH_TOKEN"
 
 // Paths inside the sandbox. They are fixed, so nothing in the agent's view
 // names the operator's home, username or temp folders.
+//
+// The fixture is the agent's home folder and its working directory
+// (probe.LayoutHome), so "my downloads" is ~/Downloads as on a person's own
+// machine. The CLI's own files (sessions, settings, .claude.json) go to
+// SandboxState instead, through the CLI's config-folder variable, so the
+// fixture holds only what the task and the agent put there.
 const (
-	SandboxHome = "/home/agent"
-	SandboxCwd  = SandboxHome + "/task"
-	toolRoot    = "/run/agentprobe"
-	toolPkg     = toolRoot + "/claude-code"
-	toolNode    = toolRoot + "/node"
-	sandboxUser = "agent"
-	sandboxHost = "agentprobe"
+	SandboxHome  = "/home/agent"
+	SandboxCwd   = SandboxHome
+	SandboxState = "/run/agentprobe-state"
+	// ConfigDirEnv moves every file Claude Code keeps under ~ (~/.claude and
+	// ~/.claude.json) into its value; checked against 2.1.310 by running it
+	// with an empty HOME, which stayed empty.
+	ConfigDirEnv = "CLAUDE_CONFIG_DIR"
+	toolRoot     = "/run/agentprobe"
+	toolPkg      = toolRoot + "/claude-code"
+	toolNode     = toolRoot + "/node"
+	sandboxUser  = "agent"
+	sandboxHost  = "agentprobe"
 )
 
 // hidden are host directories replaced by an empty tmpfs: the operator's
@@ -83,6 +94,34 @@ func ResolveInstall() (Install, error) {
 	return in, nil
 }
 
+// Freeze copies a CLI's package directory to a private folder under the
+// operator's cache and returns it, with a function that deletes it. A batch
+// mounts the copy, so nothing that updates or reinstalls the CLI on the host
+// while the batch runs (an auto-update, npm, another session) can change or
+// break the instrument between tasks: on 2026-10-24 a reinstall of the live
+// package during batch2 made 24 of its 60 task runs fail to start the CLI.
+// The copy is made with cp -a, so modes and links are kept.
+func Freeze(pkgDir string) (string, func(), error) {
+	base, err := os.UserCacheDir()
+	if err != nil {
+		return "", nil, err
+	}
+	if err := os.MkdirAll(filepath.Join(base, "agentprobe"), 0o700); err != nil {
+		return "", nil, err
+	}
+	dir, err := os.MkdirTemp(filepath.Join(base, "agentprobe"), "cli-")
+	if err != nil {
+		return "", nil, err
+	}
+	done := func() { _ = os.RemoveAll(dir) }
+	dst := filepath.Join(dir, "pkg")
+	if out, err := exec.Command("cp", "-a", "--", pkgDir, dst).CombinedOutput(); err != nil {
+		done()
+		return "", nil, fmt.Errorf("freezing %s: %v: %s", pkgDir, err, bytes.TrimSpace(out))
+	}
+	return dst, done, nil
+}
+
 func isClaudePackage(dir string) bool {
 	b, err := os.ReadFile(filepath.Join(dir, "package.json"))
 	if err != nil {
@@ -107,15 +146,17 @@ func isELF(path string) bool {
 
 // Workdir is one task's throwaway host folder:
 //
-//	Root/home        mounted read-write at SandboxHome (the CLI's HOME)
-//	Root/home/task   the fixture, the CLI's working directory
+//	Root/home        the fixture, mounted read-write at SandboxHome: the
+//	                 CLI's HOME and working directory
+//	Root/state       the CLI's own files, read-write at SandboxState
 //	Root/etc         passwd and group naming the uid "agent", and the
 //	                 isolated network's resolv.conf
 //	Root/lifeline    locked by the driver while an isolated sandbox runs
 type Workdir struct{ Root string }
 
 func (w Workdir) Home() string     { return filepath.Join(w.Root, "home") }
-func (w Workdir) Fixture() string  { return filepath.Join(w.Root, "home", "task") }
+func (w Workdir) Fixture() string  { return w.Home() }
+func (w Workdir) State() string    { return filepath.Join(w.Root, "state") }
 func (w Workdir) Lifeline() string { return filepath.Join(w.Root, "lifeline") }
 func (w Workdir) etc(f string) string {
 	return filepath.Join(w.Root, "etc", f)
@@ -129,7 +170,7 @@ func NewWorkdir() (Workdir, error) {
 		return Workdir{}, err
 	}
 	w := Workdir{Root: root}
-	for _, d := range []string{w.Fixture(), filepath.Join(root, "etc")} {
+	for _, d := range []string{w.Fixture(), w.State(), filepath.Join(root, "etc")} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
 			return w, err
 		}
@@ -215,7 +256,8 @@ type Jail struct {
 // every hidden directory that exists and every Mask directory outside them;
 // with the host network, resolv.conf's target re-exposed if it lived under
 // one, and with the isolated network, the workdir's resolv.conf naming
-// DNSForward in its place; the workdir's home read-write at SandboxHome;
+// DNSForward in its place; the workdir's home read-write at SandboxHome and
+// its state folder at SandboxState;
 // synthetic passwd and group; ReadOnly. All namespaces are unshared except
 // the network, which is pasta's (isolated) or the host's, and the sandbox
 // cannot create further user namespaces, so it cannot remount its view.
@@ -264,6 +306,7 @@ func (j Jail) Argv(w Workdir, straceOut string, inner []string) []string {
 	}
 	argv = append(argv,
 		"--bind", w.Home(), SandboxHome,
+		"--bind", w.State(), SandboxState,
 		"--ro-bind", w.etc("passwd"), "/etc/passwd",
 		"--ro-bind", w.etc("group"), "/etc/group")
 	for _, m := range j.ReadOnly {
@@ -345,6 +388,7 @@ func (s Sandbox) Env(token string) []string {
 		"TERM=dumb",
 		"LANG=C.UTF-8", // fixed: the host locale would name the operator's region and vary between machines
 		"DISABLE_AUTOUPDATER=1",
+		ConfigDirEnv + "=" + SandboxState,
 		TokenEnv + "=" + token,
 	}
 }

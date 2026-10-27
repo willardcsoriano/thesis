@@ -56,14 +56,15 @@ const (
 )
 
 // The CLI drivers' sandbox layout (claudecode.SandboxHome and SandboxCwd,
-// geminicli likewise; oracle.HiddenRoot is the same task folder): HOME is
-// agentHome and the agent starts in agentRoot. The probe package cannot import
-// the drivers, so the paths are repeated here; TestAgentPathsMatchOracle pins
-// agentRoot to oracle.HiddenRoot.
+// geminicli likewise): HOME is agentHome, and the agent starts in the task
+// root, which is agentHome itself under LayoutHome and legacyRoot under
+// LayoutTaskFolder (oracle.HiddenRoot is that same folder). The probe package
+// cannot import the drivers, so the paths are repeated here;
+// TestAgentPathsMatchOracle pins legacyRoot to oracle.HiddenRoot.
 const (
-	agentHome = "/home/agent"
-	agentRoot = agentHome + "/task"
-	agentTmp  = "/tmp"
+	agentHome  = "/home/agent"
+	legacyRoot = agentHome + "/task"
+	agentTmp   = "/tmp"
 	// replayCtl is where a replayed step's control files (the command, the
 	// final working directory) are seen inside the sandbox. It is under /run,
 	// a HideHost tmpfs, so bubblewrap can create it.
@@ -139,8 +140,9 @@ func agentOf(recs []Record) string {
 // The replay. The run's steps are re-run in order from fx inside the oracle's
 // host-hiding sandbox (oracle.ExecuteIn with HideHost: no network, only the
 // replay's own folders writable), laid out as the CLI drivers lay out the
-// agent's sandbox: HOME at /home/agent, the task folder at /home/agent/task,
-// and a /tmp that lives for one turn (one CLI invocation). Shell steps run as
+// agent's sandbox: HOME at /home/agent, the task folder at HOME itself
+// (LayoutHome) or at /home/agent/task (LayoutTaskFolder, older runs), and a
+// /tmp that lives for one turn (one CLI invocation). Shell steps run as
 // captured. File-tool steps are applied from their recorded arguments where
 // the CLI's behaviour is deterministic from them (applyTool); otherwise the
 // replay stops and the remaining steps are unreconstructable. Nothing is ever
@@ -197,24 +199,43 @@ func ScoreReplayed(ctx context.Context, recs []Record, fx []oracle.Entry, opt Re
 	return rp.run(ctx)
 }
 
+// rootOf is the task root the agent of recs started in, from their Layout.
+// One task run has one layout; records that disagree, or a layout this
+// scorer does not know, are refused rather than replayed in a guessed one.
+func rootOf(recs []Record) (string, error) {
+	l := recs[0].Layout
+	for _, r := range recs[1:] {
+		if r.Layout != l {
+			return "", fmt.Errorf("task %s: records of one run carry layouts %q and %q", r.Task, l, r.Layout)
+		}
+	}
+	switch l {
+	case LayoutHome:
+		return agentHome, nil
+	case LayoutTaskFolder:
+		return legacyRoot, nil
+	}
+	return "", fmt.Errorf("task %s: unknown sandbox layout %q", recs[0].Task, l)
+}
+
 // world is one replay's folders on the host.
 type world struct {
 	base  string
-	home  string // seen at agentHome; holds the task folder
-	task  string // seen at agentRoot
+	home  string // seen at agentHome; is or holds the task folder
+	task  string // seen at the replay's root
 	tmp   string // seen at /tmp; emptied at every turn
 	ctl   string // seen at replayCtl
 	dummy string // bound at oracle.HiddenRoot, then shadowed by home
 }
 
-func newWorld(fx []oracle.Entry) (*world, error) {
+func newWorld(fx []oracle.Entry, root string) (*world, error) {
 	base, err := os.MkdirTemp("", "probe-replay-")
 	if err != nil {
 		return nil, err
 	}
 	w := &world{base: base, home: filepath.Join(base, "home"), tmp: filepath.Join(base, "tmp"),
 		ctl: filepath.Join(base, "ctl"), dummy: filepath.Join(base, "dummy")}
-	w.task = filepath.Join(w.home, "task")
+	w.task = filepath.Join(w.home, strings.TrimPrefix(root, agentHome))
 	for _, d := range []string{w.task, w.tmp, w.ctl, w.dummy} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
 			w.remove()
@@ -270,9 +291,11 @@ func (w *world) runShell(ctx context.Context, opt ReplayOptions, cmd, cwd, tz st
 	out, err := oracle.ExecuteIn(ctx, opt.Bwrap, w.dummy, replayScript(cwd, tz), opt.StepLimit, oracle.Sandbox{
 		HideHost: true,
 		// Bound after the task folder (oracle.HiddenRoot, where dummy goes), so
-		// home shadows it and /home/agent/task is home/task: the agent's HOME
-		// and task folder are both the replay's, as in the CLI's sandbox.
+		// home shadows it: the agent's HOME and task folder are both the
+		// replay's, as in the CLI's sandbox. Under LayoutHome home holds no
+		// task folder, so the sandbox starts in HOME; replayScript enters cwd.
 		WritableAt: []oracle.Mount{{Host: w.home, At: agentHome}, {Host: w.tmp, At: agentTmp}, {Host: w.ctl, At: replayCtl}},
+		Chdir:      agentHome,
 	})
 	if err != nil {
 		return stepRun{}, err
@@ -312,6 +335,7 @@ type replay struct {
 	recs   []Record
 	opt    ReplayOptions
 	agent  string
+	root   string   // the task root as the agent saw it (rootOf)
 	a      *world   // the replay whose state is analysed
 	checks []*check // the self-consistency replays; nil once the replay has diverged
 	before oracle.Snapshot
@@ -322,17 +346,20 @@ type replay struct {
 }
 
 func newReplay(recs []Record, fx []oracle.Entry, opt ReplayOptions) (*replay, error) {
-	rp := &replay{recs: recs, opt: opt, agent: agentOf(recs), cwd: agentRoot, turn: recs[0].Turn,
+	root, err := rootOf(recs)
+	if err != nil {
+		return nil, err
+	}
+	rp := &replay{recs: recs, opt: opt, agent: agentOf(recs), root: root, cwd: root, turn: recs[0].Turn,
 		read: map[string]string{}}
-	var err error
-	if rp.a, err = newWorld(fx); err != nil {
+	if rp.a, err = newWorld(fx, root); err != nil {
 		return nil, err
 	}
 	for _, c := range []*check{
 		{name: "a replay one second later", strict: true, later: true},
 		{name: "a replay on another calendar date", tz: otherDateZone(time.Now())},
 	} {
-		if c.w, err = newWorld(fx); err != nil {
+		if c.w, err = newWorld(fx, root); err != nil {
 			rp.close()
 			return nil, err
 		}
@@ -557,7 +584,7 @@ func (rp *replay) newTurn(turn int) error {
 			return err
 		}
 	}
-	if rp.agent == AgentClaudeCode && rp.cwd != agentRoot {
+	if rp.agent == AgentClaudeCode && rp.cwd != rp.root {
 		if rp.cwd != "" {
 			rp.cwdWhy = "turn " + fmt.Sprint(turn) + " starts a new CLI process after a cd to " + rp.cwd + "; whether a resumed session keeps it is not documented"
 		}
@@ -573,7 +600,7 @@ func (rp *replay) stepCwd(r Record) (string, string) {
 		if rp.agent == AgentClaudeCode && rp.cwd != "" {
 			return rp.cwd, ""
 		}
-		return agentRoot, "" // file tools take absolute paths or resolve against the root
+		return rp.root, "" // file tools take absolute paths or resolve against the root
 	}
 	switch rp.agent {
 	case AgentClaudeCode:
@@ -587,13 +614,13 @@ func (rp *replay) stepCwd(r Record) (string, string) {
 		}
 		d := *r.Dir
 		if d == "" {
-			return agentRoot, ""
+			return rp.root, ""
 		}
 		if !path.IsAbs(d) {
-			d = path.Join(agentRoot, d)
+			d = path.Join(rp.root, d)
 		}
 		d = path.Clean(d)
-		if d != agentRoot && !strings.HasPrefix(d, agentRoot+"/") {
+		if d != rp.root && !strings.HasPrefix(d, rp.root+"/") {
 			return "", "dir_path " + *r.Dir + " is outside the workspace, which the CLI refuses"
 		}
 		return d, ""
@@ -659,12 +686,12 @@ func (rp *replay) applyShell(ctx context.Context, r Record, cwd string) (applied
 		// Whether the CLI keeps a directory change made by a failing command
 		// is not documented.
 		res.cwdUnknown = fmt.Sprintf("the command exited %d after changing the directory to %s", ra.exit, ra.pwd)
-	case ra.pwd == agentRoot || strings.HasPrefix(ra.pwd, agentRoot+"/"):
+	case ra.pwd == rp.root || strings.HasPrefix(ra.pwd, rp.root+"/"):
 		res.cwd = ra.pwd
 	default:
 		// "If cd lands outside those directories, Claude Code resets to the
 		// project directory."
-		res.cwd = agentRoot
+		res.cwd = rp.root
 	}
 	return res, nil
 }
@@ -736,7 +763,7 @@ func (rp *replay) applyTool(r Record) (applied, error) {
 			if !gemini {
 				return "", "file_path is not absolute"
 			}
-			p = path.Join(agentRoot, p)
+			p = path.Join(rp.root, p)
 		}
 		return p, ""
 	}

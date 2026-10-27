@@ -84,12 +84,14 @@ func TestArgvKeepsHomeHiddenAndSecretsOut(t *testing.T) {
 		if realHome != "" && strings.Contains(joined, filepath.Join(realHome, ".gemini")) {
 			t.Fatal("argv names the real ~/.gemini")
 		}
-		// Every read-write bind comes from the workdir and lands in the
-		// sandbox home; nothing of the real home is writable.
+		// The only read-write binds are the workdir's home (the fixture) at
+		// the sandbox home and its state folder at the CLI's state path;
+		// nothing of the real home is writable.
+		rw := map[string]string{w.Home(): SandboxHome, w.State(): claudecode.SandboxState}
 		for i, a := range argv {
 			if a == "--bind" || a == "--bind-try" {
 				src, dst := argv[i+1], argv[i+2]
-				if !strings.HasPrefix(src, w.Root+"/") || dst != SandboxHome {
+				if want, ok := rw[src]; !ok || dst != want {
 					t.Errorf("read-write bind %s -> %s", src, dst)
 				}
 				if realHome != "" && (src == realHome || strings.HasPrefix(realHome, src+"/")) {
@@ -216,8 +218,10 @@ echo "pwd=$(pwd) whoami=$(whoami) host=$(hostname) homes=$(ls /home | tr '\n' ,)
 [ -e "$REAL_HOME_PROBE" ] && echo "REAL HOME VISIBLE" >&2
 touch /usr/agentprobe-escape 2>/dev/null && echo "USR WRITABLE" >&2
 [ -n "$GEMINI_API_KEY" ] && echo "key-present" >&2
-grep -q oauth-personal ~/.gemini/settings.json && echo "settings-oauth" >&2
-grep -q refresh_token ~/.gemini/oauth_creds.json 2>/dev/null && echo "creds-present mode=$(stat -c %a ~/.gemini/oauth_creds.json)" >&2
+grep -q oauth-personal "$GEMINI_CLI_HOME/.gemini/settings.json" && echo "settings-oauth" >&2
+grep -q refresh_token "$GEMINI_CLI_HOME/.gemini/oauth_creds.json" 2>/dev/null && echo "creds-present mode=$(stat -c %a "$GEMINI_CLI_HOME/.gemini/oauth_creds.json")" >&2
+mkdir -p "$GEMINI_CLI_HOME/.gemini/tmp" && echo "state-written" >&2
+echo "home-holds=$(ls -A ~ | tr '\n' ,)" >&2
 echo '{"type":"init","session_id":"s","model":"fake-model"}'
 case "$*" in
 *--session-id*)
@@ -277,10 +281,15 @@ func TestRunTaskInRealSandbox(t *testing.T) {
 				t.Fatal(err)
 			}
 			got := string(seen)
-			for _, want := range append([]string{"pwd=" + SandboxCwd, "whoami=agent", "host=agentprobe", "homes=agent,", "--session-id", "yolo"}, tc.want...) {
+			for _, want := range append([]string{"pwd=" + SandboxCwd, "whoami=agent", "host=agentprobe", "homes=agent,", "--session-id", "yolo", "state-written", "home-holds=notes.txt,old,"}, tc.want...) {
 				if !strings.Contains(got, want) {
 					t.Errorf("sandbox view lacks %q: %s", want, got)
 				}
+			}
+			// The fixture is HOME; the CLI's own files must land in its state
+			// folder, never among the task's files.
+			if strings.Contains(got, "home-holds=") && (strings.Contains(got, ".claude") || strings.Contains(got, ".gemini")) {
+				t.Errorf("CLI state in the fixture: %s", got)
 			}
 			for _, bad := range []string{"REAL HOME VISIBLE", "USR WRITABLE"} {
 				if strings.Contains(got, bad) {

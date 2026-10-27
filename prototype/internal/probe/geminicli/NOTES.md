@@ -56,7 +56,7 @@ The agent runs shell commands as the same uid inside the sandbox, so it can read
 
 ## Environment variables set in the sandbox
 
-- `PATH` (the node binary first), `HOME=/home/agent`, `USER`/`LOGNAME=agent`, `SHELL=/bin/bash`, `TERM=dumb`, `LANG=C.UTF-8`, `NO_BROWSER=true`, plus `GEMINI_API_KEY` or `GOOGLE_CLOUD_PROJECT` when given. Nothing else from the operator's shell is passed.
+- `PATH` (the node binary first), `HOME=/home/agent` (the fixture), `GEMINI_CLI_HOME` (the state folder that holds `.gemini`, outside the fixture), `USER`/`LOGNAME=agent`, `SHELL=/bin/bash`, `TERM=dumb`, `LANG=C.UTF-8`, `NO_BROWSER=true`, plus `GEMINI_API_KEY` or `GOOGLE_CLOUD_PROJECT` when given. Nothing else from the operator's shell is passed.
 - Settings written: `general.enableAutoUpdate: false` and `general.enableAutoUpdateNotification: false` (the install is read-only anyway). `model.maxSessionTurns` is set from `-max-turns`. Source: `docs/reference/configuration.md`.
 - Not changed: `privacy.usageStatisticsEnabled` (default true) and telemetry. As with the Claude driver, the CLI is measured as people run it. The effect of turning statistics off on behaviour was not checked.
 
