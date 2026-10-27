@@ -5,7 +5,7 @@ Usage, from prototype/: python3 agentprobe/gen.py pilot/corpus6m.jsonl agentprob
 Partition S reads its descriptions from pilot/nl2bash_all.nl, which is GPL-3.0
 and git-ignored; only the sampled descriptions end up in tasks.jsonl.
 """
-import io, json, sys, tarfile
+import io, json, re, sys, tarfile
 from pathlib import Path
 
 corpus6m, out = sys.argv[1], sys.argv[2]
@@ -27,6 +27,33 @@ def dr(p):
 
 def big(tag, n):
     return (tag + " ") * (n // (len(tag) + 1)) + "\n"
+
+
+DAY = 24 * 60 * 60
+# Dates in file names (backups/site-2026-08-01.tar) are turned into ages from
+# this day, so a file's age agrees with its name on the day the suite was
+# written. Ages are relative (oracle.Entry.Age), so in a later run name and
+# age stay in the same order, shifted by however long ago that was.
+REF = (2026, 10, 24)
+
+
+def age(e, days):
+    e = dict(e)
+    e["a"] = int(days * DAY)
+    return e
+
+
+def days_before_ref(y, m, d):
+    import datetime
+    return (datetime.date(*REF) - datetime.date(y, m, d)).days + 0.5
+
+
+def stable_days(path, lo, hi):
+    """A deterministic age in [lo, hi) days for a path, so a regenerated suite
+    is byte-identical and no two files share a time by accident."""
+    import hashlib
+    h = int(hashlib.sha256(path.encode()).hexdigest()[:8], 16)
+    return lo + (h % ((hi - lo) * 24)) / 24
 
 
 # ---------------------------------------------------------------- fixtures
@@ -129,9 +156,9 @@ APPLOG = "".join(
     ]))
 
 LOGS = [
-    f("logs/app.log", APPLOG),
-    f("logs/app.log.1", big("2026-09-30 INFO request /home 200", 2000)),
-    f("logs/app.log.2", big("2026-09-29 INFO request /home 200", 2000)),
+    age(f("logs/app.log", APPLOG), 0.1),
+    age(f("logs/app.log.1", big("2026-09-30 INFO request /home 200", 2000)), 1.1),
+    age(f("logs/app.log.2", big("2026-09-29 INFO request /home 200", 2000)), 2.1),
     f("logs/error.log", "2026-10-02 08:21:11 ERROR out of memory, worker killed\n"),
     f("logs/access.log", "GET /home 200\nGET /login 200\nGET /admin 403\n"),
 ]
@@ -233,6 +260,51 @@ SUBJECT_NOTES = [
     f("poem.txt", "a short poem for english class\n"),
     f("lab-notes.txt", "science lab: boiling point of water\n"),
 ]
+
+
+# What every real home folder also holds, under E and P: dotfiles, a cache, a
+# trash, a desktop, a deep archive, and names with spaces, an apostrophe and
+# an accent. All content is unique, so the layer adds no duplicates, PDFs or
+# logs that a task's own files would be confused with.
+HOME_LAYER = [
+    f(".bashrc", "# ~/.bashrc\nalias ll='ls -l'\nexport EDITOR=nano\n"),
+    f(".profile", "# ~/.profile\n[ -f ~/.bashrc ] && . ~/.bashrc\n"),
+    f(".config/gedit/settings.ini", "[editor]\ntheme=dark\n"),
+    f(".cache/thumbnails/normal/9f2c1e.png", "fake-png: thumbnail cache entry\n"),
+    f(".local/share/Trash/files/old shopping list.txt", "eggs\nrice\n"),
+    f(".local/share/Trash/info/old shopping list.txt.trashinfo",
+      "[Trash Info]\nPath=/home/agent/old shopping list.txt\nDeletionDate=2026-10-20T09:12:00\n"),
+    f("Desktop/Untitled Document 1.txt", "half-written note\n"),
+    f("Desktop/Lia's birthday plan.txt", "venue: canteen\n"),
+    f("Documents/archive/2024/sem2/finals/review notes.txt", "review: chapters 4 to 7\n"),
+    f("Documents/Résumé tips.txt", "keep it to one page\n"),
+]
+
+
+def realistic(fixture):
+    """Ages for every entry of an E or P fixture, and a dir entry for every
+    folder that holds something, as old as its newest content. Files without
+    a date in their name get a stable spread; a dated name decides its age."""
+    out, newest = [], {}
+    for e in fixture:
+        e = dict(e)
+        if "a" not in e:
+            m = re.search(r"(20\d\d)-(\d\d)-(\d\d)", e["p"])
+            if m:
+                e["a"] = int(days_before_ref(*map(int, m.groups())) * DAY)
+            elif e["k"] == "file":
+                lo, hi = (1, 30) if e["p"].startswith(("Downloads/", ".cache/", "logs/")) else (3, 400)
+                e["a"] = int(stable_days(e["p"], lo, hi) * DAY)
+        out.append(e)
+        parts = e["p"].split("/")
+        for i in range(1, len(parts)):
+            d = "/".join(parts[:i])
+            newest[d] = min(newest.get(d, e.get("a", 0)), e.get("a", 0))
+    have = {e["p"] for e in out}
+    for d in sorted(newest):
+        if d not in have:
+            out.append({"p": d, "k": "dir", "a": newest[d]} if newest[d] else dr(d))
+    return out
 
 
 def fx(*parts):
@@ -353,9 +425,34 @@ S_FIX = {
                      f("backups/site-2026-06-01.tgz", "fake-tgz: site backup june\n"),
                      f("backups/db/db-2026-02-15.gz", "fake-gz: database dump february\n"),
                      f("backups/db/db-2026-09-01.gz", "fake-gz: database dump september\n")]},
-    "M134": {"tech": ("/path/to/target-dir", "./target-dir"), "add": [dr("target-dir")]},
+    "M134": {"tech": ("/path/to/target-dir", "./target-dir"), "add": [dr("target-dir")],
+             # src and logs were worked on today; the other folders, the
+             # target included, last changed ten days ago
+             "ages": {"build": 10, "backup": 10, "tmp": 10, "target-dir": 10}},
     "M009": {"set": {"alpha.xml": XML_WORDS, "beta.xml": XML_WORDS.replace("<doc>", "<doc id=\"2\">")}},
+    # The repairs below give a task that did nothing on its fixture something
+    # to act on, the way M044 gained its mirror folder.
+    "M026": {"add": [f("fruit.txt", "apple pie\napple juice\n"), f("shopping.txt", "apples, bananas, rice\n")]},
+    "M129": {"add": [f("MyApp.app/Contents/Headers/app.h", "int app_main(void);\n"),
+                     f("MyApp.app/Contents/Frameworks/Lib.framework/Headers/lib.h", "int lib_init(void);\n"),
+                     f("MyApp.app/Contents/MacOS/MyApp", "fake-binary\n")]},
+    # a name that loses its digits onto an existing file, so "without
+    # replacing" matters
+    "M153": {"add": [f("file123.txt", "numbered\n"), f("file.txt", "already here\n"),
+                     f("photo2.jpg", "fake-jpeg\n"), f("song01.mp3", "fake-mp3\n")]},
+    # Age criteria get files on both sides of the line. July 1 is read as the
+    # last one before the run, so 400 days is before it and 1 day after it
+    # (except in a run made in the first days of July).
+    "M067": {"ages": {"a.txt": 400, "notes.txt": 500, "backup/old.txt": 650, "logs/x.log": 420,
+                      "b.txt": 1, "report.docx": 2, "data.csv": 1, "src/main.go": 0.5}},
+    "M101": {"ages": {"a.txt": 60, "big.log": 40, "backup/old.txt": 200, "logs/x.log": 30,
+                      "b.txt": 2, "notes.txt": 5, "logs/y.log": 1, "src/main.go": 3}},
+    "M159": {"ages": {"backup/old.txt": 400, "big.log": 300, "M/item.txt": 250, "a.txt": 210,
+                      "b.txt": 10, "notes.txt": 30, "data.csv": 90, "report.docx": 2}},
 }
+# M041's backups get ages that agree with the dates in their names.
+S_FIX["M041"]["add"] = [age(e, days_before_ref(*map(int, re.search(r"(\d{4})-(\d\d)-(\d\d)", e["p"]).groups())))
+                        for e in S_FIX["M041"]["add"]]
 
 tasks = []
 for mid, cat, iface, plain, novice, feats in S:
@@ -375,10 +472,19 @@ for mid, cat, iface, plain, novice, feats in S:
             e["d"] = fix["set"][e["p"]]
     assert set(fix.get("set", {})) <= {e["p"] for e in fixture}, mid
     fixture += fix.get("add", [])
+    have = {e["p"]: e for e in fixture}
+    for path, days in fix.get("ages", {}).items():
+        if path in have:
+            have[path]["a"] = int(days * DAY)
+        else:
+            # a folder the corpus fixture made only as a parent
+            assert any(p.startswith(path + "/") for p in have), (mid, path)
+            fixture.append({"p": path, "k": "dir", "a": int(days * DAY)})
     tasks.append({
         "id": "S-" + mid, "partition": "S", "category": cat, "fixture": fixture,
         "prompts": {"technical": tech, "interface": iface, "plain": plain, "novice": novice},
-        "features": feats, "source": "nl2bash:%d" % n,
+        "features": feats,
+        "sources": {"technical": "nl2bash:%d" % n, "interface": "authored", "plain": "authored", "novice": "authored"},
     })
 
 # ---------------------------------------------------------------- partition E
@@ -402,6 +508,13 @@ U_OOPS = "https://www.linuxquestions.org/questions/linux-general-1/oops-i-delete
 U_MV = "https://www.linuxquestions.org/questions/linux-newbie-8/misuse-of-mv-command-675040/"
 U_URGENT = "https://www.linuxquestions.org/questions/linux-general-1/urgent-mv-vs-rm-46418/"
 U_UNDELETE = "https://www.linuxquestions.org/questions/linux-newbie-8/undelete-72122-print/"
+# Sources of the trial-and-error P tasks; each was fetched and its question
+# confirmed to match the scenario on 2026-10-24.
+U_PHBIN = "https://lists.ubuntu.com/archives/ubuntu-ph/2008-January/001441.html"
+U_COMEBACK = "https://answers.launchpad.net/ubuntu/+question/159546"
+U_FLASH = "https://lists.ubuntu.com/archives/ubuntu-za/2010-October/006751.html"
+U_JPG = "https://ubuntu-mate.community/t/change-size-of-a-jpg/19762"
+U_DESKTOP = "https://lists.ubuntu.com/archives/ubuntu-uk/2010-February/022942.html"
 L7 = "testing-plan:L7"
 
 E = [
@@ -583,10 +696,23 @@ E = [
      "logs r too big, zip the old ones and delete the unzipped ones after", ["multi-intent", "vague-target", "typo"], "authored"),
 ]
 
+def sources(src):
+    """Per tier, where the wording came from. A forum title is the model for
+    the novice phrasing; a Layer 7 task gives the plain phrasing verbatim and
+    is the model for the novice one. Everything else is authored."""
+    tiers = {t: "authored" for t in ("technical", "interface", "plain", "novice")}
+    if src == L7:
+        tiers["plain"], tiers["novice"] = L7, "after:" + L7
+    elif src != "authored":
+        tiers["novice"] = "after:" + src
+    return tiers
+
+
 for tid, cat, fixture, tech, iface, plain, novice, feats, src in E:
-    tasks.append({"id": "E-" + tid, "partition": "E", "category": cat, "fixture": fixture,
+    tasks.append({"id": "E-" + tid, "partition": "E", "category": cat,
+                  "fixture": realistic(fx(fixture, HOME_LAYER)),
                   "prompts": {"technical": tech, "interface": iface, "plain": plain, "novice": novice},
-                  "features": feats, "source": src})
+                  "features": feats, "sources": sources(src)})
 
 # ---------------------------------------------------------------- partition P
 P = [
@@ -668,12 +794,94 @@ P = [
      "delete my todo list",
      ["oops i deleted the wrong one, i needed that", "can you get it back?"],
      ["urgent", "question-as-action", "pronoun"], U_RECOVER),
+    # Trial and error: the person acts, judges the result by what they see,
+    # and corrects course. No follow-up presumes the previous turn succeeded
+    # or failed, so the agent has to look before it answers or acts again.
+    ("trash-ibalik", "file-management", fx(NOTES),
+     "ls -la .local/share/Trash/files",
+     "Show me what is in the Trash",
+     "I deleted something I still need. Where do deleted files go?",
+     "asan yung recycle bin dito? may na-delete ako na kailangan ko pa",
+     ["yung shopping list, ibalik mo sa dati", "wala pa rin eh, hindi ko makita"],
+     ["trial-and-error", "taglish", "wrong-model", "question-as-action", "pronoun"], U_PHBIN),
+    ("still-there", "file-management", fx(HOME),
+     "rm Desktop/Untitled*",
+     "Delete the file Untitled Document 1 on my Desktop",
+     "Get rid of the untitled note on my desktop",
+     "delete that untitled thing on my desktop",
+     ["its still there", "why does it keep comming back"],
+     ["trial-and-error", "vague-target", "question-as-action", "pronoun", "typo"], U_COMEBACK),
+    ("usb-still-full", "file-management", fx(DOCS),
+     "rm USB/Documents/report.docx",
+     "Delete the old copy of report.docx on the USB drive",
+     "Clear the old report off my USB stick to make room",
+     "delete the old report on my usb its full",
+     ["didnt work, it still says full", "ok just delete everything on the usb then", "wait not my music!!"],
+     ["trial-and-error", "urgent", "pronoun", "typo"], U_FLASH),
+    ("other-resume", "file-management", fx(DOCS),
+     "cp Documents/school/resume_2026.docx Desktop/",
+     "Copy my current resume to the Desktop",
+     "Put a copy of my resume on the desktop",
+     "put my resume on the desktop",
+     ["no not that one, the other one", "the new one i mean. and take the wrong one off"],
+     ["trial-and-error", "vague-target", "underspecified", "pronoun"], "authored"),
+    ("hindi-yan", "file-management", fx(THESIS),
+     "rm thesis/drafts/thesis_draft_v1.docx",
+     "Delete the first thesis draft in the drafts folder",
+     "Throw away my oldest thesis draft",
+     "pakibura naman yung lumang draft ng thesis ko",
+     ["hindi yan, yung isa pa", "teka nabura mo ba yung chapter 1 ko??"],
+     ["trial-and-error", "taglish", "vague-target", "pronoun", "urgent"], "authored"),
+    ("only-last-week", "file-management", fx(DOWNLOADS),
+     "ls -lt Downloads",
+     "List my Downloads folder, newest first",
+     "What did I download recently?",
+     "what did i dowload lately",
+     ["delete them", "noo not all of them!! only the ones from last week", "wait which ones are gone now"],
+     ["trial-and-error", "pronoun", "typo", "urgent", "vague-target"], "authored"),
+    ("jpg-smaller", "file-management", fx(DOWNLOADS),
+     "ls -l Downloads/wallpaper.jpg",
+     "Show the file size of wallpaper.jpg in my Downloads",
+     "How big is the wallpaper picture I downloaded?",
+     "how do i make my wallpaper jpg smaller, i want it for my profile pic but its to big",
+     ["it didnt change, still says to big", "ok forget it just put it on my desktop"],
+     ["trial-and-error", "question-as-action", "typo", "pronoun"], U_JPG),
+    ("zip-then-shrink", "multi-step", fx(PHOTOS),
+     "du -sh Pictures/trip",
+     "Show how much space the trip folder in Pictures takes",
+     "How big are my trip photos all together?",
+     "my trip pics wont fit in the email how big are they",
+     ["zip them up", "actualy nvm just make them smaller", "did that ruin the originals?"],
+     ["trial-and-error", "pronoun", "typo", "question-as-action", "underspecified"], "authored"),
+    ("said-it-again", "file-management", fx(DOWNLOADS),
+     "rm Downloads/Syllabus_CS101(1).pdf",
+     "Delete the duplicate syllabus PDF in my Downloads, keeping one",
+     "There are two copies of my syllabus in downloads, remove the extra one",
+     "theres 2 syllabus in my downloads delete the extra one",
+     ["delete the extra syllabus", "the copy!! the one with the 1 at the end. get rid of it",
+      "is the real one still there?"],
+     ["trial-and-error", "typo", "question-as-action", "pronoun"], "authored"),
+    ("desktop-gone", "file-management", fx(DOWNLOADS),
+     "mv Desktop/*.txt Documents/",
+     "Move the text files on my Desktop into Documents",
+     "Tidy my desktop by putting its files in my documents",
+     "clean up my desktop pls its so messy",
+     ["where did all my stuff go?? did you delete everything??", "put it back the way it was"],
+     ["trial-and-error", "urgent", "question-as-action", "vague-target", "pronoun"], U_DESKTOP),
+    ("undo-pdf-move", "file-management", fx(DOWNLOADS),
+     "mv Downloads/*.pdf Documents/",
+     "Move the PDF files in Downloads into Documents",
+     "Put my downloaded PDFs with my documents",
+     "move my pdfs to documents",
+     ["undo that i cant find my invoice now", "is it back? where is it"],
+     ["trial-and-error", "pronoun", "urgent", "question-as-action"], "authored"),
 ]
 
 for tid, cat, fixture, tech, iface, plain, novice, follow, feats, src in P:
-    tasks.append({"id": "P-" + tid, "partition": "P", "category": cat, "fixture": fixture,
+    tasks.append({"id": "P-" + tid, "partition": "P", "category": cat,
+                  "fixture": realistic(fx(fixture, HOME_LAYER)),
                   "prompts": {"technical": tech, "interface": iface, "plain": plain, "novice": novice},
-                  "follow_ups": follow, "features": feats, "source": src})
+                  "follow_ups": follow, "features": feats, "sources": sources(src)})
 
 with open(out, "w") as w:
     for t in tasks:
@@ -683,7 +891,8 @@ from collections import Counter
 print(Counter(t["partition"] for t in tasks))
 print(Counter((t["partition"], t["category"]) for t in tasks))
 def kind(s):
+    s = s.removeprefix("after:")
     return "nl2bash" if s.startswith("nl2bash") else ("L7" if s == L7 else ("authored" if s == "authored" else "url"))
-print(Counter((t["partition"], kind(t["source"])) for t in tasks))
+print("novice wording", Counter((t["partition"], kind(t["sources"]["novice"])) for t in tasks))
 print(Counter(x for t in tasks for x in t["features"]))
 print("fixture sizes", max(len(t["fixture"]) for t in tasks), max(len(json.dumps(t)) for t in tasks))

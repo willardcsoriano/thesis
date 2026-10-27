@@ -2,6 +2,7 @@ package probe
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -33,7 +34,11 @@ func LoadTasks(path string) ([]Task, error) {
 			continue
 		}
 		var t Task
-		if err := json.Unmarshal(sc.Bytes(), &t); err != nil {
+		// Strict: a misspelt field (a fixture's "age" for "a") would
+		// otherwise load as its zero value and change the task silently.
+		dec := json.NewDecoder(bytes.NewReader(sc.Bytes()))
+		dec.DisallowUnknownFields()
+		if err := dec.Decode(&t); err != nil {
 			return nil, fmt.Errorf("%s:%d: %w", path, line, err)
 		}
 		if err := t.validate(); err != nil {
@@ -137,8 +142,31 @@ func (t Task) validate() error {
 			return fmt.Errorf("task %s follow-up %d: %w", t.ID, i+1, err)
 		}
 	}
-	if t.Source == "" {
-		return fmt.Errorf("task %s: no source", t.ID)
+	for _, tier := range Tiers {
+		if err := CheckSource(t.Sources[tier]); err != nil {
+			return fmt.Errorf("task %s %s: %w", t.ID, tier, err)
+		}
+	}
+	if len(t.Sources) != len(Tiers) {
+		return fmt.Errorf("task %s: sources for %d tiers, want %d", t.ID, len(t.Sources), len(Tiers))
 	}
 	return nil
+}
+
+var sourcePattern = regexp.MustCompile(`^(after:)?(nl2bash:[0-9]+|testing-plan:L7|https://[^\s]+)$`)
+
+// CheckSource refuses a provenance outside the vocabulary, which is what the
+// suite's grounded-wording counts are taken over: "authored" (written for
+// the study), "nl2bash:N" (line N of NL2Bash, verbatim), "testing-plan:L7"
+// (a Layer 7 phrasing, verbatim), or a URL (a real question's title), the
+// last three prefixed "after:" when the wording is modelled on the source
+// rather than taken from it.
+func CheckSource(s string) error {
+	if s == "authored" || sourcePattern.MatchString(s) {
+		return nil
+	}
+	if s == "" {
+		return errors.New("no source")
+	}
+	return fmt.Errorf("source %q: want authored, nl2bash:N, testing-plan:L7 or a URL, optionally after:", s)
 }
