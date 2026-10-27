@@ -4,14 +4,15 @@
 //
 //	agentprobe claude -tasks FILE [-tiers technical,novice] [-limit N] [-model M] [-out runs/] [-net isolated|host] [-dry-run]
 //	agentprobe gemini -tasks FILE [-oauth-creds FILE] [same flags]
-//	agentprobe score -tasks FILE -run runs/<run-id>
+//	agentprobe score -run runs/<run-id> [-tasks FILE]
 //
 // The claude driver runs Claude Code headless inside bubblewrap with
 // permissions skipped, authenticated only by CLAUDE_CODE_OAUTH_TOKEN from the
 // operator's environment. The gemini driver runs the Gemini CLI the same way
 // with approvals off, authenticated by a copy of one OAuth credential file the
 // operator names (the personal subscription) or by GEMINI_API_KEY. Records go
-// to OUT/<run-id>/events.jsonl and each turn's raw stream to OUT/<run-id>/raw/.
+// to OUT/<run-id>/events.jsonl, each turn's raw stream to OUT/<run-id>/raw/,
+// and the tasks as they ran to OUT/<run-id>/tasks.jsonl.
 //
 // Both sandboxes get their own network namespace by default (-net isolated,
 // claudecode.Network): the CLI reaches its API over the internet, but not
@@ -50,7 +51,7 @@ func main() {
 }
 
 const usage = `usage: agentprobe <driver> -tasks FILE [flags]
-       agentprobe score -tasks FILE -run DIR
+       agentprobe score -run DIR [-tasks FILE]
 
 Drivers:
   claude   Claude Code, sandboxed (see internal/probe/claudecode/NOTES.md)
@@ -211,6 +212,15 @@ func runClaude(ctx context.Context, args []string, getenv func(string) string, s
 		fmt.Fprintln(stderr, "agentprobe:", err)
 		return 1
 	}
+	if !c.dryRun {
+		frozen, unfreeze, err := claudecode.Freeze(install.PackageDir)
+		if err != nil {
+			fmt.Fprintln(stderr, "agentprobe:", err)
+			return 1
+		}
+		defer unfreeze()
+		install.PackageDir = frozen
+	}
 	sb := claudecode.Sandbox{Bwrap: s.bwrap, Strace: s.strace, Prlimit: s.prlimit, Net: s.net, Install: install}
 	r := claudecode.Runner{Sandbox: sb, Token: token, Model: c.model, MaxTurns: c.maxTurns, TurnTimeout: c.timeout,
 		RunID: s.runID, Out: s.out, Log: stderr}
@@ -280,6 +290,15 @@ func runGemini(ctx context.Context, args []string, getenv func(string) string, s
 	if err != nil {
 		fmt.Fprintln(stderr, "agentprobe:", err)
 		return 1
+	}
+	if !c.dryRun {
+		frozen, unfreeze, err := claudecode.Freeze(install.PackageDir)
+		if err != nil {
+			fmt.Fprintln(stderr, "agentprobe:", err)
+			return 1
+		}
+		defer unfreeze()
+		install.PackageDir = frozen
 	}
 	sb := geminicli.Sandbox{Bwrap: s.bwrap, Strace: s.strace, Prlimit: s.prlimit, Net: s.net, Install: install}
 	r := geminicli.Runner{Sandbox: sb, Auth: auth, Model: c.model, MaxTurns: c.maxTurns, Debug: *debug,
@@ -358,6 +377,27 @@ type Status struct {
 	Error  string `json:"error,omitempty"`
 }
 
+// runSuite is the run's own copy of the tasks it ran, under OUT/<run-id>.
+const runSuite = "tasks.jsonl"
+
+// writeSuite writes tasks one per line, refusing to replace a file.
+func writeSuite(path string, tasks []probe.Task) error {
+	var b bytes.Buffer
+	for _, t := range tasks {
+		line, err := json.Marshal(t)
+		if err != nil {
+			return err
+		}
+		b.Write(append(line, '\n'))
+	}
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		return err
+	}
+	_, werr := f.Write(b.Bytes())
+	return errors.Join(werr, f.Sync(), f.Close())
+}
+
 // runTasks runs every task on every tier, appending records to
 // OUT/events.jsonl and one Status per task run to OUT/status.jsonl. stop,
 // when set, says which errors end the run at once (a failure every later
@@ -380,6 +420,12 @@ func runTasks(ctx context.Context, runTask taskFunc, out string, tasks []probe.T
 		files[i] = f
 	}
 	events, status := files[0], files[1]
+	// The suite as it ran, beside its records: a later edit to the suite
+	// file would otherwise rescore this run against fixtures it never saw.
+	if err := writeSuite(filepath.Join(out, runSuite), tasks); err != nil {
+		fmt.Fprintln(stderr, "agentprobe:", err)
+		return 1
+	}
 
 	failed, incomplete := 0, 0
 	for _, t := range tasks {
