@@ -43,7 +43,7 @@ exit   # stops recording
 **One command at a time**, if you'd rather record individual steps separately:
 
 ```sh
-script -a -c "~/repos/thesis/prototype/bin/synapse 'delete doomed.txt'" ~/.synapse/test-logs/session.txt   # runs just this one command and adds it to the log file
+script -a -c "~/repos/thesis/prototype/bin/synapse run 'delete doomed.txt'" ~/.synapse/test-logs/session.txt   # runs just this one command and adds it to the log file
 ```
 
 After any confirmed-irreversible step, `cat ~/.synapse/undo.log` shows the actual JSON entry SynapseOS recorded for that step — worth cross-checking against the transcript. When you're done, send the `.txt` file (or paste its contents) over.
@@ -78,7 +78,7 @@ Work in a throwaway directory so you're never testing against real files:
 ```sh
 mkdir -p /tmp/synapse-test && cd /tmp/synapse-test   # creates a disposable test folder and moves into it
 touch a.log b.log notes.txt   # creates three empty sample files to test with
-script -a -c "~/repos/thesis/prototype/bin/synapse 'move all the log files into a folder called archive'" ~/.synapse/test-logs/session.txt   # tells synapse what you want done in plain English, and logs this step
+script -a -c "~/repos/thesis/prototype/bin/synapse run 'move all the log files into a folder called archive'" ~/.synapse/test-logs/session.txt   # tells synapse what you want done in plain English, and logs this step
 ```
 
 Watch it propose a command, classify it Reversible, run it immediately, and print the result. Check with `ls` afterward — `archive/` should hold `a.log`/`b.log`, `notes.txt` should be untouched.
@@ -89,7 +89,7 @@ Still in `/tmp/synapse-test`:
 
 ```sh
 echo "port: 8080" > config.yaml   # creates a sample settings file containing one line of text
-script -a -c "~/repos/thesis/prototype/bin/synapse 'change the port in config.yaml to 9090 using sed'" ~/.synapse/test-logs/session.txt   # asks synapse to edit that file, and logs this step
+script -a -c "~/repos/thesis/prototype/bin/synapse run 'change the port in config.yaml to 9090 using sed'" ~/.synapse/test-logs/session.txt   # asks synapse to edit that file, and logs this step
 ```
 
 Expect a proposed `sed -i ...` command, then `blocked: ... is irreversible — sed -i overwrites the file in place...`, then a `[y/N]` prompt. Answer **y** — it edits the file for real, but takes a content backup first without you having to ask.
@@ -105,7 +105,7 @@ Expect a preview line `restore content: /tmp/synapse-test/config.yaml`, a confir
 ```sh
 cd /tmp/synapse-test   # moves back into the scratch test folder
 echo "keep me" > doomed.txt   # creates a sample file that's about to be deleted
-script -a -c "~/repos/thesis/prototype/bin/synapse 'delete doomed.txt'" ~/.synapse/test-logs/session.txt   # asks synapse to delete the file, and logs this step
+script -a -c "~/repos/thesis/prototype/bin/synapse run 'delete doomed.txt'" ~/.synapse/test-logs/session.txt   # asks synapse to delete the file, and logs this step
 ```
 
 Confirm it. `doomed.txt` should genuinely be gone (`ls` to check). Then:
@@ -125,7 +125,7 @@ mkdir -p /tmp/synapse-git-test && cd /tmp/synapse-git-test   # creates a separat
 git init -q && git config user.email you@example.com && git config user.name you   # sets up a throwaway git project so there's history to roll back
 echo v1 > f.txt && git add . && git commit -qm first   # creates a file and saves it as the first checkpoint
 echo v2 > f.txt && git add . && git commit -qm second   # changes the file and saves a second checkpoint
-script -a -c "~/repos/thesis/prototype/bin/synapse 'undo the last commit with git reset hard'" ~/.synapse/test-logs/session.txt   # asks synapse to roll back to the first checkpoint, and logs this step
+script -a -c "~/repos/thesis/prototype/bin/synapse run 'undo the last commit with git reset hard'" ~/.synapse/test-logs/session.txt   # asks synapse to roll back to the first checkpoint, and logs this step
 ```
 
 Confirm it, check `cat f.txt` shows `v1`. Then `synapse undo` — expect `reset git HEAD back to: <sha>`, and `f.txt` back to `v2` after confirming.
@@ -137,7 +137,7 @@ mkdir -p /tmp/synapse-test/target   # creates a folder to test permission change
 echo x > /tmp/synapse-test/target/file.txt   # creates a sample file inside it
 chmod 640 /tmp/synapse-test/target/file.txt   # sets that file's starting permissions (who's allowed to read/write it)
 cd /tmp/synapse-test   # moves into the parent scratch folder
-script -a -c "~/repos/thesis/prototype/bin/synapse 'make everything in target world-writable recursively'" ~/.synapse/test-logs/session.txt   # asks synapse to open up permissions on the folder, and logs this step
+script -a -c "~/repos/thesis/prototype/bin/synapse run 'make everything in target world-writable recursively'" ~/.synapse/test-logs/session.txt   # asks synapse to open up permissions on the folder, and logs this step
 ```
 
 Confirm it, check `ls -l target/file.txt` shows wide-open permissions. Then `synapse undo` — expect `restore permissions: .../target/file.txt`, and the original `0640` mode back after confirming.
