@@ -1,0 +1,3 @@
+desktop-load state=up apps=2/2 processes=15 rss_kb=1344684 pss_kb=586115
+desktop-load state=up apps=2/2 processes=15 rss_kb=1393116 pss_kb=617822
+desktop-load: stopped (2 of 2 apps were alive)
