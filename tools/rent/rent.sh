@@ -169,10 +169,14 @@ for _ in $(seq 60); do on root true 2>/dev/null && break; sleep 5; done
 on root true || { say "the box never accepted SSH"; exit 1; }
 
 # --- This checkout, exactly, then the documented set-up.
-BOX_SSH="ssh ${ssh_opts[*]}" bash "$repo/tools/break-box/push.sh" "$box" >/dev/null
+# Bounded: on 2026-10-27 two copies over a failing laptop network crawled
+# for 2.7 hours before the connection timed out, the servers billed all along.
+BOX_SSH="ssh ${ssh_opts[*]}" timeout 1200 bash "$repo/tools/break-box/push.sh" "$box" >/dev/null ||
+  { say "copying the checkout failed or took over 20 minutes (the network?)"; exit 1; }
 scp -q "${ssh_opts[@]}" "$repo/tools/verify-box/setup.sh" "root@$box:"
 say "setting up (setup.sh --copied)"
-on root 'bash setup.sh --copied' > "$out/setup.log" 2>&1 || { say "set-up failed; see setup.log"; exit 1; }
+timeout 2700 ssh -n "${ssh_opts[@]}" "root@$box" 'bash setup.sh --copied' > "$out/setup.log" 2>&1 ||
+  { say "set-up failed or took over 45 minutes; see setup.log"; exit 1; }
 grep -q "sandbox ok" "$out/setup.log" || { say "the sandbox check did not pass; see setup.log"; exit 1; }
 
 fingerprint() { (git diff HEAD --binary; git ls-files -o --exclude-standard -z | xargs -0r sha256sum) | sha256sum | cut -c1-12; }
@@ -191,11 +195,20 @@ cat "$out/box.txt"
 
 # The results so far, copied over what an earlier copy brought. Bounded, so a
 # dead connection cannot hold up the delete.
+# rsync's 24 means files vanished on the box while being copied: the job is
+# still writing, the rest arrived, and the next copy brings the new state.
+fetch_one() {
+  local rc=0
+  timeout 300 rsync -a --exclude synapse.test -e "ssh ${ssh_opts[*]}" "verify@$box:$1" "$out/" 2>/dev/null || rc=$?
+  case $rc in
+    0) ;;
+    24) say "$1 copied, though some files changed during the copy" ;;
+    *) say "$1 not copied (rsync status $rc)" ;;
+  esac
+}
 fetch_results() {
-  timeout 300 rsync -a -e "ssh ${ssh_opts[*]}" "verify@$box:job.out" "$out/" 2>/dev/null || say "job.out not copied"
-  for p in $fetch; do
-    timeout 300 rsync -a --exclude synapse.test -e "ssh ${ssh_opts[*]}" "verify@$box:$p" "$out/" 2>/dev/null || say "$p not copied"
-  done
+  fetch_one job.out
+  for p in $fetch; do fetch_one "$p"; done
 }
 
 # --- The job, detached on the box so a dropped connection does not stop it,
