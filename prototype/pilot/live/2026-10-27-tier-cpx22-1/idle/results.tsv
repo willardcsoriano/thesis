@@ -1,0 +1,4 @@
+model	size_gb	pull_s	load_s	prompt_tok_s	gen_tok_s	sample_runs	sample_ok	sample_capped	mean_run_s	full_runs	est_full_h	note
+qwen2.5-coder:0.5b	0.40	5	0.8	2911	55.4	12	5	0	3.7	216	0.2	estimate from 12 development runs
+qwen2.5-coder:1.5b	0.99	7	1.8	1684	39.4	12	11	0	5.9	216	0.4	estimate from 12 development runs
+qwen2.5-coder:3b	1.93	11	3.3	971	19.5	12	11	0	10.3	216	0.6	estimate from 12 development runs

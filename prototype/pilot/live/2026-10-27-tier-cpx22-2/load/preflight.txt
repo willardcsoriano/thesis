@@ -1,0 +1,8 @@
+commit f5301c33a096a742ad7dfc930d573d543b5f4c2c+702c6c948aa6
+date 2026-10-27T11:02:09Z
+cpus 2
+MemTotal: 3820 MB
+MemAvailable: 3107 MB
+disk free 62G in $HOME
+gpu none (no nvidia-smi)
+bubblewrap works

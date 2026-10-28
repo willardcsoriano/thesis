@@ -1,0 +1,67 @@
+== qwen2.5-coder:3b aids=none Layer 7: 187 s over 4 shards
+  plain       26/36   72.2%
+  interface   33/36   91.7%
+  technical   36/36  100.0%
+  runs 108; mean 6.7 s a run
+  outcomes: complete 93, gave_up 7, repeated_failure 5, repeated_success 3
+== qwen2.5-coder:3b aids=none Layer 9: 81 s over 4 shards
+  turns satisfied           44/51   86.3%
+  conversations all right   19/24   79.2%
+  mean 5.5 s a turn
+  outcomes: complete 43, repeated_failure 1, repeated_success 4, undo 3
+== qwen2.5-coder:3b aids=all Layer 7: 201 s over 4 shards
+  plain       33/36   91.7%
+  interface   36/36  100.0%
+  technical   36/36  100.0%
+  runs 108; mean 6.8 s a run
+  outcomes: complete 93, gave_up 4, repeated_failure 2, repeated_success 7, step_limit 2
+== qwen2.5-coder:3b aids=all Layer 9: 95 s over 4 shards
+  turns satisfied           47/51   92.2%
+  conversations all right   22/24   91.7%
+  mean 6.5 s a turn
+  outcomes: complete 40, repeated_failure 2, repeated_success 6, undo 3
+== qwen2.5-coder:7b aids=none Layer 7: 325 s over 4 shards
+  plain       27/36   75.0%
+  interface   33/36   91.7%
+  technical   36/36  100.0%
+  runs 108; mean 11.6 s a run
+  outcomes: complete 102, gave_up 4, repeated_failure 2
+== qwen2.5-coder:7b aids=none Layer 9: 132 s over 4 shards
+  turns satisfied           51/51  100.0%
+  conversations all right   24/24  100.0%
+  mean 9.3 s a turn
+  outcomes: complete 48, undo 3
+== qwen2.5-coder:7b aids=all Layer 7: 348 s over 4 shards
+  plain       30/36   83.3%
+  interface   36/36  100.0%
+  technical   36/36  100.0%
+  runs 108; mean 12.3 s a run
+  outcomes: complete 103, gave_up 5
+== qwen2.5-coder:7b aids=all Layer 9: 146 s over 4 shards
+  turns satisfied           51/51  100.0%
+  conversations all right   24/24  100.0%
+  mean 10.3 s a turn
+  outcomes: complete 48, undo 3
+== qwen2.5-coder:1.5b aids=none Layer 7: 146 s over 4 shards
+  plain       24/36   66.7%
+  interface   27/36   75.0%
+  technical   33/36   91.7%
+  runs 108; mean 4.9 s a run
+  outcomes: gave_up 2, repeated_failure 12, repeated_success 91, reversed_step 3
+== qwen2.5-coder:1.5b aids=none Layer 9: 63 s over 4 shards
+  turns satisfied           29/51   56.9%
+  conversations all right    8/24   33.3%
+  mean 4.2 s a turn
+  outcomes: gave_up 1, repeated_failure 6, repeated_success 41, undo 3
+== qwen2.5-coder:1.5b aids=all Layer 7: 146 s over 4 shards
+  plain       30/36   83.3%
+  interface   31/36   86.1%
+  technical   33/36   91.7%
+  runs 108; mean 4.8 s a run
+  outcomes: gave_up 2, repeated_failure 15, repeated_success 91
+== qwen2.5-coder:1.5b aids=all Layer 9: 175 s over 4 shards
+  turns satisfied           40/51   78.4%
+  conversations all right   14/24   58.3%
+  mean 12.8 s a turn
+  outcomes: repeated_failure 9, repeated_success 39, undo 3
+all done
