@@ -27,8 +27,9 @@ if [ "${1:-}" = --inside-load ]; then
   shift 2
   # The load's state (Chromium's profile among it) stays out of the results:
   # it is rewritten all through the run, so a copy taken meanwhile is torn.
-  DESKTOP_LOAD_STATE=$(mktemp -d) || exit 1
-  export DESKTOP_LOAD_STATE
+  # start.sh creates the state folder itself and refuses one that exists.
+  state_parent=$(mktemp -d) || exit 1
+  export DESKTOP_LOAD_STATE=$state_parent/state
   "$repo/tools/desktop-load/start.sh" > "$dir/desktop-load.txt" 2>&1 || {
     echo "the desktop load did not come up:" >&2
     cat "$dir/desktop-load.txt" >&2
@@ -39,7 +40,7 @@ if [ "${1:-}" = --inside-load ]; then
   rc=$?
   "$repo/tools/desktop-load/status.sh" >> "$dir/desktop-load.txt" 2>&1
   "$repo/tools/desktop-load/stop.sh" >> "$dir/desktop-load.txt" 2>&1
-  rm -rf "$DESKTOP_LOAD_STATE"
+  rm -rf "$state_parent"
   cp -a ~/model-box/. "$dir/"
   exit $rc
 fi
