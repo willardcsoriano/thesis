@@ -112,7 +112,15 @@ vet:
 	$(GO) vet ./...
 	$(GO) vet -tags live ./...
 
-ci: fmt-check vet test-gated cover-check bench-sandbox-check
+ci: fmt-check vet test-gated cover-check bench-sandbox-check tools-check
+
+# The rented-box scripts that read results: what they report and keep is the
+# evidence for the live layers and the tier timings, so their self-tests run
+# with everything else.
+.PHONY: tools-check
+tools-check:
+	python3 ../tools/layer-box/compare_aids.py --selftest
+	python3 ../tools/rent/keep.py --selftest
 
 # model-bench.sh's sandbox: hostile commands (~, $$HOME, bare cd, ~user, an
 # absolute path, XDG and TMPDIR) must not reach the operator's home. Runs inside
