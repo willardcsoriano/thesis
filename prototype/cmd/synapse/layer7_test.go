@@ -104,13 +104,14 @@ type layer7Set struct {
 }
 
 // layer7Sets picks the sets SYNAPSE_LAYER7_SET names: development (the default),
-// heldout, or both. The held-out set runs only when asked for by name: a run
+// heldout, both (development and heldout), or heldout2. The held-out set runs only when asked for by name: a run
 // that names nothing is a tuning run, and one that also ran the held-out set
 // would spend it (ship review, 2026-10-27). An unknown name fails rather than
 // running nothing.
 func layer7Sets(t *testing.T, which string) []layer7Set {
 	dev := layer7Set{"development", append(utteranceCorpus(), extraUtteranceCorpus()...)}
 	held := layer7Set{"heldout", heldOutUtteranceCorpus()}
+	held2 := layer7Set{"heldout2", heldOut2UtteranceCorpus()}
 	switch which {
 	case "both":
 		return []layer7Set{dev, held}
@@ -118,8 +119,12 @@ func layer7Sets(t *testing.T, which string) []layer7Set {
 		return []layer7Set{dev}
 	case "heldout":
 		return []layer7Set{held}
+	case "heldout2":
+		// Never part of "both": the second held-out set is spent once, only
+		// by name (layer7_heldout2_test.go).
+		return []layer7Set{held2}
 	}
-	t.Fatalf("SYNAPSE_LAYER7_SET=%q: want development (the default), heldout, or both", which)
+	t.Fatalf("SYNAPSE_LAYER7_SET=%q: want development (the default), heldout, both, or heldout2", which)
 	return nil
 }
 

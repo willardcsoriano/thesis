@@ -10,8 +10,6 @@ package main
 // manual-tests/m6-session-context.md) only a live run found it.
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -256,6 +254,7 @@ func TestLayer9Verifiers(t *testing.T) {
 	sets := map[string][]conversation{
 		"development": conversationCorpus(),
 		"heldout":     heldOutConversationCorpus(),
+		"heldout2":    heldOut2ConversationCorpus(),
 	}
 	for name, convs := range sets {
 		seen := map[string]bool{}
@@ -295,16 +294,10 @@ func TestLayer9Verifiers(t *testing.T) {
 // TestLayer9HeldOutFrozen holds the held-out conversations to the hash they
 // were frozen with, as TestLayer7HeldOutFrozen does for Layer 7's.
 func TestLayer9HeldOutFrozen(t *testing.T) {
-	src, err := os.ReadFile("layer9_heldout_test.go")
-	if err != nil {
-		t.Fatal(err)
-	}
-	want, err := os.ReadFile("../../pilot/layer9_heldout.sha256")
-	if err != nil {
-		t.Fatal(err)
-	}
-	sum := sha256.Sum256(src)
-	if got := hex.EncodeToString(sum[:]); got != strings.TrimSpace(string(want)) {
-		t.Fatalf("layer9_heldout_test.go changed since it was frozen (sha256 %s, frozen %s)", got, strings.TrimSpace(string(want)))
-	}
+	checkFrozen(t, "layer9_heldout_test.go", "../../pilot/layer9_heldout.sha256")
+}
+
+// TestLayer9HeldOut2Frozen does the same for the second held-out set.
+func TestLayer9HeldOut2Frozen(t *testing.T) {
+	checkFrozen(t, "layer9_heldout2_test.go", "../../pilot/layer9_heldout2.sha256")
 }
