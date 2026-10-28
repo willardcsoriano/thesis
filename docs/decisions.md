@@ -58,6 +58,7 @@ This file records architectural and research design decisions that have been mad
   - [D50 — Network and administrator commands always ask; every confirmation is plain and true; undo keeps what is there now](#d50--network-and-administrator-commands-always-ask-every-confirmation-is-plain-and-true-undo-keeps-what-is-there-now)
   - [D51 — The loop stops a run the model cannot stop; Layer 9 tests conversations; live layers run on rented boxes](#d51--the-loop-stops-a-run-the-model-cannot-stop-layer-9-tests-conversations-live-layers-run-on-rented-boxes)
   - [D52 — Layer 7 accepts both fair readings of an ambiguous plain request; the harness aids each weakness it measured](#d52--layer-7-accepts-both-fair-readings-of-an-ambiguous-plain-request-the-harness-aids-each-weakness-it-measured)
+  - [D53 — The model comparison runs on rented CPU servers only, on one server family](#d53--the-model-comparison-runs-on-rented-cpu-servers-only-on-one-server-family)
 
 ## Decisions
 
@@ -724,7 +725,7 @@ The analysis has been evaluated on NL2Bash, on templates, and on one 3B local mo
 
 ### D46 — The model-size comparison: candidates, tiers, and accuracy on GPU but timing on CPU
 
-**Status:** Decided 2026-10-22, when planning a one-day rented run of every experiment (`experiments.md`).
+**Status:** Decided 2026-10-22, when planning a one-day rented run of every experiment (`experiments.md`). Amended by D53: accuracy runs on CPU too, and the tiers on Hetzner's `cpx` types.
 
 Chapter 3 Section 2.1(d) promises that each larger memory tier's model is chosen by scoring candidates by execution and timing them under desktop load, but named no candidates and defined no tier above 8 GB. Decided:
 
@@ -879,7 +880,7 @@ Three things were learned. **Repeats are not samples:** at temperature 0 the sam
 
 | Aid | Miss | What it does |
 |---|---|---|
-| `lint` | a command that runs cleanly but cannot give the answer: awk's `$2` on a file with no blanks (U9, 6 of 6 runs); `ls -l \| wc -l` counting the "total" line (C8); `ls -l \| sort` sorting by permissions, naming a 1-byte file the biggest (C1) | the command is not run; the model is told why and what works (`-F','`, `ls -A`, `ls -lS`). Each check fires only on a case it can prove from the command and the files it reads |
+| `lint` | a command that runs cleanly but cannot give the answer: awk's `$2` on a file with no blanks (U9, 6 of 6 runs); `ls -l \| wc -l` counting the "total" line (C8); `ls -l \| sort` sorting by permissions, naming a 1-byte file the biggest (C1) | the command is not run; the model is told why and what works (`-F','`, `ls -A`, `ls -S \| head -n 1`). Each check fires only on a case it can prove from the command and the files it reads. Two more followed from the review: `ls -l` of a folder piped to `head -n 1`, which takes its "total" line (advising `ls -lS` had led 3B straight into it), and `du` of `.` sorted with one line kept, which picks the folder's own total |
 | `refs`, extended | "in there" and "it" ignored though the list named them | a note beside the request: `"in there" most likely means stuff/`. Not for a bare "there", which in "how many files are there" means here |
 | `tools`, extended | gave up after "not installed" | the note lists installed programs whose names are like the missing one or contain the file kind (pdftk: `pdfunite`, `pdfinfo`, …), at most 40 |
 | `literal` | the person typed a command and 3B ran something else (U8 technical) | a note that the request is itself a command, to propose as written; only when it parses, every program is installed, and it has shell punctuation or an option |
@@ -891,4 +892,19 @@ A third pair followed the second measurement, for the two misses left:
 | `tools`, re-ask | told `pdfunite` was installed, 3B still gave up on the next reply (U1, 3 of 3) | when the model gives up straight after a refusal, it is asked once more, with each similar program's one-line description from its manual page (read from the file, never by running the program). Once per task. The refusal itself has no room for this: a step's error is cut at 500 characters |
 | `refs`, the last reply | after "the biggest file is big.bin", "move it" moved both files: the look-up changed nothing, so the note had nothing to point at (C1 turn 2) | the session keeps the reply the person was shown (not a withheld one); when the last request changed nothing and its reply named exactly one thing here, "it" is that. Two named: no note |
 
-The model's remaining 3B misses with no harness answer are listed in `experiments.md` beside the second measurement.
+The singular-"it" brake (`refs`) also came from the third measurement: after "move it", the run may not remove two things that exist, since "it" names one.
+
+**Results.** The measured runs (A1–A5), with the held-out results and the misses no aid answers, are in `experiments.md`, "Measuring the aids". On development data every size gains; held out, 7B gains on Layer 7 and 3B does not, so the aids stay (they help 3B where they were aimed and hurt no size beyond noise), and the next fixes are measured on the second held-out sets only.
+
+### D53 — The model comparison runs on rented CPU servers only, on one server family
+
+**Status:** Decided 2026-10-28 by the owner, after the measurements it describes had run; it amends D46.
+
+D46 planned accuracy on a rented GPU and timing on Hetzner `cx23` to `cx53`. What ran:
+
+- **Accuracy on CPU.** Layers 7 and 9 for 1.5B, 3B and 7B ran on a rented 12-core `cpx52`; one run of both sets, three models and two aid settings took 75 minutes and about €0.40. The numbers are the ones a CPU-only device gets, which is what Table 3.2 promises, and the check D46 needed before GPU numbers could stand in for CPU ones falls away. A size too slow for this on CPU (32B) is sized before it is run.
+- **Tiers on `cpx`.** The tiers run on `cpx22` (2 cores, 4 GB), `cpx32` (4, 8 GB), `cpx42` (8, 16 GB) and `cpx62` (16, 32 GB). `cx53` had no stock in any location on 2026-10-22, and one family keeps the CPU (AMD EPYC, shared cores) the same across all four, so the tiers differ only in size. Three tiers were timed on 2026-10-27 (`experiments.md`, "Tier timing").
+
+**Rejected:** rerunning on `cx`, which would repeat three tiers for no question the thesis asks; a GPU sweep, which would add a GPU-to-CPU agreement check and a second provider for numbers the CPU servers already give.
+
+**Not decided here:** whether 32B is scored for accuracy at all, and which tier the study machine uses (D46).
