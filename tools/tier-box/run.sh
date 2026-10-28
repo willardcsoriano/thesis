@@ -10,8 +10,8 @@
 #   bash tools/tier-box/run.sh MODEL...
 #
 # Run it on the tier server, for example through tools/rent/rent.sh with
-# RENT_TYPE set to the tier and RENT_FETCH=tier-box. It installs the two
-# desktop packages setup.sh leaves out (chromium, mousepad) with sudo.
+# RENT_TYPE set to the tier and RENT_FETCH=tier-box. It installs the
+# desktop packages setup.sh leaves out (chromium, mousepad, xauth) with sudo.
 #
 # Output in ~/tier-box/<UTC time>/: idle/ and load/, each holding model-box's
 # preflight.txt, results.tsv and per-model logs; load/desktop-load.txt holds
@@ -25,7 +25,10 @@ repo=$(git -C "$here" rev-parse --show-toplevel) || exit 1
 if [ "${1:-}" = --inside-load ]; then
   dir=$2
   shift 2
-  export DESKTOP_LOAD_STATE=$dir/load-state
+  # The load's state (Chromium's profile among it) stays out of the results:
+  # it is rewritten all through the run, so a copy taken meanwhile is torn.
+  DESKTOP_LOAD_STATE=$(mktemp -d) || exit 1
+  export DESKTOP_LOAD_STATE
   "$repo/tools/desktop-load/start.sh" > "$dir/desktop-load.txt" 2>&1 || {
     echo "the desktop load did not come up:" >&2
     cat "$dir/desktop-load.txt" >&2
@@ -36,6 +39,7 @@ if [ "${1:-}" = --inside-load ]; then
   rc=$?
   "$repo/tools/desktop-load/status.sh" >> "$dir/desktop-load.txt" 2>&1
   "$repo/tools/desktop-load/stop.sh" >> "$dir/desktop-load.txt" 2>&1
+  rm -rf "$DESKTOP_LOAD_STATE"
   cp -a ~/model-box/. "$dir/"
   exit $rc
 fi
@@ -45,9 +49,11 @@ models=("$@")
 out=~/tier-box/$(date -u +%Y%m%dT%H%M%SZ)
 mkdir -p "$out/idle" "$out/load"
 
-if ! command -v chromium >/dev/null || ! command -v mousepad >/dev/null; then
-  sudo -n apt-get install -y -qq chromium mousepad >/dev/null ||
-    { echo "could not install chromium and mousepad" >&2; exit 1; }
+# xauth is what xvfb-run needs to set up the display; the first tier run
+# (2026-10-27) failed its load half without it.
+if ! command -v chromium >/dev/null || ! command -v mousepad >/dev/null || ! command -v xauth >/dev/null; then
+  sudo -n apt-get install -y -qq chromium mousepad xauth >/dev/null ||
+    { echo "could not install chromium, mousepad and xauth" >&2; exit 1; }
 fi
 command -v xvfb-run >/dev/null || { echo "xvfb-run is not installed (distro/manifest.tsv lists xvfb)" >&2; exit 1; }
 
