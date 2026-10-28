@@ -17,7 +17,6 @@ rerun is kept beside it under its own name.
 """
 import os
 import re
-import shutil
 import sys
 import tempfile
 
