@@ -23,6 +23,7 @@ func TestLayer7Verifiers(t *testing.T) {
 	sets := map[string][]utteranceTask{
 		"development": append(utteranceCorpus(), extraUtteranceCorpus()...),
 		"heldout":     heldOutUtteranceCorpus(),
+		"heldout2":    heldOut2UtteranceCorpus(),
 	}
 	for name, tasks := range sets {
 		seen := map[string]bool{}
@@ -124,17 +125,28 @@ func TestLayer7Gathered(t *testing.T) {
 // with, before any model ran on it. An edit after results exist would make it
 // development data; a new set goes under a new name instead.
 func TestLayer7HeldOutFrozen(t *testing.T) {
-	src, err := os.ReadFile("layer7_heldout_test.go")
+	checkFrozen(t, "layer7_heldout_test.go", "../../pilot/layer7_heldout.sha256")
+}
+
+// TestLayer7HeldOut2Frozen does the same for the second held-out set.
+func TestLayer7HeldOut2Frozen(t *testing.T) {
+	checkFrozen(t, "layer7_heldout2_test.go", "../../pilot/layer7_heldout2.sha256")
+}
+
+// checkFrozen fails unless the sha256 of src is the one recorded in hashFile.
+func checkFrozen(t *testing.T, src, hashFile string) {
+	t.Helper()
+	b, err := os.ReadFile(src)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want, err := os.ReadFile("../../pilot/layer7_heldout.sha256")
+	want, err := os.ReadFile(hashFile)
 	if err != nil {
 		t.Fatal(err)
 	}
-	sum := sha256.Sum256(src)
+	sum := sha256.Sum256(b)
 	if got := hex.EncodeToString(sum[:]); got != strings.TrimSpace(string(want)) {
-		t.Fatalf("layer7_heldout_test.go changed since it was frozen (sha256 %s, frozen %s)", got, strings.TrimSpace(string(want)))
+		t.Fatalf("%s changed since it was frozen (sha256 %s, frozen %s)", src, got, strings.TrimSpace(string(want)))
 	}
 }
 

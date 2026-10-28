@@ -2,7 +2,8 @@
 
 // Layer 9: multi-turn conversations, scored turn by turn on real end state.
 // The conversations and their model-free checks are in layer9_corpus_test.go
-// (development) and layer9_heldout_test.go (held out, frozen).
+// (development), layer9_heldout_test.go and layer9_heldout2_test.go (held
+// out, frozen).
 //
 // Each conversation runs in one session, as the REPL runs one: the same
 // session memory and the same undo journal across its turns, and "undo"
@@ -44,6 +45,7 @@ func TestLayer9Conversations(t *testing.T) {
 	}{
 		{"development", conversationCorpus()},
 		{"heldout", heldOutConversationCorpus()},
+		{"heldout2", heldOut2ConversationCorpus()},
 	}
 	// The held-out set runs only when named, as in Layer 7: an unnamed run is
 	// a tuning run and must not spend it.
@@ -51,9 +53,9 @@ func TestLayer9Conversations(t *testing.T) {
 	switch which {
 	case "":
 		which = "development"
-	case "development", "heldout", "both":
+	case "development", "heldout", "both", "heldout2":
 	default:
-		t.Fatalf("SYNAPSE_LAYER9_SET=%q: want development (the default), heldout, or both", which)
+		t.Fatalf("SYNAPSE_LAYER9_SET=%q: want development (the default), heldout, both, or heldout2", which)
 	}
 	// SYNAPSE_LAYER9_ONLY names conversation ids to run, as Layer 7's _ONLY
 	// does, so a run can be split across processes (tools/layer-box).
@@ -64,7 +66,9 @@ func TestLayer9Conversations(t *testing.T) {
 		}
 	}
 	for _, set := range sets {
-		if which != "both" && which != set.name {
+		// "both" is development and heldout; heldout2 runs only by name.
+		both := which == "both" && (set.name == "development" || set.name == "heldout")
+		if !both && which != set.name {
 			continue
 		}
 		convs := set.convs

@@ -15,8 +15,9 @@
 # thing that varies between runs (docs/decisions.md, D52). Without it, runs use
 # synapse's default (every aid on), as before.
 #
-# The held-out sets are not run unless LAYER_BOX_SET=heldout is given: they are
-# for the model comparison, and a result seen while tuning is no longer held out.
+# The held-out sets are not run unless LAYER_BOX_SET=heldout (or heldout2, the
+# second set) is given: they are for the model comparison, and a result seen
+# while tuning is no longer held out.
 # Splitting changes nothing a run sees: every (task, tier, repeat) still gets a
 # fresh fixture, and only the order across processes differs.
 #
