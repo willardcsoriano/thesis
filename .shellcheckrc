@@ -1,0 +1,3 @@
+# Follow the files a script names with "# shellcheck source=", so a sourced
+# helper is checked with the script instead of reported as unfollowed (SC1091).
+external-sources=true
